@@ -14,6 +14,8 @@ import java.io.File
 import android.widget.Toast
 import android.graphics.Color
 import android.view.ViewTreeObserver
+import android.view.inputmethod.InputMethodManager
+import android.content.Context
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,15 +32,33 @@ class MainActivity : AppCompatActivity() {
 
         // 查找 TerminalView 并绑定最小实现的 Client
         val terminalView = findViewById<TerminalView>(R.id.terminal_view)
+        // 默认字体大小（可按需调整）
+        var fontSize = 18
 
         // 提前声明用于回调访问的状态（避免未解析引用）
         var installResult: BootstrapInstaller.Result? = null
         var currentShellPath: String = "/system/bin/sh"
         terminalView.setTerminalViewClient(object : TerminalViewClient {
-            override fun onScale(scale: Float): Float = scale
-            override fun onSingleTapUp(e: android.view.MotionEvent) {}
+            override fun onScale(scale: Float): Float {
+                // 双指缩放：当缩放幅度明显时调整字号
+                return if (scale < 0.9f || scale > 1.1f) {
+                    val increase = scale > 1f
+                    fontSize = (if (increase) fontSize + 1 else fontSize - 1).coerceIn(8, 48)
+                    try { terminalView.setTextSize(fontSize) } catch (_: Throwable) {}
+                    1.0f // 重置累计缩放
+                } else scale
+            }
+            override fun onSingleTapUp(e: android.view.MotionEvent) {
+                // 点按显示软键盘
+                try {
+                    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    terminalView.requestFocus()
+                    imm.showSoftInput(terminalView, InputMethodManager.SHOW_IMPLICIT)
+                } catch (_: Throwable) { }
+            }
             override fun shouldBackButtonBeMappedToEscape(): Boolean = false
-            override fun shouldEnforceCharBasedInput(): Boolean = false
+            // 强制字符输入可避免部分输入法拦截组合输入，提升可输入性
+            override fun shouldEnforceCharBasedInput(): Boolean = true
             override fun shouldUseCtrlSpaceWorkaround(): Boolean = false
             override fun isTerminalViewSelected(): Boolean = true
             override fun copyModeChanged(copyMode: Boolean) {}
@@ -52,7 +72,18 @@ class MainActivity : AppCompatActivity() {
             override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession): Boolean = false
             override fun onEmulatorSet() {
                 // Emulator is ready; ensure renderer initialized and show fallback output if needed
-                try { terminalView.setTextSize(14) } catch (_: Throwable) { }
+                try { terminalView.setTextSize(fontSize) } catch (_: Throwable) { }
+                // 开启光标闪烁，提升可见性
+                try {
+                    terminalView.setTerminalCursorBlinkerRate(600)
+                    terminalView.setTerminalCursorBlinkerState(true, false)
+                } catch (_: Throwable) { }
+                // 显示软键盘
+                try {
+                    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    terminalView.requestFocus()
+                    imm.showSoftInput(terminalView, InputMethodManager.SHOW_IMPLICIT)
+                } catch (_: Throwable) { }
                 if (installResult?.installed != true && currentShellPath == "/system/bin/sh") {
                     val s = terminalView.currentSession ?: return
                     try {
@@ -70,8 +101,11 @@ class MainActivity : AppCompatActivity() {
         })
         // Initialize renderer before attaching session to avoid NPE in updateSize()
         try {
-            terminalView.setTextSize(14)
+            terminalView.setTextSize(fontSize)
         } catch (_: Throwable) { }
+        // 确保可获取焦点
+        terminalView.isFocusable = true
+        terminalView.isFocusableInTouchMode = true
 
         // 构建一个最小 TerminalSessionClient，用于刷新绘制等回调
         val sessionClient = object : TerminalSessionClient {

@@ -1,13 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
 
+// Load release signing config from keystore.properties if present
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties()
+if (keystorePropsFile.exists()) {
+    keystoreProps.load(keystorePropsFile.inputStream())
+}
+
 android {
     namespace = "com.wuxianggujun.tinaide"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.wuxianggujun.tinaide"
@@ -19,6 +26,23 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Define signing config before buildTypes so it can be referenced below
+    if (keystoreProps.isNotEmpty()) {
+        signingConfigs {
+            create("release") {
+                val storeFileProp = keystoreProps.getProperty("storeFile")
+                val storePasswordProp = keystoreProps.getProperty("storePassword")
+                val keyAliasProp = keystoreProps.getProperty("keyAlias")
+                val keyPasswordProp = keystoreProps.getProperty("keyPassword")
+
+                if (!storeFileProp.isNullOrBlank()) storeFile = file(storeFileProp)
+                if (!storePasswordProp.isNullOrBlank()) storePassword = storePasswordProp
+                if (!keyAliasProp.isNullOrBlank()) keyAlias = keyAliasProp
+                if (!keyPasswordProp.isNullOrBlank()) keyPassword = keyPasswordProp
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -26,6 +50,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Attach signing config when keystore.properties is available
+            if (keystoreProps.isNotEmpty()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
@@ -49,7 +77,8 @@ dependencies {
     implementation(project(":terminal-view"))
     implementation(project(":terminal-emulator"))
     implementation(project(":termux-shared"))
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
+    // Use desugar runtime compatible with compileSdk 35+
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.2")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
