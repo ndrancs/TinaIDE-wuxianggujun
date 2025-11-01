@@ -13,6 +13,7 @@ import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.get
 import com.wuxianggujun.tinaide.file.IFileManager
 import com.wuxianggujun.tinaide.ui.adapter.FileTreeAdapter
+import com.wuxianggujun.tinaide.ui.dialog.FileContextMenuDialog
 import java.io.File
 
 /**
@@ -91,8 +92,16 @@ class FileTreeFragment : Fragment() {
     
     private fun handleFileLongClick(file: File): Boolean {
         // 显示上下文菜单
-        // TODO: 实现上下文菜单
+        showFileContextMenu(file)
         return true
+    }
+    
+    private fun showFileContextMenu(file: File) {
+        val dialog = FileContextMenuDialog(file, fileManager) {
+            // 刷新文件树
+            refresh()
+        }
+        dialog.show(childFragmentManager, "FileContextMenu")
     }
     
     private fun showEmptyView() {
