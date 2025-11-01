@@ -12,6 +12,8 @@ import com.termux.view.TerminalViewClient
 import com.wuxianggujun.tinaide.termux.BootstrapInstaller
 import java.io.File
 import android.widget.Toast
+import android.graphics.Color
+import android.view.ViewTreeObserver
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +30,10 @@ class MainActivity : AppCompatActivity() {
 
         // 查找 TerminalView 并绑定最小实现的 Client
         val terminalView = findViewById<TerminalView>(R.id.terminal_view)
+
+        // 提前声明用于回调访问的状态（避免未解析引用）
+        var installResult: BootstrapInstaller.Result? = null
+        var currentShellPath: String = "/system/bin/sh"
         terminalView.setTerminalViewClient(object : TerminalViewClient {
             override fun onScale(scale: Float): Float = scale
             override fun onSingleTapUp(e: android.view.MotionEvent) {}
@@ -44,7 +50,16 @@ class MainActivity : AppCompatActivity() {
             override fun readShiftKey(): Boolean = false
             override fun readFnKey(): Boolean = false
             override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession): Boolean = false
-            override fun onEmulatorSet() {}
+            override fun onEmulatorSet() {
+                // Emulator is ready; ensure renderer initialized and show fallback output if needed
+                try { terminalView.setTextSize(14) } catch (_: Throwable) { }
+                if (installResult?.installed != true && currentShellPath == "/system/bin/sh") {
+                    val s = terminalView.currentSession ?: return
+                    try {
+                        s.write("echo '[TinaIDE] Terminal ready (sh)'; uname -a; id; pwd\r")
+                    } catch (_: Throwable) { }
+                }
+            }
             override fun logError(tag: String, message: String) {}
             override fun logWarn(tag: String, message: String) {}
             override fun logInfo(tag: String, message: String) {}
@@ -53,6 +68,10 @@ class MainActivity : AppCompatActivity() {
             override fun logStackTraceWithMessage(tag: String, message: String, e: Exception) {}
             override fun logStackTrace(tag: String, e: Exception) {}
         })
+        // Initialize renderer before attaching session to avoid NPE in updateSize()
+        try {
+            terminalView.setTextSize(14)
+        } catch (_: Throwable) { }
 
         // 构建一个最小 TerminalSessionClient，用于刷新绘制等回调
         val sessionClient = object : TerminalSessionClient {
@@ -66,7 +85,16 @@ class MainActivity : AppCompatActivity() {
             override fun onBell(session: TerminalSession) {}
             override fun onColorsChanged(session: TerminalSession) { terminalView.invalidate() }
             override fun onTerminalCursorStateChange(state: Boolean) { terminalView.invalidate() }
-            override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
+            override fun setTerminalShellPid(session: TerminalSession, pid: Int) {
+                // 当子进程真正启动后再写入提示，确保不会丢失
+                terminalView.post {
+                    if (installResult?.installed != true && currentShellPath == "/system/bin/sh") {
+                        try {
+                            session.write("echo '[TinaIDE] Fallback to /system/bin/sh'; uname -a; id; pwd\r")
+                        } catch (_: Throwable) { }
+                    }
+                }
+            }
             override fun getTerminalCursorStyle(): Int? = null
             override fun logError(tag: String, message: String) {}
             override fun logWarn(tag: String, message: String) {}
@@ -79,14 +107,31 @@ class MainActivity : AppCompatActivity() {
 
         // 安装/检测离线 Termux 环境（assets/bootstrap 下放置对应 ABI 的 bootstrap 包）
         val install = BootstrapInstaller.installIfNeeded(this)
+        installResult = install
         if (!install.installed) {
             Toast.makeText(this, install.message ?: "Missing bootstrap in assets/bootstrap", Toast.LENGTH_LONG).show()
         }
         // 准备 Termux 环境变量与 shell 路径
         val shellPath = BootstrapInstaller.resolveShell(this)
-        val cwd = File(filesDir, "home").absolutePath
-        val args = arrayOf("-l")
-        val env = BootstrapInstaller.buildEnv(this)
+        currentShellPath = shellPath
+        val homeDir = File(filesDir, "home").apply { if (!exists()) mkdirs() }
+        val cwd = homeDir.absolutePath
+        val env = if (install.installed) {
+            BootstrapInstaller.buildEnv(this)
+        } else {
+            arrayOf(
+                "TERM=xterm-256color",
+                "HOME=${homeDir.absolutePath}",
+                "PATH=/system/bin:/system/xbin"
+            )
+        }
+        // 根据真实 shell 选择合适的参数
+        val args: Array<String> = when {
+            shellPath.endsWith("/login") -> emptyArray() // termux login 不需要 -l
+            shellPath.endsWith("/bash") -> arrayOf("-l") // bash 登录模式
+            shellPath == "/system/bin/sh" -> arrayOf("-i") // sh 交互模式，确保立即可用
+            else -> emptyArray()
+        }
 
         val session = TerminalSession(
             shellPath,
@@ -97,6 +142,25 @@ class MainActivity : AppCompatActivity() {
             sessionClient
         )
 
-        terminalView.attachSession(session)
+        // 确保背景为黑色，避免看起来是“白屏”
+        terminalView.setBackgroundColor(Color.BLACK)
+        terminalView.requestFocus()
+
+        // 等待布局完成后再 attach，保证宽高非 0，从而立即创建 emulator 并绘制
+        terminalView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                if (terminalView.width > 0 && terminalView.height > 0) {
+                    terminalView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    val attached = terminalView.attachSession(session)
+                    if (!attached) {
+                        Toast.makeText(this@MainActivity, "Terminal attach failed", Toast.LENGTH_SHORT).show()
+                    } else if (!install.installed && shellPath == "/system/bin/sh") {
+                        try {
+                            session.write("echo '[TinaIDE] Attached (sh)'; uname -a; id; pwd\r")
+                        } catch (_: Throwable) { }
+                    }
+                }
+            }
+        })
     }
 }
