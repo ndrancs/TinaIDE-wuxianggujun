@@ -17,6 +17,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // For libraries published on JitPack (e.g., getActivity/XXPermissions)
+        maven("https://jitpack.io")
     }
 }
 

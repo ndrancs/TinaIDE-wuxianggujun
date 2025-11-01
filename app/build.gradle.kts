@@ -88,14 +88,19 @@ dependencies {
     
     // Kotlin Coroutines for async operations
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    
+
     // Use desugar runtime compatible with compileSdk 35+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.2")
+
+    // Permissions library by 轮子哥（XXPermissions）
+    implementation("com.github.getActivity:XXPermissions:21.3")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
+
+// (Removed) automated packaging of cpp_cmake template; user provides zip manually
 
 // Resolve duplicate class: guava vs listenablefuture
 configurations.all {

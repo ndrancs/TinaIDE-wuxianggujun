@@ -29,6 +29,11 @@ import com.wuxianggujun.tinaide.core.register
 import com.wuxianggujun.tinaide.ui.IUIManager
 import com.wuxianggujun.tinaide.ui.PanelType
 import com.wuxianggujun.tinaide.ui.UIManager
+import com.wuxianggujun.tinaide.core.registerSingleton
+import com.wuxianggujun.tinaide.file.IFileManager
+import com.wuxianggujun.tinaide.file.FileManager
+import com.wuxianggujun.tinaide.editor.IEditorManager
+import com.wuxianggujun.tinaide.editor.EditorManager
 
 class MainActivity : AppCompatActivity() {
     private lateinit var drawerLayout: DrawerLayout
@@ -76,13 +81,14 @@ class MainActivity : AppCompatActivity() {
         uiManager = UIManager(this)
         ServiceLocator.register<IUIManager>(uiManager)
         
-        // 注册 FileManager
-        val fileManager = com.wuxianggujun.tinaide.file.FileManager(this)
-        ServiceLocator.register<com.wuxianggujun.tinaide.file.IFileManager>(fileManager)
-        
-        // 注册 EditorManager
-        val editorManager = com.wuxianggujun.tinaide.editor.EditorManager(this, supportFragmentManager)
-        ServiceLocator.register<com.wuxianggujun.tinaide.editor.IEditorManager>(editorManager)
+        // 注册 FileManager（仅在未注册时，作为单例保存项目状态）
+        if (!ServiceLocator.isRegistered(IFileManager::class.java)) {
+            ServiceLocator.registerSingleton<IFileManager> { FileManager(applicationContext) }
+        }
+
+        // 注册 EditorManager（与此 Activity 的 FragmentManager 绑定）
+        val editorManager = EditorManager(this, supportFragmentManager)
+        ServiceLocator.register<IEditorManager>(editorManager)
     }
     
     override fun onDestroy() {

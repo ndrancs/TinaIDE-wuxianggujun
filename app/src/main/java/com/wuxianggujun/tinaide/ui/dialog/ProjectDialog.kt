@@ -5,13 +5,22 @@ import android.app.Dialog
 import android.os.Bundle
 import android.os.Environment
 import android.widget.EditText
+import android.widget.Button
+import android.widget.Spinner
+import android.widget.ArrayAdapter
+import android.widget.TextView
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import android.provider.DocumentsContract
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.get
+import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.file.IFileManager
 import java.io.File
+import com.wuxianggujun.tinaide.project.ProjectTemplateInstaller
 
 /**
  * 项目对话框 - 新建/打开项目
@@ -28,6 +37,23 @@ class ProjectDialog(
     
     private val fileManager: IFileManager by lazy {
         ServiceLocator.get<IFileManager>()
+    }
+
+    private var pathInputRef: EditText? = null
+
+    private val chooseDirLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
+        uri ?: return@registerForActivityResult
+        val path = resolveTreeUriToPath(uri)
+        if (path != null) {
+            pathInputRef?.setText(path)
+            // 记住所选目录为默认根目录
+            try {
+                val cfg = ServiceLocator.get<IConfigManager>()
+                cfg.set("project.root_dir", path)
+            } catch (_: Throwable) {}
+        } else {
+            Toast.makeText(requireContext(), "无法解析选择的目录", Toast.LENGTH_SHORT).show()
+        }
     }
     
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -63,13 +89,34 @@ class ProjectDialog(
             setPadding(padding, padding, padding, padding)
             
             // 默认路径
-            val defaultPath = File(
+            val cfg = ServiceLocator.get<IConfigManager>()
+            val saved = cfg.get("project.root_dir", "")
+            val defaultPath = if (saved.isNotBlank()) saved else File(
                 Environment.getExternalStorageDirectory(),
                 "TinaIDE/Projects"
             ).absolutePath
             setText(defaultPath)
         }
+        pathInputRef = pathInput
         container.addView(pathInput)
+
+        // 选择目录按钮
+        val chooseBtn = Button(context).apply {
+            text = getString(com.wuxianggujun.tinaide.R.string.btn_choose_directory)
+            setOnClickListener { chooseDirLauncher.launch(null) }
+        }
+        container.addView(chooseBtn)
+
+        // 项目类型
+        val typeLabel = TextView(context).apply { text = "项目类型" }
+        container.addView(typeLabel)
+        val typeSpinner = Spinner(context)
+        typeSpinner.adapter = ArrayAdapter(
+            context,
+            android.R.layout.simple_spinner_dropdown_item,
+            resources.getStringArray(com.wuxianggujun.tinaide.R.array.project_types)
+        )
+        container.addView(typeSpinner)
         
         return AlertDialog.Builder(context)
             .setTitle("新建项目")
@@ -88,7 +135,8 @@ class ProjectDialog(
                     return@setPositiveButton
                 }
                 
-                createNewProject(projectName, projectPath)
+                val selectedType = typeSpinner.selectedItemPosition // 0: C++(CMake)
+                createNewProject(projectName, projectPath, selectedType)
             }
             .setNegativeButton("取消", null)
             .create()
@@ -100,8 +148,10 @@ class ProjectDialog(
     private fun createOpenProjectDialog(): Dialog {
         val context = requireContext()
         
-        // 获取常用项目路径
-        val projectsDir = File(
+        // 获取常用项目路径（优先配置）
+        val cfg = ServiceLocator.get<IConfigManager>()
+        val saved = cfg.get("project.root_dir", "")
+        val projectsDir = if (saved.isNotBlank()) File(saved) else File(
             Environment.getExternalStorageDirectory(),
             "TinaIDE/Projects"
         )
@@ -128,11 +178,30 @@ class ProjectDialog(
             .setNegativeButton("取消", null)
             .create()
     }
+
+    private fun resolveTreeUriToPath(uri: Uri): String? {
+        return try {
+            if ("com.android.externalstorage.documents" == uri.authority) {
+                val docId = DocumentsContract.getTreeDocumentId(uri)
+                val parts = docId.split(":", limit = 2)
+                val volume = parts.getOrNull(0) ?: return null
+                val rel = parts.getOrNull(1) ?: ""
+                return when {
+                    volume.equals("primary", true) || volume.equals("home", true) ->
+                        File(Environment.getExternalStorageDirectory(), rel).absolutePath
+                    else -> "/storage/$volume/${rel}"
+                }
+            }
+            null
+        } catch (_: Throwable) {
+            null
+        }
+    }
     
     /**
-     * 创建新项目
+     * 创建新项目（根据所选类型生成模板）
      */
-    private fun createNewProject(projectName: String, projectPath: String) {
+    private fun createNewProject(projectName: String, projectPath: String, selectedType: Int) {
         try {
             val projectDir = File(projectPath, projectName)
             
@@ -141,47 +210,19 @@ class ProjectDialog(
                 return
             }
             
-            // 创建项目目录
             if (!projectDir.mkdirs()) {
                 Toast.makeText(requireContext(), "创建项目目录失败", Toast.LENGTH_SHORT).show()
                 return
             }
-            
-            // 创建基本目录结构
-            File(projectDir, "src").mkdirs()
-            File(projectDir, "include").mkdirs()
-            File(projectDir, "build").mkdirs()
-            
-            // 创建示例文件
-            val mainFile = File(projectDir, "src/main.cpp")
-            mainFile.writeText("""
-                #include <iostream>
-                
-                int main() {
-                    std::cout << "Hello, TinaIDE!" << std::endl;
-                    return 0;
-                }
-            """.trimIndent())
-            
-            // 创建 README
-            val readmeFile = File(projectDir, "README.md")
-            readmeFile.writeText("""
-                # $projectName
-                
-                这是一个使用 TinaIDE 创建的 C++ 项目。
-                
-                ## 构建
-                
-                ```bash
-                g++ src/main.cpp -o build/main
-                ```
-                
-                ## 运行
-                
-                ```bash
-                ./build/main
-                ```
-            """.trimIndent())
+
+            val ok = when (selectedType) {
+                0 -> ProjectTemplateInstaller.installCppCMakeTemplate(requireContext(), projectDir, projectName)
+                else -> false
+            }
+            if (!ok) {
+                Toast.makeText(requireContext(), "模板生成失败", Toast.LENGTH_SHORT).show()
+                return
+            }
             
             Toast.makeText(requireContext(), "项目创建成功", Toast.LENGTH_SHORT).show()
             
