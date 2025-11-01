@@ -94,6 +94,14 @@ class MainActivity : AppCompatActivity() {
                 drawerLayout.openDrawer(findViewById(R.id.nav_view))
                 true
             }
+            R.id.action_new_project -> {
+                showNewProjectDialog()
+                true
+            }
+            R.id.action_open_project -> {
+                showOpenProjectDialog()
+                true
+            }
             R.id.action_toggle_terminal -> {
                 toggleTerminal()
                 true
@@ -108,6 +116,31 @@ class MainActivity : AppCompatActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+    
+    private fun showNewProjectDialog() {
+        val dialog = com.wuxianggujun.tinaide.ui.dialog.ProjectDialog(
+            com.wuxianggujun.tinaide.ui.dialog.ProjectDialog.Mode.NEW_PROJECT
+        ) { projectDir ->
+            refreshFileTree()
+        }
+        dialog.show(supportFragmentManager, "NewProject")
+    }
+    
+    private fun showOpenProjectDialog() {
+        val dialog = com.wuxianggujun.tinaide.ui.dialog.ProjectDialog(
+            com.wuxianggujun.tinaide.ui.dialog.ProjectDialog.Mode.OPEN_PROJECT
+        ) { projectDir ->
+            refreshFileTree()
+        }
+        dialog.show(supportFragmentManager, "OpenProject")
+    }
+    
+    private fun refreshFileTree() {
+        val navView = findViewById<NavigationView>(R.id.nav_view)
+        val fileTreeFragment = supportFragmentManager.findFragmentById(R.id.file_tree_container) 
+            as? com.wuxianggujun.tinaide.ui.fragment.FileTreeFragment
+        fileTreeFragment?.refresh()
     }
     
     private fun toggleTerminal() {

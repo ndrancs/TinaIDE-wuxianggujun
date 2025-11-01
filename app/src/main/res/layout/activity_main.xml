@@ -71,20 +71,11 @@
         android:layout_gravity="start"
         android:fitsSystemWindows="true">
 
-        <FrameLayout
+        <androidx.fragment.app.FragmentContainerView
             android:id="@+id/file_tree_container"
+            android:name="com.wuxianggujun.tinaide.ui.fragment.FileTreeFragment"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="文件树\n\n暂无打开的项目"
-                android:textAlignment="center"
-                android:textSize="16sp" />
-
-        </FrameLayout>
+            android:layout_height="match_parent" />
 
     </com.google.android.material.navigation.NavigationView>
 
