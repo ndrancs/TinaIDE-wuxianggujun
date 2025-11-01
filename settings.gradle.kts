@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("external/sora-editor/build-logic")
     repositories {
         google {
             content {
@@ -31,3 +32,9 @@ project(":terminal-view").projectDir = file("external/termux-app/terminal-view")
 // Localize termux-am-library to avoid remote dependency
 include(":termux-am-library")
 project(":termux-am-library").projectDir = file("external/termux-am-library/termux-am-library")
+
+// Include SoraEditor modules for code editing
+include(":sora-editor:editor")
+include(":sora-editor:language-textmate")
+project(":sora-editor:editor").projectDir = file("external/sora-editor/editor")
+project(":sora-editor:language-textmate").projectDir = file("external/sora-editor/language-textmate")

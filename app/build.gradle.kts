@@ -57,13 +57,13 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         // Required because :termux-shared enables coreLibraryDesugaring
         isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
 }
 
@@ -73,12 +73,25 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    
     // Termux terminal components
     implementation(project(":terminal-view"))
     implementation(project(":terminal-emulator"))
     implementation(project(":termux-shared"))
+    
+    // SoraEditor components
+    implementation(project(":sora-editor:editor"))
+    implementation(project(":sora-editor:language-textmate"))
+    
+    // JSON processing for configuration
+    implementation("com.google.code.gson:gson:2.10.1")
+    
+    // Kotlin Coroutines for async operations
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    
     // Use desugar runtime compatible with compileSdk 35+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.2")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
