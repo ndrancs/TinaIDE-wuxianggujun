@@ -86,8 +86,15 @@ class FileTreeFragment : Fragment() {
             adapter.toggleDirectory(file)
         } else {
             // 打开文件
-            // TODO: 在编辑器中打开文件
+            openFileInEditor(file)
         }
+    }
+    
+    private fun openFileInEditor(file: File) {
+        // 获取 EditorContainerFragment 并打开文件
+        val editorContainer = parentFragmentManager.findFragmentById(R.id.editor_container) 
+            as? com.wuxianggujun.tinaide.ui.fragment.EditorContainerFragment
+        editorContainer?.openFile(file)
     }
     
     private fun handleFileLongClick(file: File): Boolean {

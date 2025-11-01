@@ -38,23 +38,12 @@
             app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
             <!-- 编辑器区域 -->
-            <FrameLayout
+            <androidx.fragment.app.FragmentContainerView
                 android:id="@+id/editor_container"
+                android:name="com.wuxianggujun.tinaide.ui.fragment.EditorContainerFragment"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1">
-
-                <TextView
-                    android:id="@+id/welcome_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="欢迎使用 TinaIDE\n\n点击左上角菜单打开项目"
-                    android:textAlignment="center"
-                    android:textSize="18sp"
-                    android:textColor="?android:attr/textColorPrimary" />
-
-            </FrameLayout>
+                android:layout_weight="1" />
 
             <!-- 终端区域（可折叠） -->
             <FrameLayout
