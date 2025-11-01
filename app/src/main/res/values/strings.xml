@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">TinaIDE</string>
+    <string name="title_project_manager">项目管理</string>
+    <string name="menu_new_project">新建项目</string>
+    <string name="menu_choose_dir">选择目录</string>
+    <string name="menu_refresh">刷新</string>
+    <string name="btn_choose_directory">选择目录</string>
+    <string name="permission_not_all_granted">部分权限未授予，可能影响功能使用</string>
+    <string name="permission_denied_never_ask">权限被永久拒绝，请在设置中手动开启</string>
+    <string name="permission_denied">权限被拒绝</string>
 </resources>
