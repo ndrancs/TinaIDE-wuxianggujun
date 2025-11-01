@@ -54,7 +54,7 @@ class EditorFragment : Fragment() {
         // 基本配置
         codeEditor.apply {
             // 字体大小
-            textSize = 14f
+            setTextSize(14f)
             
             // 显示行号
             isLineNumberEnabled = true
@@ -139,7 +139,7 @@ class EditorFragment : Fragment() {
      * 设置字体大小
      */
     fun setTextSize(size: Float) {
-        codeEditor.textSize = size
+        codeEditor.setTextSize(size)
     }
     
     /**
