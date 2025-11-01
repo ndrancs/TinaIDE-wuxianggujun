@@ -16,21 +16,90 @@ import android.graphics.Color
 import android.view.ViewTreeObserver
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
+import androidx.appcompat.widget.Toolbar
+import androidx.drawerlayout.widget.DrawerLayout
+import com.google.android.material.navigation.NavigationView
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var toolbar: Toolbar
+    private var terminalSession: TerminalSession? = null
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
+        // 初始化 Toolbar
+        toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeAsUpIndicator(android.R.drawable.ic_menu_sort_by_size)
+        
+        // 初始化 DrawerLayout
+        drawerLayout = findViewById(R.id.drawer_layout)
+        
         // 适配系统栏内边距
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+        
+        // 初始化终端（延迟加载）
+        initializeTerminal()
+    }
+    
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+    
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            android.R.id.home -> {
+                drawerLayout.openDrawer(findViewById(R.id.nav_view))
+                true
+            }
+            R.id.action_toggle_terminal -> {
+                toggleTerminal()
+                true
+            }
+            R.id.action_run -> {
+                Toast.makeText(this, "运行功能开发中", Toast.LENGTH_SHORT).show()
+                true
+            }
+            R.id.action_build -> {
+                Toast.makeText(this, "编译功能开发中", Toast.LENGTH_SHORT).show()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+    
+    private fun toggleTerminal() {
+        val terminalContainer = findViewById<View>(R.id.terminal_container)
+        if (terminalContainer.visibility == View.VISIBLE) {
+            terminalContainer.visibility = View.GONE
+        } else {
+            terminalContainer.visibility = View.VISIBLE
+            // 如果终端还没初始化，现在初始化
+            if (terminalSession == null) {
+                setupTerminalSession()
+            }
+        }
+    }
+    
+    private fun initializeTerminal() {
+        // 终端默认隐藏，只在需要时显示
+        findViewById<View>(R.id.terminal_container).visibility = View.GONE
+    }
+    
+    private fun setupTerminalSession() {
 
-        // 查找 TerminalView 并绑定最小实现的 Client
         val terminalView = findViewById<TerminalView>(R.id.terminal_view)
         // 默认字体大小（可按需调整）
         var fontSize = 18
@@ -167,7 +236,7 @@ class MainActivity : AppCompatActivity() {
             else -> emptyArray()
         }
 
-        val session = TerminalSession(
+        terminalSession = TerminalSession(
             shellPath,
             cwd,
             args,
@@ -185,12 +254,12 @@ class MainActivity : AppCompatActivity() {
             override fun onGlobalLayout() {
                 if (terminalView.width > 0 && terminalView.height > 0) {
                     terminalView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                    val attached = terminalView.attachSession(session)
+                    val attached = terminalView.attachSession(terminalSession)
                     if (!attached) {
                         Toast.makeText(this@MainActivity, "Terminal attach failed", Toast.LENGTH_SHORT).show()
                     } else if (!install.installed && shellPath == "/system/bin/sh") {
                         try {
-                            session.write("echo '[TinaIDE] Attached (sh)'; uname -a; id; pwd\r")
+                            terminalSession?.write("echo '[TinaIDE] Attached (sh)'; uname -a; id; pwd\r")
                         } catch (_: Throwable) { }
                     }
                 }
