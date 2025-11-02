@@ -48,6 +48,24 @@ class EditorFragment : Fragment() {
         
         codeEditor = view.findViewById(R.id.code_editor)
         setupEditor()
+        loadFileContent()
+    }
+    
+    private fun loadFileContent() {
+        filePath?.let { path ->
+            try {
+                val file = java.io.File(path)
+                if (file.exists() && file.isFile) {
+                    val content = file.readText()
+                    android.util.Log.d("EditorFragment", "Loading file: $path, content length: ${content.length}")
+                    codeEditor.setText(content)
+                } else {
+                    android.util.Log.e("EditorFragment", "File not found or not a file: $path")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("EditorFragment", "Error loading file: $path", e)
+            }
+        }
     }
     
     private fun setupEditor() {

@@ -22,7 +22,6 @@ class EditorManager(
     }
     
     private val openTabs = mutableListOf<EditorTab>()
-    private val tabFragments = mutableMapOf<String, EditorFragment>()
     private var currentTab: EditorTab? = null
     private var fontSize: Int = 14
     
@@ -33,7 +32,6 @@ class EditorManager(
     override fun onDestroy() {
         // 清理资源
         openTabs.clear()
-        tabFragments.clear()
         currentTab = null
     }
     
@@ -50,24 +48,11 @@ class EditorManager(
             file = file
         )
         
-        // 创建 Fragment
-        val fragment = EditorFragment.newInstance(file.absolutePath)
-        tabFragments[tab.id] = fragment
-        
-        // 读取文件内容
-        try {
-            val content = file.readText()
-            fragment.setText(content)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error reading file: ${file.absolutePath}", e)
-        }
-        
         // 添加到标签页列表
         openTabs.add(tab)
         currentTab = tab
         
-        // 显示 Fragment
-        showFragment(fragment)
+        Log.d(TAG, "Created tab for file: ${file.absolutePath}, tab id: ${tab.id}")
         
         return tab
     }
@@ -76,33 +61,17 @@ class EditorManager(
         // 移除标签页
         openTabs.remove(tab)
         
-        // 移除 Fragment
-        tabFragments[tab.id]?.let { fragment ->
-            fragmentManager.beginTransaction()
-                .remove(fragment)
-                .commit()
-            tabFragments.remove(tab.id)
-        }
-        
         // 如果关闭的是当前标签页，切换到其他标签页
         if (currentTab?.id == tab.id) {
             currentTab = openTabs.lastOrNull()
-            currentTab?.let { switchToTab(it) }
         }
+        
+        Log.d(TAG, "Closed tab: ${tab.id}, remaining tabs: ${openTabs.size}")
     }
     
     override fun saveFile(tab: EditorTab) {
-        val fragment = tabFragments[tab.id] ?: return
-        
-        try {
-            val content = fragment.getText()
-            tab.file.writeText(content)
-            tab.isDirty = false
-            Log.d(TAG, "File saved: ${tab.file.absolutePath}")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error saving file: ${tab.file.absolutePath}", e)
-            throw e
-        }
+        // 保存逻辑由 EditorContainerFragment 处理
+        Log.d(TAG, "Save file requested for: ${tab.file.absolutePath}")
     }
     
     override fun saveAllFiles() {
@@ -123,13 +92,8 @@ class EditorManager(
     
     override fun switchToTab(tab: EditorTab) {
         if (currentTab?.id == tab.id) return
-        
         currentTab = tab
-        
-        // 显示对应的 Fragment
-        tabFragments[tab.id]?.let { fragment ->
-            showFragment(fragment)
-        }
+        Log.d(TAG, "Switched to tab: ${tab.id}")
     }
     
     override fun getCurrentTab(): EditorTab? {
@@ -138,58 +102,22 @@ class EditorManager(
     
     override fun setFontSize(size: Int) {
         fontSize = size
-        
-        // 更新所有编辑器的字体大小
-        tabFragments.values.forEach { fragment ->
-            fragment.setTextSize(size.toFloat())
-        }
+        Log.d(TAG, "Font size set to: $size")
     }
     
     override fun undo(tab: EditorTab) {
-        tabFragments[tab.id]?.undo()
+        Log.d(TAG, "Undo requested for tab: ${tab.id}")
     }
     
     override fun redo(tab: EditorTab) {
-        tabFragments[tab.id]?.redo()
+        Log.d(TAG, "Redo requested for tab: ${tab.id}")
     }
     
     override fun find(query: String) {
-        // TODO: 实现查找功能
         Log.d(TAG, "Find: $query")
     }
     
     override fun replace(query: String, replacement: String) {
-        // TODO: 实现替换功能
         Log.d(TAG, "Replace: $query -> $replacement")
-    }
-    
-    /**
-     * 显示 Fragment
-     */
-    private fun showFragment(fragment: EditorFragment) {
-        val transaction = fragmentManager.beginTransaction()
-        
-        // 隐藏所有其他 Fragment
-        tabFragments.values.forEach { f ->
-            if (f != fragment && f.isAdded) {
-                transaction.hide(f)
-            }
-        }
-        
-        // 显示目标 Fragment
-        if (fragment.isAdded) {
-            transaction.show(fragment)
-        } else {
-            transaction.add(R.id.editor_container, fragment, fragment.getFilePath())
-        }
-        
-        transaction.commit()
-    }
-    
-    /**
-     * 获取 Fragment
-     */
-    fun getFragment(tab: EditorTab): EditorFragment? {
-        return tabFragments[tab.id]
     }
 }

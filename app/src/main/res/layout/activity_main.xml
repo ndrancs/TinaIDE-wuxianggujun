@@ -64,19 +64,24 @@
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <!-- 文件树侧边栏 -->
-    <com.google.android.material.navigation.NavigationView
+    <LinearLayout
         android:id="@+id/nav_view"
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:orientation="vertical"
+        android:background="?android:attr/colorBackground"
         android:fitsSystemWindows="true">
+
+        <include layout="@layout/include_file_tree_header" />
 
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/file_tree_container"
             android:name="com.wuxianggujun.tinaide.ui.fragment.FileTreeFragment"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-    </com.google.android.material.navigation.NavigationView>
+    </LinearLayout>
 
 </androidx.drawerlayout.widget.DrawerLayout>

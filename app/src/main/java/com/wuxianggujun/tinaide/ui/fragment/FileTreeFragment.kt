@@ -92,9 +92,15 @@ class FileTreeFragment : Fragment() {
     
     private fun openFileInEditor(file: File) {
         // 获取 EditorContainerFragment 并打开文件
-        val editorContainer = parentFragmentManager.findFragmentById(R.id.editor_container) 
+        val activity = requireActivity()
+        val editorContainer = activity.supportFragmentManager.findFragmentById(R.id.editor_container) 
             as? com.wuxianggujun.tinaide.ui.fragment.EditorContainerFragment
-        editorContainer?.openFile(file)
+        
+        if (editorContainer != null) {
+            editorContainer.openFile(file)
+        } else {
+            android.util.Log.e("FileTreeFragment", "EditorContainerFragment not found!")
+        }
     }
     
     private fun handleFileLongClick(file: File): Boolean {

@@ -22,6 +22,7 @@ class EditorTabAdapter(
     
     override fun createFragment(position: Int): Fragment {
         val tab = tabs[position]
+        android.util.Log.d("EditorTabAdapter", "Creating fragment for position $position, file: ${tab.file.absolutePath}")
         val fragment = EditorFragment.newInstance(tab.file.absolutePath)
         fragments[tab.id] = fragment
         return fragment
