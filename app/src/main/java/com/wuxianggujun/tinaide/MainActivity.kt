@@ -140,8 +140,38 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "编译功能开发中", Toast.LENGTH_SHORT).show()
                 true
             }
+            R.id.action_reinstall_termux -> {
+                reinstallTermuxEnvironment()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+    
+    private fun reinstallTermuxEnvironment() {
+        AlertDialog.Builder(this)
+            .setTitle("重新安装终端环境")
+            .setMessage("这将删除现有的 Termux 环境并重新安装。\n\n确定要继续吗？")
+            .setPositiveButton("确定") { _, _ ->
+                Thread {
+                    val result = BootstrapInstaller.installIfNeeded(this, forceReinstall = true)
+                    runOnUiThread {
+                        if (result.installed) {
+                            Toast.makeText(this, "终端环境重新安装成功", Toast.LENGTH_SHORT).show()
+                            // 重置终端会话
+                            terminalSession = null
+                        } else {
+                            AlertDialog.Builder(this)
+                                .setTitle("安装失败")
+                                .setMessage(result.message ?: "未知错误")
+                                .setPositiveButton("了解", null)
+                                .show()
+                        }
+                    }
+                }.start()
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
     
     private fun showOpenProjectDialog() {
@@ -173,6 +203,37 @@ class MainActivity : AppCompatActivity() {
     private fun initializeTerminal() {
         // 终端默认隐藏，由 UIManager 管理
         // 不需要手动设置 visibility
+        
+        // 预检查 Termux 环境（用于调试）
+        checkTermuxEnvironment()
+    }
+    
+    private fun checkTermuxEnvironment() {
+        val prefix = File(filesDir, "usr")
+        val binDir = File(prefix, "bin")
+        
+        android.util.Log.d("MainActivity", "=== Termux Environment Pre-check ===")
+        android.util.Log.d("MainActivity", "Prefix: ${prefix.absolutePath}")
+        android.util.Log.d("MainActivity", "Prefix exists: ${prefix.exists()}")
+        android.util.Log.d("MainActivity", "Bin exists: ${binDir.exists()}")
+        
+        if (binDir.exists() && binDir.isDirectory) {
+            val files = binDir.listFiles()
+            android.util.Log.d("MainActivity", "Files in bin/: ${files?.size ?: 0}")
+            files?.take(10)?.forEach { file ->
+                android.util.Log.d("MainActivity", "  - ${file.name}")
+            }
+        }
+        
+        // 检查关键文件
+        val login = File(prefix, "bin/login")
+        val bash = File(prefix, "bin/bash")
+        val sh = File(prefix, "bin/sh")
+        
+        android.util.Log.d("MainActivity", "Shell files:")
+        android.util.Log.d("MainActivity", "  login: ${login.exists()}")
+        android.util.Log.d("MainActivity", "  bash: ${bash.exists()}")
+        android.util.Log.d("MainActivity", "  sh: ${sh.exists()}")
     }
 
     private fun setupFileTreeHeader() {
@@ -288,12 +349,6 @@ class MainActivity : AppCompatActivity() {
                     terminalView.requestFocus()
                     imm.showSoftInput(terminalView, InputMethodManager.SHOW_IMPLICIT)
                 } catch (_: Throwable) { }
-                if (installResult?.installed != true && currentShellPath == "/system/bin/sh") {
-                    val s = terminalView.currentSession ?: return
-                    try {
-                        s.write("echo '[TinaIDE] Terminal ready (sh)'; uname -a; id; pwd\r")
-                    } catch (_: Throwable) { }
-                }
             }
             override fun logError(tag: String, message: String) {}
             override fun logWarn(tag: String, message: String) {}
@@ -324,14 +379,7 @@ class MainActivity : AppCompatActivity() {
             override fun onColorsChanged(session: TerminalSession) { terminalView.invalidate() }
             override fun onTerminalCursorStateChange(state: Boolean) { terminalView.invalidate() }
             override fun setTerminalShellPid(session: TerminalSession, pid: Int) {
-                // 当子进程真正启动后再写入提示，确保不会丢失
-                terminalView.post {
-                    if (installResult?.installed != true && currentShellPath == "/system/bin/sh") {
-                        try {
-                            session.write("echo '[TinaIDE] Fallback to /system/bin/sh'; uname -a; id; pwd\r")
-                        } catch (_: Throwable) { }
-                    }
-                }
+                android.util.Log.d("MainActivity", "Terminal shell started with PID: $pid")
             }
             override fun getTerminalCursorStyle(): Int? = null
             override fun logError(tag: String, message: String) {}
@@ -343,42 +391,162 @@ class MainActivity : AppCompatActivity() {
             override fun logStackTrace(tag: String, e: Exception) {}
         }
 
-        // 安装/检测离线 Termux 环境（assets/bootstrap 下放置对应 ABI 的 bootstrap 包）
+        // 安装/检测 Termux 环境
         val install = BootstrapInstaller.installIfNeeded(this)
         installResult = install
-        if (!install.installed) {
-            Toast.makeText(this, install.message ?: "Missing bootstrap in assets/bootstrap", Toast.LENGTH_LONG).show()
+        
+        android.util.Log.d("MainActivity", "Bootstrap install result: installed=${install.installed}, arch=${install.arch}")
+        
+        // 验证环境完整性
+        if (install.installed) {
+            val isValid = BootstrapInstaller.verifyEnvironment(this)
+            android.util.Log.d("MainActivity", "Environment verification: $isValid")
+            if (!isValid) {
+                android.util.Log.w("MainActivity", "Environment incomplete, some files may be missing")
+                
+                // 显示警告但继续尝试
+                Toast.makeText(this, "警告：终端环境可能不完整", Toast.LENGTH_LONG).show()
+            }
         }
-        // 准备 Termux 环境变量与 shell 路径
+        
+        if (!install.installed) {
+            // Termux 环境不可用，显示错误并返回
+            val message = install.message ?: "Termux 环境未安装"
+            android.util.Log.e("MainActivity", "Termux environment not available: $message")
+            
+            // 获取设备架构信息
+            val deviceInfo = buildString {
+                appendLine("设备架构信息：")
+                appendLine("检测到的架构: ${install.arch ?: "未知"}")
+                appendLine("支持的 ABI: ${android.os.Build.SUPPORTED_ABIS.joinToString()}")
+                appendLine()
+                appendLine(message)
+                appendLine()
+                appendLine("终端功能需要 Termux 环境支持。")
+                appendLine("请将对应架构的 bootstrap 包放到")
+                appendLine("assets/bootstrap/ 目录后重新编译应用。")
+                appendLine()
+                appendLine("参考: assets/bootstrap/README.txt")
+            }
+            
+            AlertDialog.Builder(this)
+                .setTitle("Termux 环境未安装")
+                .setMessage(deviceInfo)
+                .setPositiveButton("了解") { _, _ -> }
+                .setCancelable(false)
+                .show()
+            
+            // 不初始化终端
+            return
+        }
+        
+        // Toast.makeText(this, "Termux 环境就绪", Toast.LENGTH_SHORT).show()
+        android.util.Log.d("MainActivity", "Termux environment ready at: ${install.prefixPath}")
+        
+        // 获取 Termux shell 路径
         val shellPath = BootstrapInstaller.resolveShell(this)
+        if (shellPath == null) {
+            android.util.Log.e("MainActivity", "No Termux shell found")
+            
+            // 收集诊断信息
+            val prefix = File(filesDir, "usr")
+            val binDir = File(prefix, "bin")
+            val diagnosticInfo = buildString {
+                appendLine("找不到 Termux shell (login/bash/sh)")
+                appendLine()
+                appendLine("诊断信息：")
+                appendLine("PREFIX: ${prefix.absolutePath}")
+                appendLine("PREFIX exists: ${prefix.exists()}")
+                appendLine("BIN exists: ${binDir.exists()}")
+                
+                if (binDir.exists() && binDir.isDirectory) {
+                    val files = binDir.listFiles()
+                    appendLine("BIN 文件数: ${files?.size ?: 0}")
+                    if (files != null && files.isNotEmpty()) {
+                        appendLine()
+                        appendLine("BIN 目录内容（前10个）：")
+                        files.take(10).forEach { file ->
+                            appendLine("  - ${file.name} (${file.length()} bytes, exec: ${file.canExecute()})")
+                        }
+                    }
+                } else {
+                    appendLine("BIN 目录不存在或不是目录")
+                }
+                
+                appendLine()
+                appendLine("请检查 bootstrap 包是否完整。")
+            }
+            
+            AlertDialog.Builder(this)
+                .setTitle("终端初始化失败")
+                .setMessage(diagnosticInfo)
+                .setPositiveButton("了解") { _, _ -> }
+                .show()
+            return
+        }
+        
         currentShellPath = shellPath
+        android.util.Log.d("MainActivity", "Using Termux shell: $shellPath")
+        
         val homeDir = File(filesDir, "home").apply { if (!exists()) mkdirs() }
         val cwd = homeDir.absolutePath
-        val env = if (install.installed) {
-            BootstrapInstaller.buildEnv(this)
-        } else {
-            arrayOf(
-                "TERM=xterm-256color",
-                "HOME=${homeDir.absolutePath}",
-                "PATH=/system/bin:/system/xbin"
-            )
-        }
-        // 根据真实 shell 选择合适的参数
+        
+        // 使用 Termux 环境变量
+        val env = BootstrapInstaller.buildEnv(this)
+        
+        // 根据 shell 类型选择合适的参数
         val args: Array<String> = when {
-            shellPath.endsWith("/login") -> emptyArray() // termux login 不需要 -l
-            shellPath.endsWith("/bash") -> arrayOf("-l") // bash 登录模式
-            shellPath == "/system/bin/sh" -> arrayOf("-i") // sh 交互模式，确保立即可用
+            shellPath.endsWith("/login") -> {
+                android.util.Log.d("MainActivity", "Using Termux login shell")
+                emptyArray()
+            }
+            shellPath.endsWith("/bash") -> {
+                android.util.Log.d("MainActivity", "Using bash with login mode")
+                arrayOf("-l")
+            }
             else -> emptyArray()
         }
 
-        terminalSession = TerminalSession(
-            shellPath,
-            cwd,
-            args,
-            env,
-            /* transcriptRows = */ 10000,
-            sessionClient
-        )
+        try {
+            android.util.Log.d("MainActivity", "Creating terminal session...")
+            android.util.Log.d("MainActivity", "  Shell: $shellPath")
+            android.util.Log.d("MainActivity", "  CWD: $cwd")
+            android.util.Log.d("MainActivity", "  Args: ${args.joinToString()}")
+            
+            terminalSession = TerminalSession(
+                shellPath,
+                cwd,
+                args,
+                env,
+                /* transcriptRows = */ 10000,
+                sessionClient
+            )
+            android.util.Log.d("MainActivity", "Terminal session created successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to create terminal session", e)
+            
+            val errorInfo = buildString {
+                appendLine("终端会话创建失败")
+                appendLine()
+                appendLine("错误信息：")
+                appendLine(e.message ?: "未知错误")
+                appendLine()
+                appendLine("Shell: $shellPath")
+                appendLine("Shell exists: ${File(shellPath).exists()}")
+                appendLine("Shell executable: ${File(shellPath).canExecute()}")
+                appendLine("Shell size: ${File(shellPath).length()} bytes")
+                appendLine()
+                appendLine("工作目录: $cwd")
+                appendLine("CWD exists: ${File(cwd).exists()}")
+            }
+            
+            AlertDialog.Builder(this)
+                .setTitle("终端会话创建失败")
+                .setMessage(errorInfo)
+                .setPositiveButton("了解") { _, _ -> }
+                .show()
+            return
+        }
 
         // 确保背景为黑色，避免看起来是“白屏”
         terminalView.setBackgroundColor(Color.BLACK)
@@ -389,13 +557,23 @@ class MainActivity : AppCompatActivity() {
             override fun onGlobalLayout() {
                 if (terminalView.width > 0 && terminalView.height > 0) {
                     terminalView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    android.util.Log.d("MainActivity", "Attaching terminal session...")
                     val attached = terminalView.attachSession(terminalSession)
                     if (!attached) {
-                        Toast.makeText(this@MainActivity, "Terminal attach failed", Toast.LENGTH_SHORT).show()
-                    } else if (!install.installed && shellPath == "/system/bin/sh") {
-                        try {
-                            terminalSession?.write("echo '[TinaIDE] Attached (sh)'; uname -a; id; pwd\r")
-                        } catch (_: Throwable) { }
+                        android.util.Log.e("MainActivity", "Terminal attach failed")
+                        Toast.makeText(this@MainActivity, "终端附加失败", Toast.LENGTH_SHORT).show()
+                    } else {
+                        android.util.Log.d("MainActivity", "Terminal session attached successfully")
+                        // 发送欢迎信息
+                        terminalView.postDelayed({
+                            try {
+                                terminalSession?.write("echo 'Welcome to TinaIDE Terminal'\r")
+                                terminalSession?.write("echo 'Shell: $shellPath'\r")
+                                terminalSession?.write("pwd\r")
+                            } catch (e: Exception) {
+                                android.util.Log.e("MainActivity", "Failed to write to terminal", e)
+                            }
+                        }, 500)
                     }
                 }
             }

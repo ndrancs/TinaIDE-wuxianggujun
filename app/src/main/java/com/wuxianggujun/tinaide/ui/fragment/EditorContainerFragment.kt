@@ -26,6 +26,7 @@ class EditorContainerFragment : Fragment() {
     private lateinit var viewPager: ViewPager2
     private lateinit var adapter: EditorTabAdapter
     private var tabLayoutMediator: TabLayoutMediator? = null
+    private lateinit var editorToolbar: View
     
     private val editorManager: IEditorManager by lazy {
         ServiceLocator.get<IEditorManager>()
@@ -44,9 +45,79 @@ class EditorContainerFragment : Fragment() {
         
         tabLayout = view.findViewById(R.id.tab_layout)
         viewPager = view.findViewById(R.id.view_pager)
+        editorToolbar = view.findViewById(R.id.editor_toolbar)
         
         setupViewPager()
         setupTabLayout()
+        setupEditorToolbar()
+    }
+    
+    private fun setupEditorToolbar() {
+        view?.findViewById<android.widget.ImageButton>(R.id.btn_undo)?.setOnClickListener {
+            getCurrentEditorFragment()?.undo()
+        }
+        
+        view?.findViewById<android.widget.ImageButton>(R.id.btn_redo)?.setOnClickListener {
+            getCurrentEditorFragment()?.redo()
+        }
+        
+        view?.findViewById<android.widget.ImageButton>(R.id.btn_find)?.setOnClickListener {
+            showFindDialog()
+        }
+        
+        view?.findViewById<android.widget.ImageButton>(R.id.btn_goto_line)?.setOnClickListener {
+            showGotoLineDialog()
+        }
+        
+        view?.findViewById<android.widget.ImageButton>(R.id.btn_save)?.setOnClickListener {
+            saveCurrentFile()
+        }
+    }
+    
+    private fun getCurrentEditorFragment(): com.wuxianggujun.tinaide.ui.fragment.EditorFragment? {
+        val currentPosition = viewPager.currentItem
+        val tab = adapter.getTab(currentPosition)
+        return tab?.let { adapter.getFragment(it) }
+    }
+    
+    private fun showFindDialog() {
+        val fragment = getCurrentEditorFragment()
+        if (fragment != null) {
+            val dialog = com.wuxianggujun.tinaide.ui.dialog.FindReplaceDialog(fragment.getEditor())
+            dialog.show(childFragmentManager, "FindReplace")
+        } else {
+            android.widget.Toast.makeText(requireContext(), "没有打开的文件", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun showGotoLineDialog() {
+        val fragment = getCurrentEditorFragment() ?: return
+        val editor = fragment.getEditor()
+        
+        val input = android.widget.EditText(requireContext())
+        input.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        input.hint = "行号"
+        
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("跳转到行")
+            .setView(input)
+            .setPositiveButton("跳转") { _, _ ->
+                val lineStr = input.text.toString()
+                if (lineStr.isNotEmpty()) {
+                    try {
+                        val line = lineStr.toInt() - 1 // 行号从 0 开始
+                        if (line >= 0 && line < editor.lineCount) {
+                            editor.setSelection(line, 0)
+                        } else {
+                            android.widget.Toast.makeText(requireContext(), "行号超出范围", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: NumberFormatException) {
+                        android.widget.Toast.makeText(requireContext(), "请输入有效的行号", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
     
     private fun setupViewPager() {
@@ -68,7 +139,9 @@ class EditorContainerFragment : Fragment() {
     }
     
     private fun updateTabLayoutVisibility() {
-        tabLayout.visibility = if (adapter.itemCount > 0) View.VISIBLE else View.GONE
+        val hasFiles = adapter.itemCount > 0
+        tabLayout.visibility = if (hasFiles) View.VISIBLE else View.GONE
+        editorToolbar.visibility = if (hasFiles) View.VISIBLE else View.GONE
     }
     
     private fun setupTabLayout() {
