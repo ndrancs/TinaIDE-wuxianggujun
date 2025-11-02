@@ -1,5 +1,4 @@
 package com.wuxianggujun.tinaide
-
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -43,6 +42,13 @@ class MainActivity : AppCompatActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 先注册可能被 Fragment 依赖的核心服务，避免 Fragment 提前访问未注册服务
+        if (!ServiceLocator.isRegistered(IConfigManager::class.java)) {
+            ServiceLocator.register<IConfigManager>(ConfigManager(this))
+        }
+        if (!ServiceLocator.isRegistered(IFileManager::class.java)) {
+            ServiceLocator.registerSingleton<IFileManager> { FileManager(applicationContext) }
+        }
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
@@ -70,12 +76,17 @@ class MainActivity : AppCompatActivity() {
         
         // 初始化终端（延迟加载）
         initializeTerminal()
+
+        // 进入主页面后，主动刷新一次文件树，确保展示刚打开的项目
+        refreshFileTree()
     }
     
     private fun initializeServices() {
-        // 注册 ConfigManager
-        val configManager = ConfigManager(this)
-        ServiceLocator.register<IConfigManager>(configManager)
+        // 注册 ConfigManager（如已注册则复用，避免在 Fragment 已创建时替换实例）
+        if (!ServiceLocator.isRegistered(IConfigManager::class.java)) {
+            val configManager = ConfigManager(this)
+            ServiceLocator.register<IConfigManager>(configManager)
+        }
         
         // 注册 UIManager
         uiManager = UIManager(this)

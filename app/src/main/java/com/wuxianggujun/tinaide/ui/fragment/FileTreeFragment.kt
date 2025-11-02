@@ -112,11 +112,13 @@ class FileTreeFragment : Fragment() {
     }
     
     private fun showEmptyView() {
+        if (!::recyclerView.isInitialized || !::emptyView.isInitialized) return
         recyclerView.visibility = View.GONE
         emptyView.visibility = View.VISIBLE
     }
     
     private fun hideEmptyView() {
+        if (!::recyclerView.isInitialized || !::emptyView.isInitialized) return
         recyclerView.visibility = View.VISIBLE
         emptyView.visibility = View.GONE
     }
@@ -125,6 +127,7 @@ class FileTreeFragment : Fragment() {
      * 刷新文件树
      */
     fun refresh() {
+        if (!isAdded || !::recyclerView.isInitialized) return
         loadProject()
     }
 }

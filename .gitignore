@@ -29,3 +29,5 @@ app/src/main/assets/bootstrap/**/*.zip
 external/sora-editor/debug.jks
 # IntelliJ/AS project files (broader)
 /.idea/
+/.kiro/
+/.serena/
