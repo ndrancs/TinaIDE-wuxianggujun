@@ -31,9 +31,6 @@ project(":termux-shared").projectDir = file("external/termux-app/termux-shared")
 project(":terminal-emulator").projectDir = file("external/termux-app/terminal-emulator")
 project(":terminal-view").projectDir = file("external/termux-app/terminal-view")
 
-// Localize termux-am-library to avoid remote dependency
-include(":termux-am-library")
-project(":termux-am-library").projectDir = file("external/termux-am-library/termux-am-library")
 
 // Include SoraEditor modules for code editing
 include(":sora-editor:editor")

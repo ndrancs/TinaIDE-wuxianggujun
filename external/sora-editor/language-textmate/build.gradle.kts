@@ -30,8 +30,10 @@ plugins {
 
 android {
     namespace = "io.github.rosemoe.sora.langs.textmate"
+    compileSdk = 36
 
     defaultConfig {
+        minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -46,15 +48,24 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+    
     compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         // Flag to enable support for the new language APIs
         // It's only needed if your app targets old Android APIs.
         //isCoreLibraryDesugaringEnabled = true
     }
+    
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
 }
 
 dependencies {
-    compileOnly(projects.editor)
+    compileOnly(project(":sora-editor:editor"))
     implementation(libs.gson)
     implementation(libs.jcodings)
     implementation(libs.joni)

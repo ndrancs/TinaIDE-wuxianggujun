@@ -512,45 +512,16 @@ class MainActivity : AppCompatActivity() {
             }
             shellPath.endsWith("/bash") -> {
                 android.util.Log.d("MainActivity", "Using bash with login mode")
-                arrayOf("-l")
+                // Force interactive login shell to avoid early exit in piped mode
+                arrayOf("-l", "-i")
             }
             else -> emptyArray()
         }
 
-        // 终端输出日志路径（文件 + Logcat）
-        val logsDir = File(filesDir, "terminal_logs").apply { if (!exists()) mkdirs() }
-        val termLogFile = File(logsDir, "session-${System.currentTimeMillis()}.log").absolutePath
-        android.util.Log.d("MainActivity", "Terminal output log file: $termLogFile")
-        try { val lf = File(termLogFile); lf.parentFile?.mkdirs(); if (!lf.exists()) lf.createNewFile() } catch (_: Exception) {}
-
-        // 如非 login，则用 tee 包装输出，便于记录终端所有输出
+        // 文件日志与 tee 管道已禁用，避免日志写入失败导致会话提前退出
         var effectiveShellPath = shellPath
         var effectiveArgs = args
-        // 检测 tee 是否存在，仅在存在时启用文件日志包装
-        val prefixDirForBin = File(filesDir, "usr")
-        val teeCandidates = listOf(
-            File(prefixDirForBin, "bin/tee"),
-            File(prefixDirForBin, "bin/applets/tee")
-        )
-        val teePathLocal = teeCandidates.firstOrNull { it.exists() && it.canExecute() }?.absolutePath
-        // 系统 toybox/busybox 兜底
-        val systemToybox = File("/system/bin/toybox").takeIf { it.exists() && it.canExecute() }?.absolutePath
-        val systemBusybox = File("/system/bin/busybox").takeIf { it.exists() && it.canExecute() }?.absolutePath
-        val teeCmd: String? = when {
-            teePathLocal != null -> "\"$teePathLocal\""
-            systemToybox != null -> "\"$systemToybox\" tee"
-            systemBusybox != null -> "\"$systemBusybox\" tee"
-            else -> null
-        }
-        if (teeCmd != null && !shellPath.endsWith("/login")) {
-            val shWrap = "/system/bin/sh"
-            val argStr = if (args.isNotEmpty()) args.joinToString(" ") else ""
-            val cmd = "\"$shellPath\" $argStr 2>&1 | $teeCmd -a \"$termLogFile\""
-            effectiveShellPath = shWrap
-            effectiveArgs = arrayOf("-c", cmd)
-        } else if (teeCmd == null) {
-            android.util.Log.w("MainActivity", "tee not found in $prefixDirForBin and no system toybox/busybox; skip file logging wrapper")
-        }
+        android.util.Log.d("MainActivity", "File logging via tee is disabled by default")
 
 
         try {
@@ -569,33 +540,10 @@ class MainActivity : AppCompatActivity() {
             )
             android.util.Log.d("MainActivity", "Terminal session created successfully")
 
-            // 启动日志尾随线程，将终端输出同步写入 Logcat
-            termLogTailStop = false
+            // 文件日志尾随已禁用
+            termLogTailStop = true
             termLogTailThread?.interrupt()
-            termLogTailThread = Thread {
-                try {
-                    val f = java.io.File(termLogFile)
-                    var waited = 0
-                    while (!f.exists() && waited < 200) { Thread.sleep(50); waited++ }
-                    val raf = java.io.RandomAccessFile(f, "r")
-                    var pos = raf.length()
-                    raf.seek(pos)
-                    val buf = ByteArray(4096)
-                    while (!termLogTailStop) {
-                        val len = raf.read(buf)
-                        if (len > 0) {
-                            val out = String(buf, 0, len)
-                            android.util.Log.d("TermSession", out)
-                        } else {
-                            Thread.sleep(200)
-                        }
-                    }
-                    raf.close()
-                } catch (e: Exception) {
-                    android.util.Log.e("TermSession", "Tail thread error", e)
-                }
-            }.apply { isDaemon = true }
-            termLogTailThread?.start()
+            termLogTailThread = null
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Failed to create terminal session", e)
             

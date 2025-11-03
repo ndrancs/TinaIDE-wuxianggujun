@@ -6,6 +6,11 @@ import android.system.Os
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.io.FileInputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.security.MessageDigest
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
@@ -33,7 +38,71 @@ object TermuxBootstrap {
         return null
     }
 
-    private fun openBootstrapAsset(ctx: Context, arch: String): InputStream? {
+    private fun sha256(file: File): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        FileInputStream(file).use { fis ->
+            val buf = ByteArray(128 * 1024)
+            var r = fis.read(buf)
+            while (r > 0) {
+                md.update(buf, 0, r)
+                r = fis.read(buf)
+            }
+        }
+        return md.digest().joinToString("") { b -> String.format(Locale.US, "%02x", b) }
+    }
+
+    private fun downloadBootstrap(ctx: Context, arch: String): File? {
+        val version = "16.12.2023"
+        val checksums = mapOf(
+            "aarch64" to "68da03ed270d59cafcd37981b00583c713b42cb440adf03d1bf980f39a55181d",
+            "arm" to "f3d9f2da7338bd00b02a8df192bdc22ad431a5eef413cecf4cd78d7a54ffffbf",
+            "x86_64" to "6e4e50a206c3384c36f141b2496c1a7c69d30429e4e20268c51a84143530af67"
+        )
+        val expected = checksums[arch] ?: return null
+        val urlStr = "https://github.com/AndroidIDEOfficial/terminal-packages/releases/download/bootstrap-$version/bootstrap-$arch.zip"
+        val outDir = File(ctx.filesDir, "bootstrap-cache").apply { if (!exists()) mkdirs() }
+        val outFile = File(outDir, "bootstrap-$arch.zip")
+        try {
+            // If cached and checksum matches, reuse
+            if (outFile.exists()) {
+                val sum = sha256(outFile)
+                if (sum.equals(expected, ignoreCase = true)) return outFile
+                try { outFile.delete() } catch (_: Exception) {}
+            }
+            val url = URL(urlStr)
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 15000
+                readTimeout = 30000
+                requestMethod = "GET"
+            }
+            conn.inputStream.use { ins ->
+                FileOutputStream(outFile).use { fos ->
+                    val buf = ByteArray(128 * 1024)
+                    var r = ins.read(buf)
+                    while (r > 0) {
+                        fos.write(buf, 0, r)
+                        r = ins.read(buf)
+                    }
+                }
+            }
+            val got = sha256(outFile)
+            if (!got.equals(expected, ignoreCase = true)) {
+                android.util.Log.e(TAG, "Bootstrap checksum mismatch for $arch: expected=$expected got=$got")
+                outFile.delete()
+                return null
+            }
+            return outFile
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Download bootstrap failed: ${e.message}")
+            return null
+        }
+    }
+
+    private fun openBootstrapStream(ctx: Context, arch: String): InputStream? {
+        // Prefer network download to avoid large local assets
+        val file = downloadBootstrap(ctx, arch)
+        if (file != null && file.exists()) return FileInputStream(file)
+        // Fallback: try assets if present
         val am = ctx.assets
         val candidates = listOf(
             "bootstrap/$arch/bootstrap-$arch.zip",
@@ -56,6 +125,13 @@ object TermuxBootstrap {
         val shBin = File(prefix, "bin/sh")
         if (!forceReinstall && (loginBin.exists() || bashBin.exists() || shBin.exists())) {
             if (!home.exists()) home.mkdirs()
+            // Ensure environment fixes also apply to previously installed prefixes
+            try {
+                fixExecBits(prefix)
+                patchShebangs(prefix)
+                rewriteHardcodedTermuxPaths(prefix)
+                ensureAptSkeleton(prefix)
+            } catch (_: Exception) { }
             return Result(true, "Termux environment ready", abiToArch(), prefix.absolutePath)
         }
 
@@ -64,8 +140,8 @@ object TermuxBootstrap {
         }
 
         val arch = abiToArch() ?: return Result(false, "不支持的设备架构", null, null)
-        val input = openBootstrapAsset(ctx, arch)
-            ?: return Result(false, "缺少 Termux bootstrap 包\n请将 bootstrap-$arch.zip 放到 assets/bootstrap/$arch/ 目录", arch, null)
+        val input = openBootstrapStream(ctx, arch)
+            ?: return Result(false, "无法获取 bootstrap-$arch.zip：请检查网络或重试", arch, null)
 
         return try {
             if (!prefix.exists()) prefix.mkdirs()
@@ -73,10 +149,12 @@ object TermuxBootstrap {
             if (!home.exists()) home.mkdirs()
             fixExecBits(prefix)
             patchShebangs(prefix)
+            rewriteHardcodedTermuxPaths(prefix)
             // 先从版本号推导补齐一轮，再按 SYMLINKS.txt 精确恢复
             ensureLibrarySymlinks(prefix)
             restoreSymlinksFromFile(prefix)
             ensureShFallback(prefix)
+            ensureAptSkeleton(prefix)
             Result(true, "Termux 环境安装成功 ($arch)", arch, prefix.absolutePath)
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Failed to install bootstrap", e)
@@ -105,6 +183,12 @@ object TermuxBootstrap {
                 if (index == 1 && name.contains('/')) topLevel = name.substringBefore('/') + "/"
                 if (topLevel != null && name.startsWith(topLevel!!)) {
                     name = name.substring(topLevel!!.length)
+                    if (name.isEmpty()) { zis.closeEntry(); entry = zis.nextEntry; continue }
+                }
+                // Normalize common bootstrap layout: drop leading "usr/" so contents land directly in $PREFIX
+                // This avoids creating $PREFIX/usr/bin (double usr) when the zip already contains an "usr" root.
+                if (name.startsWith("usr/")) {
+                    name = name.removePrefix("usr/")
                     if (name.isEmpty()) { zis.closeEntry(); entry = zis.nextEntry; continue }
                 }
                 if (name.contains("..")) { zis.closeEntry(); entry = zis.nextEntry; continue }
@@ -143,7 +227,7 @@ object TermuxBootstrap {
                 val n = buf.read(header)
                 if (n <= 2) return@use
                 val head = String(header, 0, n)
-                if (!head.startsWith("#!") || !head.contains(termuxPrefix)) return@use
+                if (!head.startsWith("#!")) return@use
                 buf.reset()
                 val content = buf.readBytes().toString(Charsets.UTF_8)
                 val firstEnd = content.indexOf("\n").let { if (it == -1) content.length else it }
@@ -153,9 +237,28 @@ object TermuxBootstrap {
                 val interp = parts[0]
                 val rest = if (parts.size > 1) parts.drop(1).joinToString(" ") else ""
                 val newInterp = interp.replace(termuxPrefix, currentPrefix)
+                if (newInterp == interp) return@use
                 val newShebang = if (rest.isEmpty()) "#!$newInterp" else "#!$newInterp $rest"
                 val newContent = newShebang + content.substring(firstEnd)
                 try { file.writeText(newContent); file.setExecutable(true, false) } catch (_: Exception) {}
+            }
+        }
+    }
+
+    internal fun rewriteHardcodedTermuxPaths(prefix: File) {
+        val binDir = File(prefix, "bin")
+        if (!binDir.exists()) return
+        val termuxPrefix = "/data/data/com.termux/files/usr"
+        val currentPrefix = prefix.absolutePath
+        binDir.listFiles()?.forEach { file ->
+            if (!file.isFile || !file.canRead()) return@forEach
+            // Only process small-ish text files to avoid corrupting binaries
+            if (file.length() > 1024 * 1024) return@forEach
+            val content = try { file.readText() } catch (_: Exception) { return@forEach }
+            if (!content.contains(termuxPrefix)) return@forEach
+            val replaced = content.replace(termuxPrefix, currentPrefix)
+            if (replaced != content) {
+                try { file.writeText(replaced); file.setExecutable(true, false) } catch (_: Exception) {}
             }
         }
     }
@@ -270,6 +373,19 @@ exec /system/bin/sh "${'$'}@"
         }
     }
 
+    internal fun ensureAptSkeleton(prefix: File) {
+        try {
+            val libAptLists = File(prefix, "var/lib/apt/lists/partial")
+            val cacheArchives = File(prefix, "var/cache/apt/archives/partial")
+            val dpkgDir = File(prefix, "var/lib/dpkg")
+            if (!libAptLists.exists()) libAptLists.mkdirs()
+            if (!cacheArchives.exists()) cacheArchives.mkdirs()
+            if (!dpkgDir.exists()) dpkgDir.mkdirs()
+            val status = File(dpkgDir, "status")
+            if (!status.exists()) try { status.writeText("") } catch (_: Exception) {}
+        } catch (_: Exception) { /* best effort */ }
+    }
+
     fun buildEnv(ctx: Context): Array<String> {
         val filesDir = ctx.filesDir
         val prefixDir = File(filesDir, "usr")
@@ -290,7 +406,10 @@ exec /system/bin/sh "${'$'}@"
             "PATH=$path",
             "LD_LIBRARY_PATH=$ld",
             "LANG=en_US.UTF-8",
-            "COLORTERM=truecolor"
+            "COLORTERM=truecolor",
+            // Termux app normally exports this; required by pkg/termux-setup-package-manager
+            "TERMUX_APP_PACKAGE_MANAGER=apt",
+            "TERMUX_MAIN_PACKAGE_FORMAT=debian"
         )
         val termuxExec = File(prefix, "lib/libtermux-exec.so")
         if (termuxExec.exists()) envList += "LD_PRELOAD=$ld/libtermux-exec.so"

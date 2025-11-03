@@ -32,6 +32,10 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation("com.vanniktech:gradle-maven-publish-plugin:0.34.0")
+}
+
 java {
     targetCompatibility = JavaVersion.VERSION_17
     sourceCompatibility = JavaVersion.VERSION_17
