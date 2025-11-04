@@ -1,4 +1,6 @@
 import java.util.Properties
+import java.io.File
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
@@ -24,6 +26,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Prefer offline bootstrap by default; can be toggled per buildType if needed
+        buildConfigField("boolean", "ENABLE_NETWORK_BOOTSTRAP", "false")
     }
 
     // Define signing config before buildTypes so it can be referenced below
@@ -62,8 +67,22 @@ android {
         // Required because :termux-shared enables coreLibraryDesugaring
         isCoreLibraryDesugaringEnabled = true
     }
-    kotlinOptions {
-        jvmTarget = "17"
+    buildFeatures {
+        buildConfig = true
+    }
+
+    // 将构建时生成的 termux-exec 资产目录加入 assets 搜索路径
+    sourceSets {
+        getByName("main") {
+            assets.srcDir(layout.buildDirectory.dir("generated/termux-exec-assets"))
+        }
+    }
+
+    // Termux 库要求提取 native 库（其 Manifest 设置了 extractNativeLibs=true）
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 }
 
@@ -78,6 +97,7 @@ dependencies {
     implementation(project(":terminal-view"))
     implementation(project(":terminal-emulator"))
     implementation(project(":termux-shared"))
+    implementation(project(":termux-application"))
     
     // SoraEditor components
     implementation(project(":sora-editor:editor"))
@@ -105,4 +125,35 @@ dependencies {
 // Resolve duplicate class: guava vs listenablefuture
 configurations.all {
     exclude(group = "com.google.guava", module = "listenablefuture")
+}
+
+// --- termux-exec 预编译库 -> 生成到构建资产目录（KISS/YAGNI：只同步已存在的预编译文件）
+val syncTermuxExecToAssets by tasks.registering {
+    val srcBase = rootProject.layout.projectDirectory.dir("external/termux-exec/prebuilt")
+    val outBase = layout.buildDirectory.dir("generated/termux-exec-assets/termux-exec")
+    val archs = listOf("aarch64", "arm", "x86_64", "i686")
+    doLast {
+        val outRoot = outBase.get().asFile
+        archs.forEach { arch ->
+            val src = srcBase.file("$arch/libtermux-exec.so").asFile
+            if (src.exists()) {
+                val outDir = File(outRoot, arch)
+                outDir.mkdirs()
+                src.copyTo(File(outDir, "libtermux-exec.so"), overwrite = true)
+                println("[termux-exec] synced prebuilt: $arch")
+            } else {
+                println("[termux-exec] skip: prebuilt not found for $arch")
+            }
+        }
+    }
+}
+
+// 在构建前执行资产同步（若没有预编译文件不会失败）
+tasks.named("preBuild").configure { dependsOn(syncTermuxExecToAssets) }
+
+// Kotlin 2.x 编译器选项（替代已废弃的 kotlinOptions.jvmTarget）
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }

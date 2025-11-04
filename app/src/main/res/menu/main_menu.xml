@@ -8,11 +8,8 @@
         android:icon="@android:drawable/ic_menu_view"
         app:showAsAction="ifRoom|withText" />
 
-    <item
-        android:id="@+id/action_toggle_terminal"
-        android:title="终端"
-        android:icon="@android:drawable/ic_menu_manage"
-        app:showAsAction="always" />
+
+
 
     <item
         android:id="@+id/action_build"
@@ -29,6 +26,11 @@
     <item
         android:id="@+id/action_reinstall_termux"
         android:title="重新安装终端环境"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_open_terminal"
+        android:title="打开终端"
         app:showAsAction="never" />
 
 </menu>

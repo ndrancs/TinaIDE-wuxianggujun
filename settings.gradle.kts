@@ -26,10 +26,11 @@ rootProject.name = "TinaIDE"
 include(":app")
 
 // Include Termux modules from the cloned source at external/termux-app
-include(":termux-shared", ":terminal-emulator", ":terminal-view")
+include(":termux-shared", ":terminal-emulator", ":terminal-view", ":termux-application")
 project(":termux-shared").projectDir = file("external/termux-app/termux-shared")
 project(":terminal-emulator").projectDir = file("external/termux-app/terminal-emulator")
 project(":terminal-view").projectDir = file("external/termux-app/terminal-view")
+project(":termux-application").projectDir = file("external/termux-app/app")
 
 
 // Include SoraEditor modules for code editing
