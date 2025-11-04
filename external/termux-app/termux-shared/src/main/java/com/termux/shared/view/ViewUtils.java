@@ -10,6 +10,8 @@ import android.os.Build;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.util.DisplayMetrics;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -183,15 +185,27 @@ public class ViewUtils {
      * @return Returns the display size as {@link Point}.
      */
     public static Point getDisplaySize( @NonNull Context context, boolean activitySize) {
-        // android.view.WindowManager.getDefaultDisplay() and Display.getSize() are deprecated in
-        // API 30 and give wrong values in API 30 for activitySize=false in multi-window
-        androidx.window.WindowManager windowManager = new androidx.window.WindowManager(context);
-        androidx.window.WindowMetrics windowMetrics;
-        if (activitySize)
-            windowMetrics = windowManager.getCurrentWindowMetrics();
-        else
-            windowMetrics = windowManager.getMaximumWindowMetrics();
-        return new Point(windowMetrics.getBounds().width(), windowMetrics.getBounds().height());
+        // Avoid initializing androidx.window.* to prevent noisy NoClassDefFoundError logs on
+        // devices without OEM extension/sidecar implementations. Use platform APIs instead.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // API 30+
+            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            if (wm == null) return new Point(0, 0);
+            android.view.WindowMetrics metrics = activitySize
+                ? wm.getCurrentWindowMetrics()
+                : wm.getMaximumWindowMetrics();
+            Rect b = metrics.getBounds();
+            return new Point(b.width(), b.height());
+        } else {
+            // Fallback for API < 30
+            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            if (wm != null && wm.getDefaultDisplay() != null) {
+                Point out = new Point();
+                wm.getDefaultDisplay().getSize(out);
+                return out;
+            }
+            DisplayMetrics dm = context.getResources().getDisplayMetrics();
+            return new Point(dm.widthPixels, dm.heightPixels);
+        }
     }
 
     /** Convert {@link Rect} to {@link String}. */
