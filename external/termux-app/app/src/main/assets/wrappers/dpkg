@@ -1,0 +1,7 @@
+#!/system/bin/sh
+# Wrapper to load path-rewrite library for dpkg only
+export TERMUX_PATH_REWRITE=1
+if [ -f "$PREFIX/lib/libtermux-path-rewrite.so" ]; then
+  export LD_PRELOAD="$PREFIX/lib/libtermux-path-rewrite.so${LD_PRELOAD:+:$LD_PRELOAD}"
+fi
+exec "$PREFIX/bin/dpkg-real" "$@"

@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+: "${PREFIX:?PREFIX is not set. Run inside Termux shell.}"
+log() { printf '[prefix-repair] %s\n' "$*" >&2; }
+
+# 清理 dpkg 解压时可能创建的错误目录
+if [ -d "$PREFIX/data/data/com.termux" ]; then
+  log 'Cleaning up misplaced com.termux directory...'
+  rm -rf "$PREFIX/data" 2>/dev/null || true
+fi
+
+# 清理临时目录中的错误目录
+for tmpdir in $PREFIX/tmp/apt-dpkg-install-* 2>/dev/null; do
+  if [ -d "$tmpdir/data/data/com.termux" ]; then
+    log 'Moving files from misplaced directory...'
+    cp -Rp "$tmpdir/data/data/com.termux/files/usr/." "$PREFIX/" 2>/dev/null || cp -R "$tmpdir/data/data/com.termux/files/usr/." "$PREFIX/" 2>/dev/null || true
+    rm -rf "$tmpdir/data" 2>/dev/null || true
+  fi
+done
+
+log 'Fixing shebang paths...'
+grep -RIl '^#!/data/data/com\.termux/files/usr/bin/' "$PREFIX" 2>/dev/null \
+| while IFS= read -r f; do
+  sed -i "1s|^#!/data/data/com.termux/files/usr/bin/|#!$PREFIX/bin/|" "$f"
+done
+
+log 'Rewriting textual references to PREFIX...'
+grep -RIl '/data/data/com\.termux/files/usr' "$PREFIX" 2>/dev/null \
+| xargs -r sed -i "s|/data/data/com.termux/files/usr|$PREFIX|g"
+
+log 'Repointing symlinks...'
+find "$PREFIX" -type l -print0 2>/dev/null \
+| while IFS= read -r -d '' L; do
+  T=$(readlink "$L") || continue
+  case "$T" in
+    /data/data/com.termux/files/usr/*)
+      NEW="$PREFIX${T#/data/data/com.termux/files/usr}"
+      ln -sfn "$NEW" "$L"
+    ;;
+  esac
+done
+
+if [ -d "$PREFIX/lib/pkgconfig" ]; then
+  find "$PREFIX/lib/pkgconfig" -type f -name '*.pc' -print0 2>/dev/null \
+  | while IFS= read -r -d '' pc; do
+      if ! grep -q "^prefix=$PREFIX$" "$pc"; then
+        sed -i "s|^prefix=.*$|prefix=$PREFIX|" "$pc"
+      fi
+    done
+fi
