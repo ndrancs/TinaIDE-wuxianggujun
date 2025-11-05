@@ -50,7 +50,7 @@ public final class PrefixAdaptationManager {
         //noinspection ResultOfMethodCallIgnored
         binDir.mkdirs();
         final File repairScript = new File(binDir, "prefix-repair");
-        writeExecutableIfDifferent(repairScript, buildRepairScript(prefix));
+        copyAsset(context, "bin/prefix-repair", repairScript, true);
 
         // 2) Ensure apt Post-Invoke hook
         final File aptConfDir = new File(prefixDir, "etc/apt/apt.conf.d");
@@ -107,19 +107,17 @@ public final class PrefixAdaptationManager {
         }
 
         // 3) Create wrappers for dpkg and dpkg-deb to load path-rewrite library
-        createDpkgWrapper(binDir, "dpkg");
-        createDpkgWrapper(binDir, "dpkg-deb");
+        createDpkgWrapper(context, binDir, "dpkg");
+        createDpkgWrapper(context, binDir, "dpkg-deb");
         
         // 3.1) Ensure profile.d snippet for termux-exec
         final File profileDir = new File(prefixDir, "etc/profile.d");
+        // Cleanup any legacy path-rewrite injections that may break interactive shells
+        cleanupLegacyProfileSnippets(prefixDir);
         //noinspection ResultOfMethodCallIgnored
         profileDir.mkdirs();
         final File termuxExecSh = new File(profileDir, "termux-exec.sh");
-        String profile = "# Enable termux-exec if lib is available\n" +
-                "if [ -f \"$PREFIX/lib/libtermux-exec.so\" ]; then\n" +
-                "  export LD_PRELOAD=\"$PREFIX/lib/libtermux-exec.so${LD_PRELOAD:+:$LD_PRELOAD}\"\n" +
-                "fi\n";
-        writeTextIfDifferent(termuxExecSh, profile, false);
+        copyAsset(context, "profile.d/termux-exec.sh", termuxExecSh, false);
 
         // 4) Copy path-rewrite library from app's native libs
         final File libDir = new File(prefixDir, "lib");
@@ -183,60 +181,7 @@ public final class PrefixAdaptationManager {
         return "aarch64";
     }
 
-    private static String buildRepairScript(String prefix) {
-        // NOTE: Script is idempotent and only touches text files/symlinks.
-        return "#!/usr/bin/env bash\n" +
-                "set -Eeuo pipefail\n" +
-                "\n" +
-                ": \"${PREFIX:?PREFIX is not set. Run inside Termux shell.}\"\n" +
-                "log() { printf '[prefix-repair] %s\\n' \"$*\" >&2; }\n" +
-                "\n" +
-                "# 清理 dpkg 解压时可能创建的错误目录\n" +
-                "if [ -d \"$PREFIX/data/data/com.termux\" ]; then\n" +
-                "  log 'Cleaning up misplaced com.termux directory...'\n" +
-                "  rm -rf \"$PREFIX/data\" 2>/dev/null || true\n" +
-                "fi\n" +
-                "\n" +
-                "# 清理临时目录中的错误目录\n" +
-                "for tmpdir in $PREFIX/tmp/apt-dpkg-install-* 2>/dev/null; do\n" +
-                "  if [ -d \"$tmpdir/data/data/com.termux\" ]; then\n" +
-                "    log 'Moving files from misplaced directory...'\n" +
-                "    rsync -a \"$tmpdir/data/data/com.termux/files/usr/\" \"$PREFIX/\" 2>/dev/null || true\n" +
-                "    rm -rf \"$tmpdir/data\" 2>/dev/null || true\n" +
-                "  fi\n" +
-                "done\n" +
-                "\n" +
-                "log 'Fixing shebang paths...'\n" +
-                "grep -RIl '^#!/data/data/com\\.termux/files/usr/bin/' \"$PREFIX\" 2>/dev/null \\\n" +
-                "| while IFS= read -r f; do\n" +
-                "  sed -i \"1s|^#!/data/data/com.termux/files/usr/bin/|#!$PREFIX/bin/|\" \"$f\"\n" +
-                "done\n" +
-                "\n" +
-                "log 'Rewriting textual references to PREFIX...'\n" +
-                "grep -RIl '/data/data/com\\.termux/files/usr' \"$PREFIX\" 2>/dev/null \\\n" +
-                "| xargs -r sed -i \"s|/data/data/com.termux/files/usr|$PREFIX|g\"\n" +
-                "\n" +
-                "log 'Repointing symlinks...'\n" +
-                "find \"$PREFIX\" -type l -print0 2>/dev/null \\\n" +
-                "| while IFS= read -r -d '' L; do\n" +
-                "  T=$(readlink \"$L\") || continue\n" +
-                "  case \"$T\" in\n" +
-                "    /data/data/com.termux/files/usr/*)\n" +
-                "      NEW=\"$PREFIX${T#/data/data/com.termux/files/usr}\"\n" +
-                "      ln -sfn \"$NEW\" \"$L\"\n" +
-                "    ;;\n" +
-                "  esac\n" +
-                "done\n" +
-                "\n" +
-                "if [ -d \"$PREFIX/lib/pkgconfig\" ]; then\n" +
-                "  find \"$PREFIX/lib/pkgconfig\" -type f -name '*.pc' -print0 2>/dev/null \\\n" +
-                "  | while IFS= read -r -d '' pc; do\n" +
-                "      if ! grep -q \"^prefix=$PREFIX$\" \"$pc\"; then\n" +
-                "        sed -i \"s|^prefix=.*$|prefix=$PREFIX|\" \"$pc\"\n" +
-                "      fi\n" +
-                "    done\n" +
-                "fi\n";
-    }
+    
 
     private static void writeExecutableIfDifferent(File file, String content) {
         writeTextIfDifferent(file, content, true);
@@ -295,32 +240,64 @@ public final class PrefixAdaptationManager {
         file.delete();
     }
     
-    private static void createDpkgWrapper(File binDir, String progName) {
-        File wrapper = new File(binDir, progName + "-real");
-        File original = new File(binDir, progName);
-        
-        // Only create wrapper if program exists and wrapper doesn't
-        if (!original.exists() || wrapper.exists()) {
+    private static void createDpkgWrapper(Context context, File binDir, String progName) {
+        File wrapper = new File(binDir, progName);
+        File orig = new File(binDir, progName);
+        File real = new File(binDir, progName + "-real");
+
+        // If a stale wrapper exists but no real or orig exists, remove it (will retry later)
+        if (wrapper.exists() && !orig.exists() && !real.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            wrapper.delete();
             return;
         }
-        
+
+        // Nothing to wrap yet
+        if (!orig.exists() && !real.exists()) return;
+
+        // First time: rename original to -real
+        if (orig.exists() && !real.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            orig.renameTo(real);
+        }
+
+        // Now drop the wrapper script from assets
+        copyAsset(context, "wrappers/" + progName, wrapper, true);
+    }
+    private static void cleanupLegacyProfileSnippets(File prefixDir) {
         try {
-            // Rename original to progName-real
-            if (!original.renameTo(wrapper)) {
-                return;
+            File profileDir = new File(prefixDir, "etc/profile.d");
+            File[] files = profileDir.listFiles();
+            if (files == null) return;
+            for (File f : files) {
+                try {
+                    byte[] data = java.nio.file.Files.readAllBytes(f.toPath());
+                    String s = new String(data, StandardCharsets.UTF_8);
+                    if (s.contains("libtermux-path-rewrite.so")) {
+                        //noinspection ResultOfMethodCallIgnored
+                        f.delete();
+                    }
+                } catch (Exception ignored) {}
             }
-            
-            // Create wrapper script
-            String wrapperScript = "#!/bin/sh\n" +
-                    "# Wrapper to load path-rewrite library\n" +
-                    "# This hooks mkdir/open to rewrite com.termux paths\n" +
-                    "if [ -f \"$PREFIX/lib/libtermux-path-rewrite.so\" ]; then\n" +
-                    "  export LD_PRELOAD=\"$PREFIX/lib/libtermux-path-rewrite.so${LD_PRELOAD:+:$LD_PRELOAD}\"\n" +
-                    "fi\n" +
-                    "# Ensure we're in PREFIX directory\n" +
-                    "cd \"$PREFIX\" 2>/dev/null || true\n" +
-                    "exec \"$PREFIX/bin/" + progName + "-real\" \"$@\"\n";
-            writeExecutableIfDifferent(original, wrapperScript);
         } catch (Exception ignored) {}
+    }
+
+    private static void copyAsset(Context context, String assetPath, File out, boolean executable) {
+        try (InputStream in = context.getAssets().open(assetPath);
+             FileOutputStream fos = new FileOutputStream(out)) {
+            File parent = out.getParentFile();
+            if (parent != null && !parent.exists()) parent.mkdirs();
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = in.read(buf)) != -1) {
+                fos.write(buf, 0, len);
+            }
+            //noinspection ResultOfMethodCallIgnored
+            out.setReadable(true, false);
+            if (executable) {
+                //noinspection ResultOfMethodCallIgnored
+                out.setExecutable(true, false);
+            }
+        } catch (IOException ignored) {}
     }
 }
