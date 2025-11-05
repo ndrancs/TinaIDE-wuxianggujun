@@ -100,6 +100,10 @@ final class TermuxInstaller {
                         Os.symlink(target.getAbsolutePath(), link.getAbsolutePath());
                     } catch (Throwable ignored) {}
                 }
+                // After successful bootstrap extraction, ensure prefix adaptation artifacts
+                try {
+                    com.wuxianggujun.tinaide.PrefixAdaptationManager.ensure(activity.getApplicationContext());
+                } catch (Throwable ignored) {}
             } catch (Exception e) {
                 Log.e(LOG_TAG, "Bootstrap install failed", e);
                 error = e;
