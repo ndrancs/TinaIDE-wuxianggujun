@@ -1,7 +1,8 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
 
 android {
-    namespace 'com.termux.terminal'
+    namespace "com.termux.terminal"
     compileSdkVersion project.properties.compileSdkVersion.toInteger()
     ndkVersion = System.getenv("JITPACK_NDK_VERSION") ?: project.properties.ndkVersion
 
@@ -34,8 +35,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     testOptions {
@@ -54,10 +55,23 @@ dependencies {
     testImplementation "junit:junit:4.13.2"
 }
 
-// Use archiveClassifier for Gradle 7+/AGP modern versions
-tasks.register("sourceJar", Jar) {
-    from(android.sourceSets.main.java.srcDirs)
-    archiveClassifier.set("sources")
+android {
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
 }
 
-// Publishing configuration removed for consumer build to avoid components.release errors
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId = 'com.termux'
+                artifactId = 'terminal-emulator'
+                version = '0.118.0'
+                from components.release
+            }
+        }
+    }
+}

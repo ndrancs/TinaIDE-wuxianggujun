@@ -16,6 +16,8 @@ import com.termux.shared.termux.shell.command.environment.TermuxShellEnvironment
 import com.termux.shared.termux.shell.am.TermuxAmSocketServer;
 import com.termux.shared.termux.shell.TermuxShellManager;
 import com.termux.shared.termux.theme.TermuxThemeUtils;
+import com.wuxianggujun.tinaide.PrefixAdaptationManager;
+import com.wuxianggujun.tinaide.PrefixHook;
 
 public class TermuxApplication extends Application {
 
@@ -70,6 +72,20 @@ public class TermuxApplication extends Application {
 
         if (isTermuxFilesDirectoryAccessible) {
             TermuxShellEnvironment.writeEnvironmentToFile(this);
+            
+            // Initialize prefix hook (optional, experimental)
+            // This provides binary-level path fixing as an alternative to script-based repair
+            String targetPrefix = TermuxConstants.TERMUX_PREFIX_DIR_PATH;
+            boolean hookEnabled = PrefixHook.initialize(this, targetPrefix);
+            if (hookEnabled) {
+                Logger.logInfo(LOG_TAG, "Prefix hook enabled (experimental)");
+            } else {
+                Logger.logInfo(LOG_TAG, "Prefix hook disabled, using script-based repair");
+            }
+            
+            // Ensure prefix adaptation artifacts exist (idempotent)
+            // This provides script-based path fixing as the primary/fallback method
+            PrefixAdaptationManager.ensure(this);
         }
     }
 

@@ -1,7 +1,8 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
 
 android {
-    namespace 'com.termux.view'
+    namespace "com.termux.view"
     compileSdkVersion project.properties.compileSdkVersion.toInteger()
 
     dependencies {
@@ -12,7 +13,7 @@ android {
     defaultConfig {
         minSdkVersion project.properties.minSdkVersion.toInteger()
         targetSdkVersion project.properties.targetSdkVersion.toInteger()
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -23,8 +24,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
@@ -32,9 +33,23 @@ dependencies {
     testImplementation "junit:junit:4.13.2"
 }
 
-tasks.register("sourceJar", Jar) {
-    from(android.sourceSets.main.java.srcDirs)
-    archiveClassifier.set("sources")
+android {
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
 }
 
-// Publishing configuration removed for consumer build to avoid components.release errors
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId = 'com.termux'
+                artifactId = 'terminal-view'
+                version = '0.118.0'
+                from components.release
+            }
+        }
+    }
+}
