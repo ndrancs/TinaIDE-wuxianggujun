@@ -175,15 +175,7 @@ class MainActivity : AppCompatActivity() {
             R.id.action_run -> { Toast.makeText(this, "运行功能开发中", Toast.LENGTH_SHORT).show(); true }
             R.id.action_build -> { Toast.makeText(this, "编译功能开发中", Toast.LENGTH_SHORT).show(); true }
             R.id.action_open_terminal -> {
-                startActivity(Intent(this, com.termux.app.TermuxActivity::class.java))
-                true
-            }
-            R.id.action_reinstall_termux -> {
-                AlertDialog.Builder(this)
-                    .setTitle("重新安装终端环境")
-                    .setMessage("建议清除 TinaIDE 应用数据或在 TermuxActivity 内重新初始化环境。")
-                    .setPositiveButton("了解", null)
-                    .show()
+                startActivity(Intent(this, com.wuxianggujun.tinaide.terminal.TerminalActivity::class.java))
                 true
             }
             else -> super.onOptionsItemSelected(item)
