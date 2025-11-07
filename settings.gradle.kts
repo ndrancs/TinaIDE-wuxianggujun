@@ -25,13 +25,14 @@ dependencyResolutionManagement {
 rootProject.name = "TinaIDE"
 include(":app")
 
-// Include terminal modules (independent from termux-app)
-include(":terminal-emulator", ":terminal-view")
-project(":terminal-emulator").projectDir = file("external/terminal-emulator")
-project(":terminal-view").projectDir = file("external/terminal-view")
 
-
-// Include SoraEditor modules for code editing
+// Include AIDE-Termux modules (library)
+include(":termux-app", ":terminal-emulator", ":terminal-view", ":termux-shared")
+project(":termux-app").projectDir = file("external/AIDE-Termux/app")
+project(":terminal-emulator").projectDir = file("external/AIDE-Termux/terminal-emulator")
+project(":terminal-view").projectDir = file("external/AIDE-Termux/terminal-view")
+project(":termux-shared").projectDir = file("external/AIDE-Termux/termux-shared")
+// Include SoraEditor modules
 include(":sora-editor:editor")
 include(":sora-editor:language-textmate")
 project(":sora-editor:editor").projectDir = file("external/sora-editor/editor")

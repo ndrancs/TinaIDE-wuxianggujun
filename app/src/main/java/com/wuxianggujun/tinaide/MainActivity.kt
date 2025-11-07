@@ -175,7 +175,8 @@ class MainActivity : AppCompatActivity() {
             R.id.action_run -> { Toast.makeText(this, "运行功能开发中", Toast.LENGTH_SHORT).show(); true }
             R.id.action_build -> { Toast.makeText(this, "编译功能开发中", Toast.LENGTH_SHORT).show(); true }
             R.id.action_open_terminal -> {
-                startActivity(Intent(this, com.wuxianggujun.tinaide.terminal.TerminalActivity::class.java))
+                // 使用 AIDE-Termux 的 TermuxActivity
+                startActivity(Intent(this, com.termux.app.TermuxActivity::class.java))
                 true
             }
             else -> super.onOptionsItemSelected(item)

@@ -66,10 +66,14 @@ android {
         buildConfig = true
     }
 
-    // proot 库要求提取 native 库
-    packagingOptions {
+    // Native packaging: 保留 libproot.so 调试符号，避免被 strip 导致体积大幅缩小
+    packaging {
         jniLibs {
+            // 以传统方式打包 .so（与部分设备兼容性更好）
             useLegacyPackaging = true
+            // 默认 AGP 会 strip 调试符号，导致体积从 ~800KB 缩到 ~200KB。
+            // 显式保留 libproot.so 的符号，确保 APK 中体积与源文件一致。
+            keepDebugSymbols += setOf("**/libproot.so")
         }
     }
 }
@@ -81,9 +85,11 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     
-    // Termux terminal components (only emulator and view)
+    // AIDE-Termux components（已扁平化路径）
+    implementation(project(":termux-app"))
     implementation(project(":terminal-view"))
     implementation(project(":terminal-emulator"))
+    implementation(project(":termux-shared"))
     
     // SoraEditor components
     implementation(project(":sora-editor:editor"))
@@ -95,11 +101,13 @@ dependencies {
     // Kotlin Coroutines for async operations
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // OkHttp for runtime downloader
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // 移除运行时下载器后不再需要 OkHttp 依赖
 
     // Permissions library by 轮子哥（XXPermissions）
     implementation("com.github.getActivity:XXPermissions:21.3")
+
+    // Avoid Guava vs listenablefuture duplicate classes
+    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
