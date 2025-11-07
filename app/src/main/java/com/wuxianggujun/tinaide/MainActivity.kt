@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide
 
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -46,7 +46,8 @@ class MainActivity : AppCompatActivity() {
             ServiceLocator.registerSingleton<IFileManager> { FileManager(applicationContext) }
         }
 
-        enableEdgeToEdge()
+        // 避免标题栏侵入系统状态栏，关闭 edge-to-edge 布局
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_main)
 
         initializeServices()
@@ -59,11 +60,7 @@ class MainActivity : AppCompatActivity() {
         drawerLayout = findViewById(R.id.drawer_layout)
         setupFileTreeHeader()
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        // 已启用 decorFitsSystemWindows=true，无需手动应用 WindowInsets
 
         uiManager.restoreLayoutState()
         refreshFileTree()

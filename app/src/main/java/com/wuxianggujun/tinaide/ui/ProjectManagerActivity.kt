@@ -9,6 +9,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -41,6 +42,8 @@ class ProjectManagerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 防止标题栏侵入系统状态栏
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_project_manager)
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)

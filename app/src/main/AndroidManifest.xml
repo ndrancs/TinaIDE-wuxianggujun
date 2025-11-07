@@ -29,6 +29,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TinaIDE"
         android:largeHeap="true"
+        android:requestLegacyExternalStorage="true"
         tools:replace="android:allowBackup,android:label,android:supportsRtl,android:theme,android:largeHeap">
         <activity
             android:name=".ui.ProjectManagerActivity"
