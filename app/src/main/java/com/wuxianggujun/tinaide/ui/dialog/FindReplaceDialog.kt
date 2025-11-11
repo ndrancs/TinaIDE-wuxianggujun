@@ -8,8 +8,9 @@ import android.widget.CheckBox
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
-import com.wuxianggujun.tinaide.R
 import io.github.rosemoe.sora.widget.CodeEditor
+import com.wuxianggujun.tinaide.R
+import com.wuxianggujun.tinaide.extensions.*
 
 /**
  * 查找和替换对话框
@@ -54,7 +55,7 @@ class FindReplaceDialog(
     private fun findNext() {
         val searchText = etFind.text.toString()
         if (searchText.isEmpty()) {
-            android.widget.Toast.makeText(requireContext(), "请输入查找内容", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().toastWarning("请输入查找内容")
             return
         }
         
@@ -76,7 +77,7 @@ class FindReplaceDialog(
                 val (startLine, startCol) = getLineColumn(text, index)
                 val (endLine, endCol) = getLineColumn(text, index + searchText.length)
                 editor.setSelectionRegion(startLine, startCol, endLine, endCol)
-                android.widget.Toast.makeText(requireContext(), "找到匹配项", android.widget.Toast.LENGTH_SHORT).show()
+                requireContext().toastSuccess("找到匹配项")
             } else {
                 // 从头开始查找
                 val indexFromStart = if (caseSensitive) {
@@ -89,20 +90,20 @@ class FindReplaceDialog(
                     val (startLine, startCol) = getLineColumn(text, indexFromStart)
                     val (endLine, endCol) = getLineColumn(text, indexFromStart + searchText.length)
                     editor.setSelectionRegion(startLine, startCol, endLine, endCol)
-                    android.widget.Toast.makeText(requireContext(), "已从头开始查找", android.widget.Toast.LENGTH_SHORT).show()
+                    requireContext().toastInfo("已从头开始查找")
                 } else {
-                    android.widget.Toast.makeText(requireContext(), "未找到匹配项", android.widget.Toast.LENGTH_SHORT).show()
+                    requireContext().toast("未找到匹配项")
                 }
             }
         } catch (e: Exception) {
-            android.widget.Toast.makeText(requireContext(), "查找失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().handleErrorWithToast(e, "查找失败")
         }
     }
     
     private fun findPrevious() {
         val searchText = etFind.text.toString()
         if (searchText.isEmpty()) {
-            android.widget.Toast.makeText(requireContext(), "请输入查找内容", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().toastWarning("请输入查找内容")
             return
         }
         
@@ -122,12 +123,12 @@ class FindReplaceDialog(
                 val (startLine, startCol) = getLineColumn(text, index)
                 val (endLine, endCol) = getLineColumn(text, index + searchText.length)
                 editor.setSelectionRegion(startLine, startCol, endLine, endCol)
-                android.widget.Toast.makeText(requireContext(), "找到匹配项", android.widget.Toast.LENGTH_SHORT).show()
+                requireContext().toastSuccess("找到匹配项")
             } else {
-                android.widget.Toast.makeText(requireContext(), "未找到匹配项", android.widget.Toast.LENGTH_SHORT).show()
+                requireContext().toast("未找到匹配项")
             }
         } catch (e: Exception) {
-            android.widget.Toast.makeText(requireContext(), "查找失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().handleErrorWithToast(e, "查找失败")
         }
     }
     
@@ -136,7 +137,7 @@ class FindReplaceDialog(
         val replaceText = etReplace.text.toString()
         
         if (searchText.isEmpty()) {
-            android.widget.Toast.makeText(requireContext(), "请输入查找内容", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().toastWarning("请输入查找内容")
             return
         }
         
@@ -164,12 +165,12 @@ class FindReplaceDialog(
                         cursor.rightColumn,
                         replaceText
                     )
-                    android.widget.Toast.makeText(requireContext(), "已替换", android.widget.Toast.LENGTH_SHORT).show()
+                    requireContext().toastSuccess("已替换")
                 }
             }
             findNext()
         } catch (e: Exception) {
-            android.widget.Toast.makeText(requireContext(), "替换失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().handleErrorWithToast(e, "替换失败")
         }
     }
     
@@ -178,7 +179,7 @@ class FindReplaceDialog(
         val replaceText = etReplace.text.toString()
         
         if (searchText.isEmpty()) {
-            android.widget.Toast.makeText(requireContext(), "请输入查找内容", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().toastWarning("请输入查找内容")
             return
         }
         
@@ -195,9 +196,9 @@ class FindReplaceDialog(
         
         if (count > 0) {
             editor.setText(newText)
-            android.widget.Toast.makeText(requireContext(), "已替换 $count 处", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().toastSuccess("共替换 $count 处")
         } else {
-            android.widget.Toast.makeText(requireContext(), "未找到匹配项", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().toast("未找到匹配项")
         }
     }
     

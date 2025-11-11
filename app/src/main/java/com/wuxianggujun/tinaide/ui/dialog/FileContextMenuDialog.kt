@@ -4,8 +4,10 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.os.Bundle
 import android.widget.EditText
-import android.widget.Toast
 import androidx.fragment.app.DialogFragment
+import com.wuxianggujun.tinaide.extensions.*
+import com.wuxianggujun.tinaide.utils.FileUtils
+import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.file.IFileManager
 import java.io.File
@@ -66,16 +68,16 @@ class FileContextMenuDialog(
             .setPositiveButton("创建") { _, _ ->
                 val fileName = input.text.toString().trim()
                 if (fileName.isEmpty()) {
-                    Toast.makeText(requireContext(), "文件名不能为空", Toast.LENGTH_SHORT).show()
+                    requireContext().toastError("文件名不能为空")
                     return@setPositiveButton
                 }
                 
                 try {
                     fileManager.createFile(file, fileName)
-                    Toast.makeText(requireContext(), "文件创建成功", Toast.LENGTH_SHORT).show()
+                    requireContext().toastSuccess("创建成功")
                     onActionComplete()
                 } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "创建失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    requireContext().handleErrorWithToast(e, "创建失败")
                 }
             }
             .setNegativeButton("取消", null)
@@ -95,16 +97,16 @@ class FileContextMenuDialog(
             .setPositiveButton("创建") { _, _ ->
                 val folderName = input.text.toString().trim()
                 if (folderName.isEmpty()) {
-                    Toast.makeText(requireContext(), "文件夹名不能为空", Toast.LENGTH_SHORT).show()
+                    requireContext().toastError("文件夹名不能为空")
                     return@setPositiveButton
                 }
                 
                 try {
                     fileManager.createDirectory(file, folderName)
-                    Toast.makeText(requireContext(), "文件夹创建成功", Toast.LENGTH_SHORT).show()
+                    requireContext().toastSuccess("文件夹创建成功")
                     onActionComplete()
                 } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "创建失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    requireContext().handleErrorWithToast(e, "创建失败")
                 }
             }
             .setNegativeButton("取消", null)
@@ -125,7 +127,7 @@ class FileContextMenuDialog(
             .setPositiveButton("确定") { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isEmpty()) {
-                    Toast.makeText(requireContext(), "名称不能为空", Toast.LENGTH_SHORT).show()
+                    requireContext().toastError("名称不能为空")
                     return@setPositiveButton
                 }
                 
@@ -136,13 +138,13 @@ class FileContextMenuDialog(
                 try {
                     val success = fileManager.renameFile(file, newName)
                     if (success) {
-                        Toast.makeText(requireContext(), "重命名成功", Toast.LENGTH_SHORT).show()
+                        requireContext().toastSuccess("重命名成功")
                         onActionComplete()
                     } else {
-                        Toast.makeText(requireContext(), "重命名失败", Toast.LENGTH_SHORT).show()
+                        requireContext().toastError("重命名失败")
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "重命名失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    requireContext().handleErrorWithToast(e, "重命名失败")
                 }
             }
             .setNegativeButton("取消", null)
@@ -166,13 +168,13 @@ class FileContextMenuDialog(
                 try {
                     val success = fileManager.deleteFile(file)
                     if (success) {
-                        Toast.makeText(requireContext(), "删除成功", Toast.LENGTH_SHORT).show()
+                        requireContext().toastSuccess("删除成功")
                         onActionComplete()
                     } else {
-                        Toast.makeText(requireContext(), "删除失败", Toast.LENGTH_SHORT).show()
+                        requireContext().toastError("删除失败")
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "删除失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    requireContext().handleErrorWithToast(e, "删除失败")
                 }
             }
             .setNegativeButton("取消", null)
@@ -187,6 +189,6 @@ class FileContextMenuDialog(
             as android.content.ClipboardManager
         val clip = android.content.ClipData.newPlainText("file_path", file.absolutePath)
         clipboard.setPrimaryClip(clip)
-        Toast.makeText(requireContext(), "路径已复制", Toast.LENGTH_SHORT).show()
+        requireContext().toastSuccess("路径已复制到剪贴板")
     }
 }

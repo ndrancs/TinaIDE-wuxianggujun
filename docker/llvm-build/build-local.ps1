@@ -1,6 +1,6 @@
 Param(
   [ValidateSet('arm64-v8a','x86_64')][string]$Abi = 'arm64-v8a',
-  [int]$ApiLevel = 24,
+  [int]$ApiLevel = 26,
   [string]$NdkVersion = 'r26d',
   [string]$LlvmTag = 'llvmorg-17.0.6',
   [string]$ContainerName = 'tina-llvm-build',
@@ -44,7 +44,7 @@ function Ensure-DevContainer {
   }
 }
 
-function Exec-In-Dev { param([string]$cmd) & docker exec $ContainerName bash -c $cmd }
+function Exec-In-Dev { param([string]$cmd) & docker exec $ContainerName bash -lc $cmd }
 
 Ensure-DevContainer -containerName $ContainerName -ndkVersion $NdkVersion
 
@@ -98,7 +98,7 @@ fi
 if [ -d "${ANDROID_NDK_HOME}/sources/cxx-stl/llvm-libc++/libs/${ABI}" ]; then
   cp -af ${ANDROID_NDK_HOME}/sources/cxx-stl/llvm-libc++/libs/${ABI}/libc++_shared.so /hostout/${ABI}/libs/${ABI}/ || true
 fi
-cp -af ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/. /hostout/${ABI}/sysroot/usr/include/
+cp -af ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/. /hostout/${ABI}/sysroot/usr/include/ || true
 # Ensure libc++ headers are present under sysroot/usr/include/c++/v1 (NDK layout varies by version)
 mkdir -p /hostout/${ABI}/sysroot/usr/include/c++/v1 || true
 # Try prebuilt include path (newer NDKs)
@@ -144,6 +144,7 @@ dst_stub_dir="/hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/${API_LEVEL}"
 mkdir -p "${dst_stub_dir}"
 
 echo "[i] Probing NDK stub base: ${src_stub_base}"
+echo "[i] Listing available API dirs under stub base:"; ls -la "${src_stub_base}" || true
 echo "[i] Copying stub libs from: ${src_stub_base}/${API_LEVEL} → ${dst_stub_dir}"
 cp -af "${src_stub_base}/${API_LEVEL}/." "${dst_stub_dir}/" 2>/dev/null || true
 
@@ -158,7 +159,8 @@ if [ ${#missing[@]} -gt 0 ]; then
   # Prefer lowest baseline 21 first (most complete), then higher levels
   for fb in 21 26 29 33; do
     [ "${fb}" = "${API_LEVEL}" ] && continue
-    if [ -d "${src_stub_base}/${fb}" ] && compgen -G "${src_stub_base}/${fb}/*.so" > /dev/null; then
+    echo "[i] Inspect candidate API ${fb}:"; ls -la "${src_stub_base}/${fb}" || true
+    if [ -d "${src_stub_base}/${fb}" ] && [ -f "${src_stub_base}/${fb}/crtbegin_dynamic.o" ]; then
       echo "[i] Using fallback API ${fb} for stub/crt; copying into ${dst_stub_dir}" >&2
       cp -af "${src_stub_base}/${fb}/." "${dst_stub_dir}/"
       break
@@ -173,7 +175,7 @@ for f in "${need[@]}"; do
 done
 if [ ${#missing[@]} -gt 0 ]; then
   echo "[w] Fallback by search: looking for crtbegin_dynamic.o under ${src_stub_base}" >&2
-  fb_dir=$(find "${src_stub_base}" -maxdepth 2 -mindepth 1 -type f -name crtbegin_dynamic.o -printf '%h\n' | sort -u | head -n1 || true)
+  fb_dir=$(find "${src_stub_base}" -maxdepth 3 -mindepth 1 -type f -name crtbegin_dynamic.o -printf '%h\n' | sort -u | head -n1 || true)
   if [ -n "${fb_dir}" ] && [ -d "${fb_dir}" ]; then
     echo "[i] Found candidate: ${fb_dir} → ${dst_stub_dir}" >&2
     cp -af "${fb_dir}/." "${dst_stub_dir}/"
@@ -192,6 +194,7 @@ if [ ${#missing[@]} -gt 0 ]; then
   echo "        Please inspect inside container: ls -l ${src_stub_base}/{${API_LEVEL},21,26,29,33} ; find ${src_stub_base} -name crtbegin_dynamic.o" >&2
   exit 2
 fi
+echo "[i] Final stub dir content (top 20):"; ls -la "${dst_stub_dir}" | head -n 40 || true
 cp -af /work/src/llvm-project/clang/include/clang-c/. /hostout/${ABI}/include/clang-c/ || true
 cp -a /work/src/llvm-project/clang/include/. /hostout/${ABI}/include/clang/ || true
 cp -a /work/src/llvm-project/llvm/include/.  /hostout/${ABI}/include/llvm/  || true

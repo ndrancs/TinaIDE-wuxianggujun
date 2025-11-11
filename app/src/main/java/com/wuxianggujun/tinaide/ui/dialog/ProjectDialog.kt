@@ -10,8 +10,8 @@ import android.widget.Spinner
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.fragment.app.DialogFragment
+import com.wuxianggujun.tinaide.extensions.*
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 import android.provider.DocumentsContract
@@ -52,7 +52,7 @@ class ProjectDialog(
                 cfg.set("project.root_dir", path)
             } catch (_: Throwable) {}
         } else {
-            Toast.makeText(requireContext(), "无法解析选择的目录", Toast.LENGTH_SHORT).show()
+            requireContext().toastError("无法解析选择的目录")
         }
     }
     
@@ -126,12 +126,12 @@ class ProjectDialog(
                 val projectPath = pathInput.text.toString().trim()
                 
                 if (projectName.isEmpty()) {
-                    Toast.makeText(context, "项目名称不能为空", Toast.LENGTH_SHORT).show()
+                    context.toastError("项目名称不能为空")
                     return@setPositiveButton
                 }
                 
                 if (projectPath.isEmpty()) {
-                    Toast.makeText(context, "项目路径不能为空", Toast.LENGTH_SHORT).show()
+                    context.toastError("项目路径不能为空")
                     return@setPositiveButton
                 }
                 
@@ -173,7 +173,7 @@ class ProjectDialog(
             }
             .setNeutralButton("浏览...") { _, _ ->
                 // TODO: 实现文件浏览器
-                Toast.makeText(context, "文件浏览器功能开发中", Toast.LENGTH_SHORT).show()
+                context.toastInfo("文件浏览器功能开发中")
             }
             .setNegativeButton("取消", null)
             .create()
@@ -206,12 +206,12 @@ class ProjectDialog(
             val projectDir = File(projectPath, projectName)
             
             if (projectDir.exists()) {
-                Toast.makeText(requireContext(), "项目已存在", Toast.LENGTH_SHORT).show()
+                requireContext().toastError("项目已存在")
                 return
             }
             
             if (!projectDir.mkdirs()) {
-                Toast.makeText(requireContext(), "创建项目目录失败", Toast.LENGTH_SHORT).show()
+                requireContext().toastError("创建项目目录失败")
                 return
             }
 
@@ -220,17 +220,17 @@ class ProjectDialog(
                 else -> false
             }
             if (!ok) {
-                Toast.makeText(requireContext(), "模板生成失败", Toast.LENGTH_SHORT).show()
+                requireContext().toastError("模板生成失败")
                 return
             }
             
-            Toast.makeText(requireContext(), "项目创建成功", Toast.LENGTH_SHORT).show()
+            requireContext().toastSuccess("项目创建成功")
             
             // 打开项目
             openProject(projectDir)
             
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), "创建项目失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            requireContext().handleErrorWithToast(e, "创建项目失败")
         }
     }
     
@@ -241,9 +241,9 @@ class ProjectDialog(
         try {
             fileManager.openProject(projectDir.absolutePath)
             onProjectSelected(projectDir)
-            Toast.makeText(requireContext(), "项目已打开: ${projectDir.name}", Toast.LENGTH_SHORT).show()
+            requireContext().toastSuccess("项目已打开: ${projectDir.name}")
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), "打开项目失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            requireContext().handleErrorWithToast(e, "打开项目失败")
         }
     }
 }

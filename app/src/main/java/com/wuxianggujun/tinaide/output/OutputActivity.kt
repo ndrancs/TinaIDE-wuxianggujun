@@ -3,9 +3,8 @@ package com.wuxianggujun.tinaide.output
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import com.geyifeng.immersionbar.ktx.immersionBar
+import com.wuxianggujun.tinaide.base.BaseActivity
 import io.github.rosemoe.sora.widget.CodeEditor
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.ServiceLocator
@@ -20,25 +19,14 @@ import io.github.rosemoe.sora.lang.EmptyLanguage
  * - 高性能
  * - 滚动流畅
  */
-class OutputActivity : AppCompatActivity(), IOutputManager.OutputListener {
+class OutputActivity : BaseActivity(), IOutputManager.OutputListener {
     
     private lateinit var outputEditor: CodeEditor
     private lateinit var outputManager: IOutputManager
     
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(R.style.Theme_TinaIDE)
-        super.onCreate(savedInstanceState)
+        super.onCreate(savedInstanceState)  // BaseActivity 已处理主题和状态栏
         setContentView(R.layout.activity_output)
-        
-        // 沉浸式状态栏 - 使用最新 API
-        immersionBar {
-            statusBarColorInt(getColor(R.color.dark_primary))
-            statusBarDarkFont(false)
-            navigationBarColorInt(getColor(R.color.dark_background))
-            fitsSystemWindows(true)
-            autoStatusBarDarkModeEnable(true)
-            init()
-        }
         
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
