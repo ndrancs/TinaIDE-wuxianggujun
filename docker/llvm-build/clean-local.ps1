@@ -1,9 +1,8 @@
 Param(
-  [ValidateSet('libs','exec','all')][string]$Mode = 'all',
   [ValidateSet('arm64-v8a','x86_64','all')][string]$Abi = 'all',
-  [switch]$RemoveAssets,      # 删除 app/assets 下的 sysroot/toolchains（谨慎）
+  [switch]$RemoveAssets,      # 删除 app/assets 下的 sysroot（谨慎）
   [switch]$RemoveJniLibs,     # 删除 jniLibs 下与 LLVM/Clang 相关的 .so（精准匹配）
-  [switch]$PruneImages,       # 删除本地 Docker 镜像（embedded-ndk*）
+  [switch]$PruneImages,       # 删除本地 Docker 镜像（llvm-build*）
   [switch]$Yes                # 跳过确认
 )
 
@@ -24,17 +23,8 @@ function Confirm-Do($msg){
 
 function Remove-DirSafe($p){ if (Test-Path $p){ Write-Info "Remove: $p"; Remove-Item -Recurse -Force $p } }
 
-function Clean-ExternalLibs($abi){
-  $base = Join-Path $root 'external/embedded-ndk-libs'
-  if ($abi -eq 'all'){
-    if (Confirm-Do "删除 $base 下所有 ABI 产物？") { Remove-DirSafe $base }
-  } else {
-    Remove-DirSafe (Join-Path $base $abi)
-  }
-}
-
-function Clean-ExternalExec($abi){
-  $base = Join-Path $root 'external/embedded-ndk'
+function Clean-BuildOutput($abi){
+  $base = Join-Path $root 'docker/llvm-build/build-output'
   if ($abi -eq 'all'){
     if (Confirm-Do "删除 $base 下所有 ABI 产物？") { Remove-DirSafe $base }
   } else {
@@ -59,23 +49,16 @@ function Clean-JniLibs($abi){
   }
 }
 
-function Clean-Assets($mode){
+function Clean-Assets(){
   if (-not $RemoveAssets){ Write-Info '跳过 assets 清理（未指定 -RemoveAssets）'; return }
   $assets = Join-Path $root 'app/src/main/assets'
-  if ($mode -eq 'libs' -or $mode -eq 'all'){
-    # libs 模式仅使用 sysroot
-    Remove-DirSafe (Join-Path $assets 'sysroot')
-  }
-  if ($mode -eq 'exec' -or $mode -eq 'all'){
-    Remove-DirSafe (Join-Path $assets 'toolchains')
-    Remove-DirSafe (Join-Path $assets 'sysroot')
-  }
+  Remove-DirSafe (Join-Path $assets 'sysroot')
 }
 
 function Prune-Images($abi){
   if (-not $PruneImages){ Write-Info '跳过 Docker 镜像清理（未指定 -PruneImages）'; return }
   $images = (& docker images --format '{{.Repository}}:{{.Tag}}') | Where-Object {
-    $_ -like 'embedded-ndk:*' -or $_ -like 'embedded-ndk-libs:*'
+    $_ -like 'llvm-build-dev:*'
   }
   if ($abi -ne 'all'){
     $images = $images | Where-Object { $_ -match "-$abi-" }
@@ -85,13 +68,11 @@ function Prune-Images($abi){
   foreach($img in $images){ Write-Info "docker rmi -f $img"; & docker rmi -f $img | Out-Null }
 }
 
-Write-Info "清理开始 (Mode=$Mode, Abi=$Abi)"
+Write-Info "清理开始 (Abi=$Abi)"
 
-switch ($Mode){
-  'libs' { Clean-ExternalLibs $Abi; Clean-JniLibs $Abi; Clean-Assets 'libs' }
-  'exec' { Clean-ExternalExec $Abi; Clean-Assets 'exec' }
-  'all'  { Clean-ExternalLibs $Abi; Clean-ExternalExec $Abi; Clean-JniLibs $Abi; Clean-Assets 'all' }
-}
+Clean-BuildOutput $Abi
+Clean-JniLibs $Abi
+Clean-Assets
 
 Prune-Images $Abi
 
