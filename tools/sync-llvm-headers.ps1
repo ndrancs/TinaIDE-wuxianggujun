@@ -1,6 +1,6 @@
 Param(
-  [string]$DockerRoot = "docker/embedded-ndk/dev-work",
-  [string]$DestRoot = "external/embedded-ndk-libs/common-headers",
+  [string]$DockerRoot = "docker/llvm-build/dev-work",
+  [string]$DestRoot = "docker/llvm-build/build-output/common-headers",
   [ValidateSet('arm64-v8a','x86_64')][string]$Abi = 'x86_64',
   [int]$ApiLevel = 24
 )

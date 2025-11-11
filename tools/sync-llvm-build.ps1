@@ -2,18 +2,18 @@ Param(
   [ValidateSet('arm64-v8a','x86_64')]
   [string]$Abi = 'x86_64',
   [int]$ApiLevel = 24,
-  [string]$EmbeddedRoot = 'external/embedded-ndk-libs',
+  [string]$BuildOutputRoot = 'docker/llvm-build/build-output',
   [string]$AppJniLibs = 'app/src/main/jniLibs',
   [string]$AppAssetsSysroot = 'app/src/main/assets/sysroot'
 )
 
-Write-Host "== Sync embedded NDK resources (ABI=$Abi) ==" -ForegroundColor Cyan
+Write-Host "== Sync LLVM build artifacts (ABI=$Abi) ==" -ForegroundColor Cyan
 
 # 1) Headers (LLVM/Clang) for build-time
 & ./tools/sync-llvm-headers.ps1 -Abi $Abi -ApiLevel $ApiLevel
 
 # 2) Shared libraries to jniLibs
-$srcLibDir = Join-Path (Join-Path $EmbeddedRoot $Abi) (Join-Path 'libs' $Abi)
+$srcLibDir = Join-Path (Join-Path $BuildOutputRoot $Abi) (Join-Path 'libs' $Abi)
 $dstLibDir = Join-Path $AppJniLibs $Abi
 if (Test-Path $srcLibDir) {
   New-Item -ItemType Directory -Force -Path $dstLibDir | Out-Null
@@ -32,7 +32,7 @@ if (Test-Path $srcLibDir) {
 }
 
 # 3) Sysroot to assets
-$srcSysroot = Join-Path (Join-Path $EmbeddedRoot $Abi) 'sysroot'
+$srcSysroot = Join-Path (Join-Path $BuildOutputRoot $Abi) 'sysroot'
 if (Test-Path $srcSysroot) {
   New-Item -ItemType Directory -Force -Path $AppAssetsSysroot | Out-Null
   robocopy $srcSysroot $AppAssetsSysroot /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
@@ -50,7 +50,7 @@ if (Test-Path $srcSysroot) {
   $clangRes = Join-Path $AppAssetsSysroot 'lib/clang/17/include/stdarg.h'
   if (-not (Test-Path $clangRes)) {
     Write-Host "[w] clang resource header missing: $clangRes — attempting fallback copy from local source tree" -ForegroundColor Yellow
-    $hdrSrc = Resolve-Path 'docker/embedded-ndk/dev-work/src/llvm-project/clang/lib/Headers' -ErrorAction SilentlyContinue
+    $hdrSrc = Resolve-Path 'docker/llvm-build/dev-work/src/llvm-project/clang/lib/Headers' -ErrorAction SilentlyContinue
     if ($hdrSrc) {
       $dstDir = Join-Path $AppAssetsSysroot 'lib/clang/17/include'
       New-Item -ItemType Directory -Force -Path $dstDir | Out-Null
