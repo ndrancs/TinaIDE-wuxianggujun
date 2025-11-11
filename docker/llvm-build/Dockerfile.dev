@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1.6
+# TinaIDE LLVM Build Environment
 # Persistent builder image for incremental LLVM/Clang/LLD builds targeting Android
 
 FROM ubuntu:22.04
