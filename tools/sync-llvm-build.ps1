@@ -39,8 +39,18 @@ if (Test-Path $srcSysroot) {
   # Warn if target triple directory for selected API is missing
   $triple = if ($Abi -eq 'arm64-v8a') { 'aarch64-linux-android' } else { 'x86_64-linux-android' }
   $tripleDir = Join-Path $AppAssetsSysroot ("usr/lib/$triple/$ApiLevel")
+  $required = @('crtbegin_dynamic.o','crtend_android.o','libc.so','libm.so','liblog.so','libandroid.so')
   if (-not (Test-Path $tripleDir)) {
-    Write-Host "[w] sysroot missing triple/api: $triple/$ApiLevel at $tripleDir" -ForegroundColor Yellow
+    Write-Host "[!] sysroot missing triple/api: $triple/$ApiLevel at $tripleDir" -ForegroundColor Red
+    throw "Sysroot libraries not found — run docker/llvm-build/build-local.ps1 then re-run this script."
+  }
+  $missing = @()
+  foreach($f in $required){ if (-not (Test-Path (Join-Path $tripleDir $f))) { $missing += $f } }
+  if ($missing.Count -gt 0) {
+    Write-Host "[!] sysroot libraries incomplete at: $tripleDir" -ForegroundColor Red
+    Write-Host ("    missing: " + ($missing -join ', ')) -ForegroundColor Red
+    Write-Host "    hint: ./docker/llvm-build/build-local.ps1 -Abi $Abi -ApiLevel $ApiLevel" -ForegroundColor Yellow
+    throw "Sysroot incomplete — aborting copy to avoid shipping a broken assets/sysroot"
   }
   $libcppHdr = Join-Path $AppAssetsSysroot 'usr/include/c++/v1/__ios/fpos.h'
   if (-not (Test-Path $libcppHdr)) {

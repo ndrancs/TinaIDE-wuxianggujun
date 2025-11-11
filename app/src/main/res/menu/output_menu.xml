@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    
+    <item
+        android:id="@+id/action_clear_output"
+        android:title="清空输出"
+        android:icon="@android:drawable/ic_menu_delete"
+        app:showAsAction="ifRoom" />
+    
+    <item
+        android:id="@+id/action_toggle_editable"
+        android:title="允许编辑"
+        app:showAsAction="never" />
+    
+</menu>

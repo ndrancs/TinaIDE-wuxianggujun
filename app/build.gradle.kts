@@ -110,6 +110,9 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     
+    // AndroidX Preference (Material Design)
+    implementation("androidx.preference:preference-ktx:1.2.1")
+    
     // AIDE-Termux components removed
     // implementation(project(":termux-app"))
     // implementation(project(":terminal-view"))
@@ -121,18 +124,18 @@ dependencies {
     implementation(project(":sora-editor:language-textmate"))
     
     // JSON processing for configuration
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.11.0")
     
     // Kotlin Coroutines for async operations
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
-    // 移除运行时下载器后不再需要 OkHttp 依赖
-
-    // Permissions library by 轮子哥（XXPermissions）
-    implementation("com.github.getActivity:XXPermissions:21.3")
-
-    // Fix crash: Missing androidx.concurrent + ListenableFuture at runtime
-    implementation("androidx.concurrent:concurrent-futures:1.1.0")
+    // Permissions library by 轮子哥（XXPermissions）- 最新版
+    implementation("com.github.getActivity:XXPermissions:20.0")
+    
+    // 沉浸式状态栏和导航栏（ImmersionBar - OCNYang fork，支持 Android 15/16）
+    implementation("com.github.OCNYang:ImmersionBar:3.2.3")
+    implementation("com.github.OCNYang:ImmersionBar-ktx:3.2.3")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

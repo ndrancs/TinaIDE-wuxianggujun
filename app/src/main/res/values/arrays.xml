@@ -3,4 +3,81 @@
     <string-array name="project_types">
         <item>C++ (CMake)</item>
     </string-array>
+
+    <!-- 编辑器设置 -->
+    <string-array name="tab_size_entries">
+        <item>2 空格</item>
+        <item>4 空格</item>
+        <item>8 空格</item>
+    </string-array>
+    <string-array name="tab_size_values">
+        <item>2</item>
+        <item>4</item>
+        <item>8</item>
+    </string-array>
+
+    <string-array name="editor_theme_entries">
+        <item>Darcula (深色)</item>
+        <item>GitHub (浅色)</item>
+        <item>Monokai</item>
+        <item>Solarized Dark</item>
+    </string-array>
+    <string-array name="editor_theme_values">
+        <item>darcula</item>
+        <item>github</item>
+        <item>monokai</item>
+        <item>solarized_dark</item>
+    </string-array>
+
+    <!-- 编译器设置 -->
+    <string-array name="optimization_entries">
+        <item>O0 - 无优化（调试）</item>
+        <item>O1 - 基本优化</item>
+        <item>O2 - 标准优化（推荐）</item>
+        <item>O3 - 激进优化</item>
+    </string-array>
+    <string-array name="optimization_values">
+        <item>O0</item>
+        <item>O1</item>
+        <item>O2</item>
+        <item>O3</item>
+    </string-array>
+
+    <string-array name="target_arch_entries">
+        <item>ARM64 (arm64-v8a)</item>
+        <item>x86_64</item>
+    </string-array>
+    <string-array name="target_arch_values">
+        <item>arm64-v8a</item>
+        <item>x86_64</item>
+    </string-array>
+    <string-array name="target_arch_default">
+        <item>arm64-v8a</item>
+    </string-array>
+
+    <!-- 项目设置 -->
+    <string-array name="auto_save_entries">
+        <item>关闭</item>
+        <item>30 秒</item>
+        <item>60 秒</item>
+        <item>5 分钟</item>
+    </string-array>
+    <string-array name="auto_save_values">
+        <item>0</item>
+        <item>30</item>
+        <item>60</item>
+        <item>300</item>
+    </string-array>
+
+    <!-- 外观设置 -->
+    <string-array name="app_theme_entries">
+        <item>深色主题</item>
+        <item>浅色主题</item>
+        <item>跟随系统</item>
+    </string-array>
+    <string-array name="app_theme_values">
+        <item>dark</item>
+        <item>light</item>
+        <item>auto</item>
+    </string-array>
 </resources>

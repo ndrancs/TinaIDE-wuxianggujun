@@ -6,11 +6,11 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.view.Menu
-import android.view.MenuItem
-import android.widget.Toast
+import android.os.Bundle
+import android.os.Environment
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.WindowCompat
 import androidx.appcompat.widget.Toolbar
+import com.geyifeng.immersionbar.ktx.immersionBar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hjq.permissions.OnPermissionCallback
@@ -39,14 +39,23 @@ class ProjectManagerActivity : AppCompatActivity() {
 
     private lateinit var recycler: RecyclerView
     private lateinit var adapter: ProjectListAdapter
+    private var isNavigating = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 强制使用深色主题，确保主题一致性
         setTheme(R.style.Theme_TinaIDE)
         super.onCreate(savedInstanceState)
-        // 防止标题栏侵入系统状态栏
-        WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_project_manager)
+        
+        // 沉浸式状态栏 - 使用最新 API
+        immersionBar {
+            statusBarColorInt(getColor(R.color.dark_primary))
+            statusBarDarkFont(false)
+            navigationBarColorInt(getColor(R.color.dark_background))
+            fitsSystemWindows(true)
+            autoStatusBarDarkModeEnable(true)
+            init()
+        }
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -60,15 +69,19 @@ class ProjectManagerActivity : AppCompatActivity() {
         }
         recycler.adapter = adapter
 
-        requestStoragePermissionsIfNeeded { reloadProjects() }
-        // 首次也尝试加载（若未授权，可能为空，授权后会再刷新）
-        reloadProjects()
+        // 请求权限后加载项目列表
+        requestStoragePermissionsIfNeeded { 
+            reloadProjects() 
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        // 从其他Activity返回时，刷新项目列表
-        reloadProjects()
+        // 从 MainActivity 返回时刷新列表，但跳转过程中不刷新
+        if (!isNavigating) {
+            reloadProjects()
+        }
+        isNavigating = false
     }
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.project_manager_menu, menu)
@@ -127,12 +140,17 @@ class ProjectManagerActivity : AppCompatActivity() {
     }
 
     private fun openProject(dir: java.io.File) {
+        // 防止重复点击导致多次跳转
+        if (isNavigating) return
+        
         try {
+            isNavigating = true
             val fm = ServiceLocator.get<IFileManager>()
             fm.openProject(dir.absolutePath)
             val intent = android.content.Intent(this, com.wuxianggujun.tinaide.MainActivity::class.java)
             startActivity(intent)
         } catch (e: Exception) {
+            isNavigating = false
             Toast.makeText(this, "打开失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }

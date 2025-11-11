@@ -44,7 +44,7 @@ function Ensure-DevContainer {
   }
 }
 
-function Exec-In-Dev { param([string]$cmd) & docker exec $ContainerName bash -lc $cmd }
+function Exec-In-Dev { param([string]$cmd) & docker exec $ContainerName bash -c $cmd }
 
 Ensure-DevContainer -containerName $ContainerName -ndkVersion $NdkVersion
 
@@ -138,7 +138,60 @@ else
     exit 2
   fi
 fi
-cp -af ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${TRIPLE}/${API_LEVEL}/. /hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/${API_LEVEL}/
+# Copy NDK stub/crt libs for requested API level; if empty/missing, try fallbacks (common in some NDK layouts)
+src_stub_base="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${TRIPLE}"
+dst_stub_dir="/hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/${API_LEVEL}"
+mkdir -p "${dst_stub_dir}"
+
+echo "[i] Probing NDK stub base: ${src_stub_base}"
+echo "[i] Copying stub libs from: ${src_stub_base}/${API_LEVEL} → ${dst_stub_dir}"
+cp -af "${src_stub_base}/${API_LEVEL}/." "${dst_stub_dir}/" 2>/dev/null || true
+
+need=(crtbegin_dynamic.o crtend_android.o libc.so libm.so liblog.so libandroid.so)
+missing=()
+for f in "${need[@]}"; do
+  [ -f "${dst_stub_dir}/${f}" ] || missing+=("${f}")
+done
+
+if [ ${#missing[@]} -gt 0 ]; then
+  echo "[w] Requested API ${API_LEVEL} missing: ${missing[*]} — probing fallback APIs" >&2
+  # Prefer lowest baseline 21 first (most complete), then higher levels
+  for fb in 21 26 29 33; do
+    [ "${fb}" = "${API_LEVEL}" ] && continue
+    if [ -d "${src_stub_base}/${fb}" ] && compgen -G "${src_stub_base}/${fb}/*.so" > /dev/null; then
+      echo "[i] Using fallback API ${fb} for stub/crt; copying into ${dst_stub_dir}" >&2
+      cp -af "${src_stub_base}/${fb}/." "${dst_stub_dir}/"
+      break
+    fi
+  done
+fi
+
+# If still missing, search dynamically for any x86_64 triple dir that has crtbegin_dynamic.o
+missing=()
+for f in "${need[@]}"; do
+  [ -f "${dst_stub_dir}/${f}" ] || missing+=("${f}")
+done
+if [ ${#missing[@]} -gt 0 ]; then
+  echo "[w] Fallback by search: looking for crtbegin_dynamic.o under ${src_stub_base}" >&2
+  fb_dir=$(find "${src_stub_base}" -maxdepth 2 -mindepth 1 -type f -name crtbegin_dynamic.o -printf '%h\n' | sort -u | head -n1 || true)
+  if [ -n "${fb_dir}" ] && [ -d "${fb_dir}" ]; then
+    echo "[i] Found candidate: ${fb_dir} → ${dst_stub_dir}" >&2
+    cp -af "${fb_dir}/." "${dst_stub_dir}/"
+  else
+    echo "[w] No crtbegin_dynamic.o found under ${src_stub_base}" >&2
+  fi
+fi
+
+# Re-check after all fallbacks
+missing=()
+for f in "${need[@]}"; do
+  [ -f "${dst_stub_dir}/${f}" ] || missing+=("${f}")
+done
+if [ ${#missing[@]} -gt 0 ]; then
+  echo "[ERROR] Still missing after fallback: ${missing[*]} in ${dst_stub_dir}" >&2
+  echo "        Please inspect inside container: ls -l ${src_stub_base}/{${API_LEVEL},21,26,29,33} ; find ${src_stub_base} -name crtbegin_dynamic.o" >&2
+  exit 2
+fi
 cp -af /work/src/llvm-project/clang/include/clang-c/. /hostout/${ABI}/include/clang-c/ || true
 cp -a /work/src/llvm-project/clang/include/. /hostout/${ABI}/include/clang/ || true
 cp -a /work/src/llvm-project/llvm/include/.  /hostout/${ABI}/include/llvm/  || true

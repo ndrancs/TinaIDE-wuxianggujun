@@ -49,24 +49,27 @@
 
             <!-- 终端区域已移除 -->
 
-            <!-- 输出工具栏 -->
+            <!-- 输出工具栏（点击打开独立输出窗口） -->
             <LinearLayout
                 android:id="@+id/output_toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:orientation="horizontal"
                 android:paddingStart="12dp"
                 android:paddingEnd="8dp"
                 android:paddingTop="6dp"
                 android:paddingBottom="6dp"
-                android:background="@android:color/darker_gray">
+                android:background="@android:color/darker_gray"
+                android:clickable="true"
+                android:focusable="true">
 
                 <TextView
                     android:id="@+id/output_title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="输出"
+                    android:layout_gravity="center_vertical"
+                    android:text="编译输出（点击查看）"
                     android:textColor="@android:color/white"
                     android:textStyle="bold" />
 
@@ -75,27 +78,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@android:color/transparent"
-                    android:contentDescription="输出详情/最近结果"
+                    android:contentDescription="打开输出窗口"
                     android:src="@android:drawable/ic_dialog_info" />
             </LinearLayout>
-
-            <!-- 输出面板 -->
-            <ScrollView
-                android:id="@+id/output_scroll"
-                android:layout_width="match_parent"
-                android:layout_height="140dp"
-                android:fillViewport="true">
-                <TextView
-                    android:id="@+id/tv_output"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="@android:color/white"
-                    android:background="#222222"
-                    android:textIsSelectable="true"
-                    android:padding="8dp"
-                    android:textSize="12sp"
-                    tools:text="=== 输出区 ===\n"/>
-            </ScrollView>
 
         </LinearLayout>
 

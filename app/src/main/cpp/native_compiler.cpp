@@ -285,22 +285,86 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
     const std::string api = "24";
     const std::string libDir = sysroot+"/usr/lib/"+tripleBase+"/"+api;
 
-    std::vector<const char*> args;
-    std::vector<std::string> keep;
-    auto add=[&](const std::string& s){ keep.push_back(s); args.push_back(keep.back().c_str()); };
-    auto add2=[&](const char* a,const std::string& b){ args.push_back(a); keep.push_back(b); args.push_back(keep.back().c_str()); };
+    // 检查 sysroot 库目录是否存在
+    struct stat st;
+    if (stat(libDir.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)) {
+        std::string err =
+            "[TinaIDE] Sysroot library directory missing: " + libDir +
+            "\n请先同步嵌入式 NDK 资源："
+            "\n 1) ./docker/llvm-build/build-local.ps1 -Abi " + (tripleBase.find("aarch64") != std::string::npos ? "arm64-v8a" : "x86_64") + " -ApiLevel " + api +
+            "\n 2) ./tools/sync-llvm-build.ps1 -Abi " + (tripleBase.find("aarch64") != std::string::npos ? "arm64-v8a" : "x86_64") +
+            "\n这些步骤会把 NDK 的 stub 库与 crt 对象复制到 assets/sysroot 下。";
+        return env->NewStringUTF(err.c_str());
+    }
 
-    add("ld.lld");
-    add("-pie"); add("-z"); add("now"); add("-z"); add("relro");
-    add2("-L", libDir);
-    // crt objects if available
-    add(sysroot+"/usr/lib/"+tripleBase+"/"+api+"/crtbegin_dynamic.o");
-    add(objPath);
-    add2("-o", outExe);
-    // standard libs
-    if (isCxx) add("-lc++");
-    add("-lc"); add("-lm"); add("-llog"); add("-landroid");
-    add(sysroot+"/usr/lib/"+tripleBase+"/"+api+"/crtend_android.o");
+    // 进一步预检：关键 crt 与系统库是否存在，避免到 LLD 阶段才失败
+    auto exists = [](const std::string& p){ struct stat s; return stat(p.c_str(), &s) == 0 && S_ISREG(s.st_mode); };
+    const std::string crtBegin = libDir + "/crtbegin_dynamic.o";
+    const std::string crtEnd   = libDir + "/crtend_android.o";
+    const std::string libcSo   = libDir + "/libc.so";
+    const std::string libmSo   = libDir + "/libm.so";
+    const std::string liblogSo = libDir + "/liblog.so";
+    const std::string libandroidSo = libDir + "/libandroid.so";
+    std::vector<std::string> missing;
+    if (!exists(crtBegin))      missing.push_back("crtbegin_dynamic.o");
+    if (!exists(crtEnd))        missing.push_back("crtend_android.o");
+    if (!exists(libcSo))        missing.push_back("libc.so");
+    if (!exists(libmSo))        missing.push_back("libm.so");
+    if (!exists(liblogSo))      missing.push_back("liblog.so");
+    if (!exists(libandroidSo))  missing.push_back("libandroid.so");
+    if (jIsCxx == JNI_TRUE) {
+        // C++ 运行时：优先检查静态别名（通常 NDK 提供 libc++.a → libc++_static.a）
+        const std::string libcxxA = libDir + "/libc++.a";
+        const std::string libcxxStaticA = libDir + "/libc++_static.a";
+        if (!exists(libcxxA) && !exists(libcxxStaticA)) {
+            missing.push_back("libc++.a/libc++_static.a");
+        }
+    }
+    if (!missing.empty()) {
+        std::ostringstream oss;
+        oss << "[TinaIDE] 链接所需的 NDK stub/crt 缺失于: " << libDir << "\n"
+            << "缺失: ";
+        for (size_t i=0;i<missing.size();++i) { if(i) oss<<", "; oss<<missing[i]; }
+        oss << "\n请执行:"
+            << "\n 1) ./docker/llvm-build/build-local.ps1 -Abi "
+            << (tripleBase.find("aarch64") != std::string::npos ? "arm64-v8a" : "x86_64")
+            << " -ApiLevel " << api
+            << "\n 2) ./tools/sync-llvm-build.ps1 -Abi "
+            << (tripleBase.find("aarch64") != std::string::npos ? "arm64-v8a" : "x86_64")
+            << "\n或从本机 NDK 复制上述文件到 assets/sysroot 相应目录后重试。";
+        const std::string msg = oss.str();
+        return env->NewStringUTF(msg.c_str());
+    }
+    
+    // 先构建所有字符串到 keep，避免 vector 扩容导致 c_str() 失效
+    std::vector<std::string> keep;
+    keep.reserve(20);  // 预分配空间
+    
+    keep.push_back("ld.lld");
+    keep.push_back("-pie");
+    keep.push_back("-z");
+    keep.push_back("now");
+    keep.push_back("-z");
+    keep.push_back("relro");
+    keep.push_back("-L");
+    keep.push_back(libDir);
+    keep.push_back(crtBegin);
+    keep.push_back(objPath);
+    keep.push_back("-o");
+    keep.push_back(outExe);
+    if (isCxx) keep.push_back("-lc++");
+    keep.push_back("-lc");
+    keep.push_back("-lm");
+    keep.push_back("-llog");
+    keep.push_back("-landroid");
+    keep.push_back(crtEnd);
+    
+    // 然后构建 args 指针数组
+    std::vector<const char*> args;
+    args.reserve(keep.size());
+    for (const auto& s : keep) {
+        args.push_back(s.c_str());
+    }
 
     std::string diag;
     llvm::raw_string_ostream os(diag);

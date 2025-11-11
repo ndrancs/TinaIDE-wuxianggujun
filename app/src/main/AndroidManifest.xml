@@ -43,6 +43,16 @@
         <activity
             android:name=".MainActivity"
             android:exported="true" />
+        <activity
+            android:name=".output.OutputActivity"
+            android:exported="false"
+            android:label="编译输出"
+            android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".settings.SettingsActivity"
+            android:exported="false"
+            android:label="设置"
+            android:parentActivityName=".MainActivity" />
         <!-- Termux components declared in library manifest -->
     </application>
 

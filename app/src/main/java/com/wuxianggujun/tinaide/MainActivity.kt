@@ -1,11 +1,9 @@
 package com.wuxianggujun.tinaide
 
 import android.os.Bundle
-import androidx.core.view.WindowCompat
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import android.content.Intent
+import com.geyifeng.immersionbar.ktx.immersionBar
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
 import android.view.Menu
@@ -13,9 +11,8 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.EditText
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
 import java.io.File
 
 import com.wuxianggujun.tinaide.core.ServiceLocator
@@ -30,13 +27,14 @@ import com.wuxianggujun.tinaide.editor.IEditorManager
 import com.wuxianggujun.tinaide.editor.EditorManager
 import com.wuxianggujun.tinaide.ui.IUIManager
 import com.wuxianggujun.tinaide.ui.UIManager
+import com.wuxianggujun.tinaide.output.IOutputManager
+import com.wuxianggujun.tinaide.output.OutputManager
 class MainActivity : AppCompatActivity() {
 
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var toolbar: Toolbar
     private lateinit var uiManager: IUIManager
-    private var lastBuildSummary: String? = null
-    private var tvOutput: TextView? = null
+    private lateinit var outputManager: IOutputManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 强制使用深色主题，确保主题一致性
@@ -50,22 +48,27 @@ class MainActivity : AppCompatActivity() {
             ServiceLocator.registerSingleton<IFileManager> { FileManager(applicationContext) }
         }
 
-        // 避免标题栏侵入系统状态栏，关闭 edge-to-edge 布局
-        WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_main)
-
-        // Output panel wiring
-        tvOutput = findViewById(R.id.tv_output)
-        findViewById<ImageButton>(R.id.btn_output_info)?.setOnClickListener {
-            val summary = lastBuildSummary ?: "暂无输出"
-            AlertDialog.Builder(this)
-                .setTitle("编译结果")
-                .setMessage(summary)
-                .setPositiveButton("确定", null)
-                .show()
+        
+        // 沉浸式状态栏 - 使用最新 API
+        immersionBar {
+            statusBarColorInt(getColor(R.color.dark_primary))
+            statusBarDarkFont(false)  // 深色主题使用浅色文字
+            navigationBarColorInt(getColor(R.color.dark_background))
+            fitsSystemWindows(true)
+            autoStatusBarDarkModeEnable(true)  // 自动适配状态栏深色模式
+            init()
         }
 
         initializeServices()
+        
+        // 点击输出按钮或工具栏打开输出界面
+        findViewById<ImageButton>(R.id.btn_output_info)?.setOnClickListener {
+            outputManager.showOutput()
+        }
+        findViewById<android.widget.LinearLayout>(R.id.output_toolbar)?.setOnClickListener {
+            outputManager.showOutput()
+        }
 
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -74,8 +77,6 @@ class MainActivity : AppCompatActivity() {
 
         drawerLayout = findViewById(R.id.drawer_layout)
         setupFileTreeHeader()
-
-        // 已启用 decorFitsSystemWindows=true，无需手动应用 WindowInsets
 
         uiManager.restoreLayoutState()
         refreshFileTree()
@@ -94,6 +95,14 @@ class MainActivity : AppCompatActivity() {
 
         val editorManager = EditorManager(this, supportFragmentManager)
         ServiceLocator.register<IEditorManager>(editorManager)
+        
+        // 注册输出管理器
+        if (!ServiceLocator.isRegistered(IOutputManager::class.java)) {
+            outputManager = OutputManager(applicationContext)
+            ServiceLocator.register<IOutputManager>(outputManager)
+        } else {
+            outputManager = ServiceLocator.get<IOutputManager>()
+        }
     }
 
     private fun showOpenProjectDialog() {
@@ -144,17 +153,20 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "请先打开项目", Toast.LENGTH_SHORT).show()
             return
         }
-        val input = EditText(this)
-        input.hint = "文件名，例如 main.cpp"
-        AlertDialog.Builder(this)
-            .setTitle("添加文件")
-            .setView(input)
-            .setPositiveButton("创建") { _, _ ->
-                val name = input.text.toString().trim()
-                if (name.isEmpty()) {
-                    Toast.makeText(this, "文件名不能为空", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+        
+        // 使用 Material Design 输入对话框
+        MaterialDialogBuilder.showInput(
+            context = this,
+            title = "添加文件",
+            hint = "文件名，例如 main.cpp",
+            validator = { input ->
+                when {
+                    input.isEmpty() -> "文件名不能为空"
+                    !input.matches(Regex("[a-zA-Z0-9_.-]+")) -> "文件名包含非法字符"
+                    else -> null // 验证通过
                 }
+            },
+            onConfirm = { name ->
                 try {
                     val root = File(project.rootPath)
                     fm.createFile(root, name)
@@ -164,8 +176,7 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, "创建失败: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("取消", null)
-            .show()
+        )
     }
     override fun onDestroy() {
         super.onDestroy()
@@ -173,6 +184,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onCompileProject() {
+        // 清空之前的输出
+        outputManager.clearOutput()
+        
+        // 显示输出窗口
+        outputManager.showOutput()
+        
         // 在后台线程执行编译，避免阻塞 UI
         Thread {
             // 加载本地库和 sysroot
@@ -215,11 +232,7 @@ class MainActivity : AppCompatActivity() {
                 try {
                     android.util.Log.i("Compile", line)
                     logFile.appendText(line + "\n")
-                    runOnUiThread {
-                        tvOutput?.append(line + "\n")
-                        val sv = findViewById<android.widget.ScrollView>(R.id.output_scroll)
-                        sv?.post { sv.fullScroll(android.view.View.FOCUS_DOWN) }
-                    }
+                    outputManager.appendOutput(line + "\n")
                 } catch (_: Throwable) {}
             }
 
@@ -335,9 +348,7 @@ class MainActivity : AppCompatActivity() {
 
             log("=== 编译结束 ===")
             log(msg)
-
-            // 保存结果，供“输出工具栏”的感叹号按钮查看
-            lastBuildSummary = msg + "\n\n日志: ${logFile.absolutePath}"
+            log("\n日志文件: ${logFile.absolutePath}")
         }.start()
     }
 
@@ -352,9 +363,14 @@ class MainActivity : AppCompatActivity() {
                 drawerLayout.openDrawer(findViewById(R.id.nav_view))
                 true
             }
-            R.id.action_open_project -> { showOpenProjectDialog(); true }
             R.id.action_run -> { onCompileProject(); true }
             R.id.action_build -> { onCompileProject(); true }
+            R.id.action_settings -> {
+                // 打开设置界面
+                val intent = Intent(this, com.wuxianggujun.tinaide.settings.SettingsActivity::class.java)
+                startActivity(intent)
+                true
+            }
 
             else -> super.onOptionsItemSelected(item)
         }

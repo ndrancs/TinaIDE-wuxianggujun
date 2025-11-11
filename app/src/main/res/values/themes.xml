@@ -45,4 +45,31 @@
     <style name="TextAppearance.Tina.PopupMenuItem" parent="TextAppearance.AppCompat.Body1">
         <item name="android:textColor">@android:color/white</item>
     </style>
+
+    <!-- Material AlertDialog 主题 -->
+    <style name="ThemeOverlay.App.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorPrimary">@color/dark_primary</item>
+        <item name="colorSecondary">@color/dark_secondary</item>
+        <item name="colorSurface">@color/dark_surface</item>
+        <item name="colorOnSurface">@color/dark_on_surface</item>
+        <item name="android:background">@color/dark_surface</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.App.Title.Text</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/MaterialAlertDialog.App.Body.Text</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.App.Button</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.App.Button</item>
+    </style>
+
+    <style name="MaterialAlertDialog.App.Title.Text" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:textColor">@color/dark_on_surface</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+
+    <style name="MaterialAlertDialog.App.Body.Text" parent="MaterialAlertDialog.Material3.Body.Text">
+        <item name="android:textColor">@color/dark_on_surface</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="Widget.App.Button" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/dark_secondary</item>
+    </style>
 </resources>
