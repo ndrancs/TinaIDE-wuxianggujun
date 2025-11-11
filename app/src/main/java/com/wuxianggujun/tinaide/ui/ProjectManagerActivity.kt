@@ -6,11 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.view.Menu
-import android.os.Bundle
-import android.os.Environment
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import com.geyifeng.immersionbar.ktx.immersionBar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hjq.permissions.OnPermissionCallback
@@ -18,6 +14,9 @@ import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import android.Manifest
 import android.content.pm.PackageManager
+import com.wuxianggujun.tinaide.base.BaseActivity
+import com.wuxianggujun.tinaide.extensions.*
+import com.wuxianggujun.tinaide.utils.Logger
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.config.ConfigManager
@@ -35,27 +34,15 @@ import android.provider.DocumentsContract
 /**
  * 项目管理页：菜单栏 + 项目列表
  */
-class ProjectManagerActivity : AppCompatActivity() {
+class ProjectManagerActivity : BaseActivity() {
 
     private lateinit var recycler: RecyclerView
     private lateinit var adapter: ProjectListAdapter
     private var isNavigating = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 强制使用深色主题，确保主题一致性
-        setTheme(R.style.Theme_TinaIDE)
-        super.onCreate(savedInstanceState)
+        super.onCreate(savedInstanceState)  // BaseActivity 已处理主题和状态栏
         setContentView(R.layout.activity_project_manager)
-        
-        // 沉浸式状态栏 - 使用最新 API
-        immersionBar {
-            statusBarColorInt(getColor(R.color.dark_primary))
-            statusBarDarkFont(false)
-            navigationBarColorInt(getColor(R.color.dark_background))
-            fitsSystemWindows(true)
-            autoStatusBarDarkModeEnable(true)
-            init()
-        }
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -151,7 +138,7 @@ class ProjectManagerActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: Exception) {
             isNavigating = false
-            Toast.makeText(this, "打开失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            handleErrorWithToast(e, "打开失败")
         }
     }
 
@@ -171,16 +158,16 @@ class ProjectManagerActivity : AppCompatActivity() {
                     .request(object : OnPermissionCallback {
                         override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
                             if (!allGranted) {
-                                Toast.makeText(this@ProjectManagerActivity, R.string.permission_not_all_granted, Toast.LENGTH_SHORT).show()
+                                toastWarning(getString(R.string.permission_not_all_granted))
                             }
                             onAfterGranted()
                         }
                         override fun onDenied(permissions: MutableList<String>, doNotAskAgain: Boolean) {
                             if (doNotAskAgain) {
-                                Toast.makeText(this@ProjectManagerActivity, R.string.permission_denied_never_ask, Toast.LENGTH_LONG).show()
+                                toastLong(getString(R.string.permission_denied_never_ask))
                                 XXPermissions.startPermissionActivity(this@ProjectManagerActivity, permissions)
                             } else {
-                                Toast.makeText(this@ProjectManagerActivity, R.string.permission_denied, Toast.LENGTH_SHORT).show()
+                                toastError(getString(R.string.permission_denied))
                             }
                         }
                     })
@@ -208,7 +195,7 @@ class ProjectManagerActivity : AppCompatActivity() {
             if (granted) {
                 reloadProjects()
             } else {
-                Toast.makeText(this, R.string.permission_denied, Toast.LENGTH_SHORT).show()
+                toastError(getString(R.string.permission_denied))
             }
         }
     }
@@ -239,7 +226,7 @@ class ProjectManagerActivity : AppCompatActivity() {
                     ServiceLocator.get<IConfigManager>().set(KEY_PROJECTS_ROOT, path)
                     reloadProjects()
                 } else {
-                    Toast.makeText(this, "无法解析选择的目录，请选择内部存储目录", Toast.LENGTH_SHORT).show()
+                    toastError("无法解析选择的目录，请选择内部存储目录")
                 }
             }
         }

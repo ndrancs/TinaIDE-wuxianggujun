@@ -1,9 +1,7 @@
 package com.wuxianggujun.tinaide
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import android.content.Intent
-import com.geyifeng.immersionbar.ktx.immersionBar
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
 import android.view.Menu
@@ -11,8 +9,13 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.Toast
+import com.wuxianggujun.tinaide.base.BaseActivity
+import com.wuxianggujun.tinaide.extensions.toast
+import com.wuxianggujun.tinaide.extensions.toastSuccess
+import com.wuxianggujun.tinaide.extensions.toastError
 import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
+import com.wuxianggujun.tinaide.utils.FileUtils
+import com.wuxianggujun.tinaide.utils.Logger
 import java.io.File
 
 import com.wuxianggujun.tinaide.core.ServiceLocator
@@ -29,7 +32,7 @@ import com.wuxianggujun.tinaide.ui.IUIManager
 import com.wuxianggujun.tinaide.ui.UIManager
 import com.wuxianggujun.tinaide.output.IOutputManager
 import com.wuxianggujun.tinaide.output.OutputManager
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var toolbar: Toolbar
@@ -37,9 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var outputManager: IOutputManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 强制使用深色主题，确保主题一致性
-        setTheme(R.style.Theme_TinaIDE)
-        super.onCreate(savedInstanceState)
+        super.onCreate(savedInstanceState)  // BaseActivity 已处理主题和沉浸式状态栏
 
         if (!ServiceLocator.isRegistered(IConfigManager::class.java)) {
             ServiceLocator.register<IConfigManager>(ConfigManager(this))
@@ -49,16 +50,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(R.layout.activity_main)
-        
-        // 沉浸式状态栏 - 使用最新 API
-        immersionBar {
-            statusBarColorInt(getColor(R.color.dark_primary))
-            statusBarDarkFont(false)  // 深色主题使用浅色文字
-            navigationBarColorInt(getColor(R.color.dark_background))
-            fitsSystemWindows(true)
-            autoStatusBarDarkModeEnable(true)  // 自动适配状态栏深色模式
-            init()
-        }
 
         initializeServices()
         
@@ -128,7 +119,7 @@ class MainActivity : AppCompatActivity() {
             refreshFileTree()
         }
         findViewById<ImageButton>(R.id.btn_view_mode)?.setOnClickListener {
-            Toast.makeText(this, "查看功能开发中", Toast.LENGTH_SHORT).show()
+            toastInfo("查看功能开发中")
         }
         updateProjectHeaderName()
     }
@@ -150,7 +141,7 @@ class MainActivity : AppCompatActivity() {
         val fm = ServiceLocator.get<IFileManager>()
         val project = fm.getCurrentProject()
         if (project == null) {
-            Toast.makeText(this, "请先打开项目", Toast.LENGTH_SHORT).show()
+            toastError("请先打开项目")
             return
         }
         
@@ -167,14 +158,15 @@ class MainActivity : AppCompatActivity() {
                 }
             },
             onConfirm = { name ->
-                try {
-                    val root = File(project.rootPath)
-                    fm.createFile(root, name)
-                    Toast.makeText(this, "已创建 $name", Toast.LENGTH_SHORT).show()
-                    refreshFileTree()
-                } catch (e: Exception) {
-                    Toast.makeText(this, "创建失败: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+                val root = File(project.rootPath)
+                FileUtils.createFile(root, name)
+                    .onSuccess { file ->
+                        toastSuccess("已创建 ${file.name}")
+                        refreshFileTree()
+                    }
+                    .onFailure { error ->
+                        handleErrorWithToast(error, "创建失败")
+                    }
             }
         )
     }
@@ -202,16 +194,16 @@ class MainActivity : AppCompatActivity() {
             val project = fm.getCurrentProject()
             if (project == null || sysrootDir == null) {
                 runOnUiThread {
-                    Toast.makeText(this, "未找到项目或sysroot安装失败", Toast.LENGTH_SHORT).show()
+                    toastError("未找到项目或sysroot安装失败")
                 }
                 return@Thread
             }
 
             val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
             val target = when {
-                abi.contains("arm64", ignoreCase = true) -> "aarch64-linux-android24"
-                abi.contains("x86_64", ignoreCase = true) -> "x86_64-linux-android24"
-                else -> "aarch64-linux-android24"
+                abi.contains("arm64", ignoreCase = true) -> "aarch64-linux-android26"
+                abi.contains("x86_64", ignoreCase = true) -> "x86_64-linux-android26"
+                else -> "aarch64-linux-android26"
             }
 
             val root = java.io.File(project.rootPath)
@@ -220,7 +212,7 @@ class MainActivity : AppCompatActivity() {
                 .toList()
 
             if (sources.isEmpty()) {
-                runOnUiThread { Toast.makeText(this, "未找到 C/C++ 源文件", Toast.LENGTH_SHORT).show() }
+                runOnUiThread { toastWarning("未找到 C/C++ 源文件") }
                 return@Thread
             }
 

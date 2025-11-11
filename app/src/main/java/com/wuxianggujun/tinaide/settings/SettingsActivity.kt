@@ -1,31 +1,19 @@
 package com.wuxianggujun.tinaide.settings
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import com.geyifeng.immersionbar.ktx.immersionBar
+import com.wuxianggujun.tinaide.base.BaseActivity
 import com.wuxianggujun.tinaide.R
 
 /**
  * 设置界面 Activity
  * Material Design 风格
  */
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(R.style.Theme_TinaIDE)
-        super.onCreate(savedInstanceState)
+        super.onCreate(savedInstanceState)  // BaseActivity 已处理主题和状态栏
         setContentView(R.layout.activity_settings)
-
-        // 沉浸式状态栏
-        immersionBar {
-            statusBarColorInt(getColor(R.color.dark_primary))
-            statusBarDarkFont(false)
-            navigationBarColorInt(getColor(R.color.dark_background))
-            fitsSystemWindows(true)
-            autoStatusBarDarkModeEnable(true)
-            init()
-        }
 
         // 设置 Toolbar
         val toolbar = findViewById<Toolbar>(R.id.toolbar)

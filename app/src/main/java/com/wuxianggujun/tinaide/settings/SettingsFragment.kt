@@ -2,13 +2,13 @@ package com.wuxianggujun.tinaide.settings
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SeekBarPreference
 import androidx.preference.SwitchPreferenceCompat
 import com.wuxianggujun.tinaide.R
+import com.wuxianggujun.tinaide.extensions.*
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.core.get
@@ -59,9 +59,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // 行号显示
         findPreference<SwitchPreferenceCompat>("editor_line_numbers")?.apply {
             setOnPreferenceChangeListener { _, newValue ->
-                Toast.makeText(requireContext(), 
-                    if (newValue as Boolean) "已启用行号显示" else "已禁用行号显示", 
-                    Toast.LENGTH_SHORT).show()
+                requireContext().toast(
+                    if (newValue as Boolean) "已启用行号显示" else "已禁用行号显示"
+                )
                 true
             }
         }
@@ -79,7 +79,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         findPreference<ListPreference>("editor_theme")?.apply {
             setOnPreferenceChangeListener { _, newValue ->
                 entry?.let { summary = it.toString() }
-                Toast.makeText(requireContext(), "主题将在重启应用后生效", Toast.LENGTH_SHORT).show()
+                requireContext().toastInfo("主题将在重启应用后生效")
                 true
             }
             entry?.let { summary = it.toString() }
@@ -110,7 +110,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // 默认项目路径
         findPreference<Preference>("project_default_path")?.apply {
             setOnPreferenceClickListener {
-                Toast.makeText(requireContext(), "选择项目路径功能开发中", Toast.LENGTH_SHORT).show()
+                requireContext().toastInfo("选择项目路径功能开发中")
                 true
             }
             // 从配置中读取当前路径
@@ -148,7 +148,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         findPreference<ListPreference>("app_theme")?.apply {
             setOnPreferenceChangeListener { _, _ ->
                 entry?.let { summary = it.toString() }
-                Toast.makeText(requireContext(), "主题将在重启应用后生效", Toast.LENGTH_SHORT).show()
+                requireContext().toastInfo("主题将在重启应用后生效")
                 true
             }
             entry?.let { summary = it.toString() }
@@ -157,9 +157,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // 沉浸式状态栏
         findPreference<SwitchPreferenceCompat>("statusbar_immersive")?.apply {
             setOnPreferenceChangeListener { _, newValue ->
-                Toast.makeText(requireContext(), 
-                    if (newValue as Boolean) "已启用沉浸式状态栏" else "已禁用沉浸式状态栏", 
-                    Toast.LENGTH_SHORT).show()
+                requireContext().toast(
+                    if (newValue as Boolean) "已启用沉浸式状态栏" else "已禁用沉浸式状态栏"
+                )
                 // 需要重启应用才能生效
                 true
             }
@@ -180,7 +180,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             
             setOnPreferenceClickListener {
                 // 可以在这里显示更详细的版本信息对话框
-                Toast.makeText(requireContext(), "TinaIDE - Android C/C++ IDE", Toast.LENGTH_SHORT).show()
+                requireContext().toastInfo("TinaIDE - Android C/C++ IDE")
                 true
             }
         }
@@ -197,7 +197,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         findPreference<Preference>("about_licenses")?.apply {
             setOnPreferenceClickListener {
                 // TODO: 显示开源许可对话框或跳转到许可页面
-                Toast.makeText(requireContext(), "开源许可功能开发中", Toast.LENGTH_SHORT).show()
+                requireContext().toastInfo("开源许可功能开发中")
                 true
             }
         }

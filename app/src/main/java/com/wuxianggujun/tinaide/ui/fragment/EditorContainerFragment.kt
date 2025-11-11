@@ -3,11 +3,14 @@ package com.wuxianggujun.tinaide.ui.fragment
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import com.wuxianggujun.tinaide.extensions.*
+import com.wuxianggujun.tinaide.utils.FileUtils
+import com.wuxianggujun.tinaide.utils.Logger
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.get
@@ -86,7 +89,7 @@ class EditorContainerFragment : Fragment() {
             val dialog = com.wuxianggujun.tinaide.ui.dialog.FindReplaceDialog(fragment.getEditor())
             dialog.show(childFragmentManager, "FindReplace")
         } else {
-            android.widget.Toast.makeText(requireContext(), "没有打开的文件", android.widget.Toast.LENGTH_SHORT).show()
+            requireContext().toastWarning("没有打开的文件")
         }
     }
     
@@ -109,10 +112,10 @@ class EditorContainerFragment : Fragment() {
                         if (line >= 0 && line < editor.lineCount) {
                             editor.setSelection(line, 0)
                         } else {
-                            android.widget.Toast.makeText(requireContext(), "行号超出范围", android.widget.Toast.LENGTH_SHORT).show()
+                            requireContext().toastError("行号超出范围")
                         }
                     } catch (e: NumberFormatException) {
-                        android.widget.Toast.makeText(requireContext(), "请输入有效的行号", android.widget.Toast.LENGTH_SHORT).show()
+                        requireContext().toastError("请输入有效的行号")
                     }
                 }
             }
@@ -324,10 +327,10 @@ class EditorContainerFragment : Fragment() {
                     tab.file.writeText(content)
                     tab.isDirty = false
                     android.util.Log.d("EditorContainer", "File saved: ${tab.file.absolutePath}")
-                    android.widget.Toast.makeText(requireContext(), "文件已保存", android.widget.Toast.LENGTH_SHORT).show()
+                    requireContext().toastSuccess("文件已保存")
                 } catch (e: Exception) {
-                    android.util.Log.e("EditorContainer", "Error saving file", e)
-                    android.widget.Toast.makeText(requireContext(), "保存失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                    Logger.e("Error saving file", e, "EditorContainer")
+                    requireContext().handleErrorWithToast(e, "保存失败")
                 }
             }
         }
@@ -349,7 +352,7 @@ class EditorContainerFragment : Fragment() {
                 }
             }
         }
-        android.widget.Toast.makeText(requireContext(), "所有文件已保存", android.widget.Toast.LENGTH_SHORT).show()
+        requireContext().toastSuccess("所有文件已保存")
     }
     
     override fun onDestroyView() {

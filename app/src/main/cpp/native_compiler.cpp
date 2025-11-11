@@ -282,7 +282,16 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
 
     auto deriveTripleBase = [&](const std::string& t){ std::string r=t; while(!r.empty() && isdigit((unsigned char)r.back())) r.pop_back(); return r; };
     const std::string tripleBase = deriveTripleBase(target);
-    const std::string api = "24";
+    auto deriveApi = [&](const std::string& t){
+        std::string digits;
+        for (auto it = t.rbegin(); it != t.rend(); ++it) {
+            if (!isdigit(static_cast<unsigned char>(*it))) break;
+            digits.push_back(*it);
+        }
+        std::reverse(digits.begin(), digits.end());
+        return digits.empty() ? std::string("24") : digits;
+    };
+    const std::string api = deriveApi(target);
     const std::string libDir = sysroot+"/usr/lib/"+tripleBase+"/"+api;
 
     // 检查 sysroot 库目录是否存在

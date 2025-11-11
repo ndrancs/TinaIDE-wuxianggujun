@@ -1,7 +1,7 @@
 Param(
   [ValidateSet('arm64-v8a','x86_64')]
   [string]$Abi = 'x86_64',
-  [int]$ApiLevel = 24,
+  [int]$ApiLevel = 26,
   [string]$BuildOutputRoot = 'docker/llvm-build/build-output',
   [string]$AppJniLibs = 'app/src/main/jniLibs',
   [string]$AppAssetsSysroot = 'app/src/main/assets/sysroot'
@@ -39,9 +39,45 @@ if (Test-Path $srcSysroot) {
   # Warn if target triple directory for selected API is missing
   $triple = if ($Abi -eq 'arm64-v8a') { 'aarch64-linux-android' } else { 'x86_64-linux-android' }
   $tripleDir = Join-Path $AppAssetsSysroot ("usr/lib/$triple/$ApiLevel")
+  $srcStubRoot = Join-Path (Join-Path $BuildOutputRoot $Abi) ("sysroot/usr/lib/$triple")
   $required = @('crtbegin_dynamic.o','crtend_android.o','libc.so','libm.so','liblog.so','libandroid.so')
+
+  function Test-StubComplete($dir){
+    if (-not (Test-Path $dir)) { return $false }
+    foreach($f in $required){ if (-not (Test-Path (Join-Path $dir $f))) { return $false } }
+    return $true
+  }
+
+  # If target API dir is missing or incomplete, try to normalize by copying from another available API dir
+  $attemptNormalize = $false
+  if (-not (Test-Path $tripleDir)) { $attemptNormalize = $true } else {
+    $need = @(); foreach($f in $required){ if (-not (Test-Path (Join-Path $tripleDir $f))) { $need += $f } }
+    if ($need.Count -gt 0) { $attemptNormalize = $true }
+  }
+  if ($attemptNormalize) {
+    $candidates = @($ApiLevel,21,26,29,33 | Select-Object -Unique)
+    $chosen = $null
+    foreach($lvl in $candidates){
+      $srcCand = Join-Path $srcStubRoot $lvl
+      if (Test-StubComplete $srcCand) { $chosen = $srcCand; break }
+    }
+    if ($null -ne $chosen) {
+      New-Item -ItemType Directory -Force -Path $tripleDir | Out-Null
+      Write-Host "[i] Normalizing assets sysroot: filling $triple/$ApiLevel from source $(Split-Path -Leaf $chosen)" -ForegroundColor Yellow
+      robocopy $chosen $tripleDir /E /NFL /NDL /NJH /NJS /NP | Out-Null
+    }
+  }
+
   if (-not (Test-Path $tripleDir)) {
     Write-Host "[!] sysroot missing triple/api: $triple/$ApiLevel at $tripleDir" -ForegroundColor Red
+    # 打印来源 build-output 的对应目录方便定位
+    $srcTripleDir = Join-Path (Join-Path $BuildOutputRoot $Abi) ("sysroot/usr/lib/$triple/$ApiLevel")
+    if (Test-Path $srcTripleDir) {
+      Write-Host "[i] build-output source dir exists but assets missing. Listing source:" -ForegroundColor Yellow
+      Get-ChildItem -Force $srcTripleDir | Select-Object -First 20 | Format-Table -AutoSize | Out-String | Write-Host
+    } else {
+      Write-Host "[i] build-output source dir not found: $srcTripleDir" -ForegroundColor Yellow
+    }
     throw "Sysroot libraries not found — run docker/llvm-build/build-local.ps1 then re-run this script."
   }
   $missing = @()
@@ -49,8 +85,33 @@ if (Test-Path $srcSysroot) {
   if ($missing.Count -gt 0) {
     Write-Host "[!] sysroot libraries incomplete at: $tripleDir" -ForegroundColor Red
     Write-Host ("    missing: " + ($missing -join ', ')) -ForegroundColor Red
-    Write-Host "    hint: ./docker/llvm-build/build-local.ps1 -Abi $Abi -ApiLevel $ApiLevel" -ForegroundColor Yellow
-    throw "Sysroot incomplete — aborting copy to avoid shipping a broken assets/sysroot"
+    # Try one more normalization from build-output if possible
+    $srcTripleDir = Join-Path $srcStubRoot $ApiLevel
+    if (-not (Test-StubComplete $srcTripleDir)) {
+      foreach($lvl in (21,26,29,33)){
+        $srcCand = Join-Path $srcStubRoot $lvl
+        if (Test-StubComplete $srcCand) {
+          Write-Host "[i] Normalizing (2nd pass): filling $triple/$ApiLevel from source $lvl" -ForegroundColor Yellow
+          robocopy $srcCand $tripleDir /E /NFL /NDL /NJH /NJS /NP | Out-Null
+          break
+        }
+      }
+    }
+    # Recompute missing after attempted normalization
+    $missing = @(); foreach($f in $required){ if (-not (Test-Path (Join-Path $tripleDir $f))) { $missing += $f } }
+    if ($missing.Count -gt 0) {
+      Write-Host ("    missing: " + ($missing -join ', ')) -ForegroundColor Red
+      Write-Host "    hint: ./docker/llvm-build/build-local.ps1 -Abi $Abi -ApiLevel $ApiLevel" -ForegroundColor Yellow
+      # 同时打印 build-output 源目录的前若干项，帮助排查为何 assets 为空
+      $srcTripleDir = Join-Path (Join-Path $BuildOutputRoot $Abi) ("sysroot/usr/lib/$triple/$ApiLevel")
+      if (Test-Path $srcTripleDir) {
+        Write-Host "[i] build-output source listing:" -ForegroundColor Yellow
+        Get-ChildItem -Force $srcTripleDir | Select-Object -First 30 | Format-Table -AutoSize | Out-String | Write-Host
+      } else {
+        Write-Host "[i] build-output source dir not found: $srcTripleDir" -ForegroundColor Yellow
+      }
+      throw "Sysroot incomplete — aborting copy to avoid shipping a broken assets/sysroot"
+    }
   }
   $libcppHdr = Join-Path $AppAssetsSysroot 'usr/include/c++/v1/__ios/fpos.h'
   if (-not (Test-Path $libcppHdr)) {
