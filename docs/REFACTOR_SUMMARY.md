@@ -17,17 +17,17 @@
 
 ```bash
 # 已完成
-docker/embedded-ndk/          → docker/llvm-build/
-tools/sync-embedded-ndk.ps1   → tools/sync-llvm-build.ps1
+docker/llvm-build/          → docker/llvm-build/
+tools/sync-llvm-build.ps1   → tools/sync-llvm-build.ps1
 ```
 
 ### 2. 文档重命名
 
 ```bash
 # 已完成
-docs/EMBEDDED_NDK_SHARED_LIBS.md      → docs/LLVM_SHARED_LIBS.md
-docs/EMBEDDED_NDK_TOOLS.md            → docs/LLVM_BUILD_TOOLS.md
-docs/EMBEDDED_NDK_TOOLS_DOCKER.md     → docs/LLVM_BUILD_DOCKER.md
+docs/LLVM_BUILD_SHARED_LIBS.md      → docs/LLVM_SHARED_LIBS.md
+docs/LLVM_BUILD_TOOLS.md            → docs/LLVM_BUILD_TOOLS.md
+docs/LLVM_BUILD_TOOLS_DOCKER.md     → docs/LLVM_BUILD_DOCKER.md
 docs/EMBEDDED_CLANG_STATUS.md         → docs/LLVM_CLANG_STATUS.md
 ```
 
@@ -36,14 +36,14 @@ docs/EMBEDDED_CLANG_STATUS.md         → docs/LLVM_CLANG_STATUS.md
 #### 构建输出路径
 
 ```
-旧路径：external/embedded-ndk-libs/<abi>/
+旧路径：docker/llvm-build/build-output/<abi>/
 新路径：docker/llvm-build/build-output/<abi>/
 ```
 
 #### Docker 工作目录
 
 ```
-旧路径：docker/embedded-ndk/dev-work/
+旧路径：docker/llvm-build/dev-work/
 新路径：docker/llvm-build/dev-work/
 ```
 
@@ -53,7 +53,7 @@ docs/EMBEDDED_CLANG_STATUS.md         → docs/LLVM_CLANG_STATUS.md
 - ✅ 移除 `-Mode` 参数（只保留默认的 libs 模式）
 - ✅ 移除 `exec` 模式所有代码
 - ✅ 输出路径改为 `docker/llvm-build/build-output/`
-- ✅ 容器名从 `tina-ndk-dev` 改为 `tina-llvm-build`
+- ✅ 容器名从 `tina-llvm-build` 改为 `tina-llvm-build`
 - ✅ 镜像名从 `embedded-ndk-dev` 改为 `llvm-build-dev`
 - ✅ Docker 挂载从 `/hostout-libs` 改为 `/hostout`
 
@@ -91,9 +91,9 @@ docs/EMBEDDED_CLANG_STATUS.md         → docs/LLVM_CLANG_STATUS.md
 
 ```gitignore
 # 旧规则（已删除）
-# docker/embedded-ndk/dev-work/
-# external/embedded-ndk/
-# external/embedded-ndk-libs/
+# docker/llvm-build/dev-work/
+# docker/llvm-build/build-output/
+# docker/llvm-build/build-output/
 
 # 新规则（已添加）
 docker/llvm-build/dev-work/
@@ -215,10 +215,10 @@ TinaIDE/
 
 ```powershell
 # 删除旧的构建产物
-Remove-Item external/embedded-ndk-libs -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item docker/llvm-build/build-output -Recurse -Force -ErrorAction SilentlyContinue
 
 # 清理 Docker 镜像
-docker rmi embedded-ndk-dev:r26d -f
+docker rmi llvm-build-dev:r26d -f
 ```
 
 ### 2. 构建测试
@@ -280,7 +280,7 @@ docker rmi embedded-ndk-dev:r26d -f
 
 1. **LLVM_SHARED_LIBS.md**
    - `embedded-ndk` → `llvm-build`
-   - `external/embedded-ndk-libs` → `docker/llvm-build/build-output`
+   - `docker/llvm-build/build-output` → `docker/llvm-build/build-output`
 
 2. **LLVM_BUILD_TOOLS.md**
    - 同上

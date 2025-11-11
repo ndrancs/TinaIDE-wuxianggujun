@@ -55,14 +55,14 @@ Docker 构建 → build-output/ → 同步脚本 → app/src/main/
 Rename-Item docker/embedded-ndk docker/llvm-build
 
 # 2. 删除 external 下的构建产物（不需要了）
-Remove-Item external/embedded-ndk-libs -Recurse -Force
+Remove-Item docker/llvm-build/build-output -Recurse -Force
 ```
 
 #### 1.2 文件重命名
 
 ```powershell
 # tools/ 目录
-Rename-Item tools/sync-embedded-ndk.ps1 tools/sync-llvm-build.ps1
+Rename-Item tools/sync-llvm-build.ps1 tools/sync-llvm-build.ps1
 # tools/sync-llvm-headers.ps1 名字已经正确，保持不变
 ```
 
@@ -82,7 +82,7 @@ Rename-Item tools/sync-embedded-ndk.ps1 tools/sync-llvm-build.ps1
 
 ```powershell
 # 旧路径
-$OutBaseLibs = Join-Path $root 'external/embedded-ndk-libs'
+$OutBaseLibs = Join-Path $root 'docker/llvm-build/build-output'
 
 # 新路径
 $OutBaseLibs = Join-Path $root 'docker/llvm-build/build-output'
@@ -140,8 +140,8 @@ robocopy "$srcBase/sysroot" "$AppAssetsSysroot" /MIR /NFL /NDL /NJH /NJS
 
 ```gitignore
 # 旧规则（删除）
-# external/embedded-ndk/
-# external/embedded-ndk-libs/
+# docker/llvm-build/build-output/
+# docker/llvm-build/build-output/
 
 # 新规则（添加）
 # LLVM 构建产物（临时文件，不提交）
@@ -167,9 +167,9 @@ app/src/main/assets/sysroot/
 需要更新的文档：
 - `docs/CLANG_INTEGRATION_ROADMAP.md` - 主路线图
 - `docs/EMBEDDED_CLANG_STATUS.md` - 状态报告
-- `docs/EMBEDDED_NDK_SHARED_LIBS.md` - 可以重命名为 `LLVM_SHARED_LIBS.md`
-- `docs/EMBEDDED_NDK_TOOLS.md` - 可以重命名为 `LLVM_BUILD_TOOLS.md`
-- `docs/EMBEDDED_NDK_TOOLS_DOCKER.md` - 可以重命名为 `LLVM_BUILD_DOCKER.md`
+- `docs/LLVM_BUILD_SHARED_LIBS.md` - 可以重命名为 `LLVM_SHARED_LIBS.md`
+- `docs/LLVM_BUILD_TOOLS.md` - 可以重命名为 `LLVM_BUILD_TOOLS.md`
+- `docs/LLVM_BUILD_TOOLS_DOCKER.md` - 可以重命名为 `LLVM_BUILD_DOCKER.md`
 
 ## 📝 详细重构清单
 
@@ -188,13 +188,13 @@ git commit -am "backup: 重构前的状态"
 git mv docker/embedded-ndk docker/llvm-build
 
 # 2. 删除 external 下的构建产物
-Remove-Item external/embedded-ndk-libs -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item docker/llvm-build/build-output -Recurse -Force -ErrorAction SilentlyContinue
 ```
 
 ### Step 3: 重命名脚本 ✅
 
 ```powershell
-git mv tools/sync-embedded-ndk.ps1 tools/sync-llvm-build.ps1
+git mv tools/sync-llvm-build.ps1 tools/sync-llvm-build.ps1
 ```
 
 ### Step 4: 更新脚本内容 🔄
@@ -202,7 +202,7 @@ git mv tools/sync-embedded-ndk.ps1 tools/sync-llvm-build.ps1
 #### 4.1 `docker/llvm-build/build-local.ps1`
 
 **修改点**：
-1. 输出路径从 `external/embedded-ndk-libs` 改为 `docker/llvm-build/build-output`
+1. 输出路径从 `docker/llvm-build/build-output` 改为 `docker/llvm-build/build-output`
 2. 移除 exec 模式相关代码（暂不需要）
 3. 更新注释和变量名
 
@@ -214,7 +214,7 @@ $OutBasePath = Join-Path $root 'docker/llvm-build/build-output'
 #### 4.2 `docker/llvm-build/sync-to-app.ps1`
 
 **修改点**：
-1. 源路径从 `external/embedded-ndk-libs` 改为 `docker/llvm-build/build-output`
+1. 源路径从 `docker/llvm-build/build-output` 改为 `docker/llvm-build/build-output`
 2. 更新文档字符串
 
 #### 4.3 `docker/llvm-build/clean-local.ps1`
@@ -228,13 +228,13 @@ $OutBasePath = Join-Path $root 'docker/llvm-build/build-output'
 
 **修改点**：
 1. 参数 `$EmbeddedRoot` 改为 `$BuildOutputRoot`
-2. 默认路径 `external/embedded-ndk-libs` 改为 `docker/llvm-build/build-output`
+2. 默认路径 `docker/llvm-build/build-output` 改为 `docker/llvm-build/build-output`
 3. 更新注释
 
 #### 4.5 `tools/sync-llvm-headers.ps1`
 
 **修改点**：
-1. Docker 工作目录路径从 `docker/embedded-ndk/dev-work` 改为 `docker/llvm-build/dev-work`
+1. Docker 工作目录路径从 `docker/llvm-build/dev-work` 改为 `docker/llvm-build/dev-work`
 
 ### Step 5: 更新 `.gitignore` ✅
 
@@ -258,17 +258,17 @@ app/src/main/assets/sysroot/
 #### 6.1 重命名文档文件
 
 ```powershell
-git mv docs/EMBEDDED_NDK_SHARED_LIBS.md docs/LLVM_SHARED_LIBS.md
-git mv docs/EMBEDDED_NDK_TOOLS.md docs/LLVM_BUILD_TOOLS.md
-git mv docs/EMBEDDED_NDK_TOOLS_DOCKER.md docs/LLVM_BUILD_DOCKER.md
+git mv docs/LLVM_BUILD_SHARED_LIBS.md docs/LLVM_SHARED_LIBS.md
+git mv docs/LLVM_BUILD_TOOLS.md docs/LLVM_BUILD_TOOLS.md
+git mv docs/LLVM_BUILD_TOOLS_DOCKER.md docs/LLVM_BUILD_DOCKER.md
 ```
 
 #### 6.2 更新文档内容
 
 全局替换：
 - `embedded-ndk` → `llvm-build`
-- `EMBEDDED_NDK` → `LLVM_BUILD`
-- `Embedded NDK` → `LLVM Build`
+- `LLVM_BUILD` → `LLVM_BUILD`
+- `LLVM Build` → `LLVM Build`
 
 特别更新 `CLANG_INTEGRATION_ROADMAP.md`：
 - 目录结构图
@@ -286,7 +286,7 @@ git mv docs/EMBEDDED_NDK_TOOLS_DOCKER.md docs/LLVM_BUILD_DOCKER.md
 #### 7.2 `docker/llvm-build/build-local.ps1`
 
 **修改点**：
-- `$ContainerName` 默认值从 `tina-ndk-dev` 改为 `tina-llvm-build`
+- `$ContainerName` 默认值从 `tina-llvm-build` 改为 `tina-llvm-build`
 - 镜像标签从 `embedded-ndk-dev` 改为 `llvm-build-dev`
 
 ## 🧪 验证步骤
@@ -298,7 +298,7 @@ git mv docs/EMBEDDED_NDK_TOOLS_DOCKER.md docs/LLVM_BUILD_DOCKER.md
 ./docker/llvm-build/clean-local.ps1 -RemoveJniLibs -RemoveAssets -Yes
 
 # 清理 Docker 镜像
-docker rmi embedded-ndk-dev:r26d -f
+docker rmi llvm-build-dev:r26d -f
 docker rmi llvm-build-dev:r26d -f
 ```
 
@@ -387,15 +387,15 @@ if (-not $DryRun) {
 # Step 4: 重命名脚本
 Info "重命名脚本..."
 if (-not $DryRun) {
-    git mv tools/sync-embedded-ndk.ps1 tools/sync-llvm-build.ps1
+    git mv tools/sync-llvm-build.ps1 tools/sync-llvm-build.ps1
 }
 
 # Step 5: 重命名文档
 Info "重命名文档..."
 if (-not $DryRun) {
-    git mv docs/EMBEDDED_NDK_SHARED_LIBS.md docs/LLVM_SHARED_LIBS.md
-    git mv docs/EMBEDDED_NDK_TOOLS.md docs/LLVM_BUILD_TOOLS.md
-    git mv docs/EMBEDDED_NDK_TOOLS_DOCKER.md docs/LLVM_BUILD_DOCKER.md
+    git mv docs/LLVM_BUILD_SHARED_LIBS.md docs/LLVM_SHARED_LIBS.md
+    git mv docs/LLVM_BUILD_TOOLS.md docs/LLVM_BUILD_TOOLS.md
+    git mv docs/LLVM_BUILD_TOOLS_DOCKER.md docs/LLVM_BUILD_DOCKER.md
 }
 
 # Step 6: 更新文件内容（需要手动完成）

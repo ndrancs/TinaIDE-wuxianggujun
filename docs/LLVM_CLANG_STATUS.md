@@ -42,8 +42,8 @@ TinaIDE 嵌入式 Clang/LLVM 集成进度与状态
 两条前端内嵌路径（参考）
 - 方案 A（推荐）：clang C++ 前端（clang::tooling 等）
   - 需要把 clang C++ 头打包到仓库（架构无关，一份通用）：
-    - 目标路径：external/embedded-ndk-libs/common-headers/clang
-    - 已提供脚本：docker/embedded-ndk/fetch-clang-headers.ps1（依赖 Docker Desktop 运行）；
+    - 目标路径：docker/llvm-build/build-output/common-headers/clang
+    - 已提供脚本：docker/llvm-build/fetch-clang-headers.ps1（依赖 Docker Desktop 运行）；
       或手动下载 `llvmorg-17.0.6` 并拷贝 `clang/include/` 到上述目录。
   - 到位后可恢复 `syntaxCheck()`（-fsyntax-only），并扩展到 EmitObj（生成 .o）。
 - 方案 B：libclang C API（clang-c/Index.h + libclang.so）
@@ -56,8 +56,8 @@ TinaIDE 嵌入式 Clang/LLVM 集成进度与状态
   - clang/LLVM version：当前返回 LLVM 17.0.6
   - sysroot：<files>/sysroot 路径
 - 若需要同步/更新 `.so` 与 sysroot：
-  - 推荐：`pwsh tools/sync-embedded-ndk.ps1 -Abi arm64-v8a -ApiLevel 24`
-  - 或：`pwsh docker/embedded-ndk/sync-to-app.ps1 -Mode libs -Abi arm64-v8a -ApiLevel 24`
+  - 推荐：`pwsh tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 24`
+  - 或：`pwsh docker/llvm-build/sync-to-app.ps1 -Mode libs -Abi arm64-v8a -ApiLevel 24`
   - 两者都会镜像 sysroot，且仅清理/覆盖我们托管的库文件，避免残留
 
 常见问题与排查
@@ -68,7 +68,7 @@ TinaIDE 嵌入式 Clang/LLVM 集成进度与状态
 - sysroot 未解压
   - 解决：首次运行由 `SysrootInstaller` 自动解压到 `<files>/sysroot`。
 - 构建缺头文件（clang C++ 头）
-  - 解决：执行 `tools/sync-embedded-ndk.ps1 -Abi <abi> -ApiLevel 24`，内部会调用 `tools/sync-llvm-headers.ps1` 将构建期头更新到 `external/embedded-ndk-libs/common-headers`。
+  - 解决：执行 `tools/sync-llvm-build.ps1 -Abi <abi> -ApiLevel 24`，内部会调用 `tools/sync-llvm-headers.ps1` 将构建期头更新到 `docker/llvm-build/build-output/common-headers`。
 
 下一步计划（按 KISS/YAGNI 增量推进）
 1) 恢复基于 clang::tooling 的 `syntaxCheck(sysroot, src, target, isCxx)`（前提：已放置 clang 头）。
@@ -115,4 +115,4 @@ TinaIDE 嵌入式 Clang/LLVM 集成进度与状态
 - app/src/main/cpp/native_compiler.cpp
 
 若需我继续：
-- 一旦 `external/embedded-ndk-libs/common-headers/clang` 到位，我将恢复 `syntaxCheck()` 并实现 `compileToObject()`，随后接入 LLD 链接，完成端侧编译闭环。
+- 一旦 `docker/llvm-build/build-output/common-headers/clang` 到位，我将恢复 `syntaxCheck()` 并实现 `compileToObject()`，随后接入 LLD 链接，完成端侧编译闭环。

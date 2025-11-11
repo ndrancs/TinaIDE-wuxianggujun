@@ -6,47 +6,47 @@ Android 设备端可加载的 Clang/LLVM/LLD 共享库（.so）方案
 - 输出布局清晰，便于直接放入 `jniLibs/<abi>` 与 `assets/sysroot`。
 
 目录结构
-- `docker/embedded-ndk/Dockerfile.dev`：持久构建基础镜像（预装依赖与 NDK）
-- `docker/embedded-ndk/build-local.ps1`：统一构建入口（会话模式，libs/exec）
-- `docker/embedded-ndk/sync-to-app.ps1`：同步 external 产物到工程（可选）
-- `docker/embedded-ndk/clean-local.ps1`：清理 external 产物/集成文件/镜像（可选）
+- `docker/llvm-build/Dockerfile.dev`：持久构建基础镜像（预装依赖与 NDK）
+- `docker/llvm-build/build-local.ps1`：统一构建入口（会话模式，libs/exec）
+- `docker/llvm-build/sync-to-app.ps1`：同步 external 产物到工程（可选）
+- `docker/llvm-build/clean-local.ps1`：清理 external 产物/集成文件/镜像（可选）
 
 快速开始
 1) 一键构建（PowerShell，默认 ABI=arm64-v8a, API=21）
 ```
 # libs 模式（推荐，用于把 Clang/LLVM/LLD 以 .so 形式内嵌）
-./docker/embedded-ndk/build-local.ps1 -Mode libs
+./docker/llvm-build/build-local.ps1 -Mode libs
 # x86_64 示例（模拟器）：
-./docker/embedded-ndk/build-local.ps1 -Mode libs -Abi x86_64
-# 产物会直写 external/embedded-ndk-libs/<abi>/（含 libs、sysroot、include、zip、MANIFEST 等）
+./docker/llvm-build/build-local.ps1 -Mode libs -Abi x86_64
+# 产物会直写 docker/llvm-build/build-output/<abi>/（含 libs、sysroot、include、zip、MANIFEST 等）
 # 如需自定义输出目录：添加 -OutBaseLibs D:\your\path\to\libs-base
-# 单容器增量构建已默认启用（tina-ndk-dev），无需额外参数
+# 单容器增量构建已默认启用（tina-llvm-build），无需额外参数
 ```
 
 2) 将产物集成到 App（手动）
-- 运行时库：复制 `external/embedded-ndk-libs/<abi>/libs/<abi>/*.so` 到 `app/src/main/jniLibs/<abi>`
-- sysroot：复制 `external/embedded-ndk-libs/<abi>/sysroot` 到 `app/src/main/assets/sysroot`
-- 头文件：保持在 `external/embedded-ndk-libs/<abi>/include`，供 JNI 编译期 include 使用
+- 运行时库：复制 `docker/llvm-build/build-output/<abi>/libs/<abi>/*.so` 到 `app/src/main/jniLibs/<abi>`
+- sysroot：复制 `docker/llvm-build/build-output/<abi>/sysroot` 到 `app/src/main/assets/sysroot`
+- 头文件：保持在 `docker/llvm-build/build-output/<abi>/include`，供 JNI 编译期 include 使用
 
 
 3) 切换 ABI / API Level / 版本
 ```
 # PowerShell：
-./docker/embedded-ndk/build-local.ps1 -Mode libs -Abi x86_64
+./docker/llvm-build/build-local.ps1 -Mode libs -Abi x86_64
 # 通过参数覆盖 NDK/LLVM 版本（如需）：
-./docker/embedded-ndk/build-local.ps1 -Mode libs -Abi x86_64 -NdkVersion r26d -LlvmTag llvmorg-17.0.6
+./docker/llvm-build/build-local.ps1 -Mode libs -Abi x86_64 -NdkVersion r26d -LlvmTag llvmorg-17.0.6
 ```
 
 清理与重置
 ```
 # 仅清理共享库模式产物（arm64-v8a），并删除 jniLibs 里的相关 .so（保留其他 .so）
-./docker/embedded-ndk/clean-local.ps1 -Mode libs -Abi arm64-v8a -RemoveJniLibs -Yes
+./docker/llvm-build/clean-local.ps1 -Mode libs -Abi arm64-v8a -RemoveJniLibs -Yes
 # 同时清理 assets/sysroot：
-./docker/embedded-ndk/clean-local.ps1 -Mode libs -Abi arm64-v8a -RemoveJniLibs -RemoveAssets -Yes
+./docker/llvm-build/clean-local.ps1 -Mode libs -Abi arm64-v8a -RemoveJniLibs -RemoveAssets -Yes
 # 清理 x86_64 产物：
-./docker/embedded-ndk/clean-local.ps1 -Mode libs -Abi x86_64 -RemoveJniLibs -Yes
+./docker/llvm-build/clean-local.ps1 -Mode libs -Abi x86_64 -RemoveJniLibs -Yes
 # 清理所有 ABI + Docker 镜像：
-./docker/embedded-ndk/clean-local.ps1 -Mode all -Abi all -PruneImages -Yes
+./docker/llvm-build/clean-local.ps1 -Mode all -Abi all -PruneImages -Yes
 ```
 
 产物内容（zip 内）
