@@ -35,6 +35,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var toolbar: Toolbar
     private lateinit var uiManager: IUIManager
+    private var lastBuildSummary: String? = null
+    private var tvOutput: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 强制使用深色主题，确保主题一致性
@@ -51,6 +53,17 @@ class MainActivity : AppCompatActivity() {
         // 避免标题栏侵入系统状态栏，关闭 edge-to-edge 布局
         WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_main)
+
+        // Output panel wiring
+        tvOutput = findViewById(R.id.tv_output)
+        findViewById<ImageButton>(R.id.btn_output_info)?.setOnClickListener {
+            val summary = lastBuildSummary ?: "暂无输出"
+            AlertDialog.Builder(this)
+                .setTitle("编译结果")
+                .setMessage(summary)
+                .setPositiveButton("确定", null)
+                .show()
+        }
 
         initializeServices()
 
@@ -202,6 +215,11 @@ class MainActivity : AppCompatActivity() {
                 try {
                     android.util.Log.i("Compile", line)
                     logFile.appendText(line + "\n")
+                    runOnUiThread {
+                        tvOutput?.append(line + "\n")
+                        val sv = findViewById<android.widget.ScrollView>(R.id.output_scroll)
+                        sv?.post { sv.fullScroll(android.view.View.FOCUS_DOWN) }
+                    }
                 } catch (_: Throwable) {}
             }
 
@@ -251,6 +269,34 @@ class MainActivity : AppCompatActivity() {
                 if (err.isEmpty()) {
                     ok++
                     log("成功: ${src.name}")
+                    // 尝试链接为可执行文件并运行，输出到面板
+                    val exe = java.io.File(buildRoot, src.nameWithoutExtension + ".exe")
+                    val linkErr = try {
+                        com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.linkExe(
+                            sysrootDir.absolutePath,
+                            objFile.absolutePath,
+                            exe.absolutePath,
+                            target,
+                            isCxx
+                        )
+                    } catch (t: Throwable) { "link JNI error: ${t.message}" }
+                    if (linkErr.isEmpty()) {
+                        exe.setExecutable(true)
+                        try {
+                            log("[运行] ${exe.name}")
+                            val pb = java.lang.ProcessBuilder(exe.absolutePath)
+                                .redirectErrorStream(true)
+                            val p = pb.start()
+                            val out = p.inputStream.bufferedReader().use { it.readText() }
+                            val code = p.waitFor()
+                            log("[退出码] $code")
+                            if (out.isNotEmpty()) log(out.trimEnd())
+                        } catch (t: Throwable) {
+                            log("运行失败: ${t.message}")
+                        }
+                    } else {
+                        log("链接失败: $linkErr")
+                    }
                 } else {
                     // fallback: syntax-only
                     val syn = try {
@@ -289,13 +335,8 @@ class MainActivity : AppCompatActivity() {
             log("=== 编译结束 ===")
             log(msg)
 
-            runOnUiThread {
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("编译完成")
-                    .setMessage(msg + "\n\n日志: ${logFile.absolutePath}")
-                    .setPositiveButton("确定", null)
-                    .show()
-            }
+            // 保存结果，供“输出工具栏”的感叹号按钮查看
+            lastBuildSummary = msg + "\n\n日志: ${logFile.absolutePath}"
         }.start()
     }
 

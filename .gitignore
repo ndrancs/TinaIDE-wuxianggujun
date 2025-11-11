@@ -23,6 +23,7 @@ out/
 *.jks
 *.keystore
 keystore.properties
+nul
 # Ignore large offline bootstrap archives by default; keep README
 app/src/main/assets/bootstrap/**/*.zip
 # Sora editor upstream debug keystore
@@ -31,3 +32,11 @@ external/sora-editor/debug.jks
 /.idea/
 /.kiro/
 /.serena/
+/.claude/
+# Docker dev workdir (mounted cache and build artifacts) - do not commit
+docker/embedded-ndk/dev-work/
+docker/embedded-ndk/dev-work/**
+
+# Embedded NDK build artifacts (构建产物，不提交到 git)
+external/embedded-ndk/
+external/embedded-ndk-libs/

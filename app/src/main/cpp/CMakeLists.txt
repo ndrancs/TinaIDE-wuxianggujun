@@ -25,6 +25,8 @@ include_directories(
 # 注意：LLVM源文件被复制到了 llvm/llvm/ 子目录（因为源码中include/llvm/本身就带llvm前缀）
 if (EXISTS "${COMMON_HEADERS}/llvm/llvm/Support/Casting.h")
     add_definitions(-DLLVM_HEADERS_AVAILABLE=1)
+    # 启用进程内 LLD 链接
+    add_definitions(-DLLD_LINK_ENABLED=1)
     message(STATUS "LLVM headers detected, enabling in-process compilation")
 else()
     message(WARNING "LLVM headers not found at ${COMMON_HEADERS}/llvm/llvm/Support/")
@@ -45,6 +47,12 @@ set_target_properties(LLVM-17 PROPERTIES
     IMPORTED_LOCATION   ${JNI_LIBS_DIR}/libLLVM-17.so
 )
 
+# 导入 LLD 静态库以支持进程内链接（ELF）
+add_library(lldCommon STATIC IMPORTED)
+set_target_properties(lldCommon PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/liblldCommon.a)
+add_library(lldELF STATIC IMPORTED)
+set_target_properties(lldELF PROPERTIES IMPORTED_LOCATION ${JNI_LIBS_DIR}/liblldELF.a)
+
 find_library(log-lib log)
 
 # 仅验证版本获取，后续可扩展为真正编译/链接
@@ -55,5 +63,7 @@ target_link_libraries(native_compiler
     PRIVATE
     clang-cpp
     LLVM-17
+    lldELF
+    lldCommon
     ${log-lib}
 )

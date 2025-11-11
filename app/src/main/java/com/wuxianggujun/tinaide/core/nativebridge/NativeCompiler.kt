@@ -17,4 +17,16 @@ object NativeCompiler {
         flags: Array<String>,
         includeDirs: Array<String>
     ): String
+
+    /**
+     * 使用 LLD 在进程内把 .o 链接为可执行文件（PIE）。
+     * 返回空字符串为成功；否则返回诊断文本。
+     */
+    external fun linkExe(
+        sysroot: String,
+        objPath: String,
+        outExe: String,
+        target: String,
+        isCxx: Boolean
+    ): String
 }

@@ -4,6 +4,9 @@
 #include <vector>
 #include <sstream>
 #include <android/log.h>
+#include <dlfcn.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #if LLVM_HEADERS_AVAILABLE
 // Clang/LLVM headers for in-process compilation
@@ -20,11 +23,59 @@
 #include "llvm/Support/raw_ostream.h"
 #endif
 
+// Forward declaration to avoid depending on LLD headers at build time.
+#if LLVM_HEADERS_AVAILABLE
+// 注意：为避免直接依赖 LLD 头文件，这里仅做前向声明。
+// LLVM 17（本项目打包的 LLD 静态库）对外入口原型：
+//   bool lld::elf::link(ArrayRef<const char*>, raw_ostream& /*stdout*/, raw_ostream& /*stderr*/, bool /*disableOutput*/, bool /*exitEarly*/)
+// 该签名由打包的 liblldELF.a 导出符号验证（见 llvm-nm 输出）。
+namespace llvm { template <typename T> class ArrayRef; class raw_ostream; }
+namespace lld { namespace elf { bool link(llvm::ArrayRef<const char*>, llvm::raw_ostream&, llvm::raw_ostream&, bool, bool); } }
+#endif
+
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  "native_compiler", __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN,  "native_compiler", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "native_compiler", __VA_ARGS__)
 
 
+
+// ---- Minimal per-arch LLVM target initialization (avoid unresolved symbols) ----
+#if LLVM_HEADERS_AVAILABLE
+extern "C" {
+#if defined(__aarch64__)
+void LLVMInitializeAArch64TargetInfo();
+void LLVMInitializeAArch64Target();
+void LLVMInitializeAArch64TargetMC();
+void LLVMInitializeAArch64AsmParser();
+void LLVMInitializeAArch64AsmPrinter();
+#elif defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+void LLVMInitializeX86TargetInfo();
+void LLVMInitializeX86Target();
+void LLVMInitializeX86TargetMC();
+void LLVMInitializeX86AsmParser();
+void LLVMInitializeX86AsmPrinter();
+#endif
+}
+
+static inline void initLLVMTargetsOnce() {
+    static bool inited = false; if (inited) return; inited = true;
+#if defined(__aarch64__)
+    LLVMInitializeAArch64TargetInfo();
+    LLVMInitializeAArch64Target();
+    LLVMInitializeAArch64TargetMC();
+    LLVMInitializeAArch64AsmParser();
+    LLVMInitializeAArch64AsmPrinter();
+#elif defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+    LLVMInitializeX86TargetInfo();
+    LLVMInitializeX86Target();
+    LLVMInitializeX86TargetMC();
+    LLVMInitializeX86AsmParser();
+    LLVMInitializeX86AsmPrinter();
+#else
+    // Fallback: do nothing (avoid unresolved refs for unknown arch)
+#endif
+}
+#endif // LLVM_HEADERS_AVAILABLE
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_getClangVersion(
@@ -49,6 +100,13 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_syntaxCheck(
     const std::string srcPath = toStr(jSrc);
     const std::string target  = toStr(jTarget);
     const bool isCxx = jIsCxx == JNI_TRUE;
+    // Ensure LLVM target backends are registered so cc1 can emit/parse for the target
+    static bool sTargetsInitedA = false;
+    if (!sTargetsInitedA) {
+        // 仅初始化与当前 ABI 匹配的 LLVM 目标，避免链接期未定义符号
+        initLLVMTargetsOnce();
+        sTargetsInitedA = true;
+    }
     // Derive arch triple without API suffix, e.g. "x86_64-linux-android24" → "x86_64-linux-android"
     auto deriveTripleBase = [&](const std::string& t){
         if (t.empty()) return std::string();
@@ -131,6 +189,13 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_emitObj(
     const std::string objOut  = toStr(jObjOut);
     const std::string target  = toStr(jTarget);
     const bool isCxx = jIsCxx == JNI_TRUE;
+    // Ensure LLVM target backends are registered so cc1 can emit objects
+    static bool sTargetsInitedB = false;
+    if (!sTargetsInitedB) {
+        // 同上
+        initLLVMTargetsOnce();
+        sTargetsInitedB = true;
+    }
     auto deriveTripleBase = [&](const std::string& t){
         if (t.empty()) return std::string();
         std::string r = t;
@@ -138,9 +203,6 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_emitObj(
         return r;
     };
     const std::string tripleBase = deriveTripleBase(target.empty()? llvm::sys::getDefaultTargetTriple(): target);
-
-    // NOTE: Do not call InitializeAll* to avoid unresolved target init symbols
-    // in monolithic libLLVM builds that don't export per-target inits.
 
     // Build tokens then stable argv
     std::vector<std::string> tokens;
@@ -192,6 +254,59 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_emitObj(
     bool ok = clang::ExecuteCompilerInvocation(&Clang);
     os.flush();
     if (!ok) return env->NewStringUTF(diag.empty()?"compile failed":diag.c_str());
+    return env->NewStringUTF("");
+#endif
+}
+
+// Link object to a PIE executable using LLD (in-process)
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
+        JNIEnv* env, jclass /*clazz*/, jstring jSysroot, jstring jObj, jstring jOut,
+        jstring jTarget, jboolean jIsCxx) {
+#if !LLVM_HEADERS_AVAILABLE
+    const char* msg = "UNAVAILABLE: LLD not available";
+    return env->NewStringUTF(msg);
+#elif !defined(LLD_LINK_ENABLED)
+    const char* msg = "UNAVAILABLE: LLD link disabled at build time";
+    return env->NewStringUTF(msg);
+#else
+    auto toStr = [&](jstring s){ const char* c = s? env->GetStringUTFChars(s,nullptr):nullptr; std::string o=c?std::string(c):std::string(); if(c) env->ReleaseStringUTFChars(s,c); return o; };
+    const std::string sysroot = toStr(jSysroot);
+    const std::string objPath = toStr(jObj);
+    const std::string outExe  = toStr(jOut);
+    const std::string target  = toStr(jTarget);
+    const bool isCxx = jIsCxx == JNI_TRUE;
+
+    auto deriveTripleBase = [&](const std::string& t){ std::string r=t; while(!r.empty() && isdigit((unsigned char)r.back())) r.pop_back(); return r; };
+    const std::string tripleBase = deriveTripleBase(target);
+    const std::string api = "24";
+    const std::string libDir = sysroot+"/usr/lib/"+tripleBase+"/"+api;
+
+    std::vector<const char*> args;
+    std::vector<std::string> keep;
+    auto add=[&](const std::string& s){ keep.push_back(s); args.push_back(keep.back().c_str()); };
+    auto add2=[&](const char* a,const std::string& b){ args.push_back(a); keep.push_back(b); args.push_back(keep.back().c_str()); };
+
+    add("ld.lld");
+    add("-pie"); add("-z"); add("now"); add("-z"); add("relro");
+    add2("-L", libDir);
+    // crt objects if available
+    add(sysroot+"/usr/lib/"+tripleBase+"/"+api+"/crtbegin_dynamic.o");
+    add(objPath);
+    add2("-o", outExe);
+    // standard libs
+    if (isCxx) add("-lc++");
+    add("-lc"); add("-lm"); add("-llog"); add("-landroid");
+    add(sysroot+"/usr/lib/"+tripleBase+"/"+api+"/crtend_android.o");
+
+    std::string diag;
+    llvm::raw_string_ostream os(diag);
+    // 调用打包库签名 (args, stdout, stderr, disableOutput, exitEarly)
+    bool ok = lld::elf::link(args, os, os, /*disableOutput=*/false, /*exitEarly=*/false);
+    os.flush();
+    if (!ok) return env->NewStringUTF(diag.c_str());
+    // chmod +x
+    chmod(outExe.c_str(), 0755);
     return env->NewStringUTF("");
 #endif
 }

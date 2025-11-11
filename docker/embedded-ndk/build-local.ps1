@@ -25,11 +25,16 @@ if (-not $OutBaseExec -or [string]::IsNullOrWhiteSpace($OutBaseExec)) {
   $OutBaseExec = Join-Path $root 'external/embedded-ndk'
 }
 
-# Ensure they exist and resolve to absolute normalized paths
-New-Item -ItemType Directory -Force -Path $OutBaseLibs | Out-Null
-New-Item -ItemType Directory -Force -Path $OutBaseExec | Out-Null
-$libsBase = (Resolve-Path $OutBaseLibs).Path
-$execBase = (Resolve-Path $OutBaseExec).Path
+# Ensure they exist and resolve to absolute normalized paths (only for the mode being used)
+if ($Mode -eq 'libs') {
+  New-Item -ItemType Directory -Force -Path $OutBaseLibs | Out-Null
+  $libsBase = (Resolve-Path $OutBaseLibs).Path
+  $execBase = $OutBaseExec  # Just store the path, don't create directory
+} else {
+  New-Item -ItemType Directory -Force -Path $OutBaseExec | Out-Null
+  $execBase = (Resolve-Path $OutBaseExec).Path
+  $libsBase = $OutBaseLibs  # Just store the path, don't create directory
+}
 
 function Ensure-DevContainer {
   param([string]$containerName,[string]$ndkVersion)
