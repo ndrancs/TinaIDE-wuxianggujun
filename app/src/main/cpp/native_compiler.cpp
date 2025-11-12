@@ -819,6 +819,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated
             fprintf(stderr, "dlopen failed: %s\n", e?e:"unknown");
             _exit(127);
         }
+        fprintf(stderr, "[tina] dlopen ok\n");
         if (sym.empty()) {
             fprintf(stderr, "runSharedIsolated: empty symbol name\n");
             dlclose(handle); _exit(125);
@@ -829,10 +830,13 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated
             fprintf(stderr, "dlsym failed: %s\n", e?e:"unknown");
             dlclose(handle); _exit(126);
         }
+        fprintf(stderr, "[tina] dlsym ok: %s\n", sym.c_str());
         using EntryNoArg = int (*)();
         int rc = -1;
         try {
+            fprintf(stderr, "[tina] calling entry\n");
             rc = reinterpret_cast<EntryNoArg>(fp)();
+            fprintf(stderr, "[tina] entry returned rc=%d\n", rc);
         } catch (const std::bad_cast& e) {
             // Provide a clearer hint for common RTTI/any_cast/dynamic_cast issues
             fprintf(stderr, "unhandled std::bad_cast: %s\n", e.what());
