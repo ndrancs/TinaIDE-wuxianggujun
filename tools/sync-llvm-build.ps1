@@ -53,13 +53,13 @@ if (Test-Path $srcLibDir) {
       }
     }
   }
-  Write-Host "Copied .so libraries → $dstLibDir" -ForegroundColor Green
+  Write-Host "Copied .so libraries -> $dstLibDir" -ForegroundColor Green
 
   # Ensure libc++_shared.so is present in jniLibs when requested, even if not provided by prebuilt libs
   if ($CopyLibcxxToJni) {
     $dstLibCxx = Join-Path $dstLibDir 'libc++_shared.so'
     if (-not (Test-Path $dstLibCxx)) {
-      Write-Host "[i] libc++_shared.so not found under $dstLibDir — attempting to copy from local NDK" -ForegroundColor Yellow
+      Write-Host "INFO: libc++_shared.so not found under $dstLibDir - attempting to copy from local NDK" -ForegroundColor Yellow
       # Discover Android SDK/NDK roots
       $repoRoot = (Resolve-Path '.').Path
       $localPropsPath = Join-Path $repoRoot 'local.properties'
@@ -85,7 +85,7 @@ if (Test-Path $srcLibDir) {
         $srcCxx = Join-Path (Join-Path $NdkDir 'sources/cxx-stl/llvm-libc++/libs') (Join-Path $Abi 'libc++_shared.so')
         if (Test-Path $srcCxx) {
           Copy-Item $srcCxx -Destination $dstLibCxx -Force
-          Write-Host "[i] Copied libc++_shared.so from $srcCxx → $dstLibCxx" -ForegroundColor Green
+          Write-Host "INFO: Copied libc++_shared.so from $srcCxx to $dstLibCxx" -ForegroundColor Green
           $copied = $true
         } else {
           # Fallback (some layouts): toolchains/llvm/prebuilt/*/sysroot/usr/lib/<triple>/libc++_shared.so
@@ -95,7 +95,7 @@ if (Test-Path $srcLibDir) {
             $cand1 = Join-Path $preb.FullName ("sysroot/usr/lib/$triple/libc++_shared.so")
             if (Test-Path $cand1) {
               Copy-Item $cand1 -Destination $dstLibCxx -Force
-              Write-Host "[i] Copied libc++_shared.so from $cand1 → $dstLibCxx" -ForegroundColor Green
+              Write-Host "INFO: Copied libc++_shared.so from $cand1 to $dstLibCxx" -ForegroundColor Green
               $copied = $true
             }
           }
@@ -152,7 +152,7 @@ if ($srcSysroot -and (Test-Path $srcSysroot)) {
           Copy-Item $src -Destination (Join-Path $dstRuntime $n) -Force
         }
       }
-      Write-Host "[i] Injected runtime libs → $dstRuntime" -ForegroundColor Green
+      Write-Host "INFO: Injected runtime libs -> $dstRuntime" -ForegroundColor Green
     } else {
       Write-Host "[w] Prebuilt libs not found at $prebuiltLibs; skip runtime injection" -ForegroundColor Yellow
     }
@@ -176,7 +176,7 @@ if ($srcSysroot -and (Test-Path $srcSysroot)) {
         $null = [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $relZip, [System.IO.Compression.CompressionLevel]::Optimal)
       }
     } finally { if ($zip) { $zip.Dispose() }; if ($fs) { $fs.Dispose() } }
-    Write-Host "[i] Packaged sysroot.zip → $zipPath" -ForegroundColor Green
+    Write-Host "INFO: Packaged sysroot.zip -> $zipPath" -ForegroundColor Green
   } else {
     New-Item -ItemType Directory -Force -Path $AppAssetsSysroot | Out-Null
   robocopy $srcSysroot $AppAssetsSysroot /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
@@ -279,11 +279,11 @@ if ($srcSysroot -and (Test-Path $srcSysroot)) {
       Write-Host "[!] No local clang/lib/Headers found. Run build-local.ps1 to generate resource headers." -ForegroundColor Red
     }
   }
-  Write-Host "Mirrored sysroot → $AppAssetsSysroot" -ForegroundColor Green
+  Write-Host "Mirrored sysroot -> $AppAssetsSysroot" -ForegroundColor Green
   }
 
 } else {
-  Write-Host "Skip sysroot: $srcSysroot not found" -ForegroundColor DarkYellow
+  Write-Host "Skip sysroot packaging: source sysroot path not found or not set" -ForegroundColor DarkYellow
 }
 
 Write-Host "== Done ==" -ForegroundColor Cyan
