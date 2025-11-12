@@ -246,6 +246,8 @@ class MainActivity : BaseActivity() {
 
             val flags = mutableListOf<String>()
             flags += listOf("-Wall", "-Wextra")
+            // 将用户 main 重命名为 tina_user_main，便于注入的 launcher 调用
+            flags += listOf("-Dmain=tina_user_main")
 
             var ok = 0
             var syntaxOk = 0
@@ -279,14 +281,41 @@ class MainActivity : BaseActivity() {
                     log("成功: ${src.name}")
                     if (sources.size == 1) {
                         // 单文件工程：直接链接并运行
+                        // 准备并编译 launcher 模板（assets → 构建目录）
+                        val launcherSrc = java.io.File(buildDir, "launcher_template.c")
+                        try {
+                            assets.open("templates/launcher_template.c").use { inp ->
+                                launcherSrc.outputStream().use { out -> inp.copyTo(out) }
+                            }
+                        } catch (t: Throwable) {
+                            log("拷贝 launcher 模板失败: ${t.message}")
+                        }
+                        val launcherObj = java.io.File(buildDir, "launcher_template.o")
+                        val launcherErr = try {
+                            com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.emitObj(
+                                sysrootDir.absolutePath,
+                                launcherSrc.absolutePath,
+                                launcherObj.absolutePath,
+                                target,
+                                /*isCxx*/ false,
+                                emptyArray(),
+                                arrayOf(java.io.File(sysrootDir, "usr/include").absolutePath)
+                            )
+                        } catch (t: Throwable) { "launcher JNI error: ${t.message}" }
+                        if (launcherErr.isNotEmpty()) {
+                            log("launcher 编译失败: $launcherErr")
+                        }
+
                         val soFile = java.io.File(buildRoot, "lib${src.nameWithoutExtension}.so")
                         val linkErr = try {
-                            com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.linkSo(
+                            com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.linkSoMany(
                                 sysrootDir.absolutePath,
-                                objFile.absolutePath,
+                                arrayOf(objFile.absolutePath, launcherObj.absolutePath),
                                 soFile.absolutePath,
                                 target,
-                                isCxx
+                                isCxx,
+                                emptyArray(),
+                                emptyArray()
                             )
                         } catch (t: Throwable) { "link JNI error: ${t.message}" }
                         if (linkErr.isEmpty()) {
@@ -329,11 +358,37 @@ class MainActivity : BaseActivity() {
 
             // 多文件工程：编译完成后统一链接一次（以共享库方式运行）
             if (compiledObjs.isNotEmpty() && sources.size > 1) {
+                // 编译 launcher 并加入链接
+                val launcherSrc = java.io.File(buildDir, "launcher_template.c")
+                try {
+                    assets.open("templates/launcher_template.c").use { inp ->
+                        launcherSrc.outputStream().use { out -> inp.copyTo(out) }
+                    }
+                } catch (t: Throwable) {
+                    log("拷贝 launcher 模板失败: ${t.message}")
+                }
+                val launcherObj = java.io.File(buildDir, "launcher_template.o")
+                val launcherErr = try {
+                    com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.emitObj(
+                        sysrootDir.absolutePath,
+                        launcherSrc.absolutePath,
+                        launcherObj.absolutePath,
+                        target,
+                        /*isCxx*/ false,
+                        emptyArray(),
+                        arrayOf(java.io.File(sysrootDir, "usr/include").absolutePath)
+                    )
+                } catch (t: Throwable) { "launcher JNI error: ${t.message}" }
+                if (launcherErr.isNotEmpty()) {
+                    log("launcher 编译失败: $launcherErr")
+                }
+
                 val soFile = java.io.File(buildRoot, "lib${project.name}.so")
+                val objArray = (compiledObjs + launcherObj.absolutePath).toTypedArray()
                 val linkErr = try {
                     com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.linkSoMany(
                         sysrootDir.absolutePath,
-                        compiledObjs.toTypedArray(),
+                        objArray,
                         soFile.absolutePath,
                         target,
                         /*isCxx*/ true,
