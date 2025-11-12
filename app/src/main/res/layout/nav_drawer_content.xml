@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/drawer_header_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
+
+    <!-- Header row (project info + actions) -->
+    <include layout="@layout/include_file_tree_header" />
+
+    <!-- File tree content below header -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/file_tree_container"
+        android:name="com.wuxianggujun.tinaide.ui.fragment.FileTreeFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>
+

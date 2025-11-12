@@ -54,17 +54,16 @@ class MainActivity : BaseActivity() {
 
         setContentView(R.layout.activity_main)
 
-        // Adjust drawer/header for status bar insets to prevent overlap
+        // Adjust drawer/header for status bar insets to prevent overlap (headerView case)
         try {
-            val header = findViewById<android.view.View>(R.id.drawer_header_container)
-            if (header != null) {
-                androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(header) { v, insets ->
+            val headerRoot = findViewById<android.view.View>(R.id.drawer_header_root)
+            if (headerRoot != null) {
+                androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(headerRoot) { v, insets ->
                     val status = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
                     v.setPadding(v.paddingLeft, status.top, v.paddingRight, v.paddingBottom)
                     insets
                 }
-                // Request initial insets dispatch
-                androidx.core.view.ViewCompat.requestApplyInsets(header)
+                androidx.core.view.ViewCompat.requestApplyInsets(headerRoot)
             }
         } catch (_: Throwable) { }
 

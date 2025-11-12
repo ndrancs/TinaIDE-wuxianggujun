@@ -54,7 +54,7 @@ cmake -S /work/src/ninja -B /work/build/tools/ninja-${ABI}-api${API_LEVEL} -G Ni
   -DCMAKE_ANDROID_ARCH_ABI=${ABI} -DCMAKE_ANDROID_API=${API_LEVEL} \
   -DCMAKE_BUILD_TYPE=MinSizeRel \
   -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-  -DCMAKE_CXX_FLAGS="-fPIC -Dmain=ninja_main"
+  -DCMAKE_CXX_FLAGS="-fPIC"
 ninja -C /work/build/tools/ninja-${ABI}-api${API_LEVEL} -j$(nproc) ninja
 
 mkdir -p /hostout/${ABI}/tools/bin
@@ -75,11 +75,15 @@ if [ "${BUILD_NINJA_SO}" = "True" ] || [ "${BUILD_NINJA_SO}" = "true" ] || [ "${
   NDK_CLANGXX="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${API_LEVEL}-clang++"
   mkdir -p /work/build/tools/ninja-runner
   cat > /work/build/tools/ninja-runner/ninja_runner.cpp <<'EOF'
-extern "C" int ninja_main(int, char**);
-extern "C" int ninja_run(int argc, char** argv) { return ninja_main(argc, argv); }
+extern "C" int main(int, char**);
+extern "C" int ninja_run(int argc, char** argv) { return main(argc, argv); }
 EOF
   # Collect object files from the ninja target and link into a shared object together with the small wrapper
-  ninja_objs=$(find /work/build/tools/ninja-${ABI}-api${API_LEVEL}/CMakeFiles/ninja.dir -name '*.o' | xargs echo)
+  ninja_objs_core=$(find /work/build/tools/ninja-${ABI}-api${API_LEVEL}/CMakeFiles/libninja.dir -name '*.o' | xargs echo)
+  ninja_objs_re2c=$(find /work/build/tools/ninja-${ABI}-api${API_LEVEL}/CMakeFiles/libninja-re2c.dir -name '*.o' | xargs echo)
+  ninja_main_obj=$(find /work/build/tools/ninja-${ABI}-api${API_LEVEL}/CMakeFiles/ninja.dir -name 'ninja.cc.o' | head -n1)
+  if [ -n "${ninja_main_obj}" ]; then ninja_objs_main=${ninja_main_obj}; else ninja_objs_main=""; fi
+  if [ -n "${ninja_objs_core}" ] || [ -n "${ninja_objs_re2c}" ]; then ninja_objs="${ninja_objs_core} ${ninja_objs_re2c} ${ninja_objs_main}"; else ninja_objs=""; fi
   if [ -n "${ninja_objs}" ] && [ -x "${NDK_CLANGXX}" ]; then
     ${NDK_CLANGXX} -shared -fPIC -Wl,-z,now -Wl,-z,relro \
       -o /hostout/${ABI}/tools/bin/libninja_runner.so \

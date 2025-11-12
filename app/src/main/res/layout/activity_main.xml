@@ -59,25 +59,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
-        android:background="?android:attr/colorBackground">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:fitsSystemWindows="true">
-
-            <include layout="@layout/include_file_tree_header" />
-
-            <androidx.fragment.app.FragmentContainerView
-                android:id="@+id/file_tree_container"
-                android:name="com.wuxianggujun.tinaide.ui.fragment.FileTreeFragment"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-        </LinearLayout>
-
-    </com.google.android.material.navigation.NavigationView>
+        app:headerLayout="@layout/nav_drawer_content"
+        android:background="?android:attr/colorBackground" />
 
 </androidx.drawerlayout.widget.DrawerLayout>
