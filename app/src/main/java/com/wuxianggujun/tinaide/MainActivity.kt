@@ -200,6 +200,14 @@ class MainActivity : BaseActivity() {
                 return@Thread
             }
 
+            // Experimental: probe sysroot CMake/Ninja before compile to verify exec availability
+            try {
+                val probe = com.wuxianggujun.tinaide.core.nativebridge.SysrootCMakeRunner.probe()
+                log(probe)
+            } catch (t: Throwable) {
+                log("Sysroot CMake/Ninja probe failed: ${t.message}")
+            }
+
             val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
             val target = when {
                 abi.contains("arm64", ignoreCase = true) -> "aarch64-linux-android28"
