@@ -1,30 +1,26 @@
-// TinaIDE C++ launcher template with SFINAE dispatch to user main signature.
-// - User main is renamed via -Dmain=tina_user_main during compilation of user sources.
-// - Define TINA_ENTRY to the desired unmangled entry symbol (e.g., myproj_main).
-// - This file must be compiled as C++ (e.g., -x c++ -std=c++17).
+// TinaIDE C++ launcher template with weak-overload detection.
+// - User main is renamed via -Dmain=tina_user_main in user compilation.
+// - Define TINA_ENTRY to set the exported, unmangled entry symbol (e.g., myproj_main).
+// - Compile this file as C++ (-x c++ -std=c++17).
 
 #ifndef TINA_ENTRY
 #define TINA_ENTRY run_main
 #endif
 
-// Declare both candidate signatures; only the actually-defined one will be referenced.
-extern int tina_user_main();
-extern int tina_user_main(int, char**);
+// Declare both overloads as weak. If a definition is missing, the
+// function pointer will be null at runtime and we can safely skip it.
+extern int tina_user_main(int, char**) __attribute__((weak));
+extern int tina_user_main() __attribute__((weak));
 
-// Prefer calling (int,char**) when available; otherwise fall back to ()
-// SFINAE selects the viable expression.
-
-template <typename = void>
-static auto tina_user_main_dispatch(int) -> decltype(tina_user_main(0, (char**)0), int()) {
-    return tina_user_main(0, (char**)0);
-}
-
-template <typename = void>
-static auto tina_user_main_dispatch(long) -> decltype(tina_user_main(), int()) {
-    return tina_user_main();
-}
-
-// Export an unmangled entry symbol so dlsym("<project>_main") succeeds.
 extern "C" int TINA_ENTRY(void) {
-    return tina_user_main_dispatch<>(0);
+    // Prefer argc/argv when available
+    int (*p2)(int, char**) = tina_user_main;
+    if (p2) return p2(0, nullptr);
+
+    // Fallback to zero-arg form
+    int (*p0)() = (int(*)())tina_user_main;
+    if (p0) return p0();
+
+    // Neither form linked in; treat as error
+    return -200;
 }
