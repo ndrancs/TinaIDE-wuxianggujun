@@ -5,7 +5,13 @@ Param(
   [string]$LlvmTag = 'llvmorg-17.0.6',
   [string]$ContainerName = 'tina-llvm-build',
   [string]$OutputPath,
-  [ValidateSet('incremental','reconfigure','clean')][string]$Mode = 'incremental'
+  [ValidateSet('incremental','reconfigure','clean')][string]$Mode = 'incremental',
+  # Build-type/diagnostics toggles for Android runtime libraries
+  [ValidateSet('MinSizeRel','RelWithDebInfo','Debug')][string]$AndroidBuildType = 'MinSizeRel',
+  [bool]$EnableAssertions = $false,
+  # Host-side developer tools
+  [bool]$BuildClangdHost = $true,
+  [bool]$BuildLlvmDebugToolsHost = $true
 )
 
 $ErrorActionPreference = 'Stop'
@@ -51,7 +57,7 @@ Ensure-DevContainer -containerName $ContainerName -ndkVersion $NdkVersion
 
 $outDirHost = Join-Path $OutputPath "${Abi}"
 New-Item -ItemType Directory -Force -Path $outDirHost | Out-Null
-$assign = "ABI='$Abi'; API_LEVEL='$ApiLevel'; LLVM_TAG='$LlvmTag'; NDK_VERSION='$NdkVersion'; MODE='$Mode';"
+$assign = "ABI='$Abi'; API_LEVEL='$ApiLevel'; LLVM_TAG='$LlvmTag'; NDK_VERSION='$NdkVersion'; MODE='$Mode'; ANDROID_BUILD_TYPE='$AndroidBuildType'; ENABLE_ASSERTIONS='$EnableAssertions'; BUILD_CLANGD_HOST='$BuildClangdHost'; BUILD_LLVM_DEBUG_TOOLS_HOST='$BuildLlvmDebugToolsHost';"
 $sessionScript = @'
 set -eux
 case "${ABI}" in
@@ -65,8 +71,18 @@ if [ ! -d /work/src/llvm-project/.git ]; then
 fi
 if [ ! -x /work/build/host/bin/llvm-tblgen ]; then
   cmake -S /work/src/llvm-project/llvm -B /work/build/host -G Ninja \
-    -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TARGETS_TO_BUILD="AArch64;X86" -DCMAKE_BUILD_TYPE=Release
-  ninja -C /work/build/host -j$(nproc) llvm-tblgen clang-tblgen
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld" -DLLVM_TARGETS_TO_BUILD="AArch64;X86" -DCMAKE_BUILD_TYPE=RelWithDebInfo
+  ninja -C /work/build/host -j$(nproc) llvm-tblgen clang-tblgen || true
+fi
+# Optionally build host developer tools (clangd and common llvm debug tools) and copy to hostout tools/bin
+mkdir -p /hostout/${ABI}/tools/bin
+if [ "${BUILD_CLANGD_HOST}" = "True" ] || [ "${BUILD_CLANGD_HOST}" = "true" ] || [ "${BUILD_CLANGD_HOST}" = "1" ]; then
+  ninja -C /work/build/host -j$(nproc) clangd || true
+  if [ -f /work/build/host/bin/clangd ]; then cp -af /work/build/host/bin/clangd /hostout/${ABI}/tools/bin/clangd-host; fi
+fi
+if [ "${BUILD_LLVM_DEBUG_TOOLS_HOST}" = "True" ] || [ "${BUILD_LLVM_DEBUG_TOOLS_HOST}" = "true" ] || [ "${BUILD_LLVM_DEBUG_TOOLS_HOST}" = "1" ]; then
+  ninja -C /work/build/host -j$(nproc) llvm-symbolizer llvm-objdump llvm-dwarfdump || true
+  for t in llvm-symbolizer llvm-objdump llvm-dwarfdump; do if [ -f /work/build/host/bin/${t} ]; then cp -af /work/build/host/bin/${t} /hostout/${ABI}/tools/bin/${t}-host; fi; done
 fi
 # Configure control via MODE: incremental | reconfigure | clean
 if [ "${MODE}" = "clean" ]; then
@@ -77,7 +93,7 @@ if [ "${MODE}" = "reconfigure" ] || [ "${MODE}" = "clean" ]; then
   rm -rf /work/build/android/${ABI}-api${API_LEVEL}/CMakeFiles || true
 fi
 cmake -S /work/src/llvm-project/llvm -B /work/build/android/${ABI}-api${API_LEVEL} -G Ninja \
-  -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TARGETS_TO_BUILD="${LLVM_TARGET}" -DCMAKE_BUILD_TYPE=MinSizeRel \
+  -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TARGETS_TO_BUILD="${LLVM_TARGET}" -DCMAKE_BUILD_TYPE=${ANDROID_BUILD_TYPE} \
   -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=${ANDROID_NDK_HOME} -DCMAKE_ANDROID_ARCH_ABI=${ABI} -DCMAKE_ANDROID_API=${API_LEVEL} \
   -DLLVM_TABLEGEN=/work/build/host/bin/llvm-tblgen -DCLANG_TABLEGEN=/work/build/host/bin/clang-tblgen \
   -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF \
@@ -87,7 +103,8 @@ cmake -S /work/src/llvm-project/llvm -B /work/build/android/${ABI}-api${API_LEVE
   -DLLVM_BUILD_TOOLS=OFF -DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON -DCLANG_LINK_CLANG_DYLIB=ON \
   -DLLVM_ENABLE_THREADS=OFF \
   -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS="-femulated-tls" -DCMAKE_CXX_FLAGS="-femulated-tls" \
-  -DLLVM_ENABLE_ASSERTIONS=OFF -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+  -DLLVM_ENABLE_ASSERTIONS=$([ "${ENABLE_ASSERTIONS}" = "True" ] || [ "${ENABLE_ASSERTIONS}" = "true" ] || [ "${ENABLE_ASSERTIONS}" = "1" ] && echo ON || echo OFF) \
+  -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
 ninja -C /work/build/android/${ABI}-api${API_LEVEL} -j$(nproc) clang-cpp lld lldELF lldCommon
 
 # Clean destination to avoid duplicate/readonly collisions on host mounts
