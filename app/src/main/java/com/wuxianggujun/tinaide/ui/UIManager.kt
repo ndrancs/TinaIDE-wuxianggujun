@@ -137,8 +137,10 @@ class UIManager(private val activity: Activity) : IUIManager, ServiceLifecycle {
             Theme.DARK -> AppCompatDelegate.MODE_NIGHT_YES
             Theme.AUTO -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
         }
-        
-        AppCompatDelegate.setDefaultNightMode(mode)
+        // Avoid unnecessary Activity recreate: only set when changed
+        if (AppCompatDelegate.getDefaultNightMode() != mode) {
+            AppCompatDelegate.setDefaultNightMode(mode)
+        }
     }
     
     /**
