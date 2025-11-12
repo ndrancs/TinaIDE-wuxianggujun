@@ -8,6 +8,10 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.get
@@ -60,6 +64,9 @@ class FileTreeFragment : Fragment() {
         )
         
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.setHasFixedSize(true)
+        recyclerView.itemAnimator = null
+        recyclerView.setItemViewCacheSize(32)
         recyclerView.adapter = adapter
     }
     
@@ -83,8 +90,16 @@ class FileTreeFragment : Fragment() {
     private fun loadProjectFiles(rootPath: String) {
         val rootDir = File(rootPath)
         if (rootDir.exists() && rootDir.isDirectory) {
-            val files = rootDir.listFiles()?.toList() ?: emptyList()
-            adapter.setFiles(files)
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                val files = try {
+                    rootDir.listFiles()?.sortedBy { it.name.lowercase() } ?: emptyList()
+                } catch (_: Throwable) {
+                    emptyList<File>()
+                }
+                withContext(Dispatchers.Main) {
+                    adapter.setFiles(files)
+                }
+            }
         }
     }
     
