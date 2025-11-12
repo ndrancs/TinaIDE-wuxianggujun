@@ -5,6 +5,8 @@
 //
 // Needs stdio for fprintf/stderr used in fallback diagnostics.
 #include <stdio.h>
+#include <exception>
+#include <typeinfo>
 
 #ifndef TINA_ENTRY
 #define TINA_ENTRY run_main
@@ -18,11 +20,21 @@ extern int tina_user_main() __attribute__((weak));
 extern "C" int TINA_ENTRY(void) {
     // Prefer argc/argv when available
     int (*p2)(int, char**) = tina_user_main;
-    if (p2) return p2(0, nullptr);
-
-    // Fallback to zero-arg form
     int (*p0)() = (int(*)())tina_user_main;
-    if (p0) return p0();
+
+    try {
+        if (p2) return p2(0, (char**)0);
+        if (p0) return p0();
+    } catch (const std::bad_cast& e) {
+        fprintf(stderr, "unhandled std::bad_cast (in launcher): %s\n", e.what());
+        return 101;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "unhandled std::exception (in launcher): %s\n", e.what());
+        return 102;
+    } catch (...) {
+        fprintf(stderr, "unhandled non-std exception (in launcher)\n");
+        return 103;
+    }
 
     // Neither form linked in; treat as error
     // Also print a hint for the user-facing UI (captured by isolated runner)
