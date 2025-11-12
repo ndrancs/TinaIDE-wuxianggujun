@@ -244,10 +244,15 @@ class MainActivity : BaseActivity() {
                 if (d.exists()) includeDirs += d.absolutePath
             }
 
+            // Compute entry symbol: projectName + _main (e.g., myproj_main)
+            val entrySymbol = "${'$'}{project.name}_main"
+
             val flags = mutableListOf<String>()
             flags += listOf("-Wall", "-Wextra")
             // 启用 C++ 异常（防止 dynamic_cast 引用失败等直接触发 terminate）
             flags += listOf("-fexceptions", "-fcxx-exceptions")
+            // Rename user's main to the project-scoped entry to avoid symbol conflicts
+            flags += listOf("-Dmain=${'$'}entrySymbol")
 
             var ok = 0
             var syntaxOk = 0
@@ -326,7 +331,7 @@ class MainActivity : BaseActivity() {
                         // 直接调用 main，native 侧会自动尝试 C++ mangled 名称
                         val out = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runSharedIsolated(
                             soFile.absolutePath,
-                            "main",
+                            entrySymbol,
                             15000
                         )
                         log(out)
