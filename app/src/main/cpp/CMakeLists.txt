@@ -80,7 +80,7 @@ endif()
 # 在完成 LLD（静态）配置后再追加 LLVM/Clang（共享）与日志库，确保链接顺序：
 # lldELF/lldCommon（静态）→ LLVM-17/clang-cpp（共享）→ log
 if(HAVE_LLVM_HEADERS AND HAVE_LLVM_LIBS)
-  target_link_libraries(native_compiler PRIVATE LLVM-17 clang-cpp ${log-lib})
+  target_link_libraries(native_compiler PRIVATE LLVM-17 clang-cpp c++_shared ${log-lib})
 else()
-  target_link_libraries(native_compiler PRIVATE ${log-lib})
+  target_link_libraries(native_compiler PRIVATE c++_shared ${log-lib})
 endif()

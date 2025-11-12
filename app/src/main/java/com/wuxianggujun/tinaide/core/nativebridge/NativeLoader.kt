@@ -7,7 +7,15 @@ object NativeLoader {
     @Volatile
     private var loaded = false
 
-    private fun preloadLibcxxFromSysrootIfAvailable() {
+    private fun preloadLibcxxOnce() {
+        // 优先使用 APK/jniLibs 自带的 libc++_shared（进入 app 默认命名空间，避免产生重复副本）。
+        try {
+            System.loadLibrary("c++_shared")
+            Log.i("NativeLoader", "Preloaded libc++_shared from jniLibs")
+            return
+        } catch (_: Throwable) {
+            // fallback to sysroot absolute path
+        }
         try {
             val ctx = TinaApplication.instance
             val base = java.io.File(ctx.filesDir, "sysroot")
@@ -35,13 +43,13 @@ object NativeLoader {
         } catch (_: Throwable) {
             // ignore
         }
-        // 不再回退到 jniLibs：统一从 sysroot 加载，缺失则让上层安装流程报错
+        // 若两者皆不可用，由上层安装流程提示缺失
     }
 
     fun loadIfNeeded() {
         if (loaded) return
-        // 先预加载 libc++_shared（仅 sysroot），以满足 LLVM/Clang 的依赖
-        preloadLibcxxFromSysrootIfAvailable()
+        // 先预加载 libc++_shared（优先 jniLibs，失败再回退 sysroot），确保全局唯一运行时
+        preloadLibcxxOnce()
         // 加载 LLVM 主库（仅 sysroot runtime），再加载 clang-cpp
         var llvmLoaded = false
         try {
@@ -86,4 +94,3 @@ object NativeLoader {
 
     fun isLoaded(): Boolean = loaded
 }
-

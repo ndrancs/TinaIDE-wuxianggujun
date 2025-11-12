@@ -366,14 +366,10 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
     keep.push_back(libDir);
     // Also search triple root where NDK places libc++_shared.so (r23+)
     const std::string libDirRoot = sysroot+"/usr/lib/"+tripleBase;
-    const std::string runtimeDir = sysroot+"/usr/lib/"+tripleBase+"/runtime";
     // Library search paths (link-time)
     keep.push_back("-L");
     keep.push_back(libDirRoot);
-    // Runtime search paths (run-time)
-    keep.push_back(std::string("-rpath=")+runtimeDir);
-    // Also allow colocated libs near the produced binary (optional)
-    keep.push_back("-rpath=$ORIGIN");
+    // Do not inject rpath; rely on app-preloaded libc++_shared to avoid duplicate runtimes
     // Explicit dynamic linker for Android
     const char* dynLinker = (tripleBase.find("64") != std::string::npos) ? "/system/bin/linker64" : "/system/bin/linker";
     keep.push_back("-dynamic-linker");
@@ -478,10 +474,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExeMany(
     keep.push_back("-L"); keep.push_back(libDir);
     const std::string libDirRoot = sysroot+"/usr/lib/"+tripleBase;
     keep.push_back("-L"); keep.push_back(libDirRoot);
-    // Runtime rpath to sysroot runtime dir and $ORIGIN fallback
-    const std::string runtimeDir = sysroot+"/usr/lib/"+tripleBase+"/runtime";
-    keep.push_back(std::string("-rpath=")+runtimeDir);
-    keep.push_back("-rpath=$ORIGIN");
+    // No rpath to sysroot runtime; ensure single C++ runtime in process
     // Explicit dynamic linker for Android
     const char* dynLinker = (tripleBase.find("64") != std::string::npos) ? "/system/bin/linker64" : "/system/bin/linker";
     keep.push_back("-dynamic-linker");
@@ -585,10 +578,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkSo(
     const std::string libDirRoot = sysroot+"/usr/lib/"+tripleBase;
     keep.push_back("-L"); keep.push_back(libDir);
     keep.push_back("-L"); keep.push_back(libDirRoot);
-    // Optional runpaths for transitive deps when loaded via dlopen(System.load)
-    const std::string runtimeDir = sysroot+"/usr/lib/"+tripleBase+"/runtime";
-    keep.push_back(std::string("-rpath=")+runtimeDir);
-    keep.push_back("-rpath=$ORIGIN");
+    // Avoid rpath; use global libc++_shared preloaded by app
     // Inputs/outputs
     keep.push_back(crtBegin);
     keep.push_back(objPath);
@@ -652,9 +642,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkSoMany(
     keep.push_back("-L"); keep.push_back(libDir);
     const std::string libDirRoot = sysroot+"/usr/lib/"+tripleBase;
     keep.push_back("-L"); keep.push_back(libDirRoot);
-    const std::string runtimeDir = sysroot+"/usr/lib/"+tripleBase+"/runtime";
-    keep.push_back(std::string("-rpath=")+runtimeDir);
-    keep.push_back("-rpath=$ORIGIN");
+    // No rpath here either to prevent duplicated libc++_shared in separate namespaces
 
     keep.push_back(crtBegin);
 
@@ -744,7 +732,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runShared(
     // Install terminate/signal handlers before touching user code
     tina_install_handlers_once();
 
-    void* handle = dlopen(soPath.c_str(), RTLD_NOW | RTLD_LOCAL);
+    void* handle = dlopen(soPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (!handle) {
         const char* e = dlerror();
         std::string err = std::string("dlopen failed: ") + (e?e:"unknown");
@@ -813,7 +801,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated
         // Install handlers in child
         tina_install_handlers_once();
         // dlopen + dlsym + call
-        void* handle = dlopen(soPath.c_str(), RTLD_NOW | RTLD_LOCAL);
+        void* handle = dlopen(soPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
         if (!handle) {
             const char* e = dlerror();
             fprintf(stderr, "dlopen failed: %s\n", e?e:"unknown");
@@ -825,6 +813,26 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated
             dlclose(handle); _exit(125);
         }
         void* fp = dlsym(handle, sym.c_str());
+        
+        // If symbol not found and it's "main", try common C++ mangled names
+        if (!fp && sym == "main") {
+            // Try C++ mangled names for main()
+            const char* mangled_names[] = {
+                "_Z4mainv",           // int main()
+                "_Z4mainiPPc",        // int main(int, char**)
+                "main",               // C linkage fallback
+                nullptr
+            };
+            for (int i = 0; mangled_names[i] && !fp; ++i) {
+                dlerror(); // clear error
+                fp = dlsym(handle, mangled_names[i]);
+                if (fp) {
+                    fprintf(stderr, "[tina] found main as: %s\n", mangled_names[i]);
+                    break;
+                }
+            }
+        }
+        
         if (!fp) {
             const char* e = dlerror();
             fprintf(stderr, "dlsym failed: %s\n", e?e:"unknown");
