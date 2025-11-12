@@ -12,7 +12,9 @@ Param(
   [string]$ToolBinSource = '',
   # New: do NOT inject host-built tool binaries (cmake/ninja) into sysroot by default
   # Because Android SELinux denies exec() from app private dirs (execute_no_trans)
-  [bool]$InjectToolsToSysroot = $false
+  [bool]$InjectToolsToSysroot = $false,
+  # New: copy in-process tool runners (shared objects) into jniLibs for app-side JNI loading
+  [bool]$CopyToolRunnersToJni = $true
 )
 
 Write-Host "== Sync LLVM build artifacts (ABI=$Abi) ==" -ForegroundColor Cyan
@@ -107,6 +109,26 @@ if (Test-Path $srcLibDir) {
       if (-not $copied) {
         Write-Host "[!] Unable to locate libc++_shared.so in prebuilt libs or local NDK. Ensure NDK installed and ANDROID_SDK_ROOT/ndk.dir set." -ForegroundColor Red
       }
+    }
+  }
+
+  # Optionally copy tool runner .so (libninja_runner.so / libcmake_runner.so) from build-output tools/bin
+  if ($CopyToolRunnersToJni) {
+    try {
+      $toolsBin = Join-Path (Join-Path $BuildOutputRoot $Abi) 'tools/bin'
+      if (Test-Path $toolsBin) {
+        $runners = @('libninja_runner.so','libcmake_runner.so')
+        foreach($r in $runners){
+          $src = Join-Path $toolsBin $r
+          if (Test-Path $src) {
+            $dst = Join-Path $dstLibDir $r
+            Copy-Item $src -Destination $dst -Force
+            Write-Host "INFO: Copied $r -> $dst" -ForegroundColor Green
+          }
+        }
+      }
+    } catch {
+      Write-Host "[w] Failed to copy tool runners to jniLibs: $($_.Exception.Message)" -ForegroundColor Yellow
     }
   }
 } else {
