@@ -229,7 +229,7 @@ cmake -S /work/src/cmake -B /work/build/tools/cmake-${ABI}-api${API_LEVEL} -G Ni
   -DBUILD_SHARED_LIBS=OFF \
   -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
   -DCMAKE_C_FLAGS="-fPIC -D_GNU_SOURCE -include /work/src/cmake/Utilities/cmlibuv/include/uv_android_compat.h" \
-  -DCMAKE_CXX_FLAGS="-fPIC -D_GNU_SOURCE -Dmain=cmake_main -include /work/src/cmake/Utilities/cmlibuv/include/uv_android_compat.h"
+  -DCMAKE_CXX_FLAGS="-fPIC -D_GNU_SOURCE -include /work/src/cmake/Utilities/cmlibuv/include/uv_android_compat.h"
 ninja -C /work/build/tools/cmake-${ABI}-api${API_LEVEL} -j$(nproc) cmake || true
 if [ -f /work/build/tools/cmake-${ABI}-api${API_LEVEL}/bin/cmake ]; then
   cp -af /work/build/tools/cmake-${ABI}-api${API_LEVEL}/bin/cmake /hostout/${ABI}/tools/bin/
