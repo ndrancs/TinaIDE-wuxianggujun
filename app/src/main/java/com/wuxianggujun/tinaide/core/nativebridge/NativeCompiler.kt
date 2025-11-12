@@ -70,4 +70,11 @@ object NativeCompiler {
         soPath: String,
         symbol: String
     ): Int
+
+    // Run shared library in an isolated child process; returns combined output with RC prefix
+    external fun runSharedIsolated(
+        soPath: String,
+        symbol: String,
+        timeoutMs: Int
+    ): String
 }

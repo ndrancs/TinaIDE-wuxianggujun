@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <poll.h>
+#include <errno.h>
 #include <typeinfo>
 #include <cxxabi.h>
 
@@ -778,4 +780,102 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runShared(
     }
     dlclose(handle);
     return rc;
+}
+
+// Isolated run: fork child to dlopen and run symbol; parent captures stdout/stderr and returns combined log with RC prefix
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated(
+        JNIEnv* env, jclass /*clazz*/, jstring jSoPath, jstring jSym, jint jTimeoutMs) {
+    auto toStr = [&](jstring s){ const char* c = s? env->GetStringUTFChars(s,nullptr):nullptr; std::string o=c?std::string(c):std::string(); if(c) env->ReleaseStringUTFChars(s,c); return o; };
+    const std::string soPath = toStr(jSoPath);
+    const std::string sym    = toStr(jSym);
+    int timeoutMs = jTimeoutMs <= 0 ? 15000 : jTimeoutMs;
+
+    int pipefd[2]; if (pipe(pipefd) != 0) {
+        std::string err = std::string("pipe failed: ")+strerror(errno);
+        return env->NewStringUTF(err.c_str());
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        std::string err = std::string("fork failed: ")+strerror(errno);
+        close(pipefd[0]); close(pipefd[1]);
+        return env->NewStringUTF(err.c_str());
+    }
+    if (pid == 0) {
+        // Child
+        dup2(pipefd[1], STDOUT_FILENO);
+        dup2(pipefd[1], STDERR_FILENO);
+        close(pipefd[0]); close(pipefd[1]);
+        // Install handlers in child
+        tina_install_handlers_once();
+        // dlopen + dlsym + call
+        void* handle = dlopen(soPath.c_str(), RTLD_NOW | RTLD_LOCAL);
+        if (!handle) {
+            const char* e = dlerror();
+            fprintf(stderr, "dlopen failed: %s\n", e?e:"unknown");
+            _exit(127);
+        }
+        if (sym.empty()) {
+            fprintf(stderr, "runSharedIsolated: empty symbol name\n");
+            dlclose(handle); _exit(125);
+        }
+        void* fp = dlsym(handle, sym.c_str());
+        if (!fp) {
+            const char* e = dlerror();
+            fprintf(stderr, "dlsym failed: %s\n", e?e:"unknown");
+            dlclose(handle); _exit(126);
+        }
+        using EntryNoArg = int (*)();
+        int rc = -1;
+        try {
+            rc = reinterpret_cast<EntryNoArg>(fp)();
+        } catch (const std::exception& e) {
+            fprintf(stderr, "unhandled std::exception: %s\n", e.what());
+            rc = 102;
+        } catch (...) {
+            fprintf(stderr, "unhandled non-std exception\n");
+            rc = 103;
+        }
+        dlclose(handle);
+        _exit(rc);
+    }
+    // Parent
+    close(pipefd[1]);
+    std::string out;
+    out.reserve(4096);
+
+    int rc = -1;
+    const int fd = pipefd[0];
+    int elapsed = 0;
+    char buf[1024];
+    while (true) {
+        struct pollfd pfd; pfd.fd = fd; pfd.events = POLLIN; pfd.revents = 0;
+        int to = 100; // 100ms step
+        int pr = poll(&pfd, 1, to);
+        if (pr > 0 && (pfd.revents & POLLIN)) {
+            ssize_t n = read(fd, buf, sizeof(buf));
+            if (n > 0) {
+                out.append(buf, buf + n);
+                continue;
+            }
+            if (n == 0) break; // EOF
+        }
+        elapsed += to;
+        int status = 0; pid_t w = waitpid(pid, &status, WNOHANG);
+        if (w == pid) {
+            if (WIFEXITED(status)) rc = WEXITSTATUS(status);
+            else if (WIFSIGNALED(status)) rc = 128 + WTERMSIG(status);
+            break;
+        }
+        if (elapsed >= timeoutMs) {
+            kill(pid, SIGKILL);
+            int status2 = 0; waitpid(pid, &status2, 0);
+            rc = 124; // timeout
+            break;
+        }
+    }
+    close(fd);
+    std::ostringstream oss; oss << "RC=" << rc << "\n";
+    if (!out.empty()) oss << out;
+    return env->NewStringUTF(oss.str().c_str());
 }

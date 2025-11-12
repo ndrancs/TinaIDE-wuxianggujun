@@ -324,11 +324,12 @@ class MainActivity : BaseActivity() {
                             try {
                                 log("[运行] ${soFile.name}")
                                 val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
-                                val rc = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runShared(
+                                val out = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runSharedIsolated(
                                     soFile.absolutePath,
-                                    entrySym
+                                    entrySym,
+                                    15000
                                 )
-                                log("[退出码] $rc")
+                                log(out)
                             } catch (t: Throwable) {
                                 log("运行失败: ${t.message}")
                             }
@@ -404,11 +405,12 @@ class MainActivity : BaseActivity() {
                     try {
                         log("[运行] ${soFile.name}")
                         val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
-                        val rc = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runShared(
+                        val out = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runSharedIsolated(
                             soFile.absolutePath,
-                            entrySym
+                            entrySym,
+                            15000
                         )
-                        log("[退出码] $rc")
+                        log(out)
                     } catch (t: Throwable) {
                         log("运行失败: ${t.message}")
                     }
