@@ -298,7 +298,7 @@ class MainActivity : BaseActivity() {
                                 launcherSrc.absolutePath,
                                 launcherObj.absolutePath,
                                 target,
-                                /*isCxx*/ false,
+                                isCxx,
                                 arrayOf("-DTINA_ENTRY=${entrySym}"),
                                 arrayOf(java.io.File(sysrootDir, "usr/include").absolutePath)
                             )
@@ -377,7 +377,7 @@ class MainActivity : BaseActivity() {
                         launcherSrc.absolutePath,
                         launcherObj.absolutePath,
                         target,
-                        /*isCxx*/ false,
+                        /*isCxx*/ true,
                         arrayOf("-DTINA_ENTRY=${entrySym}"),
                         arrayOf(java.io.File(sysrootDir, "usr/include").absolutePath)
                     )

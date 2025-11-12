@@ -2,11 +2,10 @@
 // User's main is renamed via -Dmain=tina_user_main during compilation.
 // Define TINA_ENTRY to the desired entry identifier (e.g., myproj_main).
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// Do NOT force C linkage here; compile this template with the same language
+// mode as user sources to ensure matching symbol mangling.
 
-extern int tina_user_main(); // intentionally no prototype to tolerate both forms
+int tina_user_main(); // intentionally no prototype; tolerate C/C++ signatures
 
 #ifndef TINA_ENTRY
 #define TINA_ENTRY run_main
@@ -15,7 +14,3 @@ extern int tina_user_main(); // intentionally no prototype to tolerate both form
 int TINA_ENTRY(void) {
     return tina_user_main(0, (char**)0);
 }
-
-#ifdef __cplusplus
-}
-#endif
