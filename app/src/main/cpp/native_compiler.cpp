@@ -9,6 +9,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
+#include <typeinfo>
+#include <cxxabi.h>
 
 #if LLVM_HEADERS_AVAILABLE
 // Clang/LLVM headers for in-process compilation
@@ -704,12 +707,36 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkSoMany(
 }
 
 // Load a shared library and call a no-arg entry symbol (e.g., run_main)
+static void tina_install_handlers_once() {
+    static bool done = false; if (done) return; done = true;
+    auto term = []() noexcept {
+        const std::type_info* t = abi::__cxa_current_exception_type();
+        const char* name = t ? t->name() : nullptr;
+        int status = 0;
+        char* dem = name ? abi::__cxa_demangle(name, nullptr, nullptr, &status) : nullptr;
+        LOGE("std::terminate: uncaught exception: %s", dem ? dem : (name ? name : "<unknown>"));
+        if (dem) free(dem);
+        _Exit(134);
+    };
+    std::set_terminate(term);
+
+    auto siglog = [](int sig){ LOGE("caught signal %d", sig); _Exit(128+sig); };
+    struct sigaction sa; memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = siglog; sigemptyset(&sa.sa_mask);
+    sigaction(SIGABRT, &sa, nullptr);
+    sigaction(SIGSEGV, &sa, nullptr);
+    sigaction(SIGBUS,  &sa, nullptr);
+    sigaction(SIGILL,  &sa, nullptr);
+}
 extern "C" JNIEXPORT jint JNICALL
 Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runShared(
         JNIEnv* env, jclass /*clazz*/, jstring jSoPath, jstring jSym) {
     auto toStr = [&](jstring s){ const char* c = s? env->GetStringUTFChars(s,nullptr):nullptr; std::string o=c?std::string(c):std::string(); if(c) env->ReleaseStringUTFChars(s,c); return o; };
     const std::string soPath = toStr(jSoPath);
     const std::string sym    = toStr(jSym);
+
+    // Install terminate/signal handlers before touching user code
+    tina_install_handlers_once();
 
     void* handle = dlopen(soPath.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!handle) {
