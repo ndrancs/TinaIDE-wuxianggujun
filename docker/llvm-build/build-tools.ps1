@@ -250,8 +250,8 @@ if [ "${BUILD_CMAKE_SO}" = "True" ] || [ "${BUILD_CMAKE_SO}" = "true" ] || [ "${
   NDK_CLANGXX="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${API_LEVEL}-clang++"
   mkdir -p /work/build/tools/cmake-runner
   cat > /work/build/tools/cmake-runner/cmake_runner.cpp <<'EOF'
-extern "C" int cmake_main(int, char**);
-extern "C" int cmake_run(int argc, char** argv) { return cmake_main(argc, argv); }
+extern "C" int main(int, char**);
+extern "C" int cmake_run(int argc, char** argv) { return main(argc, argv); }
 EOF
   cmake_objs=$(find /work/build/tools/cmake-${ABI}-api${API_LEVEL} -path '*/Source/CMakeFiles/cmake.dir/*' -name '*.o' | xargs echo)
   if [ -n "${cmake_objs}" ] && [ -x "${NDK_CLANGXX}" ]; then
