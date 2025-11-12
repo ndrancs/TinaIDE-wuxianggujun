@@ -27,7 +27,7 @@ class TinaApplication : Application() {
         }
         // 统一在 Application 阶段应用主题，避免首个 Activity 因 setDefaultNightMode 触发重建
         try {
-            val cfg = ServiceLocator.get<IConfigManager>()
+            val cfg = ServiceLocator.get(IConfigManager::class.java)
             val themeName = cfg.get("ui.theme", "DARK")
             val mode = when (themeName) {
                 "LIGHT" -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
