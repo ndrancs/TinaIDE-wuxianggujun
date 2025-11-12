@@ -45,7 +45,8 @@ class FileTreeFragment : Fragment() {
         emptyView = view.findViewById(R.id.empty_view)
         
         setupRecyclerView()
-        loadProject()
+        // 推迟到首帧后加载，避免进入页面首帧阻塞导致黑屏
+        view.post { loadProject() }
     }
     
     private fun setupRecyclerView() {

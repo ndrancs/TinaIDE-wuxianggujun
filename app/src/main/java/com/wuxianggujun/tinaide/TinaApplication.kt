@@ -25,6 +25,19 @@ class TinaApplication : Application() {
         if (!ServiceLocator.isRegistered(IFileManager::class.java)) {
             ServiceLocator.registerSingleton<IFileManager> { FileManager(applicationContext) }
         }
+        // 统一在 Application 阶段应用主题，避免首个 Activity 因 setDefaultNightMode 触发重建
+        try {
+            val cfg = ServiceLocator.get<IConfigManager>()
+            val themeName = cfg.get("ui.theme", "DARK")
+            val mode = when (themeName) {
+                "LIGHT" -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+                "AUTO" -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                else -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+            }
+            if (androidx.appcompat.app.AppCompatDelegate.getDefaultNightMode() != mode) {
+                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(mode)
+            }
+        } catch (_: Throwable) { }
         // 加载嵌入式编译器依赖（clang-cpp 等）
         try { com.wuxianggujun.tinaide.core.nativebridge.NativeLoader.loadIfNeeded() } catch (_: Throwable) { }
         // 后台预安装 sysroot（优先从 assets/sysroot.zip 解压，避免首个编译时等待）
