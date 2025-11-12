@@ -173,7 +173,7 @@ class MainActivity : BaseActivity() {
     }
     override fun onDestroy() {
         super.onDestroy()
-        ServiceLocator.clear()
+        // Do not clear ServiceLocator here; services are application-scoped
     }
 
     private fun onCompileProject() {
