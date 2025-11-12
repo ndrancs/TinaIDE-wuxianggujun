@@ -291,6 +291,7 @@ class MainActivity : BaseActivity() {
                             log("拷贝 launcher 模板失败: ${t.message}")
                         }
                         val launcherObj = java.io.File(buildDir, "launcher_template.o")
+                        val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
                         val launcherErr = try {
                             com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.emitObj(
                                 sysrootDir.absolutePath,
@@ -298,7 +299,7 @@ class MainActivity : BaseActivity() {
                                 launcherObj.absolutePath,
                                 target,
                                 /*isCxx*/ false,
-                                emptyArray(),
+                                arrayOf("-DTINA_ENTRY=${entrySym}"),
                                 arrayOf(java.io.File(sysrootDir, "usr/include").absolutePath)
                             )
                         } catch (t: Throwable) { "launcher JNI error: ${t.message}" }
@@ -321,9 +322,10 @@ class MainActivity : BaseActivity() {
                         if (linkErr.isEmpty()) {
                             try {
                                 log("[运行] ${soFile.name}")
+                                val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
                                 val rc = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runShared(
                                     soFile.absolutePath,
-                                    "run_main"
+                                    entrySym
                                 )
                                 log("[退出码] $rc")
                             } catch (t: Throwable) {
@@ -368,6 +370,7 @@ class MainActivity : BaseActivity() {
                     log("拷贝 launcher 模板失败: ${t.message}")
                 }
                 val launcherObj = java.io.File(buildDir, "launcher_template.o")
+                val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
                 val launcherErr = try {
                     com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.emitObj(
                         sysrootDir.absolutePath,
@@ -375,7 +378,7 @@ class MainActivity : BaseActivity() {
                         launcherObj.absolutePath,
                         target,
                         /*isCxx*/ false,
-                        emptyArray(),
+                        arrayOf("-DTINA_ENTRY=${entrySym}"),
                         arrayOf(java.io.File(sysrootDir, "usr/include").absolutePath)
                     )
                 } catch (t: Throwable) { "launcher JNI error: ${t.message}" }
@@ -399,9 +402,10 @@ class MainActivity : BaseActivity() {
                 if (linkErr.isEmpty()) {
                     try {
                         log("[运行] ${soFile.name}")
+                        val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
                         val rc = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runShared(
                             soFile.absolutePath,
-                            "run_main"
+                            entrySym
                         )
                         log("[退出码] $rc")
                     } catch (t: Throwable) {

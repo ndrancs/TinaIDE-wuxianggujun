@@ -721,13 +721,13 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runShared(
     using EntryNoArg = int (*)();
     using EntryWithArgs = int (*)(int, char**);
 
-    void* fp = dlsym(handle, sym.empty()? "run_main" : sym.c_str());
-    bool isNoArg = true;
-    if (!fp) {
-        // Fallback to plain C/C++ main(int,char**)
-        fp = dlsym(handle, "main");
-        isNoArg = false;
+    if (sym.empty()) {
+        LOGW("runShared: empty symbol name");
+        dlclose(handle);
+        return -125;
     }
+
+    void* fp = dlsym(handle, sym.c_str());
     if (!fp) {
         const char* e = dlerror();
         std::string err = std::string("dlsym failed: ") + (e?e:"unknown");
@@ -738,11 +738,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runShared(
 
     int rc = -125;
     try {
-        if (isNoArg) {
-            rc = reinterpret_cast<EntryNoArg>(fp)();
-        } else {
-            rc = reinterpret_cast<EntryWithArgs>(fp)(0, nullptr);
-        }
+        rc = reinterpret_cast<EntryNoArg>(fp)();
     } catch (const std::bad_cast& e) {
         LOGW("unhandled std::bad_cast: %s", e.what());
         rc = -101;
