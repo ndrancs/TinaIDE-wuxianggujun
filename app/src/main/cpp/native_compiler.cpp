@@ -361,10 +361,19 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
     keep.push_back(libDir);
     // Also search triple root where NDK places libc++_shared.so (r23+)
     const std::string libDirRoot = sysroot+"/usr/lib/"+tripleBase;
+    const std::string runtimeDir = sysroot+"/usr/lib/"+tripleBase+"/runtime";
+    // Library search paths (link-time)
     keep.push_back("-L");
     keep.push_back(libDirRoot);
-    // Embed rpath for the produced executable. When invoking LLD directly, use linker-native flag (no -Wl, prefix).
+    // Runtime search paths (run-time)
+    keep.push_back(std::string("-rpath=")+runtimeDir);
+    // Also allow colocated libs near the produced binary (optional)
     keep.push_back("-rpath=$ORIGIN");
+    // Explicit dynamic linker for Android
+    const char* dynLinker = (tripleBase.find("64") != std::string::npos) ? "/system/bin/linker64" : "/system/bin/linker";
+    keep.push_back("-dynamic-linker");
+    keep.push_back(dynLinker);
+    // Inputs and output
     keep.push_back(crtBegin);
     keep.push_back(objPath);
     keep.push_back("-o");
@@ -464,7 +473,14 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExeMany(
     keep.push_back("-L"); keep.push_back(libDir);
     const std::string libDirRoot = sysroot+"/usr/lib/"+tripleBase;
     keep.push_back("-L"); keep.push_back(libDirRoot);
+    // Runtime rpath to sysroot runtime dir and $ORIGIN fallback
+    const std::string runtimeDir = sysroot+"/usr/lib/"+tripleBase+"/runtime";
+    keep.push_back(std::string("-rpath=")+runtimeDir);
     keep.push_back("-rpath=$ORIGIN");
+    // Explicit dynamic linker for Android
+    const char* dynLinker = (tripleBase.find("64") != std::string::npos) ? "/system/bin/linker64" : "/system/bin/linker";
+    keep.push_back("-dynamic-linker");
+    keep.push_back(dynLinker);
     keep.push_back(crtBegin);
 
     // Append all object files
