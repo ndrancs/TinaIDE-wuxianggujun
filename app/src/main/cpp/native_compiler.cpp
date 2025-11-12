@@ -7,6 +7,8 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #if LLVM_HEADERS_AVAILABLE
 // Clang/LLVM headers for in-process compilation
@@ -322,11 +324,11 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
     if (!exists(liblogSo))      missing.push_back("liblog.so");
     if (!exists(libandroidSo))  missing.push_back("libandroid.so");
     if (jIsCxx == JNI_TRUE) {
-        // C++ 运行时：优先检查静态别名（通常 NDK 提供 libc++.a → libc++_static.a）
-        const std::string libcxxA = libDir + "/libc++.a";
-        const std::string libcxxStaticA = libDir + "/libc++_static.a";
-        if (!exists(libcxxA) && !exists(libcxxStaticA)) {
-            missing.push_back("libc++.a/libc++_static.a");
+        // 动态 C++ 运行时必需：libc++_shared.so 可在 API 目录或 triple 根目录
+        const std::string libcxxSharedApi  = libDir + "/libc++_shared.so";
+        const std::string libcxxSharedRoot = (sysroot+"/usr/lib/"+tripleBase) + "/libc++_shared.so";
+        if (!exists(libcxxSharedApi) && !exists(libcxxSharedRoot)) {
+            missing.push_back("libc++_shared.so");
         }
     }
     if (!missing.empty()) {
@@ -357,11 +359,20 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
     keep.push_back("relro");
     keep.push_back("-L");
     keep.push_back(libDir);
+    // Also search triple root where NDK places libc++_shared.so (r23+)
+    const std::string libDirRoot = sysroot+"/usr/lib/"+tripleBase;
+    keep.push_back("-L");
+    keep.push_back(libDirRoot);
+    // Embed rpath for the produced executable. When invoking LLD directly, use linker-native flag (no -Wl, prefix).
+    keep.push_back("-rpath=$ORIGIN");
     keep.push_back(crtBegin);
     keep.push_back(objPath);
     keep.push_back("-o");
     keep.push_back(outExe);
-    if (isCxx) keep.push_back("-lc++");
+    if (isCxx) {
+        // 强制使用动态 C++ 运行时（由 NDK 链接脚本把 -lc++ 解析为 -lc++_shared）
+        keep.push_back("-lc++");
+    }
     keep.push_back("-lc");
     keep.push_back("-lm");
     keep.push_back("-llog");
@@ -375,6 +386,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
         args.push_back(s.c_str());
     }
 
+    #if LLD_LINK_ENABLED
     std::string diag;
     llvm::raw_string_ostream os(diag);
     // 调用打包库签名 (args, stdout, stderr, disableOutput, exitEarly)
@@ -384,5 +396,126 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
     // chmod +x
     chmod(outExe.c_str(), 0755);
     return env->NewStringUTF("");
+    #else
+    // No fallback: dynamic-only mode requires shared LLD libraries present at build/runtime.
+    return env->NewStringUTF("UNAVAILABLE: In-process LLD disabled at build-time. Build liblldELF.a/liblldCommon.a (static) and resync build artifacts.");
+    #endif
+#endif
+}
+
+// Link multiple objects to a PIE executable using in-process LLD
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExeMany(
+        JNIEnv* env, jclass /*clazz*/, jstring jSysroot, jobjectArray jObjs, jstring jOut,
+        jstring jTarget, jboolean jIsCxx, jobjectArray jLibDirs, jobjectArray jLibs) {
+#if !LLVM_HEADERS_AVAILABLE
+    const char* msg = "UNAVAILABLE: LLD not available";
+    return env->NewStringUTF(msg);
+#elif !defined(LLD_LINK_ENABLED)
+    const char* msg = "UNAVAILABLE: LLD link disabled at build time";
+    return env->NewStringUTF(msg);
+#else
+    auto toStr = [&](jstring s){ const char* c = s? env->GetStringUTFChars(s,nullptr):nullptr; std::string o=c?std::string(c):std::string(); if(c) env->ReleaseStringUTFChars(s,c); return o; };
+    const std::string sysroot = toStr(jSysroot);
+    const std::string outExe  = toStr(jOut);
+    const std::string target  = toStr(jTarget);
+    const bool isCxx = jIsCxx == JNI_TRUE;
+
+    auto deriveTripleBase = [&](const std::string& t){ std::string r=t; while(!r.empty() && isdigit((unsigned char)r.back())) r.pop_back(); return r; };
+    const std::string tripleBase = deriveTripleBase(target);
+    auto deriveApi = [&](const std::string& t){ std::string digits; for (auto it=t.rbegin(); it!=t.rend(); ++it){ if(!isdigit((unsigned char)*it)) break; digits.push_back(*it);} std::reverse(digits.begin(), digits.end()); return digits.empty()? std::string("24"):digits; };
+    const std::string api = deriveApi(target);
+    const std::string libDir = sysroot+"/usr/lib/"+tripleBase+"/"+api;
+
+    // Basic sysroot checks (same as single-object variant)
+    struct stat st;
+    if (stat(libDir.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)) {
+        std::string err = "[TinaIDE] Sysroot library directory missing: "+libDir;
+        return env->NewStringUTF(err.c_str());
+    }
+    auto exists = [](const std::string& p){ struct stat s; return stat(p.c_str(), &s) == 0 && S_ISREG(s.st_mode); };
+    const std::string crtBegin = libDir + "/crtbegin_dynamic.o";
+    const std::string crtEnd   = libDir + "/crtend_android.o";
+    const std::string libcSo   = libDir + "/libc.so";
+    const std::string libmSo   = libDir + "/libm.so";
+    const std::string liblogSo = libDir + "/liblog.so";
+    const std::string libandroidSo = libDir + "/libandroid.so";
+    std::vector<std::string> missing;
+    if (!exists(crtBegin))      missing.push_back("crtbegin_dynamic.o");
+    if (!exists(crtEnd))        missing.push_back("crtend_android.o");
+    if (!exists(libcSo))        missing.push_back("libc.so");
+    if (!exists(libmSo))        missing.push_back("libm.so");
+    if (!exists(liblogSo))      missing.push_back("liblog.so");
+    if (!exists(libandroidSo))  missing.push_back("libandroid.so");
+    if (jIsCxx == JNI_TRUE) {
+        const std::string libcxxSharedApi  = libDir + "/libc++_shared.so";
+        const std::string libcxxSharedRoot = (sysroot+"/usr/lib/"+tripleBase) + "/libc++_shared.so";
+        if (!exists(libcxxSharedApi) && !exists(libcxxSharedRoot)) { missing.push_back("libc++_shared.so"); }
+    }
+    if (!missing.empty()) {
+        std::ostringstream oss; oss << "[TinaIDE] 链接所需的 NDK stub/crt 缺失于: " << libDir << "\n缺失: ";
+        for (size_t i=0;i<missing.size();++i){ if(i) oss<<", "; oss<<missing[i]; }
+        return env->NewStringUTF(oss.str().c_str());
+    }
+
+    std::vector<std::string> keep; keep.reserve(32);
+    keep.push_back("ld.lld");
+    keep.push_back("-pie"); keep.push_back("-z"); keep.push_back("now"); keep.push_back("-z"); keep.push_back("relro");
+    keep.push_back("-L"); keep.push_back(libDir);
+    const std::string libDirRoot = sysroot+"/usr/lib/"+tripleBase;
+    keep.push_back("-L"); keep.push_back(libDirRoot);
+    keep.push_back("-rpath=$ORIGIN");
+    keep.push_back(crtBegin);
+
+    // Append all object files
+    if (jObjs != nullptr) {
+        jsize n = env->GetArrayLength(jObjs);
+        for (jsize i=0;i<n;++i) {
+            jstring s = (jstring)env->GetObjectArrayElement(jObjs, i);
+            const char* c = s? env->GetStringUTFChars(s,nullptr):nullptr;
+            if (c) { keep.emplace_back(c); env->ReleaseStringUTFChars(s,c); }
+            if (s) env->DeleteLocalRef(s);
+        }
+    }
+
+    keep.push_back("-o"); keep.push_back(outExe);
+    if (isCxx) { keep.push_back("-lc++"); }
+    keep.push_back("-lc"); keep.push_back("-lm"); keep.push_back("-llog"); keep.push_back("-landroid");
+
+    // Extra lib search dirs
+    if (jLibDirs != nullptr) {
+        jsize n = env->GetArrayLength(jLibDirs);
+        for (jsize i=0;i<n;++i){
+            jstring s=(jstring)env->GetObjectArrayElement(jLibDirs,i);
+            const char* c = s? env->GetStringUTFChars(s,nullptr):nullptr;
+            if (c) { keep.push_back("-L"); keep.emplace_back(c); env->ReleaseStringUTFChars(s,c); }
+            if (s) env->DeleteLocalRef(s);
+        }
+    }
+    // Extra libs, e.g. -lfoo
+    if (jLibs != nullptr) {
+        jsize n = env->GetArrayLength(jLibs);
+        for (jsize i=0;i<n;++i){
+            jstring s=(jstring)env->GetObjectArrayElement(jLibs,i);
+            const char* c = s? env->GetStringUTFChars(s,nullptr):nullptr;
+            if (c) { keep.emplace_back(std::string("-l")+c); env->ReleaseStringUTFChars(s,c); }
+            if (s) env->DeleteLocalRef(s);
+        }
+    }
+
+    keep.push_back(crtEnd);
+
+    std::vector<const char*> args; args.reserve(keep.size());
+    for (const auto& s : keep) args.push_back(s.c_str());
+
+    #if LLD_LINK_ENABLED
+    std::string diag; llvm::raw_string_ostream os(diag);
+    bool ok = lld::elf::link(args, os, os, /*disableOutput=*/false, /*exitEarly=*/false);
+    os.flush(); if (!ok) return env->NewStringUTF(diag.c_str());
+    chmod(outExe.c_str(), 0755);
+    return env->NewStringUTF("");
+    #else
+    return env->NewStringUTF("UNAVAILABLE: In-process LLD disabled at build-time. Build liblldELF.a/liblldCommon.a (static) and resync build artifacts.");
+    #endif
 #endif
 }
