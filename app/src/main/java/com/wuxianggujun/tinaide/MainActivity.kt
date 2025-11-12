@@ -248,8 +248,6 @@ class MainActivity : BaseActivity() {
             flags += listOf("-Wall", "-Wextra")
             // 启用 C++ 异常（防止 dynamic_cast 引用失败等直接触发 terminate）
             flags += listOf("-fexceptions", "-fcxx-exceptions")
-            // 将用户 main 重命名为 tina_user_main，便于注入的 launcher 调用
-            flags += listOf("-Dmain=tina_user_main")
 
             var ok = 0
             var syntaxOk = 0
@@ -282,63 +280,6 @@ class MainActivity : BaseActivity() {
                     ok++
                     compiledObjs += objFile.absolutePath
                     log("成功: ${src.name}")
-                    if (sources.size == 1) {
-                        // 单文件工程：直接链接并运行
-                        // 准备并编译 launcher 模板（assets → 构建目录）
-                        val launcherSrc = java.io.File(buildDir, "launcher_template.c")
-                        try {
-                            assets.open("templates/launcher_template.c").use { inp ->
-                                launcherSrc.outputStream().use { out -> inp.copyTo(out) }
-                            }
-                        } catch (t: Throwable) {
-                            log("拷贝 launcher 模板失败: ${t.message}")
-                        }
-                        val launcherObj = java.io.File(buildDir, "launcher_template.o")
-                        val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
-                        val launcherErr = try {
-                            com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.emitObj(
-                                sysrootDir.absolutePath,
-                                launcherSrc.absolutePath,
-                                launcherObj.absolutePath,
-                                target,
-                                isCxx,
-                                arrayOf("-fexceptions", "-fcxx-exceptions", "-DTINA_ENTRY=${entrySym}"),
-                                arrayOf(java.io.File(sysrootDir, "usr/include").absolutePath)
-                            )
-                        } catch (t: Throwable) { "launcher JNI error: ${t.message}" }
-                        if (launcherErr.isNotEmpty()) {
-                            log("launcher 编译失败: $launcherErr")
-                        }
-
-                        val soFile = java.io.File(buildRoot, "lib${src.nameWithoutExtension}.so")
-                        val linkErr = try {
-                            com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.linkSoMany(
-                                sysrootDir.absolutePath,
-                                arrayOf(objFile.absolutePath, launcherObj.absolutePath),
-                                soFile.absolutePath,
-                                target,
-                                isCxx,
-                                emptyArray(),
-                                emptyArray()
-                            )
-                        } catch (t: Throwable) { "link JNI error: ${t.message}" }
-                        if (linkErr.isEmpty()) {
-                            try {
-                                log("[运行] ${soFile.name}")
-                                val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
-                                val out = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runSharedIsolated(
-                                    soFile.absolutePath,
-                                    entrySym,
-                                    15000
-                                )
-                                log(out)
-                            } catch (t: Throwable) {
-                                log("运行失败: ${t.message}")
-                            }
-                        } else {
-                            log("链接失败: $linkErr")
-                        }
-                    }
                 } else {
                     // fallback: syntax-only
                     val syn = try {
@@ -362,54 +303,30 @@ class MainActivity : BaseActivity() {
                 }
             }
 
-            // 多文件工程：编译完成后统一链接一次（以共享库方式运行）
-            if (compiledObjs.isNotEmpty() && sources.size > 1) {
-                // 编译 launcher 并加入链接
-                val launcherSrc = java.io.File(buildDir, "launcher_template.c")
-                try {
-                    assets.open("templates/launcher_template.c").use { inp ->
-                        launcherSrc.outputStream().use { out -> inp.copyTo(out) }
-                    }
-                } catch (t: Throwable) {
-                    log("拷贝 launcher 模板失败: ${t.message}")
-                }
-                val launcherObj = java.io.File(buildDir, "launcher_template.o")
-                val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
-                val launcherErr = try {
-                    com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.emitObj(
-                        sysrootDir.absolutePath,
-                        launcherSrc.absolutePath,
-                        launcherObj.absolutePath,
-                        target,
-                        /*isCxx*/ true,
-                        arrayOf("-fexceptions", "-fcxx-exceptions", "-DTINA_ENTRY=${entrySym}"),
-                        arrayOf(java.io.File(sysrootDir, "usr/include").absolutePath)
-                    )
-                } catch (t: Throwable) { "launcher JNI error: ${t.message}" }
-                if (launcherErr.isNotEmpty()) {
-                    log("launcher 编译失败: $launcherErr")
-                }
-
+            // 统一链接和运行（单文件或多文件）
+            if (compiledObjs.isNotEmpty()) {
+                log("=== 链接阶段 ===")
                 val soFile = java.io.File(buildRoot, "lib${project.name}.so")
-                val objArray = (compiledObjs + launcherObj.absolutePath).toTypedArray()
                 val linkErr = try {
                     com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.linkSoMany(
                         sysrootDir.absolutePath,
-                        objArray,
+                        compiledObjs.toTypedArray(),
                         soFile.absolutePath,
                         target,
-                        /*isCxx*/ true,
+                        true,  // C++ 模式
                         emptyArray(),
                         emptyArray()
                     )
                 } catch (t: Throwable) { "link JNI error: ${t.message}" }
+                
                 if (linkErr.isEmpty()) {
+                    log("链接成功: ${soFile.name}")
                     try {
-                        log("[运行] ${soFile.name}")
-                        val entrySym = (project.name.replace(Regex("[^A-Za-z0-9_]"), "_") + "_main")
+                        log("=== 运行阶段 ===")
+                        // 直接调用 main，native 侧会自动尝试 C++ mangled 名称
                         val out = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runSharedIsolated(
                             soFile.absolutePath,
-                            entrySym,
+                            "main",
                             15000
                         )
                         log(out)
