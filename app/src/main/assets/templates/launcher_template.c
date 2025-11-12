@@ -2,6 +2,9 @@
 // - User main is renamed via -Dmain=tina_user_main in user compilation.
 // - Define TINA_ENTRY to set the exported, unmangled entry symbol (e.g., myproj_main).
 // - Compile this file as C++ (-x c++ -std=c++17).
+//
+// Needs stdio for fprintf/stderr used in fallback diagnostics.
+#include <stdio.h>
 
 #ifndef TINA_ENTRY
 #define TINA_ENTRY run_main
