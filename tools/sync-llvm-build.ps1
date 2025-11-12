@@ -7,7 +7,7 @@ Param(
   [string]$AppAssetsSysroot = 'app/src/main/assets/sysroot',
   [ValidateSet('none','zip','mirror')]
   [string]$SysrootMode = 'zip',
-  [bool]$CopyLibcxxToJni = $false,
+  [bool]$CopyLibcxxToJni = $true,
   [bool]$CopyLlvmToJni   = $false,
   [string]$ToolBinSource = ''
 )

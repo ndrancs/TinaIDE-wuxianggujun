@@ -8,42 +8,15 @@ object NativeLoader {
     private var loaded = false
 
     private fun preloadLibcxxOnce() {
-        // 优先使用 APK/jniLibs 自带的 libc++_shared（进入 app 默认命名空间，避免产生重复副本）。
+        // 仅允许使用 APK/jniLibs 的 libc++_shared，彻底关闭 sysroot 回退，确保进程内始终只有一份 C++ 运行时。
         try {
             System.loadLibrary("c++_shared")
             Log.i("NativeLoader", "Preloaded libc++_shared from jniLibs")
-            return
-        } catch (_: Throwable) {
-            // fallback to sysroot absolute path
+        } catch (t: Throwable) {
+            val msg = "Missing libc++_shared in APK/jniLibs (required). Please ensure it is packaged. (${t.message})"
+            Log.e("NativeLoader", msg)
+            throw UnsatisfiedLinkError(msg)
         }
-        try {
-            val ctx = TinaApplication.instance
-            val base = java.io.File(ctx.filesDir, "sysroot")
-            val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: ""
-            val triple = when {
-                abi.contains("arm64", true) -> "aarch64-linux-android"
-                abi.contains("x86_64", true) -> "x86_64-linux-android"
-                else -> "aarch64-linux-android"
-            }
-            val candidates = listOf(
-                java.io.File(base, "usr/lib/$triple/libc++_shared.so"),
-                java.io.File(base, "usr/lib/$triple/26/libc++_shared.so")
-            )
-            for (f in candidates) {
-                if (f.exists()) {
-                    try {
-                        System.load(f.absolutePath)
-                        Log.i("NativeLoader", "Preloaded libc++_shared from ${f.absolutePath}")
-                        return
-                    } catch (_: Throwable) {
-                        // try next candidate
-                    }
-                }
-            }
-        } catch (_: Throwable) {
-            // ignore
-        }
-        // 若两者皆不可用，由上层安装流程提示缺失
     }
 
     fun loadIfNeeded() {
@@ -93,4 +66,71 @@ object NativeLoader {
     }
 
     fun isLoaded(): Boolean = loaded
+
+    // ---- Helpers: preload arbitrary libs from sysroot by name (without hardcoding absolute paths) ----
+    private fun abiToTriple(): String {
+        val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: ""
+        return when {
+            abi.contains("arm64", true) -> "aarch64-linux-android"
+            abi.contains("x86_64", true) -> "x86_64-linux-android"
+            else -> "aarch64-linux-android"
+        }
+    }
+
+    private fun sysrootBase(): java.io.File = java.io.File(TinaApplication.instance.filesDir, "sysroot")
+
+    /**
+     * 从 sysroot 以“库名”方式批量预加载（构造常见候选路径并加载第一命中者）。
+     * - 默认不允许加载 libc++_shared.so（避免产生第二份 C++ 运行时）；必要时可显式 allowLibcxx=true。
+     * - preferRuntime=true 时优先从 usr/lib/<triple>/runtime 目录查找，其次 <api> 目录，再次 triple 根目录。
+     * - names 传入完整库名（例："libLLVM-17.so"、"libclang-cpp.so"、"libfoo.so"）。
+     */
+    @JvmOverloads
+    fun preloadFromSysrootByName(
+        names: List<String>,
+        preferRuntime: Boolean = true,
+        allowLibcxx: Boolean = false,
+        apiLevel: String? = null
+    ) {
+        val triple = abiToTriple()
+        val base = sysrootBase()
+        val api = apiLevel ?: "26" // 与打包默认一致，必要时可由调用者指定
+        for (name in names) {
+            if (!allowLibcxx && name == "libc++_shared.so") {
+                Log.w("NativeLoader", "Skip loading libc++_shared from sysroot to keep single C++ runtime")
+                continue
+            }
+            val candidates = buildList {
+                if (preferRuntime) add(java.io.File(base, "usr/lib/$triple/runtime/$name"))
+                add(java.io.File(base, "usr/lib/$triple/$api/$name"))
+                add(java.io.File(base, "usr/lib/$triple/$name"))
+                if (!preferRuntime) add(java.io.File(base, "usr/lib/$triple/runtime/$name"))
+            }
+            var loadedOne = false
+            for (f in candidates) {
+                if (f.exists()) {
+                    try {
+                        System.load(f.absolutePath)
+                        Log.i("NativeLoader", "Preloaded from sysroot: ${f.absolutePath}")
+                        loadedOne = true
+                        break
+                    } catch (t: Throwable) {
+                        Log.w("NativeLoader", "Failed to load ${f.absolutePath}: ${t.message}")
+                    }
+                }
+            }
+            if (!loadedOne) {
+                Log.w("NativeLoader", "No match in sysroot for $name (triple=$triple, api=$api)")
+            }
+        }
+    }
+
+    /** 便捷可变参数封装 */
+    @JvmOverloads
+    fun preloadFromSysrootVararg(
+        vararg names: String,
+        preferRuntime: Boolean = true,
+        allowLibcxx: Boolean = false,
+        apiLevel: String? = null
+    ) = preloadFromSysrootByName(names.toList(), preferRuntime, allowLibcxx, apiLevel)
 }
