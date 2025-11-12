@@ -255,7 +255,8 @@ class MainActivity : BaseActivity() {
             val compiledObjs = mutableListOf<String>()
 
             for (src in sources) {
-                val isCxx = !src.extension.equals("c", true)
+                // Force C++ mode for uniform symbol/mangling behavior
+                val isCxx = true
                 val rel = src.absolutePath.removePrefix(root.absolutePath).trimStart(java.io.File.separatorChar)
                 val objName = rel.replace(java.io.File.separatorChar, '_') + ".o"
                 val objFile = java.io.File(buildDir, objName)
