@@ -8,7 +8,11 @@ Param(
   # New: build shared-object runners instead of relying on exec() (SELinux blocks exec in app sandbox)
   [bool]$BuildNinjaSo = $true,
   # Default to also produce a CMake runner .so (best‑effort); keeps cmake executable build intact
-  [bool]$BuildCMakeSo = $true
+  [bool]$BuildCMakeSo = $true,
+  # New: try to produce a clangd runner .so for Android (best‑effort, heavy deps)
+  [bool]$BuildClangdSo = $true,
+  # Optional llvm-project tag for clangd build (fallback to 17.0.6)
+  [string]$LlvmTagForClangd = 'llvmorg-17.0.6'
 )
 
 $ErrorActionPreference = 'Stop'

@@ -117,7 +117,7 @@ if (Test-Path $srcLibDir) {
     try {
       $toolsBin = Join-Path (Join-Path $BuildOutputRoot $Abi) 'tools/bin'
       if (Test-Path $toolsBin) {
-        $runners = @('libninja_runner.so','libcmake_runner.so')
+        $runners = @('libninja_runner.so','libcmake_runner.so','libclangd_runner.so')
         foreach($r in $runners){
           $src = Join-Path $toolsBin $r
           if (Test-Path $src) {
@@ -206,6 +206,24 @@ if ($srcSysroot -and (Test-Path $srcSysroot)) {
       }
     } finally { if ($zip) { $zip.Dispose() }; if ($fs) { $fs.Dispose() } }
     Write-Host "INFO: Packaged sysroot.zip -> $zipPath" -ForegroundColor Green
+    # Optionally copy tool runners into sysroot runtime too (for archival/absolute System.load)
+    if ($CopyToolRunnersToSysroot) {
+      try {
+        $toolsBin = Join-Path (Join-Path $BuildOutputRoot $Abi) 'tools/bin'
+        if (Test-Path $toolsBin) {
+          $runners = @('libninja_runner.so','libcmake_runner.so','libclangd_runner.so')
+          foreach($r in $runners){
+            $src = Join-Path $toolsBin $r
+            if (Test-Path $src) {
+              Copy-Item $src -Destination (Join-Path $dstRuntime $r) -Force
+              Write-Host "INFO: Archived $r into sysroot runtime" -ForegroundColor Green
+            }
+          }
+        }
+      } catch {
+        Write-Host "[w] Failed to archive tool runners into sysroot runtime: $($_.Exception.Message)" -ForegroundColor Yellow
+      }
+    }
   } else {
     New-Item -ItemType Directory -Force -Path $AppAssetsSysroot | Out-Null
   robocopy $srcSysroot $AppAssetsSysroot /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
