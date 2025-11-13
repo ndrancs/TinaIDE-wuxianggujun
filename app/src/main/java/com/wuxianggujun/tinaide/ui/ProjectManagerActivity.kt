@@ -13,8 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hjq.permissions.OnPermissionCallback
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
-import android.Manifest
-import android.content.pm.PackageManager
 import com.wuxianggujun.tinaide.base.BaseActivity
 import com.wuxianggujun.tinaide.extensions.*
 import com.wuxianggujun.tinaide.utils.Logger
@@ -152,7 +150,7 @@ class ProjectManagerActivity : BaseActivity() {
 
     private fun requestStoragePermissionsIfNeeded(onAfterGranted: () -> Unit) {
         when {
-            // Android 11+：申请“所有文件访问”以便访问自定义项目目录（交由 XXPermissions 全权处理）
+            // Android 11+：未完全适配分区存储，使用 MANAGE_EXTERNAL_STORAGE
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
                 XXPermissions.with(this)
                     .permission(Permission.MANAGE_EXTERNAL_STORAGE)
@@ -173,10 +171,14 @@ class ProjectManagerActivity : BaseActivity() {
                         }
                     })
             }
-            // Android 6.0 - 10：交由 XXPermissions 请求读写权限
+            // Android 6.0 - 10：使用 XXPermissions + READ_MEDIA_*，由库在低版本自动兼容到外部存储权限
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
                 XXPermissions.with(this)
-                    .permission(Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE)
+                    .permission(
+                        Permission.READ_MEDIA_IMAGES,
+                        Permission.READ_MEDIA_VIDEO,
+                        Permission.READ_MEDIA_AUDIO
+                    )
                     .request(object : OnPermissionCallback {
                         override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
                             if (!allGranted) {
@@ -204,7 +206,6 @@ class ProjectManagerActivity : BaseActivity() {
 
 
     companion object {
-        private const val REQ_STORAGE_PERMS = 1001
         private const val REQ_CHOOSE_DIR = 1002
         private const val KEY_PROJECTS_ROOT = "project.root_dir"
     }
@@ -238,6 +239,7 @@ class ProjectManagerActivity : BaseActivity() {
             }
         }
     }
+
 
     private fun resolveTreeUriToPath(uri: Uri): String? {
         return try {

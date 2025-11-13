@@ -151,9 +151,11 @@ class MainActivity : BaseActivity() {
     }
 
     private fun updateProjectHeaderName() {
-        val nameView = findViewById<TextView>(R.id.tv_project_name)
+        val nav = findViewById<com.google.android.material.navigation.NavigationView>(R.id.nav_view)
+        val headerView = nav?.let { if (it.headerCount > 0) it.getHeaderView(0) else null }
+        val nameView = headerView?.findViewById<TextView>(R.id.tv_project_name)
         if (nameView == null) {
-            android.util.Log.e("MainActivity", "tv_project_name not found!")
+            android.util.Log.e("MainActivity", "tv_project_name not found in nav header!")
             return
         }
         val fm = ServiceLocator.get<IFileManager>()
@@ -409,6 +411,10 @@ class MainActivity : BaseActivity() {
                 drawerLayout.openDrawer(findViewById(R.id.nav_view))
                 true
             }
+            R.id.action_open_project -> {
+                showOpenProjectDialog()
+                true
+            }
             R.id.action_run -> { onCompileProject(); true }
             R.id.action_build -> { onCompileProject(); true }
             R.id.action_settings -> {
@@ -422,3 +428,4 @@ class MainActivity : BaseActivity() {
         }
     }
 }
+

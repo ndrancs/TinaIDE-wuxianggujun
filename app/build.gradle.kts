@@ -26,7 +26,7 @@ android {
 
     defaultConfig {
         applicationId = "com.wuxianggujun.tinaide"
-        minSdk = 24
+        minSdk = 28
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -97,7 +97,7 @@ android {
     // Ensure AAPT does not ignore libc++ private headers under c++/v1/__ios
     // Some default ignore patterns may exclude double-underscore directories in assets.
     @Suppress("UnstableApiUsage")
-    aaptOptions {
+    androidResources {
         // Do not ignore any assets to ensure libc++ internals like c++/v1/__ios are packaged
         ignoreAssetsPattern = ""
     }
@@ -123,6 +123,7 @@ dependencies {
     implementation(project(":sora-editor:editor"))
     implementation(project(":sora-editor:language-textmate"))
     
+    implementation(project(":treeview"))
     // JSON processing for configuration
     implementation("com.google.code.gson:gson:2.11.0")
     
