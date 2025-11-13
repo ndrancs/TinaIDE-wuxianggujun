@@ -6,6 +6,7 @@ import android.util.Log
 import com.wuxianggujun.tinaide.core.ServiceLifecycle
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.config.IConfigManager
+import com.wuxianggujun.tinaide.core.config.ConfigKeys
 import com.wuxianggujun.tinaide.core.get
 import java.io.File
 
@@ -15,8 +16,6 @@ import java.io.File
 class FileManager(private val context: Context) : IFileManager, ServiceLifecycle {
     companion object {
         private const val TAG = "FileManager"
-        private const val KEY_CURRENT_PROJECT = "file.current_project"
-        private const val KEY_RECENT_FILES = "file.recent_files"
         private const val MAX_RECENT_FILES = 10
     }
 
@@ -53,7 +52,7 @@ class FileManager(private val context: Context) : IFileManager, ServiceLifecycle
         )
         currentProject = project
 
-        configManager.set(KEY_CURRENT_PROJECT, path)
+        configManager.set(ConfigKeys.CurrentProject, path)
 
         addFileWatcher(path, object : FileChangeListener {
             override fun onFileCreated(file: File) { Log.d(TAG, "File created: ${file.absolutePath}") }
@@ -68,14 +67,14 @@ class FileManager(private val context: Context) : IFileManager, ServiceLifecycle
         currentProject?.let { project ->
             removeFileWatcher(project.rootPath)
             currentProject = null
-            configManager.remove(KEY_CURRENT_PROJECT)
+            configManager.remove(ConfigKeys.CurrentProject.key)
         }
     }
 
     override fun getCurrentProject(): Project? {
         if (currentProject == null) {
             try {
-                val lastPath = configManager.get(KEY_CURRENT_PROJECT, "")
+                val lastPath = configManager.get(ConfigKeys.CurrentProject)
                 if (lastPath.isNotEmpty()) {
                     val dir = File(lastPath)
                     if (dir.exists() && dir.isDirectory) {
@@ -262,7 +261,7 @@ class FileManager(private val context: Context) : IFileManager, ServiceLifecycle
 
     private fun loadRecentFiles() {
         try {
-            val paths = configManager.get(KEY_RECENT_FILES, "")
+            val paths = configManager.get(ConfigKeys.RecentFiles)
             if (paths.isNotEmpty()) {
                 paths.split(";").forEach { p ->
                     val f = File(p)
@@ -277,7 +276,7 @@ class FileManager(private val context: Context) : IFileManager, ServiceLifecycle
     private fun saveRecentFiles() {
         try {
             val paths = recentFiles.joinToString(";") { it.absolutePath }
-            configManager.set(KEY_RECENT_FILES, paths)
+            configManager.set(ConfigKeys.RecentFiles, paths)
         } catch (e: Exception) {
             Log.e(TAG, "Error saving recent files", e)
         }

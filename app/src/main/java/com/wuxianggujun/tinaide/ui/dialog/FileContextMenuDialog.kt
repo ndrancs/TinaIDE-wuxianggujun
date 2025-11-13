@@ -1,6 +1,5 @@
 package com.wuxianggujun.tinaide.ui.dialog
 
-import android.app.AlertDialog
 import android.app.Dialog
 import android.os.Bundle
 import android.widget.EditText
@@ -28,7 +27,7 @@ class FileContextMenuDialog(
             arrayOf("重命名", "删除", "复制路径")
         }
         
-        return AlertDialog.Builder(requireContext())
+        return MaterialDialogBuilder.create(requireContext())
             .setTitle(file.name)
             .setItems(items) { _, which ->
                 handleMenuItemClick(which, file.isDirectory)
@@ -62,7 +61,7 @@ class FileContextMenuDialog(
         val input = EditText(requireContext())
         input.hint = "文件名"
         
-        AlertDialog.Builder(requireContext())
+        MaterialDialogBuilder.create(requireContext())
             .setTitle("新建文件")
             .setView(input)
             .setPositiveButton("创建") { _, _ ->
@@ -91,7 +90,7 @@ class FileContextMenuDialog(
         val input = EditText(requireContext())
         input.hint = "文件夹名"
         
-        AlertDialog.Builder(requireContext())
+        MaterialDialogBuilder.create(requireContext())
             .setTitle("新建文件夹")
             .setView(input)
             .setPositiveButton("创建") { _, _ ->
@@ -121,7 +120,7 @@ class FileContextMenuDialog(
         input.setText(file.name)
         input.selectAll()
         
-        AlertDialog.Builder(requireContext())
+        MaterialDialogBuilder.create(requireContext())
             .setTitle("重命名")
             .setView(input)
             .setPositiveButton("确定") { _, _ ->
@@ -161,7 +160,7 @@ class FileContextMenuDialog(
             "确定要删除文件 \"${file.name}\" 吗？"
         }
         
-        AlertDialog.Builder(requireContext())
+        MaterialDialogBuilder.create(requireContext())
             .setTitle("确认删除")
             .setMessage(message)
             .setPositiveButton("删除") { _, _ ->

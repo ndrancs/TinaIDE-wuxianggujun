@@ -7,7 +7,7 @@ import androidx.annotation.ColorInt
  */
 enum class LogLevel(
     val prefix: String,
-    @ColorInt val color: Int
+    @param:ColorInt val color: Int
 ) {
     ERROR("ERROR", 0xFFF44336.toInt()),   // 红色
     WARN("WARN", 0xFFFF9800.toInt()),     // 橙色

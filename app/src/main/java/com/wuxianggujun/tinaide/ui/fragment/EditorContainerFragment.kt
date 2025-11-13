@@ -13,6 +13,7 @@ import com.wuxianggujun.tinaide.extensions.*
 import com.wuxianggujun.tinaide.utils.FileUtils
 import com.wuxianggujun.tinaide.utils.Logger
 import com.wuxianggujun.tinaide.R
+import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.get
 import com.wuxianggujun.tinaide.editor.EditorTab
@@ -99,31 +100,28 @@ class EditorContainerFragment : Fragment() {
     private fun showGotoLineDialog() {
         val fragment = getCurrentEditorFragment() ?: return
         val editor = fragment.getEditor()
-        
-        val input = android.widget.EditText(requireContext())
-        input.inputType = android.text.InputType.TYPE_CLASS_NUMBER
-        input.hint = "行号"
-        
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
-            .setTitle("跳转到行")
-            .setView(input)
-            .setPositiveButton("跳转") { _, _ ->
-                val lineStr = input.text.toString()
-                if (lineStr.isNotEmpty()) {
-                    try {
-                        val line = lineStr.toInt() - 1 // 行号从 0 开始
-                        if (line >= 0 && line < editor.lineCount) {
-                            editor.setSelection(line, 0)
-                        } else {
-                            requireContext().toastError("行号超出范围")
-                        }
-                    } catch (e: NumberFormatException) {
-                        requireContext().toastError("请输入有效的行号")
+
+        MaterialDialogBuilder.showInput(
+            context = requireContext(),
+            title = "跳转到行",
+            hint = "行号",
+            validator = { value ->
+                if (value.isEmpty()) {
+                    "请输入行号"
+                } else {
+                    val line = value.toIntOrNull()
+                    when {
+                        line == null -> "请输入有效的数字"
+                        line <= 0 || line > editor.lineCount -> "行号超出范围"
+                        else -> null
                     }
                 }
+            },
+            onConfirm = { value ->
+                val line = value.toInt() - 1
+                editor.setSelection(line, 0)
             }
-            .setNegativeButton("取消", null)
-            .show()
+        )
     }
     
     private fun setupViewPager() {

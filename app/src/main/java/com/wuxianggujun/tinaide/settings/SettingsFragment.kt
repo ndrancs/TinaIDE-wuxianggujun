@@ -11,6 +11,7 @@ import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.extensions.*
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.config.IConfigManager
+import com.wuxianggujun.tinaide.core.config.ConfigKeys
 import com.wuxianggujun.tinaide.core.get
 
 /**
@@ -114,7 +115,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 true
             }
             // 从配置中读取当前路径
-            val currentPath = configManager.get("project.root_dir", "/storage/emulated/0/TinaIDE/Projects")
+            val currentPath = configManager.get(ConfigKeys.ProjectRootDir)
             summary = currentPath
         }
 

@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.Intent
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.config.IConfigManager
+import com.wuxianggujun.tinaide.core.config.ConfigKeys
 import com.wuxianggujun.tinaide.core.get
+import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
@@ -12,7 +14,8 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 class OutputManager(private val context: Context) : IOutputManager {
     
-    private val outputBuffer = StringBuilder()
+    private val outputFile: File by lazy { File(context.cacheDir, "compile_output.log") }
+    private val maxOutputSizeBytes: Long = 1024L * 1024L // 1MB
     private val listeners = CopyOnWriteArrayList<IOutputManager.OutputListener>()
     private var outputMode = IOutputManager.OutputMode.ACTIVITY
     
@@ -20,7 +23,7 @@ class OutputManager(private val context: Context) : IOutputManager {
         // 从配置读取输出模式
         try {
             val configManager = ServiceLocator.get<IConfigManager>()
-            val savedMode = configManager.get("output.mode", "ACTIVITY")
+            val savedMode = configManager.get(ConfigKeys.OutputMode)
             outputMode = IOutputManager.OutputMode.valueOf(savedMode)
         } catch (e: Exception) {
             outputMode = IOutputManager.OutputMode.ACTIVITY
@@ -28,17 +31,54 @@ class OutputManager(private val context: Context) : IOutputManager {
     }
     
     override fun appendOutput(text: String) {
-        outputBuffer.append(text)
+        try {
+            if (!outputFile.exists()) {
+                outputFile.parentFile?.mkdirs()
+                outputFile.createNewFile()
+            }
+            outputFile.appendText(text)
+            // 控制输出文件大小，超过上限时截断为后 50%
+            if (outputFile.length() > maxOutputSizeBytes) {
+                trimOutputFile()
+            }
+        } catch (_: Throwable) {
+            // 忽略文件写入错误，仍然通知监听器
+        }
         listeners.forEach { it.onOutputAppended(text) }
     }
     
     override fun clearOutput() {
-        outputBuffer.clear()
+        try {
+            if (outputFile.exists()) {
+                outputFile.writeText("")
+            }
+        } catch (_: Throwable) {
+            // 忽略清理错误
+        }
         listeners.forEach { it.onOutputCleared() }
     }
     
     override fun getOutput(): String {
-        return outputBuffer.toString()
+        return try {
+            if (!outputFile.exists()) "" else outputFile.readText()
+        } catch (_: Throwable) {
+            ""
+        }
+    }
+
+    /**
+     * 截断输出文件，只保留后 50% 内容
+     */
+    private fun trimOutputFile() {
+        try {
+            if (!outputFile.exists()) return
+            val lines = outputFile.readLines()
+            if (lines.isEmpty()) return
+            val keep = lines.takeLast(lines.size / 2)
+            outputFile.writeText(keep.joinToString("\n"))
+        } catch (_: Throwable) {
+            // 忽略截断错误，保持现状
+        }
     }
     
     override fun setOutputMode(mode: IOutputManager.OutputMode) {
@@ -46,7 +86,7 @@ class OutputManager(private val context: Context) : IOutputManager {
         // 保存到配置
         try {
             val configManager = ServiceLocator.get<IConfigManager>()
-            configManager.set("output.mode", mode.name)
+            configManager.set(ConfigKeys.OutputMode, mode.name)
         } catch (e: Exception) {
             // 忽略配置保存失败
         }

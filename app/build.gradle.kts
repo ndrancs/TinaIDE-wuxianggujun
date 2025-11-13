@@ -131,6 +131,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
+    // AndroidX Lifecycle (ViewModel + StateFlow)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.6")
+
     // Permissions library by 轮子哥（XXPermissions）- 最新版
     implementation("com.github.getActivity:XXPermissions:20.0")
     

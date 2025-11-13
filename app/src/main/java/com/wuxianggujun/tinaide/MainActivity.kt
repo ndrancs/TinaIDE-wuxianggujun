@@ -9,6 +9,10 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.wuxianggujun.tinaide.base.BaseActivity
 import com.wuxianggujun.tinaide.extensions.toast
 import com.wuxianggujun.tinaide.extensions.toastSuccess
@@ -16,10 +20,13 @@ import com.wuxianggujun.tinaide.extensions.toastError
 import com.wuxianggujun.tinaide.extensions.toastInfo
 import com.wuxianggujun.tinaide.extensions.toastWarning
 import com.wuxianggujun.tinaide.extensions.handleErrorWithToast
+import com.wuxianggujun.tinaide.ui.CompilerViewModel
+import com.wuxianggujun.tinaide.ui.CompileState
 import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
 import com.wuxianggujun.tinaide.utils.FileUtils
 import com.wuxianggujun.tinaide.utils.Logger
 import java.io.File
+import kotlinx.coroutines.launch
 
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.config.ConfigManager
@@ -37,20 +44,17 @@ import com.wuxianggujun.tinaide.output.IOutputManager
 import com.wuxianggujun.tinaide.output.OutputManager
 class MainActivity : BaseActivity() {
 
+    // 用于在 ServiceLocator 中隔离与本 Activity 绑定的服务
+    private val serviceScope = "MainActivity_${hashCode()}"
+
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var toolbar: Toolbar
     private lateinit var uiManager: IUIManager
     private lateinit var outputManager: IOutputManager
+    private lateinit var compilerViewModel: CompilerViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)  // BaseActivity 已处理主题和沉浸式状态栏
-
-        if (!ServiceLocator.isRegistered(IConfigManager::class.java)) {
-            ServiceLocator.register<IConfigManager>(ConfigManager(this))
-        }
-        if (!ServiceLocator.isRegistered(IFileManager::class.java)) {
-            ServiceLocator.registerSingleton<IFileManager> { FileManager(applicationContext) }
-        }
 
         setContentView(R.layout.activity_main)
 
@@ -81,6 +85,34 @@ class MainActivity : BaseActivity() {
 
         initializeServices()
 
+        compilerViewModel = ViewModelProvider(
+            this,
+            CompilerViewModel.Factory(applicationContext)
+        )[CompilerViewModel::class.java]
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                compilerViewModel.state.collect { state ->
+                    when (state) {
+                        is CompileState.Idle -> {
+                            hideLoading()
+                        }
+                        is CompileState.Compiling -> {
+                            showLoading("正在编译项目...", cancelable = false)
+                        }
+                        is CompileState.Success -> {
+                            hideLoading()
+                            toastSuccess("编译完成")
+                        }
+                        is CompileState.Error -> {
+                            hideLoading()
+                            toastError(state.message)
+                        }
+                    }
+                }
+            }
+        }
+
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -100,20 +132,23 @@ class MainActivity : BaseActivity() {
     }
     private fun initializeServices() {
         if (!ServiceLocator.isRegistered(IConfigManager::class.java)) {
-            val configManager = ConfigManager(this)
+            // ConfigManager 使用 applicationContext，作为应用级服务
+            val configManager = ConfigManager(applicationContext)
             ServiceLocator.register<IConfigManager>(configManager)
         }
+        // UIManager 绑定当前 Activity 生命周期，注册为作用域服务
         uiManager = UIManager(this)
-        ServiceLocator.register<IUIManager>(uiManager)
+        ServiceLocator.registerScoped(serviceScope, IUIManager::class.java, uiManager)
 
         if (!ServiceLocator.isRegistered(IFileManager::class.java)) {
             ServiceLocator.registerSingleton<IFileManager> { FileManager(applicationContext) }
         }
 
+        // EditorManager 同样与当前 Activity 绑定，注册为作用域服务
         val editorManager = EditorManager(this, supportFragmentManager)
-        ServiceLocator.register<IEditorManager>(editorManager)
+        ServiceLocator.registerScoped(serviceScope, IEditorManager::class.java, editorManager)
         
-        // 注册输出管理器
+        // 注册输出管理器（应用级）
         if (!ServiceLocator.isRegistered(IOutputManager::class.java)) {
             outputManager = OutputManager(applicationContext)
             ServiceLocator.register<IOutputManager>(outputManager)
@@ -200,202 +235,17 @@ class MainActivity : BaseActivity() {
     }
     override fun onDestroy() {
         super.onDestroy()
-        // Do not clear ServiceLocator here; services are application-scoped
+        // 清理与本 Activity 作用域绑定的服务（如 UIManager、EditorManager）
+        ServiceLocator.clearScope(serviceScope)
     }
 
     private fun onCompileProject() {
         // 清空之前的输出
         outputManager.clearOutput()
-        
         // 显示输出窗口
         outputManager.showOutput()
-        
-        // 在后台线程执行编译，避免阻塞 UI
-        Thread {
-            // 加载本地库和 sysroot
-            com.wuxianggujun.tinaide.core.nativebridge.NativeLoader.loadIfNeeded()
-            val sysrootDir = try {
-                com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller.ensureInstalled(this)
-            } catch (t: Throwable) { null }
-
-            val fm = com.wuxianggujun.tinaide.core.ServiceLocator.get<com.wuxianggujun.tinaide.file.IFileManager>()
-            val project = fm.getCurrentProject()
-            if (project == null || sysrootDir == null) {
-                runOnUiThread {
-                    toastError("未找到项目或sysroot安装失败")
-                }
-                return@Thread
-            }
-
-            // Experimental: probe sysroot CMake/Ninja before compile to verify exec availability
-            try {
-                val probe = com.wuxianggujun.tinaide.core.nativebridge.SysrootCMakeRunner.probe()
-                android.util.Log.i("CMakeProbe", probe)
-                outputManager.appendOutput(probe + "\n")
-            } catch (t: Throwable) {
-                android.util.Log.w("CMakeProbe", "probe failed: ${t.message}")
-                outputManager.appendOutput("Sysroot CMake/Ninja probe failed: ${t.message}\n")
-            }
-
-            val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
-            val target = when {
-                abi.contains("arm64", ignoreCase = true) -> "aarch64-linux-android28"
-                abi.contains("x86_64", ignoreCase = true) -> "x86_64-linux-android28"
-                else -> "aarch64-linux-android28"
-            }
-
-            val root = java.io.File(project.rootPath)
-            val sources = root.walkTopDown()
-                .filter { it.isFile && (it.extension.equals("c", true) || it.extension.equals("cc", true) || it.extension.equals("cpp", true) || it.extension.equals("cxx", true)) }
-                .toList()
-
-            if (sources.isEmpty()) {
-                runOnUiThread { toastWarning("未找到 C/C++ 源文件") }
-                return@Thread
-            }
-
-            val buildRoot = java.io.File(filesDir, "build/${project.name}").apply { mkdirs() }
-            val buildDir = java.io.File(buildRoot, "obj").apply { mkdirs() }
-            val logFile = java.io.File(buildRoot, "build.log").apply { parentFile?.mkdirs(); if (!exists()) createNewFile() }
-
-            fun log(line: String) {
-                try {
-                    android.util.Log.i("Compile", line)
-                    logFile.appendText(line + "\n")
-                    outputManager.appendOutput(line + "\n")
-                } catch (_: Throwable) {}
-            }
-
-            log("=== 编译开始 ===")
-            log("目标: $target")
-            log("sysroot: ${sysrootDir.absolutePath}")
-            log("工程: ${project.name} @ ${project.rootPath}")
-            log("源文件数: ${sources.size}")
-
-            // 组装 include 目录：sysroot + 项目常见 include 位置
-            val includeDirs = mutableListOf<String>()
-            includeDirs += java.io.File(sysrootDir, "usr/include").absolutePath
-            includeDirs += java.io.File(sysrootDir, "usr/include/c++/v1").absolutePath
-            listOf("include", "includes", "src").forEach { sub ->
-                val d = java.io.File(root, sub)
-                if (d.exists()) includeDirs += d.absolutePath
-            }
-
-            // Fixed entry symbol (configurable later): rename user main to a stable name
-            val entrySymbol = "tina_ide_use_main"
-
-            val flags = mutableListOf<String>()
-            flags += listOf("-Wall", "-Wextra")
-            // 启用 C++ 异常（防止 dynamic_cast 引用失败等直接触发 terminate）
-            flags += listOf("-fexceptions", "-fcxx-exceptions")
-            // Rename user's main to the project-scoped entry to avoid symbol conflicts
-            flags += listOf("-Dmain=$entrySymbol")
-
-            var ok = 0
-            var syntaxOk = 0
-            val failed = mutableListOf<String>()
-            val compiledObjs = mutableListOf<String>()
-
-            for (src in sources) {
-                // Force C++ mode for uniform symbol/mangling behavior
-                val isCxx = true
-                val rel = src.absolutePath.removePrefix(root.absolutePath).trimStart(java.io.File.separatorChar)
-                val objName = rel.replace(java.io.File.separatorChar, '_') + ".o"
-                val objFile = java.io.File(buildDir, objName)
-
-                log("[${if (isCxx) "C++" else "C"}] 编译 ${src.name} -> ${objFile.name}")
-                var err = try {
-                    com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.emitObj(
-                        sysrootDir.absolutePath,
-                        src.absolutePath,
-                        objFile.absolutePath,
-                        target,
-                        isCxx,
-                        flags.toTypedArray(),
-                        includeDirs.toTypedArray()
-                    )
-                } catch (t: Throwable) {
-                    "JNI error: ${t.message}"
-                }
-
-                if (err.isEmpty()) {
-                    ok++
-                    compiledObjs += objFile.absolutePath
-                    log("成功: ${src.name}")
-                } else {
-                    // fallback: syntax-only
-                    val syn = try {
-                        com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.syntaxCheck(
-                            sysrootDir.absolutePath,
-                            src.absolutePath,
-                            target,
-                            isCxx
-                        )
-                    } catch (t: Throwable) { "syntax JNI error: ${t.message}" }
-
-                    if (syn.isEmpty()) {
-                        syntaxOk++
-                        val reason = err.ifEmpty { "(no diagnostics)" }
-                        log("语法通过(未生成.o): ${src.name}; 原因: ${reason}")
-                    } else {
-                        val fmsg = "${src.name}: $err | $syn"
-                        failed += fmsg
-                        log("失败: $fmsg")
-                    }
-                }
-            }
-
-            // 统一链接和运行（单文件或多文件）
-            if (compiledObjs.isNotEmpty()) {
-                log("=== 链接阶段 ===")
-                val soFile = java.io.File(buildRoot, "lib${project.name}.so")
-                val linkErr = try {
-                    com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.linkSoMany(
-                        sysrootDir.absolutePath,
-                        compiledObjs.toTypedArray(),
-                        soFile.absolutePath,
-                        target,
-                        true,  // C++ 模式
-                        emptyArray(),
-                        emptyArray()
-                    )
-                } catch (t: Throwable) { "link JNI error: ${t.message}" }
-                
-                if (linkErr.isEmpty()) {
-                    log("链接成功: ${soFile.name}")
-                    try {
-                        log("=== 运行阶段 ===")
-                        // 直接调用 main，native 侧会自动尝试 C++ mangled 名称
-                        val out = com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler.runSharedIsolated(
-                            soFile.absolutePath,
-                            entrySymbol,
-                            15000
-                        )
-                        log(out)
-                    } catch (t: Throwable) {
-                        log("运行失败: ${t.message}")
-                    }
-                } else {
-                    log("链接失败: $linkErr")
-                }
-            }
-
-            val msg = buildString {
-                appendLine("目标: $target")
-                appendLine("sysroot: ${sysrootDir.absolutePath}")
-                appendLine("输出: ${buildDir.absolutePath}")
-                appendLine("生成 .o 成功: $ok, 语法通过(回退): $syntaxOk, 失败: ${failed.size}")
-                if (failed.isNotEmpty()) {
-                    appendLine()
-                    appendLine("失败样例: ")
-                    appendLine(failed.take(5).joinToString("\n"))
-                }
-            }
-
-            log("=== 编译结束 ===")
-            log(msg)
-            log("\n日志文件: ${logFile.absolutePath}")
-        }.start()
+        // 交给 ViewModel + UseCase 在后台线程编译
+        compilerViewModel.compile()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

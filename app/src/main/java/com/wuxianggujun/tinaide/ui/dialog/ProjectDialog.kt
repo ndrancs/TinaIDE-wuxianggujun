@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide.ui.dialog
 
-import android.app.AlertDialog
 import android.app.Dialog
+import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
 import android.os.Bundle
 import android.os.Environment
 import android.widget.EditText
@@ -18,6 +18,7 @@ import android.provider.DocumentsContract
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.get
 import com.wuxianggujun.tinaide.core.config.IConfigManager
+import com.wuxianggujun.tinaide.core.config.ConfigKeys
 import com.wuxianggujun.tinaide.file.IFileManager
 import java.io.File
 import com.wuxianggujun.tinaide.project.ProjectTemplateInstaller
@@ -49,7 +50,7 @@ class ProjectDialog(
             // 记住所选目录为默认根目录
             try {
                 val cfg = ServiceLocator.get<IConfigManager>()
-                cfg.set("project.root_dir", path)
+                cfg.set(ConfigKeys.ProjectRootDir, path)
             } catch (_: Throwable) {}
         } else {
             requireContext().toastError("无法解析选择的目录")
@@ -118,7 +119,7 @@ class ProjectDialog(
         )
         container.addView(typeSpinner)
         
-        return AlertDialog.Builder(context)
+        return MaterialDialogBuilder.create(context)
             .setTitle("新建项目")
             .setView(container)
             .setPositiveButton("创建") { _, _ ->
@@ -163,7 +164,7 @@ class ProjectDialog(
             arrayOf("暂无项目")
         }
         
-        return AlertDialog.Builder(context)
+        return MaterialDialogBuilder.create(context)
             .setTitle("打开项目")
             .setItems(existingProjects) { _, which ->
                 if (existingProjects[which] != "暂无项目") {

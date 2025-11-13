@@ -188,7 +188,7 @@ fun FileNode.Companion.fromJson(json: JSONObject): FileNode {
         path = json.getString("path"),
         name = json.getString("name"),
         isDirectory = json.getBoolean("isDirectory"),
-        extension = json.optString("extension", null),
+        extension = json.optString("extension", "").takeIf { it.isNotEmpty() },
         size = json.getLong("size"),
         lastModified = json.getLong("lastModified"),
         children = json.optJSONArray("children")?.let { array ->
@@ -265,9 +265,9 @@ fun WorkspaceState.Companion.fromJson(json: JSONObject): WorkspaceState {
     }
     
     return WorkspaceState(
-        currentProject = json.optString("currentProject", null),
+        currentProject = json.optString("currentProject", "").takeIf { it.isNotEmpty() },
         openFiles = json.optJSONArray("openFiles")?.toStringList() ?: emptyList(),
-        activeFile = json.optString("activeFile", null),
+        activeFile = json.optString("activeFile", "").takeIf { it.isNotEmpty() },
         editorStates = editorStates,
         panelVisibility = panelVisibility,
         theme = Theme.valueOf(json.optString("theme", Theme.DARK.name))

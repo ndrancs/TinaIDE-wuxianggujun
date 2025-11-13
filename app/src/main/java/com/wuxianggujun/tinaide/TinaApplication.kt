@@ -6,6 +6,7 @@ import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.register
 import com.wuxianggujun.tinaide.core.registerSingleton
 import com.wuxianggujun.tinaide.core.config.ConfigManager
+import com.wuxianggujun.tinaide.core.config.ConfigKeys
 import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.file.FileManager
 import com.wuxianggujun.tinaide.file.IFileManager
@@ -28,7 +29,7 @@ class TinaApplication : Application() {
         // 统一在 Application 阶段应用主题，避免首个 Activity 因 setDefaultNightMode 触发重建
         try {
             val cfg = ServiceLocator.get(IConfigManager::class.java)
-            val themeName = cfg.get("ui.theme", "DARK")
+            val themeName = cfg.get(ConfigKeys.Theme)
             val mode = when (themeName) {
                 "LIGHT" -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
                 "AUTO" -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
@@ -41,9 +42,9 @@ class TinaApplication : Application() {
         // 加载嵌入式编译器依赖（clang-cpp 等）
         try { com.wuxianggujun.tinaide.core.nativebridge.NativeLoader.loadIfNeeded() } catch (_: Throwable) { }
         // 后台预安装 sysroot（优先从 assets/sysroot.zip 解压，避免首个编译时等待）
-        Thread {
+        kotlin.concurrent.thread(name = "SysrootInstaller") {
             try { com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller.ensureInstalled(this) } catch (_: Throwable) { }
-        }.start()
+        }
     }
 
     companion object {

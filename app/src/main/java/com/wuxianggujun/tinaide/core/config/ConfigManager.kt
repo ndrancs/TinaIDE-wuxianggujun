@@ -63,6 +63,10 @@ class ConfigManager(private val context: Context) : IConfigManager, ServiceLifec
             default
         }
     }
+
+    override fun <T> get(key: ConfigKey<T>): T {
+        return get(key.key, key.default)
+    }
     
     override fun <T> set(key: String, value: T) {
         try {
@@ -97,6 +101,10 @@ class ConfigManager(private val context: Context) : IConfigManager, ServiceLifec
         } catch (e: Exception) {
             Log.e(TAG, "Error setting config for key: $key", e)
         }
+    }
+
+    override fun <T> set(key: ConfigKey<T>, value: T) {
+        set(key.key, value)
     }
     
     override fun remove(key: String) {

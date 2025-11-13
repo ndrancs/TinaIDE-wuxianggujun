@@ -28,6 +28,9 @@ object ServiceLocator {
     private val services = mutableMapOf<Class<*>, Any>()
     private val serviceFactories = mutableMapOf<Class<*>, () -> Any>()
     private val singletonInstances = mutableMapOf<Class<*>, Any>()
+
+    // 作用域服务映射：scopeId -> service types
+    private val scopedServices = mutableMapOf<String, MutableSet<Class<*>>>()
     
     /**
      * 注册服务实例（单例模式）
@@ -125,6 +128,29 @@ object ServiceLocator {
         services.remove(serviceClass)
         serviceFactories.remove(serviceClass)
         singletonInstances.remove(serviceClass)
+        // 同时从所有作用域中移除该服务类型
+        scopedServices.values.forEach { it.remove(serviceClass) }
+    }
+
+    /**
+     * 在指定作用域内注册服务实例
+     * 该服务仍然通过全局 get 获取，但会在 clearScope 时自动注销
+     */
+    fun <T : Any> registerScoped(scope: String, serviceClass: Class<T>, instance: T) {
+        register(serviceClass, instance)
+        val set = scopedServices.getOrPut(scope) { mutableSetOf() }
+        set += serviceClass
+    }
+
+    /**
+     * 清理指定作用域下注册的所有服务
+     */
+    fun clearScope(scope: String) {
+        val types = scopedServices.remove(scope) ?: return
+        types.forEach { type ->
+            @Suppress("UNCHECKED_CAST")
+            unregister(type as Class<Any>)
+        }
     }
     
     /**

@@ -93,9 +93,9 @@ class ProjectManagerActivity : BaseActivity() {
     }
 
     private fun initializeServices() {
-        // 注册 ConfigManager（若未注册）
+        // 注册 ConfigManager（若未注册），使用 applicationContext 作为应用级服务
         if (!ServiceLocator.isRegistered(IConfigManager::class.java)) {
-            ServiceLocator.register<IConfigManager>(ConfigManager(this))
+            ServiceLocator.register<IConfigManager>(ConfigManager(applicationContext))
         }
         // 注册 FileManager（单例，供后续页面使用）
         if (!ServiceLocator.isRegistered(IFileManager::class.java)) {

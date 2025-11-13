@@ -6,14 +6,24 @@ package com.wuxianggujun.tinaide.core.config
  */
 interface IConfigManager {
     /**
-     * 获取配置值
+     * 获取配置值（字符串键）
      */
     fun <T> get(key: String, default: T): T
+
+    /**
+     * 获取配置值（类型安全键）
+     */
+    fun <T> get(key: ConfigKey<T>): T
     
     /**
-     * 设置配置值
+     * 设置配置值（字符串键）
      */
     fun <T> set(key: String, value: T)
+
+    /**
+     * 设置配置值（类型安全键）
+     */
+    fun <T> set(key: ConfigKey<T>, value: T)
     
     /**
      * 删除配置项
