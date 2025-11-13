@@ -2,37 +2,19 @@ TinaIDE 嵌入式 Clang/LLVM 集成进度与状态
 
 概述
 - 目标：在 Android 设备端以内嵌“库模式”运行 Clang/LLVM，完成本地 C/C++ 编译；不依赖外部可执行文件与 Termux。
-- 方式：把 `libclang-cpp.so`、`libLLVM-17.so` 等库随 APK 打包；把最小 sysroot（NDK 头文件 + crt/桩库）放到 `assets/sysroot`，首次运行解压到 `<files>/sysroot` 并作为 `--sysroot` 使用。
+- 方式：将最小 sysroot（NDK 头文件 + crt/桩库 + 运行时库）以 `assets/sysroot.zip` 随 APK 打包；首次运行解压到 `<files>/sysroot`，运行时从该目录加载依赖并作为 `--sysroot` 使用。
 
-当前状态（2025-11，已统一 API=24）
-- 目录与产物
-  - sysroot（已就位，默认 API 24）
-    - app/src/main/assets/sysroot/usr/include
-    - app/src/main/assets/sysroot/usr/lib/aarch64-linux-android/24（或 x86_64-linux-android/24）
-  - 动态库（已就位）
-    - app/src/main/jniLibs/arm64-v8a/libLLVM-17.so
-    - app/src/main/jniLibs/arm64-v8a/libclang-cpp.so
-    - app/src/main/jniLibs/arm64-v8a/libc++_shared.so
-    - app/src/main/jniLibs/x86_64/…（如需模拟器）
-- 代码改动（已合入）
-  - 移除 AIDE-Termux 模块与入口
-    - settings.gradle.kts: 注释掉 `:termux-*` include 与 projectDir 映射
-    - app/build.gradle.kts: 移除 `implementation(project(":termux-*"))`
-    - app/src/main/res/menu/main_menu.xml: 移除“打开终端/重新安装终端环境”菜单项
-    - app/src/main/java/com/wuxianggujun/tinaide/MainActivity.kt: 移除 `TermuxActivity` 调用分支
-  - 原生加载与 sysroot 安装
-    - app/src/main/java/com/wuxianggujun/tinaide/core/nativebridge/NativeLoader.kt
-      - 加载顺序：`c++_shared` → `LLVM-17` → `clang-cpp` → `native_compiler`
-    - app/src/main/java/com/wuxianggujun/tinaide/core/nativebridge/SysrootInstaller.kt
-      - 首次运行将 `assets/sysroot` 解压到 `<files>/sysroot`
-  - JNI 编译模块（库模式）
-    - app/src/main/cpp/CMakeLists.txt：导入 jniLibs 下的 `libLLVM-17.so`、`libclang-cpp.so`
-    - app/src/main/cpp/native_compiler.cpp：
-      - `emitObj` 使用 `-cc1` 并改为 joined 形式参数：`-x=c++`、`-std=c++17`
-      - `syntaxCheck` 采用 `-fsyntax-only`（在 LLVM 头可用时）
-      - 统一 `-D__ANDROID_API__=24`
-    - app/src/main/java/com/wuxianggujun/tinaide/core/nativebridge/NativeCompiler.kt：JNI 声明
-    - MainActivity.kt “编译”入口：展示 ABI、加载状态、LLVM 版本、sysroot 路径
+当前状态（2025-11，API=24 统一）
+- 目录与产物（以仓库现状为准）
+  - sysroot 资产：`app/src/main/assets/sysroot.zip`（已存在，首次运行自动解压）
+  - jniLibs：仅保留项目自有 JNI 桥接库（由构建生成）；LLVM/Clang 运行库随 sysroot 提供，不再常驻 jniLibs
+  - 统一头文件：`external/embedded-ndk-libs/common-headers` 用于 JNI 构建期包含
+- 代码要点（已合入）
+  - settings.gradle.kts：`:termux-*` 模块保持注释（不启用 Termux 路径）
+  - Sysroot 解压：`core/nativebridge/SysrootInstaller.kt` 首次运行解压 `assets/sysroot.zip` → `<files>/sysroot`
+  - 库加载建议：`core/nativebridge/NativeLoader.kt` 优先从 `<files>/sysroot` 加载运行库（`libc++_shared.so`、`libLLVM-17.so`、`libclang-cpp.so`），再加载 JNI 桥库 `native_compiler`
+  - JNI/编译接口：`core/nativebridge/NativeCompiler.kt` 与 `src/main/cpp/native_compiler.cpp`
+  - CMake：`src/main/cpp/CMakeLists.txt` 支持在构建期引用 `docker/llvm-build/build-output/<abi>/libs/<abi>` 的预编译库（不打包进 APK）
 
 为什么需要 sysroot
 - 编译期：提供 NDK 头文件（如 stdio.h、jni.h）。
@@ -41,13 +23,10 @@ TinaIDE 嵌入式 Clang/LLVM 集成进度与状态
 
 两条前端内嵌路径（参考）
 - 方案 A（推荐）：clang C++ 前端（clang::tooling 等）
-  - 需要把 clang C++ 头打包到仓库（架构无关，一份通用）：
-    - 目标路径：docker/llvm-build/build-output/common-headers/clang
-    - 已提供脚本：docker/llvm-build/fetch-clang-headers.ps1（依赖 Docker Desktop 运行）；
-      或手动下载 `llvmorg-17.0.6` 并拷贝 `clang/include/` 到上述目录。
-  - 到位后可恢复 `syntaxCheck()`（-fsyntax-only），并扩展到 EmitObj（生成 .o）。
+  - 准备 clang C++ 头（架构无关）：`docker/llvm-build/build-output/common-headers/clang`
+  - 到位后可启用 `syntaxCheck()`（-fsyntax-only）与 EmitObj（生成 .o）
 - 方案 B：libclang C API（clang-c/Index.h + libclang.so）
-  - 需要新增打包 `libclang.so` 并改 JNI 到 C API。API 稳定、体积略增。
+  - 采用稳定 C API，体积略增，按需选择
 
 运行与验证
 - 构建并安装应用；在 App 中点击“编译”，期望看到：
@@ -55,10 +34,9 @@ TinaIDE 嵌入式 Clang/LLVM 集成进度与状态
   - clang-cpp loaded：true/false（库加载状态）
   - clang/LLVM version：当前返回 LLVM 17.0.6
   - sysroot：<files>/sysroot 路径
-- 若需要同步/更新 `.so` 与 sysroot：
-  - 推荐：`pwsh tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 24`
-  - 或：`pwsh docker/llvm-build/sync-to-app.ps1 -Mode libs -Abi arm64-v8a -ApiLevel 24`
-  - 两者都会镜像 sysroot，且仅清理/覆盖我们托管的库文件，避免残留
+- 同步/更新 sysroot 与运行库：
+  - `pwsh tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 24`
+  - 默认以 zip 方式更新 `app/src/main/assets/sysroot.zip`（按需）
 
 常见问题与排查
 - dlopen failed: library 'libc++_shared.so' not found
@@ -70,14 +48,11 @@ TinaIDE 嵌入式 Clang/LLVM 集成进度与状态
 - 构建缺头文件（clang C++ 头）
   - 解决：执行 `tools/sync-llvm-build.ps1 -Abi <abi> -ApiLevel 24`，内部会调用 `tools/sync-llvm-headers.ps1` 将构建期头更新到 `docker/llvm-build/build-output/common-headers`。
 
-下一步计划（按 KISS/YAGNI 增量推进）
-1) 恢复基于 clang::tooling 的 `syntaxCheck(sysroot, src, target, isCxx)`（前提：已放置 clang 头）。
-2) 新增 `compileToObject(...)`：使用 `EmitObjAction` 生成 `.o`（仅编译，不链接）。
-3) 引入 LLD 链接（库模式）：
-   - 在 CMake 中将 `liblld*.a` 静态链接到 `libnative_compiler.so`（不能运行时加载 .a）。
-   - 产出可执行（-pie）或 `.so`（-shared）。
-4) UI 增强：为“编译”入口提供源文件选择、目标生成与错误展示。
-5) 体积优化与 ABI 精简（如只留 `arm64-v8a`）。
+下一步计划（KISS/YAGNI 增量推进）
+1) 放置 clang 头后恢复 `syntaxCheck()`（-fsyntax-only）
+2) 实现 `compileToObject(...)` 生成 `.o`
+3) 引入 LLD（库模式）并完成链接闭环
+4) UI 增强与体积优化（优先 arm64-v8a）
 
 原则应用（KISS / YAGNI / DRY / SOLID）
 - KISS：最小闭环先验证“库加载 + sysroot 路径”，再逐步开启前端编译、链接。
@@ -104,10 +79,7 @@ TinaIDE 嵌入式 Clang/LLVM 集成进度与状态
   - 共享库：`-shared -o <out>.so <obj>.o ...`
 
 变更清单（主要文件）
-- settings.gradle.kts
-- app/build.gradle.kts
-- app/src/main/res/menu/main_menu.xml
-- app/src/main/java/com/wuxianggujun/tinaide/MainActivity.kt
+- settings.gradle.kts（保持 `:termux-*` 注释）
 - app/src/main/java/com/wuxianggujun/tinaide/core/nativebridge/NativeLoader.kt
 - app/src/main/java/com/wuxianggujun/tinaide/core/nativebridge/SysrootInstaller.kt
 - app/src/main/java/com/wuxianggujun/tinaide/core/nativebridge/NativeCompiler.kt

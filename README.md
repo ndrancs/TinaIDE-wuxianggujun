@@ -1,88 +1,37 @@
-TinaIDE（feat/integrate-termux-app）
+TinaIDE
 
-本分支采用 AIDE‑Termux 模块集成终端，提供在应用内的完整 Termux 体验（会在首次启动时完成 bootstrap 安装）。本 README 说明当前分支的集成方式、支持架构、在不同模拟器/设备上的兼容性与常见问题排查方法。
+本项目聚焦于在 Android 设备端提供轻量的本地开发体验：集成 Sora Editor 编辑器、基础项目管理、以及“嵌入式 Clang/LLVM（库模式）”以在 App 进程内完成 C/C++ 的语法检查与编译（按需启用）。
 
-分支与集成方式
-- 分支：`feat/integrate-termux-app`
-- 集成方案：引入 AIDE‑Termux 模块（已本地化）
-  - `:termux-app`
-  - `:terminal-emulator`
-  - `:terminal-view`
-  - `:termux-shared`
-- 运行路径（概要）：
-  - 首次启动由 `TermuxInstaller` 解压 bootstrap 到 `$PREFIX`（先到 `usr-staging`，完成后迁移到 `usr`），随后执行第二阶段脚本 `etc/termux/bootstrap/termux-bootstrap-second-stage.sh`。
-  - App 内部通过 `AppShell` 执行命令，`TermuxShellEnvironment/TermuxShellUtils` 会以 `proot` 方式启动，将当前包的数据目录绑定到 `/data/data/com.termux`，以兼容 Termux 二进制里对 `$PREFIX` 的硬编码路径。
+当前形态（2025-11）
+- 不引入 Termux/proot 终端模块（settings.gradle.kts 中 `:termux-*` 已注释）。
+- 推荐“库模式（in-process）”集成 LLVM/Clang：运行时从 `assets/sysroot.zip` 解压到 `<files>/sysroot`，按需加载运行库并通过 JNI 提供编译接口。
+- 代码编辑与 UI 基于 `external/sora-editor`。
 
 支持架构
-- 已随 APK 打包的本地库（按模块 jniLibs）：
-  - `arm64-v8a`
-  - `armeabi-v7a`
-  - `x86_64`
-- 关键 .so（随 `:termux-app` 提供）：
-  - `libproot.so`（proot 主体）
-  - `libLoader.so`（可选 loader）
-  - `libtermux-bootstrap.so` / `libtermux.so`（Termux 侧支持）
+- 目标 ABI：`arm64-v8a`、`x86_64`（按需）
+- 统一目标 API：24（兼顾体积与兼容性）
 
-运行与兼容性（设备/模拟器）
-- ARM64 真机（Android 8–14）：
-  - 终端/引导流程正常，通过 `proot` 完成 `$PREFIX` 绑定。
-- Android Studio 模拟器：
-  - x86_64（较新系统镜像，API 33+）通常可正常安装与运行。
-  - 少数老镜像（如 Android 9/部分 AOSP/厂商镜像）可能因策略更严格而拦截 `ptrace`，导致 `proot` 启动失败（详见下节“常见问题”）。
-- 雷电模拟器（LDPlayer）x86_64：
-  - 已知在部分版本/镜像上，安装终端环境（bootstrap 第二阶段）会失败，典型报错为 `proot error: ptrace(TRACEME): Permission denied`。这属于模拟器内核/SELinux/seccomp 策略限制，非业务代码 bug。
+快速开始（库模式）
+1) 准备构建产物（Docker 脚本）
+   - `pwsh ./docker/llvm-build/build-local.ps1 -Abi arm64-v8a -ApiLevel 24`
+2) 同步到 App（仅运行库与 sysroot）
+   - `pwsh ./tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 24`
+   - 默认会在 `app/src/main/assets/` 生成/更新 `sysroot.zip`（或镜像目录），并仅保留我们托管的运行库
+3) 安装运行
+   - `./gradlew installDebug`
 
-常见问题与排查
-- 症状：首次安装或执行命令时失败，并看到以下日志：
-  - `proot error: ptrace(TRACEME): Permission denied`
-  - 随后伴随 `execve("/data/data/com.termux/..."|"/system/bin/sh"): Permission denied`
-- 根因：目标环境禁止非特权进程使用 `ptrace`（`proot` 依赖 `ptrace` 拦截系统调用实现绑定与伪 root）。
-- 结论：
-  - 替换镜像/改用允许 `ptrace` 的模拟器，或直接在真机上运行；
-  - 该问题与业务代码（包括 `TermuxAppShellEnvironment` 的环境变量填充）无直接因果关系。
-- 快速排查方法：
-  - Logcat 关键字：`TermuxInstaller`、`AppShell`、`proot error`、`ptrace(TRACEME)`。
-  - 进阶：使用 `strace` 附加到 `libproot.so` 进程确认首个 `ptrace` 返回 `EPERM`，参考文档：`docs/strace-proot-guide.md`、`docs/integrate-strace.md`。
-
-UI 与系统栏
-- 为避免标题栏/工具栏侵入状态栏，当前分支默认：
-  - 在入口 Activity 中 `WindowCompat.setDecorFitsSystemWindows(window, true)`；
-  - 顶层布局/`AppBarLayout` 设置 `android:fitsSystemWindows="true"`。
-- 若需要 Edge‑to‑Edge，请自行改回并在内容视图上按 WindowInsets 正确分发 top/bottom insets。
-
-构建与运行
-- 环境：
-  - Android Studio（Gradle 8.13 / Kotlin 2.0.x）
-  - `compileSdk=36`，`minSdk=24`
-- 依赖：
-  - 隐藏 API 豁免：`org.lsposed.hiddenapibypass:hiddenapibypass:6.1`
-  - 项目管理页涉及外部存储访问，不同 Android 版本会有权限差异（API 29 使用 `requestLegacyExternalStorage`，API 30+ 需适配分区存储/所有文件访问）。
-- 运行：
-  - 安装后首次进入终端会触发 bootstrap，请保持网络/磁盘可用（本分支已将 bootstrap 压缩包随 APK 提供，通常无需外网）。
+运行与验证
+- 首次运行会自动解压 `assets/sysroot.zip` 到 `<files>/sysroot`（见 `SysrootInstaller`）。
+- UI 中“编译/输出”入口可查看当前 ABI、LLVM 版本与 sysroot 路径（如已启用）。
 
 已知限制与建议
-- 某些 x86/x86_64 模拟器镜像（含部分第三方模拟器）会禁止 `ptrace`：
-  - 现象：`proot error: ptrace(TRACEME): Permission denied`
-  - 建议：更换镜像（API 33+ Google APIs）或改用真机；应用层无法“解禁”该策略。
-- 业务侧可选改进（后续）：
-  - 在启动前做 `proot` 能力探测，若发现 `ptrace` 不可用，给出友好提示，避免连锁错误信息误导。
+- x86/x86_64 模拟器处于不同系统策略下时可能限制某些行为；库模式默认不依赖 `ptrace`，不受 proot 约束。
+- 仅在确有需求时再引入可执行工具链/终端依赖（YAGNI）。
 
 参考文档
-- AIDE‑Termux 集成说明：`docs/AIDE-Termux-Integration.md`
-- `proot/strace` 排查指南：`docs/strace-proot-guide.md`、`docs/integrate-strace.md`
+- 路线图与现状：`docs/CLANG_INTEGRATION_ROADMAP.md`、`docs/LLVM_CLANG_STATUS.md`
+- 工具链与打包：`docs/LLVM_BUILD_TOOLS.md`
+- 原生链接策略：`docs/Native-Linking-Strategies.md`
 
 ——
-如需切换为其它终端集成方案或禁用 `proot` 路径，请在 issue/PR 中说明目标与约束，我方可评估最小改动路径（遵循 KISS/YAGNI/DRY/SOLID 原则）。
-
----
-
-嵌入式 Clang/LLVM（库模式）快速开始（可选）
-- 目标：不依赖 Termux/proot，直接在应用进程内用 `libclang-cpp.so` + `libLLVM-17.so` 编译 C/C++ 源码。
-- 推荐流程：
-  1) 构建 `.so` + sysroot（默认 API=24）：
-     - `pwsh ./docker/embedded-ndk/build-local.ps1 -Mode libs -Abi arm64-v8a`
-  2) 同步到 App：
-     - `pwsh ./tools/sync-embedded-ndk.ps1 -Abi arm64-v8a -ApiLevel 24`
-  3) 安装运行：
-     - `./gradlew installDebug`
-- 文档：`docs/EMBEDDED_CLANG_STATUS.md`、`docs/EMBEDDED_NDK_TOOLS.md`、`docs/EMBEDDED_NDK_TOOLS_DOCKER.md`
+如需切换目标或定制集成方式，请在 issue/PR 说明约束与目标，我方将按 KISS/YAGNI/DRY/SOLID 原则给出最小变更方案。
