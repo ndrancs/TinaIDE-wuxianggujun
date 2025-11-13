@@ -4,6 +4,7 @@
   <string name="menu_new_project">新建项目</string>
   <string name="menu_choose_dir">选择目录</string>
   <string name="menu_refresh">刷新</string>
+  <string name="menu_settings">设置</string>
   <string name="btn_choose_directory">选择目录</string>
   <string name="permission_not_all_granted">部分权限未授予，可能影响功能使用</string>
   <string name="permission_denied_never_ask">权限被永久拒绝，请在设置中手动开启</string>
@@ -11,4 +12,8 @@
   <string name="empty_projects_hint">当前没有项目，请从右上角菜单新建或选择目录</string>
   <string name="editor_empty_hint">点击左侧文件树打开文件开始编辑</string>
   <string name="empty_editor">空编辑器</string>
+  <!-- Project manager / main screen strings -->
+  <string name="project_manager_alpha_notice_title">Alpha 版本公告</string>
+  <string name="project_manager_alpha_notice">TinaIDE 仍处于 Alpha 阶段，可能存在崩溃、Bug 和未完成的功能；欢迎在 Issue 区反馈问题和建议。</string>
+  <string name="project_manager_projects">项目</string>
 </resources>

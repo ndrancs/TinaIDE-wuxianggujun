@@ -7,9 +7,12 @@ import android.os.Bundle
 import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.widget.Toolbar
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.hjq.permissions.OnPermissionCallback
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
@@ -41,23 +44,36 @@ class ProjectManagerActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)  // BaseActivity 已处理主题和状态栏
-        setContentView(R.layout.activity_project_manager)
+        // 使用新的主界面布局（project_manager_fragment 风格）
+        setContentView(R.layout.project_manager_fragment)
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
 
         initializeServices()
 
-        recycler = findViewById(R.id.recycler_projects)
+        recycler = findViewById(R.id.projects_recycler)
         recycler.layoutManager = LinearLayoutManager(this)
         adapter = ProjectListAdapter { dir ->
             openProject(dir)
         }
         recycler.adapter = adapter
 
+        // 设置下拉刷新：下拉即重新加载项目列表
+        val swipeRefresh = findViewById<SwipeRefreshLayout>(R.id.scrolling_view)
+        swipeRefresh?.setOnRefreshListener {
+            reloadProjects()
+            swipeRefresh.isRefreshing = false
+        }
+
+        // 设置 FAB 新建项目入口
+        findViewById<ExtendedFloatingActionButton>(R.id.create_project_fab)?.setOnClickListener {
+            showProjectDialog(ProjectDialog.Mode.NEW_PROJECT)
+        }
+
         // 请求权限后加载项目列表
-        requestStoragePermissionsIfNeeded { 
-            reloadProjects() 
+        requestStoragePermissionsIfNeeded {
+            reloadProjects()
         }
     }
 
@@ -76,16 +92,10 @@ class ProjectManagerActivity : BaseActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_new_project -> {
-                showProjectDialog(ProjectDialog.Mode.NEW_PROJECT)
-                true
-            }
-            R.id.action_choose_dir -> {
-                chooseRootDirectory()
-                true
-            }
-            R.id.action_refresh -> {
-                reloadProjects()
+            R.id.action_settings -> {
+                // 打开设置界面，与主编辑器保持一致
+                val intent = Intent(this, com.wuxianggujun.tinaide.settings.SettingsActivity::class.java)
+                startActivity(intent)
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -115,13 +125,20 @@ class ProjectManagerActivity : BaseActivity() {
         if (!root.exists()) root.mkdirs()
         val dirs = root.listFiles()?.filter { it.isDirectory }?.sortedBy { it.name.lowercase() } ?: emptyList()
         adapter.submitList(dirs)
-        val emptyView = findViewById<android.widget.TextView>(R.id.tv_empty)
+
+        // 使用 Material Design 风格的空态视图，而不是旧的 tv_empty 文本
+        val emptyProjects = findViewById<View>(R.id.empty_projects)
+        val loadingContainer = findViewById<View>(R.id.empty_container)
+
+        // 主动隐藏 loading 容器，避免与空态文案叠加
+        loadingContainer?.visibility = View.GONE
+
         if (dirs.isEmpty()) {
-            emptyView?.visibility = android.view.View.VISIBLE
-            recycler.visibility = android.view.View.GONE
+            recycler.visibility = View.GONE
+            emptyProjects?.visibility = View.VISIBLE
         } else {
-            emptyView?.visibility = android.view.View.GONE
-            recycler.visibility = android.view.View.VISIBLE
+            recycler.visibility = View.VISIBLE
+            emptyProjects?.visibility = View.GONE
         }
     }
 
