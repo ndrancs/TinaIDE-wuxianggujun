@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:iconSpaceReserved="false">
+
+    <!-- 优化级别 -->
+    <ListPreference
+        android:key="compiler_optimization"
+        android:title="优化级别"
+        android:summary="编译优化等级"
+        android:entries="@array/optimization_entries"
+        android:entryValues="@array/optimization_values"
+        android:defaultValue="O2"
+        app:iconSpaceReserved="false" />
+
+    <!-- 目标架构 -->
+    <MultiSelectListPreference
+        android:key="compiler_target_arch"
+        android:title="目标架构"
+        android:summary="选择编译目标架构"
+        android:entries="@array/target_arch_entries"
+        android:entryValues="@array/target_arch_values"
+        android:defaultValue="@array/target_arch_default"
+        app:iconSpaceReserved="false" />
+
+    <!-- 编译线程数 -->
+    <SeekBarPreference
+        android:key="compiler_threads"
+        android:title="编译线程数"
+        android:summary="并行编译的线程数"
+        android:defaultValue="2"
+        android:min="1"
+        android:max="8"
+        app:showSeekBarValue="true"
+        app:iconSpaceReserved="false" />
+
+    <!-- 保留调试信息 -->
+    <SwitchPreferenceCompat
+        android:key="compiler_debug_symbols"
+        android:title="保留调试信息"
+        android:summary="在编译结果中保留调试符号"
+        android:defaultValue="false"
+        app:iconSpaceReserved="false" />
+
+</PreferenceScreen>

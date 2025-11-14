@@ -183,7 +183,8 @@ class FileManager(private val context: Context) : IFileManager, ServiceLifecycle
     override fun addFileWatcher(path: String, listener: FileChangeListener) {
         fileListeners.getOrPut(path) { mutableListOf() }.add(listener)
         if (!fileWatchers.containsKey(path)) {
-            val observer = object : FileObserver(path, ALL_EVENTS) {
+            // 使用非弃用的 FileObserver 构造函数（监听所有事件，在 onEvent 中自行筛选）
+            val observer = object : FileObserver(path) {
                 override fun onEvent(event: Int, child: String?) {
                     val base = File(path)
                     val file = if (child != null) File(base, child) else base

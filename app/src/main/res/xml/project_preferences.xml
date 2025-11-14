@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:iconSpaceReserved="false">
+
+    <!-- 默认项目路径 -->
+    <Preference
+        android:key="project_default_path"
+        android:title="默认项目路径"
+        android:summary="点击查看或修改默认项目路径"
+        app:iconSpaceReserved="false" />
+
+    <!-- 自动保存间隔 -->
+    <ListPreference
+        android:key="project_auto_save"
+        android:title="自动保存间隔"
+        android:summary="文件自动保存的时间间隔"
+        android:entries="@array/auto_save_entries"
+        android:entryValues="@array/auto_save_values"
+        android:defaultValue="60"
+        app:iconSpaceReserved="false" />
+
+    <!-- 自动备份 -->
+    <SwitchPreferenceCompat
+        android:key="project_backup"
+        android:title="自动备份"
+        android:summary="编译前自动备份项目文件"
+        android:defaultValue="true"
+        app:iconSpaceReserved="false" />
+
+</PreferenceScreen>

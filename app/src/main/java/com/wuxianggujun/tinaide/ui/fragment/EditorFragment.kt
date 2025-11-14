@@ -64,22 +64,22 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     private fun setupEditor() {
         // 基本配置
         codeEditor.apply {
-            // 字体大小
-            setTextSize(14f)
-            
+            // 字体大小（从 Prefs 读取）
+            setTextSize(com.wuxianggujun.tinaide.core.config.Prefs.editorFontSize)
+
             // 显示行号
-            isLineNumberEnabled = true
-            
+            isLineNumberEnabled = com.wuxianggujun.tinaide.core.config.Prefs.editorShowLineNumbers
+
             // 自动换行
-            isWordwrap = false
-            
-            // 显示不可打印字符
+            isWordwrap = com.wuxianggujun.tinaide.core.config.Prefs.editorWordWrap
+
+            // 显示不可打印字符（保持原有策略）
             nonPrintablePaintingFlags = CodeEditor.FLAG_DRAW_WHITESPACE_LEADING or 
                                         CodeEditor.FLAG_DRAW_LINE_SEPARATOR or 
                                         CodeEditor.FLAG_DRAW_WHITESPACE_IN_SELECTION
-            
+
             // 启用自动缩进
-            tabWidth = 4
+            tabWidth = com.wuxianggujun.tinaide.core.config.Prefs.editorTabSize
             
             // 启用代码块线
             isBlockLineEnabled = true

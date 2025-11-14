@@ -114,18 +114,19 @@ dependencies {
     
     // AndroidX Preference (Material Design)
     implementation("androidx.preference:preference-ktx:1.2.1")
-    
+
     // AIDE-Termux components removed
     // implementation(project(":termux-app"))
     // implementation(project(":terminal-view"))
     // implementation(project(":terminal-emulator"))
     // implementation(project(":termux-shared"))
-    
+
     // SoraEditor components
     implementation(project(":sora-editor:editor"))
     implementation(project(":sora-editor:language-textmate"))
-    
+
     implementation(project(":treeview"))
+
     // JSON processing for configuration
     implementation("com.google.code.gson:gson:2.11.0")
     

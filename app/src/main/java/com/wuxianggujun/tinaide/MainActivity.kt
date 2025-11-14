@@ -63,28 +63,26 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         // Adjust drawer/header for status bar insets to prevent overlap (NavigationView headerView)
         try {
             val nav = binding.navView
-            if (nav != null) {
-                val headerView = if (nav.headerCount > 0) nav.getHeaderView(0) else null
-                if (headerView != null) {
-                    val headerBinding = IncludeFileTreeHeaderBinding.bind(headerView)
-                    navHeaderBinding = headerBinding
-                    val headerRoot = headerBinding.root
-                    androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(headerRoot) { v, insets ->
-                        val status = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
-                        v.setPadding(v.paddingLeft, status.top, v.paddingRight, v.paddingBottom)
-                        insets
-                    }
-                    androidx.core.view.ViewCompat.requestApplyInsets(headerRoot)
-                }
-                // Ensure NavigationView itself doesn't add unexpected top padding; status bar handled by headerRoot
-                androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(nav) { v, insets ->
+            val headerView = if (nav.headerCount > 0) nav.getHeaderView(0) else null
+            if (headerView != null) {
+                val headerBinding = IncludeFileTreeHeaderBinding.bind(headerView)
+                navHeaderBinding = headerBinding
+                val headerRoot = headerBinding.root
+                androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(headerRoot) { v, insets ->
                     val status = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
-                    // Keep nav top padding zero; headerRoot receives inset
-                    v.setPadding(v.paddingLeft, 0, v.paddingRight, v.paddingBottom)
+                    v.setPadding(v.paddingLeft, status.top, v.paddingRight, v.paddingBottom)
                     insets
                 }
-                androidx.core.view.ViewCompat.requestApplyInsets(nav)
+                androidx.core.view.ViewCompat.requestApplyInsets(headerRoot)
             }
+            // Ensure NavigationView itself doesn't add unexpected top padding; status bar handled by headerRoot
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(nav) { v, insets ->
+                val status = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
+                // Keep nav top padding zero; headerRoot receives inset
+                v.setPadding(v.paddingLeft, 0, v.paddingRight, v.paddingBottom)
+                insets
+            }
+            androidx.core.view.ViewCompat.requestApplyInsets(nav)
         } catch (_: Throwable) { }
 
         initializeServices()

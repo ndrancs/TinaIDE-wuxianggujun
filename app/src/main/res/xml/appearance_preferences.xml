@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:iconSpaceReserved="false">
+
+    <!-- 应用主题 -->
+    <ListPreference
+        android:key="app_theme"
+        android:title="应用主题"
+        android:summary="选择应用整体主题"
+        android:entries="@array/app_theme_entries"
+        android:entryValues="@array/app_theme_values"
+        android:defaultValue="dark"
+        app:iconSpaceReserved="false" />
+
+    <!-- 沉浸式状态栏 -->
+    <SwitchPreferenceCompat
+        android:key="statusbar_immersive"
+        android:title="沉浸式状态栏"
+        android:summary="状态栏与应用主题融合"
+        android:defaultValue="true"
+        app:iconSpaceReserved="false" />
+
+</PreferenceScreen>

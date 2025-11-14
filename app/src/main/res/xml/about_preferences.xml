@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:iconSpaceReserved="false">
+
+    <!-- 版本信息 -->
+    <Preference
+        android:key="about_version"
+        android:title="版本信息"
+        android:summary="点击查看版本详情"
+        app:iconSpaceReserved="false" />
+
+    <!-- GitHub 项目 -->
+    <Preference
+        android:key="about_github"
+        android:title="GitHub 项目"
+        android:summary="在 GitHub 上查看源代码"
+        app:iconSpaceReserved="false">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="https://github.com/wuxianggujun/TinaIDE" />
+    </Preference>
+
+    <!-- 开源许可 -->
+    <Preference
+        android:key="about_licenses"
+        android:title="开源许可"
+        android:summary="查看第三方开源库许可"
+        app:iconSpaceReserved="false" />
+
+</PreferenceScreen>

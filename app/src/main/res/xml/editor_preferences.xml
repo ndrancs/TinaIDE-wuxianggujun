@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:iconSpaceReserved="false">
+
+    <!-- 字体大小 -->
+    <SeekBarPreference
+        android:key="editor_font_size"
+        android:title="字体大小"
+        android:summary="调整编辑器字体大小"
+        android:defaultValue="16"
+        android:min="10"
+        android:max="24"
+        app:showSeekBarValue="true"
+        app:iconSpaceReserved="false" />
+
+    <!-- 显示行号 -->
+    <SwitchPreferenceCompat
+        android:key="editor_line_numbers"
+        android:title="显示行号"
+        android:summary="在编辑器左侧显示行号"
+        android:defaultValue="true"
+        app:iconSpaceReserved="false" />
+
+    <!-- 自动缩进 -->
+    <SwitchPreferenceCompat
+        android:key="editor_auto_indent"
+        android:title="自动缩进"
+        android:summary="按下回车键时自动缩进"
+        android:defaultValue="true"
+        app:iconSpaceReserved="false" />
+
+    <!-- Tab 大小 -->
+    <ListPreference
+        android:key="editor_tab_size"
+        android:title="Tab 大小"
+        android:summary="Tab 键对应的空格数"
+        android:entries="@array/tab_size_entries"
+        android:entryValues="@array/tab_size_values"
+        android:defaultValue="4"
+        app:iconSpaceReserved="false" />
+
+    <!-- 自动换行 -->
+    <SwitchPreferenceCompat
+        android:key="editor_word_wrap"
+        android:title="自动换行"
+        android:summary="长行自动换行显示"
+        android:defaultValue="true"
+        app:iconSpaceReserved="false" />
+
+</PreferenceScreen>

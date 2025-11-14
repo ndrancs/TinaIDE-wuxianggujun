@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 不为没有图标的 Preference 预留图标空间，让文本紧贴左边 -->
+    <bool name="config_materialPreferenceIconSpaceReserved">false</bool>
+</resources>

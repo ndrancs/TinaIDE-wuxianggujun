@@ -8,6 +8,7 @@ import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -222,38 +223,37 @@ class ProjectManagerActivity : BaseActivity<ProjectManagerFragmentBinding>(Proje
 
 
     companion object {
-        private const val REQ_CHOOSE_DIR = 1002
         private const val KEY_PROJECTS_ROOT = "project.root_dir"
     }
 
-    private fun chooseRootDirectory() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-        startActivityForResult(intent, REQ_CHOOSE_DIR)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        when (requestCode) {
-            REQ_CHOOSE_DIR -> {
-                if (data != null) {
-                    val treeUri: Uri? = data.data
-                    if (treeUri != null) {
-                        contentResolver.takePersistableUriPermission(
-                            treeUri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                        )
-                        val path = resolveTreeUriToPath(treeUri)
-                        if (path != null) {
-                            ServiceLocator.get<IConfigManager>().set(KEY_PROJECTS_ROOT, path)
-                            reloadProjects()
-                        } else {
-                            toastError("无法解析选择的目录，请选择内部存储目录")
-                        }
-                    }
+    private val chooseRootDirLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val data = result.data ?: return@registerForActivityResult
+            val treeUri: Uri? = data.data
+            if (treeUri != null) {
+                contentResolver.takePersistableUriPermission(
+                    treeUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                val path = resolveTreeUriToPath(treeUri)
+                if (path != null) {
+                    ServiceLocator.get<IConfigManager>().set(KEY_PROJECTS_ROOT, path)
+                    reloadProjects()
+                } else {
+                    toastError("无法解析选择的目录，请选择内部存储目录")
                 }
             }
         }
+
+    private fun chooseRootDirectory() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            )
+        }
+        chooseRootDirLauncher.launch(intent)
     }
 
 
