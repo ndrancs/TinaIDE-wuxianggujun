@@ -42,6 +42,48 @@ class CompileProjectUseCase(
         data class Success(val summary: String) : Result()
         data class Error(val userMessage: String, val throwable: Throwable?) : Result()
     }
+    
+    /**
+     * 编译 CMake 项目
+     */
+    private suspend fun compileCMakeProject(
+        sysrootDir: File,
+        projectRoot: File,
+        projectName: String
+    ): Result = withContext(Dispatchers.IO) {
+        try {
+            val buildRoot = File(appContext.filesDir, "build/${projectName}").apply { mkdirs() }
+            val buildDir = File(buildRoot, "cmake-build").apply { mkdirs() }
+            
+            val compiler = CMakeProjectCompiler(
+                sysrootDir = sysrootDir,
+                projectRoot = projectRoot,
+                buildDir = buildDir,
+                onLog = { line ->
+                    outputManager.appendOutput(line + "\n")
+                }
+            )
+            
+            val result = compiler.compile()
+            
+            if (result.success) {
+                val summary = buildString {
+                    appendLine("=== CMake 构建成功 ===")
+                    appendLine("项目: $projectName")
+                    appendLine("构建目录: ${buildDir.absolutePath}")
+                    result.executable?.let {
+                        appendLine("输出文件: ${it.absolutePath}")
+                    }
+                }
+                Result.Success(summary)
+            } else {
+                Result.Error(result.message, null)
+            }
+            
+        } catch (e: Exception) {
+            Result.Error("CMake 编译失败: ${e.message}", e)
+        }
+    }
 
     suspend fun execute(onProgress: (CompileProgress) -> Unit): Result = withContext(Dispatchers.IO) {
         try {
@@ -51,6 +93,17 @@ class CompileProjectUseCase(
 
             val project = fileManager.getCurrentProject()
                 ?: return@withContext Result.Error("未找到项目", null)
+
+            val projectRoot = File(project.rootPath)
+            
+            // 检测是否为 CMake 项目
+            if (CMakeProjectCompiler.isCMakeProject(projectRoot)) {
+                outputManager.appendOutput("检测到 CMake 项目，使用 CMake 构建系统\n")
+                return@withContext compileCMakeProject(sysrootDir, projectRoot, project.name)
+            }
+            
+            // 否则使用原有的单文件编译流程
+            outputManager.appendOutput("使用单文件编译模式\n")
 
             // 记录 CMake/Ninja 探测结果
             try {
@@ -67,7 +120,7 @@ class CompileProjectUseCase(
                 else -> "aarch64-linux-android28"
             }
 
-            val root = File(project.rootPath)
+            val root = projectRoot
             val sources = root.walkTopDown()
                 .filter { it.isFile && (it.extension.equals("c", true) || it.extension.equals("cc", true) || it.extension.equals("cpp", true) || it.extension.equals("cxx", true)) }
                 .toList()
