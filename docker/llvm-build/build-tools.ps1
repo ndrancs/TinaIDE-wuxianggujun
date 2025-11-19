@@ -80,25 +80,32 @@ if [ "${BUILD_NINJA_SO}" = "True" ] || [ "${BUILD_NINJA_SO}" = "true" ] || [ "${
   NDK_CLANGXX="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/${TRIPLE}${API_LEVEL}-clang++"
   mkdir -p /work/build/tools/ninja-runner
   cat > /work/build/tools/ninja-runner/ninja_runner.cpp <<'EOF'
+#include <android/log.h>
+
 extern "C" int main(int, char**);
 extern "C" int ninja_run(int argc, char** argv) { return main(argc, argv); }
 
-// Stub for browse functionality (not supported on Android)
+// Provide implementation for browse functionality
+// On Android, we don't have Python, so we provide a minimal implementation
+// that logs a message and returns an error
 struct State;
 extern "C" int RunBrowsePython(State* state, const char* ninja_command,
                                const char* input_file, int argc, char** argv) {
-  // Browse mode is not supported on Android
+  __android_log_print(ANDROID_LOG_WARN, "NinjaRunner", 
+    "Browse mode is not supported on Android (no Python runtime)");
+  __android_log_print(ANDROID_LOG_INFO, "NinjaRunner",
+    "To view build graph, use ninja -t graph or ninja -t targets");
   return 1;
 }
 EOF
-  # Collect object files from the ninja target and link into a shared object together with the small wrapper
-  # Exclude browse.cc.o because it depends on Python (RunBrowsePython symbol)
-  ninja_objs_core=$(find /work/build/tools/ninja-${ABI}-api${API_LEVEL}/CMakeFiles/libninja.dir -name '*.o' ! -name 'browse.cc.o' | xargs echo)
+  # Collect ALL object files from the ninja target (including browse.cc.o)
+  # We provide RunBrowsePython implementation above, so no missing symbols
+  ninja_objs_core=$(find /work/build/tools/ninja-${ABI}-api${API_LEVEL}/CMakeFiles/libninja.dir -name '*.o' | xargs echo)
   ninja_objs_re2c=$(find /work/build/tools/ninja-${ABI}-api${API_LEVEL}/CMakeFiles/libninja-re2c.dir -name '*.o' | xargs echo)
   ninja_main_obj=$(find /work/build/tools/ninja-${ABI}-api${API_LEVEL}/CMakeFiles/ninja.dir -name 'ninja.cc.o' | head -n1)
   if [ -n "${ninja_main_obj}" ]; then ninja_objs_main=${ninja_main_obj}; else ninja_objs_main=""; fi
   if [ -n "${ninja_objs_core}" ] || [ -n "${ninja_objs_re2c}" ]; then ninja_objs="${ninja_objs_core} ${ninja_objs_re2c} ${ninja_objs_main}"; else ninja_objs=""; fi
-  echo "[i] Excluded browse.cc.o to avoid Python dependency"
+  echo "[i] Including all Ninja objects with RunBrowsePython stub implementation"
   if [ -n "${ninja_objs}" ] && [ -x "${NDK_CLANGXX}" ]; then
     ${NDK_CLANGXX} -shared -fPIC -Wl,-z,now -Wl,-z,relro \
       -o /hostout/${ABI}/tools/bin/libninja_runner.so \
