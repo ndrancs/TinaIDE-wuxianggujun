@@ -90,14 +90,12 @@ class CMakeProjectCompiler(
                 return configResult
             }
             
-            // 5. 运行 CMake 构建（使用 Ninja JNI）
+            // 5. 运行 CMake 构建
             onLog("\n--- CMake 构建阶段 ---")
-            val buildResult = if (NinjaRunner.isAvailable()) {
-                runNinjaBuild()
-            } else {
-                onLog("警告: Ninja JNI 不可用，尝试使用 sh -c")
-                runCMakeBuild(cmakePath)
-            }
+            // TODO: Ninja JNI 暂时禁用，因为 libninja_runner.so 缺少 RunBrowsePython 符号
+            // 需要重新构建 ninja，禁用 browse 功能
+            onLog("注意: 当前 Ninja JNI 不可用（缺少符号），使用 sh -c 方案")
+            val buildResult = runCMakeBuild(cmakePath)
             if (!buildResult.success) {
                 return buildResult
             }
@@ -234,7 +232,14 @@ class CMakeProjectCompiler(
             
             val exitCode = process.exitValue()
             if (exitCode != 0) {
-                return CompileResult(false, "$stageName 失败 (退出码: $exitCode)")
+                val errorMsg = if (exitCode == 126 || exitCode == 127) {
+                    "$stageName 失败: 无法执行工具 (SELinux 限制)\n" +
+                    "Android 安全策略阻止从应用目录执行二进制文件。\n" +
+                    "需要使用 JNI 方案，但当前 libninja_runner.so 有链接问题。"
+                } else {
+                    "$stageName 失败 (退出码: $exitCode)"
+                }
+                return CompileResult(false, errorMsg)
             }
             
             return CompileResult(true, "$stageName 成功")
