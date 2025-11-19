@@ -90,12 +90,15 @@ class CMakeProjectCompiler(
                 return configResult
             }
             
-            // 5. 运行 CMake 构建
+            // 5. 运行 CMake 构建（优先使用 Ninja JNI）
             onLog("\n--- CMake 构建阶段 ---")
-            // TODO: Ninja JNI 暂时禁用，因为 libninja_runner.so 缺少 RunBrowsePython 符号
-            // 需要重新构建 ninja，禁用 browse 功能
-            onLog("注意: 当前 Ninja JNI 不可用（缺少符号），使用 sh -c 方案")
-            val buildResult = runCMakeBuild(cmakePath)
+            val buildResult = if (NinjaRunner.isAvailable()) {
+                onLog("使用 Ninja JNI 运行构建")
+                runNinjaBuild()
+            } else {
+                onLog("警告: Ninja JNI 不可用，回退到 sh -c 方案")
+                runCMakeBuild(cmakePath)
+            }
             if (!buildResult.success) {
                 return buildResult
             }
