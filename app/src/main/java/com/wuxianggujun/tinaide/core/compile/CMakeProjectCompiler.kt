@@ -52,22 +52,24 @@ class CMakeProjectCompiler(
             buildDir.mkdirs()
             
             // 1. 检查 cmake 和 ninja
-            val cmakePath = File(sysrootDir, "usr/bin/cmake")
-            val ninjaPath = File(sysrootDir, "usr/bin/ninja")
+            val cmakeSrc = File(sysrootDir, "usr/bin/cmake")
+            val ninjaSrc = File(sysrootDir, "usr/bin/ninja")
             
-            if (!cmakePath.exists()) {
-                return CompileResult(false, "CMake 未找到: ${cmakePath.absolutePath}")
+            if (!cmakeSrc.exists()) {
+                return CompileResult(false, "CMake 未找到: ${cmakeSrc.absolutePath}")
             }
-            if (!ninjaPath.exists()) {
-                return CompileResult(false, "Ninja 未找到: ${ninjaPath.absolutePath}")
+            if (!ninjaSrc.exists()) {
+                return CompileResult(false, "Ninja 未找到: ${ninjaSrc.absolutePath}")
             }
             
-            // 设置可执行权限
-            cmakePath.setExecutable(true)
-            ninjaPath.setExecutable(true)
+            // 2. 创建 shell 包装脚本（绕过 SELinux 限制）
+            val context = TinaApplication.instance
+            val wrapperDir = File(context.cacheDir, "bin").apply { mkdirs() }
+            val cmakePath = createShellWrapper(wrapperDir, "cmake", cmakeSrc.absolutePath)
+            val ninjaPath = createShellWrapper(wrapperDir, "ninja", ninjaSrc.absolutePath)
             
-            onLog("CMake: ${cmakePath.absolutePath}")
-            onLog("Ninja: ${ninjaPath.absolutePath}")
+            onLog("CMake 包装器: ${cmakePath.absolutePath}")
+            onLog("Ninja 包装器: ${ninjaPath.absolutePath}")
             
             // 2. 获取目标架构
             val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
@@ -233,6 +235,24 @@ class CMakeProjectCompiler(
             Log.e(TAG, "Command execution failed", e)
             return CompileResult(false, "$stageName 异常: ${e.message}")
         }
+    }
+    
+    /**
+     * 创建 shell 包装脚本（绕过 SELinux 限制）
+     */
+    private fun createShellWrapper(wrapperDir: File, name: String, targetPath: String): File {
+        val wrapper = File(wrapperDir, name)
+        
+        // 创建 shell 脚本
+        val script = """
+            #!/system/bin/sh
+            exec "$targetPath" "$@"
+        """.trimIndent()
+        
+        wrapper.writeText(script)
+        wrapper.setExecutable(true, false)
+        
+        return wrapper
     }
     
     /**
