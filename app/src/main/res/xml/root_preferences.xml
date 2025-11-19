@@ -7,40 +7,40 @@
     <!-- 编辑器设置 -->
     <Preference
         android:key="editor"
-        android:title="编辑器"
-        android:summary="字体、Tab、换行等编辑器行为"
+        android:title="@string/settings_title_editor"
+        android:summary="@string/settings_desc_editor"
         app:fragment="com.wuxianggujun.tinaide.settings.EditorPreferenceFragment"
         app:iconSpaceReserved="false" />
 
     <!-- 编译器设置 -->
     <Preference
         android:key="compiler"
-        android:title="编译器"
-        android:summary="优化级别、目标架构等"
+        android:title="@string/settings_title_compiler"
+        android:summary="@string/settings_desc_compiler"
         app:fragment="com.wuxianggujun.tinaide.settings.CompilerPreferenceFragment"
         app:iconSpaceReserved="false" />
 
     <!-- 项目设置 -->
     <Preference
         android:key="project"
-        android:title="项目"
-        android:summary="默认项目路径、自动保存等"
+        android:title="@string/settings_title_project"
+        android:summary="@string/settings_desc_project"
         app:fragment="com.wuxianggujun.tinaide.settings.ProjectPreferenceFragment"
         app:iconSpaceReserved="false" />
 
     <!-- 外观设置 -->
     <Preference
         android:key="appearance"
-        android:title="外观"
-        android:summary="应用主题、沉浸式状态栏"
+        android:title="@string/settings_title_appearance"
+        android:summary="@string/settings_desc_appearance"
         app:fragment="com.wuxianggujun.tinaide.settings.AppearancePreferenceFragment"
         app:iconSpaceReserved="false" />
 
     <!-- 关于 -->
     <Preference
         android:key="about"
-        android:title="关于"
-        android:summary="版本信息、GitHub、开源许可"
+        android:title="@string/settings_title_about"
+        android:summary="@string/settings_desc_about"
         app:fragment="com.wuxianggujun.tinaide.settings.AboutPreferenceFragment"
         app:iconSpaceReserved="false" />
 

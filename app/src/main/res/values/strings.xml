@@ -12,8 +12,31 @@
   <string name="empty_projects_hint">当前没有项目，请从右上角菜单新建或选择目录</string>
   <string name="editor_empty_hint">点击左侧文件树打开文件开始编辑</string>
   <string name="empty_editor">空编辑器</string>
+
   <!-- Project manager / main screen strings -->
   <string name="project_manager_alpha_notice_title">Alpha 版本公告</string>
   <string name="project_manager_alpha_notice">TinaIDE 仍处于 Alpha 阶段，可能存在崩溃、Bug 和未完成的功能；欢迎在 Issue 区反馈问题和建议。</string>
   <string name="project_manager_projects">项目</string>
+
+  <!-- Settings root titles & descriptions（对齐 CodeAssist 风格） -->
+  <string name="settings_title_editor">编辑器</string>
+  <string name="settings_desc_editor">字体、Tab、换行等编辑器行为</string>
+
+  <string name="settings_title_compiler">编译器</string>
+  <string name="settings_desc_compiler">优化级别、目标架构等</string>
+
+  <string name="settings_title_project">项目</string>
+  <string name="settings_desc_project">默认项目路径、自动保存等</string>
+
+  <string name="settings_title_appearance">外观</string>
+  <string name="settings_desc_appearance">应用主题、沉浸式状态栏</string>
+
+  <string name="settings_title_about">关于</string>
+  <string name="settings_desc_about">版本信息、GitHub、开源许可</string>
+
+  <!-- Settings categories -->
+  <string name="settings_cat_editor_display">显示</string>
+  <string name="settings_cat_editor_behavior">编辑行为</string>
+  <string name="settings_cat_compiler_options">编译选项</string>
+  <string name="settings_cat_compiler_debug_perf">调试与性能</string>
 </resources>
