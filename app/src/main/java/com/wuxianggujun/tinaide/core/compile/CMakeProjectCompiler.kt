@@ -62,14 +62,12 @@ class CMakeProjectCompiler(
                 return CompileResult(false, "Ninja 未找到: ${ninjaSrc.absolutePath}")
             }
             
-            // 2. 创建 shell 包装脚本（绕过 SELinux 限制）
-            val context = TinaApplication.instance
-            val wrapperDir = File(context.cacheDir, "bin").apply { mkdirs() }
-            val cmakePath = createShellWrapper(wrapperDir, "cmake", cmakeSrc.absolutePath)
-            val ninjaPath = createShellWrapper(wrapperDir, "ninja", ninjaSrc.absolutePath)
+            // 2. 直接使用 sysroot 中的工具（通过 sh -c 执行）
+            val cmakePath = cmakeSrc
+            val ninjaPath = ninjaSrc
             
-            onLog("CMake 包装器: ${cmakePath.absolutePath}")
-            onLog("Ninja 包装器: ${ninjaPath.absolutePath}")
+            onLog("CMake: ${cmakePath.absolutePath}")
+            onLog("Ninja: ${ninjaPath.absolutePath}")
             
             // 2. 获取目标架构
             val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
@@ -193,9 +191,13 @@ class CMakeProjectCompiler(
      */
     private fun runCommand(args: List<String>, stageName: String): CompileResult {
         try {
-            onLog("执行: ${args.joinToString(" ")}")
+            // 使用 sh -c 执行命令（绕过 SELinux 限制）
+            val command = args.joinToString(" ") { arg ->
+                if (arg.contains(" ")) "\"$arg\"" else arg
+            }
+            onLog("执行: $command")
             
-            val pb = ProcessBuilder(args)
+            val pb = ProcessBuilder("/system/bin/sh", "-c", command)
             pb.directory(projectRoot)
             
             // 设置环境变量
@@ -237,24 +239,7 @@ class CMakeProjectCompiler(
         }
     }
     
-    /**
-     * 创建 shell 包装脚本（绕过 SELinux 限制）
-     */
-    private fun createShellWrapper(wrapperDir: File, name: String, targetPath: String): File {
-        val wrapper = File(wrapperDir, name)
-        
-        // 创建 shell 脚本
-        val script = """
-            #!/system/bin/sh
-            exec "$targetPath" "$@"
-        """.trimIndent()
-        
-        wrapper.writeText(script)
-        wrapper.setExecutable(true, false)
-        
-        return wrapper
-    }
-    
+
     /**
      * 查找构建输出文件
      */
