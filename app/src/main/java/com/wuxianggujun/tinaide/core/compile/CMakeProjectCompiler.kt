@@ -89,9 +89,14 @@ class CMakeProjectCompiler(
                 return configResult
             }
             
-            // 5. 运行 CMake 构建
+            // 5. 运行 CMake 构建（使用 Ninja JNI）
             onLog("\n--- CMake 构建阶段 ---")
-            val buildResult = runCMakeBuild(cmakePath)
+            val buildResult = if (NinjaRunner.isAvailable()) {
+                runNinjaBuild()
+            } else {
+                onLog("警告: Ninja JNI 不可用，尝试使用 sh -c")
+                runCMakeBuild(cmakePath)
+            }
             if (!buildResult.success) {
                 return buildResult
             }
@@ -240,6 +245,41 @@ class CMakeProjectCompiler(
     }
     
 
+    /**
+     * 使用 Ninja JNI 运行构建
+     */
+    private fun runNinjaBuild(): CompileResult {
+        try {
+            onLog("使用 Ninja JNI 运行构建")
+            
+            NinjaRunner.loadIfNeeded()
+            
+            val args = arrayOf(
+                "ninja",
+                "-C", buildDir.absolutePath,
+                "-j", "4",
+                "-v"  // verbose
+            )
+            
+            onLog("执行: ${args.joinToString(" ")}")
+            
+            val exitCode = NinjaRunner.runNinja(
+                workingDir = buildDir.absolutePath,
+                args = args
+            )
+            
+            return if (exitCode == 0) {
+                CompileResult(true, "Ninja 构建成功")
+            } else {
+                CompileResult(false, "Ninja 构建失败 (退出码: $exitCode)")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Ninja JNI execution failed", e)
+            return CompileResult(false, "Ninja JNI 执行异常: ${e.message}")
+        }
+    }
+    
     /**
      * 查找构建输出文件
      */

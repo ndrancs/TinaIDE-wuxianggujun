@@ -84,3 +84,22 @@ if(HAVE_LLVM_HEADERS AND HAVE_LLVM_LIBS)
 else()
   target_link_libraries(native_compiler PRIVATE c++_shared ${log-lib})
 endif()
+
+# ============================================================================
+# Ninja Runner Integration
+# ============================================================================
+
+# 导入 libninja_runner.so（从 jniLibs 加载，会被打包进 APK）
+set(NINJA_RUNNER_SO ${PROJ_ROOT}/app/src/main/jniLibs/${ANDROID_ABI}/libninja_runner.so)
+if(EXISTS ${NINJA_RUNNER_SO})
+    add_library(ninja_runner SHARED IMPORTED GLOBAL)
+    set_target_properties(ninja_runner PROPERTIES 
+        IMPORTED_NO_SONAME TRUE 
+        IMPORTED_LOCATION ${NINJA_RUNNER_SO}
+    )
+    target_link_libraries(native_compiler PRIVATE ninja_runner)
+    message(STATUS "Found libninja_runner.so: ${NINJA_RUNNER_SO}")
+else()
+    message(WARNING "libninja_runner.so not found at ${NINJA_RUNNER_SO}. Ninja JNI support disabled.\n"
+                    "To enable, run: ./docker/llvm-build/build-tools.ps1 -Abi ${ANDROID_ABI} && ./tools/sync-llvm-build.ps1 -Abi ${ANDROID_ABI}")
+endif()

@@ -923,3 +923,72 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated
     if (!out.empty()) oss << out;
     return env->NewStringUTF(oss.str().c_str());
 }
+
+// ============================================================================
+// Ninja Runner JNI Interface
+// ============================================================================
+
+// 声明 libninja_runner.so 中的函数
+extern "C" int ninja_run(int argc, char** argv);
+
+/**
+ * 通过 JNI 调用 Ninja
+ * 
+ * @param workDir 工作目录
+ * @param args Ninja 参数数组（包括 "ninja" 作为 argv[0]）
+ * @return 退出码
+ */
+extern "C" JNIEXPORT jint JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NinjaRunner_runNinja(
+        JNIEnv* env, jobject /*thiz*/, jstring jWorkDir, jobjectArray jArgs) {
+    
+    // 获取工作目录
+    const char* workDir = env->GetStringUTFChars(jWorkDir, nullptr);
+    if (!workDir) {
+        return -1;
+    }
+    
+    // 切换到工作目录
+    int chdirResult = chdir(workDir);
+    env->ReleaseStringUTFChars(jWorkDir, workDir);
+    
+    if (chdirResult != 0) {
+        __android_log_print(ANDROID_LOG_ERROR, "NinjaRunner", 
+            "Failed to chdir to %s: %s", workDir, strerror(errno));
+        return -1;
+    }
+    
+    // 转换参数数组
+    jsize argc = env->GetArrayLength(jArgs);
+    std::vector<char*> argv(argc + 1);
+    std::vector<std::string> argStrings(argc);
+    
+    for (jsize i = 0; i < argc; i++) {
+        jstring jArg = (jstring)env->GetObjectArrayElement(jArgs, i);
+        if (!jArg) {
+            argv[i] = nullptr;
+            continue;
+        }
+        
+        const char* argChars = env->GetStringUTFChars(jArg, nullptr);
+        if (argChars) {
+            argStrings[i] = argChars;
+            argv[i] = const_cast<char*>(argStrings[i].c_str());
+            env->ReleaseStringUTFChars(jArg, argChars);
+        } else {
+            argv[i] = nullptr;
+        }
+    }
+    argv[argc] = nullptr;
+    
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "Calling ninja_run with %d arguments", (int)argc);
+    
+    // 调用 ninja_run
+    int result = ninja_run((int)argc, argv.data());
+    
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "ninja_run returned %d", result);
+    
+    return result;
+}
