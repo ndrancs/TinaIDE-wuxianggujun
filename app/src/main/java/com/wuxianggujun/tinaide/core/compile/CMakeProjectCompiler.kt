@@ -83,11 +83,27 @@ class CMakeProjectCompiler(
             val toolchainFile = createToolchainFile(triple)
             onLog("工具链文件: ${toolchainFile.absolutePath}")
             
-            // 4. 运行 CMake 配置
-            onLog("\n--- CMake 配置阶段 ---")
-            val configResult = runCMakeConfigure(cmakePath, toolchainFile)
-            if (!configResult.success) {
-                return configResult
+            // 4. 检查是否已有 build.ninja（预配置）
+            val buildNinjaFile = File(buildDir, "build.ninja")
+            if (!buildNinjaFile.exists()) {
+                // 尝试运行 CMake 配置
+                onLog("\n--- CMake 配置阶段 ---")
+                val configResult = runCMakeConfigure(cmakePath, toolchainFile)
+                if (!configResult.success) {
+                    // CMake 配置失败，尝试生成简单的 build.ninja
+                    onLog("警告: CMake 配置失败，尝试生成简单的构建文件")
+                    val generated = generateSimpleBuildNinja(triple)
+                    if (!generated) {
+                        return CompileResult(false, 
+                            "CMake 配置失败且无法生成备用构建文件。\n" +
+                            "由于 Android SELinux 限制，无法在设备上运行 CMake。\n" +
+                            "建议：在电脑上预先配置项目，或使用单文件编译模式。")
+                    }
+                    onLog("已生成简单的 build.ninja，继续构建")
+                }
+            } else {
+                onLog("\n--- 使用现有的 build.ninja ---")
+                onLog("跳过 CMake 配置阶段")
             }
             
             // 5. 运行 CMake 构建（优先使用 Ninja JNI）
@@ -254,6 +270,65 @@ class CMakeProjectCompiler(
     }
     
 
+    /**
+     * 生成简单的 build.ninja 文件（当 CMake 无法运行时）
+     */
+    private fun generateSimpleBuildNinja(triple: String): Boolean {
+        try {
+            // 查找所有源文件
+            val sources = projectRoot.walkTopDown()
+                .filter { it.isFile && it.extension in listOf("cpp", "cc", "cxx", "c") }
+                .toList()
+            
+            if (sources.isEmpty()) {
+                return false
+            }
+            
+            val clangxx = File(sysrootDir, "usr/bin/clang++").absolutePath
+            val projectName = projectRoot.name
+            
+            // 生成简单的 build.ninja
+            val buildNinja = buildString {
+                appendLine("# Auto-generated build.ninja for $projectName")
+                appendLine()
+                appendLine("ninja_required_version = 1.5")
+                appendLine()
+                appendLine("cxx = $clangxx")
+                appendLine("cflags = -fPIC -target $triple")
+                appendLine("ldflags = -shared")
+                appendLine()
+                appendLine("rule cxx")
+                appendLine("  command = \$cxx \$cflags -c \$in -o \$out")
+                appendLine("  description = CXX \$out")
+                appendLine()
+                appendLine("rule link")
+                appendLine("  command = \$cxx \$ldflags \$in -o \$out")
+                appendLine("  description = LINK \$out")
+                appendLine()
+                
+                // 为每个源文件生成编译规则
+                val objects = sources.map { src ->
+                    val rel = src.relativeTo(projectRoot).path
+                    val obj = rel.replace(File.separatorChar, '_') + ".o"
+                    appendLine("build $obj: cxx ${src.absolutePath}")
+                    obj
+                }
+                
+                appendLine()
+                appendLine("build lib$projectName.so: link ${objects.joinToString(" ")}")
+                appendLine()
+                appendLine("default lib$projectName.so")
+            }
+            
+            File(buildDir, "build.ninja").writeText(buildNinja)
+            return true
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to generate build.ninja", e)
+            return false
+        }
+    }
+    
     /**
      * 使用 Ninja JNI 运行构建
      */
