@@ -1,6 +1,7 @@
 package com.wuxianggujun.tinaide.core.compile
 
 import android.util.Log
+import com.wuxianggujun.tinaide.core.nativebridge.NinjaRunner
 import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
 import com.wuxianggujun.tinaide.TinaApplication
 import java.io.File
