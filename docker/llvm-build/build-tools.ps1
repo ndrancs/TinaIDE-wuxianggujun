@@ -85,6 +85,27 @@ if [ "${BUILD_NINJA_SO}" = "True" ] || [ "${BUILD_NINJA_SO}" = "true" ] || [ "${
 
 extern "C" int main(int, char**);
 
+// Export ninja_run for use by native_compiler.so
+extern "C" __attribute__((visibility("default"))) int ninja_run(int argc, char** argv) {
+  LOGI("========================================");
+  LOGI("=== ninja_run START, argc=%d ===", argc);
+  LOGI("========================================");
+  
+  for (int i = 0; i < argc; i++) {
+    LOGI("  ninja argv[%d] = %s", i, argv[i] ? argv[i] : "(null)");
+  }
+  
+  LOGI(">>> Calling Ninja main() NOW <<<");
+  int result = main(argc, argv);
+  LOGI("<<< Ninja main() returned: %d >>>", result);
+  
+  LOGI("========================================");
+  LOGI("=== ninja_run END, result=%d ===", result);
+  LOGI("========================================");
+  
+  return result;
+}
+
 // Provide C++ stub for browse functionality (matching browse.h signature)
 // On Android, we don't have Python, so we provide a minimal implementation
 // that logs a message and exits with error

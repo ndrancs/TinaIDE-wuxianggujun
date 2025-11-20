@@ -942,24 +942,41 @@ extern "C" JNIEXPORT jint JNICALL
 Java_com_wuxianggujun_tinaide_core_nativebridge_NinjaRunner_runNinja(
         JNIEnv* env, jobject /*thiz*/, jstring jWorkDir, jobjectArray jArgs) {
     
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "========================================");
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "=== runNinja START ===");
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "========================================");
+    
     // 获取工作目录
     const char* workDir = env->GetStringUTFChars(jWorkDir, nullptr);
     if (!workDir) {
         return -1;
     }
     
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "Working directory: %s", workDir);
+    
     // 切换到工作目录
     int chdirResult = chdir(workDir);
-    env->ReleaseStringUTFChars(jWorkDir, workDir);
     
     if (chdirResult != 0) {
         __android_log_print(ANDROID_LOG_ERROR, "NinjaRunner", 
-            "Failed to chdir to %s: %s", workDir, strerror(errno));
+            "Failed to chdir to %s: %s (errno=%d)", workDir, strerror(errno), errno);
+        env->ReleaseStringUTFChars(jWorkDir, workDir);
         return -1;
     }
     
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "Successfully changed to working directory");
+    env->ReleaseStringUTFChars(jWorkDir, workDir);
+    
     // 转换参数数组
     jsize argc = env->GetArrayLength(jArgs);
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "Converting %d arguments", (int)argc);
+    
     std::vector<char*> argv(argc + 1);
     std::vector<std::string> argStrings(argc);
     
@@ -974,6 +991,8 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NinjaRunner_runNinja(
         if (argChars) {
             argStrings[i] = argChars;
             argv[i] = const_cast<char*>(argStrings[i].c_str());
+            __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+                "  argv[%d] = %s", (int)i, argChars);
             env->ReleaseStringUTFChars(jArg, argChars);
         } else {
             argv[i] = nullptr;
@@ -982,13 +1001,23 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NinjaRunner_runNinja(
     argv[argc] = nullptr;
     
     __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
-        "Calling ninja_run with %d arguments", (int)argc);
+        "About to call ninja_run with %d arguments", (int)argc);
     
     // 调用 ninja_run
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        ">>> Calling ninja_run NOW <<<");
+    
     int result = ninja_run((int)argc, argv.data());
     
     __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
-        "ninja_run returned %d", result);
+        "<<< ninja_run returned: %d >>>", result);
+    
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "========================================");
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "=== runNinja END (result=%d) ===", result);
+    __android_log_print(ANDROID_LOG_INFO, "NinjaRunner", 
+        "========================================");
     
     return result;
 }
