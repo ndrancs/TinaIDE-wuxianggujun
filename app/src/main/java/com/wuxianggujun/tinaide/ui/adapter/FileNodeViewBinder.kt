@@ -42,6 +42,10 @@ class FileNodeViewBinder(
         // 点击事件
         itemView.setOnClickListener {
             if (file.isDirectory) {
+                // 懒加载：在展开前加载子节点
+                if (!treeNode.isExpanded && treeNode.getChildren().isEmpty()) {
+                    loadDirectoryChildren(treeNode, file)
+                }
                 treeView?.toggleNode(treeNode)
             } else {
                 onFileClick(file)
@@ -60,8 +64,36 @@ class FileNodeViewBinder(
     }
 
     override fun onNodeToggled(treeNode: TreeNode<File>, expand: Boolean) {
+        val file = treeNode.value ?: return
+        
+        // 懒加载：在展开前加载子节点
+        if (expand && file.isDirectory && treeNode.getChildren().isEmpty()) {
+            loadDirectoryChildren(treeNode, file)
+        }
+        
         // 更新展开图标旋转角度
         expandIcon.rotation = if (expand) 90f else 0f
+    }
+    
+    /**
+     * 懒加载目录的子文件
+     */
+    private fun loadDirectoryChildren(node: TreeNode<File>, dir: File) {
+        if (!dir.isDirectory) return
+        
+        // 如果已经加载过子节点，不重复加载
+        if (node.getChildren().isNotEmpty()) return
+
+        val children = try {
+            dir.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
+        } catch (_: Throwable) {
+            emptyList<File>()
+        }
+
+        for (child in children) {
+            val childNode = TreeNode(child, node.level + 1)
+            node.addChild(childNode)
+        }
     }
 
     /**

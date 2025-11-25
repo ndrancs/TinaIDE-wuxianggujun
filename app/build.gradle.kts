@@ -18,12 +18,6 @@ android {
     namespace = "com.wuxianggujun.tinaide"
     compileSdk = 36
 
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-        }
-    }
-
     defaultConfig {
         applicationId = "com.wuxianggujun.tinaide"
         minSdk = 28
@@ -33,16 +27,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 传递 STL 选择（与 jniLibs 中的 libc++_shared.so 对齐）
-        externalNativeBuild {
-            cmake {
-                arguments += listOf("-DANDROID_STL=c++_shared")
-                cppFlags += listOf("-std=c++17", "-fexceptions", "-frtti")
-            }
-        }
-        ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64")
-        }
+
     }
 
     // Define signing config before buildTypes so it can be referenced below

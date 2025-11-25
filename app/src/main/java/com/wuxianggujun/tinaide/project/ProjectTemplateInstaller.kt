@@ -11,95 +11,94 @@ import java.util.zip.ZipInputStream
 object ProjectTemplateInstaller {
     private const val TAG = "ProjectTemplate"
 
-    fun installCppCMakeTemplate(ctx: Context, destDir: File, projectName: String): Boolean {
-        // 1) 尝试从 assets 解压模板
-        val okFromAssets = try {
-            ctx.assets.open("templates/cpp_cmake.zip").use { input ->
-                unzipToDir(input, destDir)
-            }
-            true
-        } catch (_: Throwable) { false }
-
-        if (okFromAssets) {
-            // 2) 占位符替换
-            try {
-                replacePlaceholders(destDir, mapOf(
-                    "__PROJECT_NAME__" to projectName
-                ))
-                return true
-            } catch (e: Exception) {
-                Log.w(TAG, "Placeholder replace failed, fallback to generate", e)
-            }
-        }
-
-        // 3) 回退：生成最小 CMake 项目
+    /**
+     * 安装 C++ xmake 项目模板
+     */
+    fun installCppXmakeTemplate(ctx: Context, destDir: File, projectName: String): Boolean {
         return try {
-            generateMinimalCppCMake(destDir, projectName)
+            generateMinimalCppXmake(destDir, projectName)
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Generate minimal template failed", e)
+            Log.e(TAG, "Generate xmake template failed", e)
             false
         }
     }
 
-    private fun unzipToDir(input: InputStream, destDir: File) {
-        ZipInputStream(input).use { zis ->
-            var entry: ZipEntry? = zis.nextEntry
-            val buffer = ByteArray(64 * 1024)
-            while (entry != null) {
-                val outFile = File(destDir, entry.name)
-                if (entry.isDirectory) {
-                    outFile.mkdirs()
-                } else {
-                    outFile.parentFile?.mkdirs()
-                    FileOutputStream(outFile).use { fos ->
-                        var r = zis.read(buffer)
-                        while (r > 0) {
-                            fos.write(buffer, 0, r)
-                            r = zis.read(buffer)
-                        }
-                    }
-                }
-                zis.closeEntry()
-                entry = zis.nextEntry
-            }
+    /**
+     * 创建 C++ 单文件项目（不使用构建系统）
+     */
+    fun installCppSingleFile(destDir: File, projectName: String): Boolean {
+        return try {
+            generateCppSingleFile(destDir, projectName)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Generate single file template failed", e)
+            false
         }
     }
 
-    private fun replacePlaceholders(root: File, replacements: Map<String, String>) {
-        if (!root.exists()) return
-        root.walkTopDown().forEach { f ->
-            if (f.isFile && isTextCandidate(f.name)) {
-                runCatching {
-                    val content = f.readText()
-                    var newContent = content
-                    replacements.forEach { (k, v) -> newContent = newContent.replace(k, v) }
-                    if (newContent != content) f.writeText(newContent)
-                }
-            }
-        }
-    }
-
-    private fun isTextCandidate(name: String): Boolean {
-        val ext = name.substringAfterLast('.', missingDelimiterValue = "").lowercase()
-        return ext in setOf("txt", "md", "cmake", "cpp", "cc", "cxx", "c", "h", "hpp", "gitignore") ||
-               name.equals("CMakeLists.txt", true)
-    }
-
-    private fun generateMinimalCppCMake(destDir: File, projectName: String) {
-        val src = File(destDir, "src").apply { mkdirs() }
-        File(destDir, "include").apply { mkdirs() }
-        File(destDir, "build").apply { mkdirs() }
-
-        val cmake = """
-            cmake_minimum_required(VERSION 3.10)
-            project($projectName)
-            add_executable(${projectName} src/main.cpp)
-        """.trimIndent()
-        File(destDir, "CMakeLists.txt").writeText(cmake)
-
+    /**
+     * 生成 C++ 单文件项目
+     */
+    private fun generateCppSingleFile(destDir: File, projectName: String) {
+        // 创建一个简单的 main.cpp
         val mainCpp = """
             #include <iostream>
+            
+            int main() {
+                std::cout << "Hello, $projectName!" << std::endl;
+                return 0;
+            }
+        """.trimIndent()
+        File(destDir, "main.cpp").writeText(mainCpp)
+
+        // 创建 README.md
+        val readme = """
+            # $projectName
+
+            这是一个简单的 C++ 单文件项目。
+
+            ## 编译运行
+
+            使用 g++ 或 clang++ 编译：
+            ```bash
+            g++ main.cpp -o $projectName
+            ./$projectName
+            ```
+
+            或者使用 TinaIDE 的编译功能直接运行。
+        """.trimIndent()
+        File(destDir, "README.md").writeText(readme)
+    }
+
+    /**
+     * 生成最小 xmake C++ 项目
+     */
+    private fun generateMinimalCppXmake(destDir: File, projectName: String) {
+        val src = File(destDir, "src").apply { mkdirs() }
+        File(destDir, "include").apply { mkdirs() }
+
+        // 创建 xmake.lua
+        val xmakeLua = """
+            -- xmake 项目配置
+            set_project("$projectName")
+            set_version("1.0.0")
+            
+            -- 设置 C++ 标准
+            set_languages("c++17")
+            
+            -- 定义目标
+            target("$projectName")
+                set_kind("binary")
+                add_files("src/*.cpp")
+                add_includedirs("include")
+        """.trimIndent()
+        File(destDir, "xmake.lua").writeText(xmakeLua)
+
+        // 创建 main.cpp
+        val mainCpp = """
+            #include <iostream>
+            
             int main() {
                 std::cout << "Hello, $projectName!" << std::endl;
                 return 0;
@@ -107,21 +106,49 @@ object ProjectTemplateInstaller {
         """.trimIndent()
         File(src, "main.cpp").writeText(mainCpp)
 
+        // 创建 README.md
         val readme = """
             # $projectName
 
-            这是由 TinaIDE 生成的最小 CMake C++ 项目。
+            这是由 TinaIDE 生成的 xmake C++ 项目。
 
-            构建：
+            ## 构建
             ```bash
-            cmake -S . -B build && cmake --build build
+            xmake
             ```
-            运行：
+
+            ## 运行
             ```bash
-            ./build/$projectName
+            xmake run
+            ```
+
+            ## 清理
+            ```bash
+            xmake clean
+            ```
+
+            ## 配置
+            ```bash
+            xmake f -p android -a arm64-v8a
             ```
         """.trimIndent()
         File(destDir, "README.md").writeText(readme)
+
+        // 创建 .gitignore
+        val gitignore = """
+            # xmake
+            .xmake/
+            build/
+            
+            # IDE
+            .vscode/
+            .idea/
+            *.swp
+            *.swo
+            *~
+        """.trimIndent()
+        File(destDir, ".gitignore").writeText(gitignore)
     }
+
 }
 

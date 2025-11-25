@@ -13,8 +13,11 @@ Param(
   # New: do NOT inject host-built tool binaries into sysroot by default
   # Because Android SELinux denies exec() from app private dirs (execute_no_trans)
   [bool]$InjectToolsToSysroot = $false,
-  # New: copy in-process tool runners (shared objects) into jniLibs for app-side JNI loading
-  [bool]$CopyToolRunnersToJni = $true
+  # Tool runners (xmake_runner.so) are loaded from sysroot, not jniLibs
+  # Set to $true only if you want to duplicate them in jniLibs (not recommended)
+  [bool]$CopyToolRunnersToJni = $false,
+  # Copy tool runners into sysroot runtime directory for System.load()
+  [bool]$CopyToolRunnersToSysroot = $true
 )
 
 Write-Host "== Sync LLVM build artifacts (ABI=$Abi) ==" -ForegroundColor Cyan

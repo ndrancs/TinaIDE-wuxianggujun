@@ -1,0 +1,3 @@
+[submodule "external/xmake"]
+	path = external/xmake
+	url = https://github.com/wuxianggujun/xmake.git

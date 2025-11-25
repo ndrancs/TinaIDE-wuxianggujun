@@ -4,7 +4,9 @@ Param(
   [string]$ContainerName = 'tina-llvm-build',
   [string]$OutputPath,
   [string]$XmakeRepoUrl = 'https://github.com/wuxianggujun/xmake.git',
-  [string]$XmakeRef = 'master'
+  [string]$XmakeRef = 'master',
+  # 是否清理构建目录（默认 false，支持增量编译）
+  [switch]$Clean = $false
 )
 
 $ErrorActionPreference = 'Stop'
@@ -31,7 +33,8 @@ if (-not $running) {
 
 function Exec-In-Dev { param([string]$cmd) & docker exec $ContainerName bash -lc $cmd }
 
-$assign = "ABI='$Abi'; API_LEVEL='$ApiLevel'; XMAKE_REPO='$XmakeRepoUrl'; XMAKE_REF='$XmakeRef';"
+$cleanFlag = if ($Clean) { "1" } else { "0" }
+$assign = "ABI='$Abi'; API_LEVEL='$ApiLevel'; XMAKE_REPO='$XmakeRepoUrl'; XMAKE_REF='$XmakeRef'; CLEAN_BUILD='$cleanFlag';"
 $session = @'
 set -eux
 case "${ABI}" in
@@ -83,7 +86,13 @@ fi
 BUILD_DIR="/work/build/tools/xmake-${ABI}-api${API_LEVEL}"
 INSTALL_ROOT="/work/build/tools/xmake-install-${ABI}-api${API_LEVEL}"
 PREFIX="/usr"
-rm -rf "${BUILD_DIR}" "${INSTALL_ROOT}"
+
+# 根据 CLEAN_BUILD 参数决定是否清理构建目录
+if [ "${CLEAN_BUILD}" = "1" ]; then
+  echo "[i] Clean build requested, removing BUILD_DIR..."
+  rm -rf "${BUILD_DIR}"
+fi
+rm -rf "${INSTALL_ROOT}"
 mkdir -p "${BUILD_DIR}" "${INSTALL_ROOT}"
 
 export CC CXX AR RANLIB STRIP LD
@@ -116,7 +125,39 @@ make DESTDIR="${INSTALL_ROOT}" install
 RUNNER_DIR="/work/build/tools/xmake-runner"
 mkdir -p "${RUNNER_DIR}"
 cat > "${RUNNER_DIR}/xmake_runner.cpp" <<'EOF'
+#include <jni.h>
+#include <string>
+#include <vector>
+
 extern "C" int main(int, char**);
+
+// JNI 函数：Java_com_wuxianggujun_tinaide_core_nativebridge_XmakeRunner_xmake_1run
+// 对应 Kotlin: external fun xmake_run(argc: Int, argv: Array<String>): Int
+extern "C" JNIEXPORT jint JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_XmakeRunner_xmake_1run(
+    JNIEnv* env, jobject /* this */, jint argc, jobjectArray argv) {
+    
+    // 转换 Java String[] 到 char**
+    std::vector<std::string> args;
+    std::vector<char*> argv_ptrs;
+    
+    for (int i = 0; i < argc; i++) {
+        jstring jstr = (jstring)env->GetObjectArrayElement(argv, i);
+        const char* str = env->GetStringUTFChars(jstr, nullptr);
+        args.push_back(str);
+        env->ReleaseStringUTFChars(jstr, str);
+    }
+    
+    for (auto& arg : args) {
+        argv_ptrs.push_back(const_cast<char*>(arg.c_str()));
+    }
+    argv_ptrs.push_back(nullptr);
+    
+    // 调用 xmake main
+    return main(argc, argv_ptrs.data());
+}
+
+// 保留原有的 C 函数接口（兼容）
 extern "C" __attribute__((visibility("default"))) int xmake_run(int argc, char** argv) {
     return main(argc, argv);
 }

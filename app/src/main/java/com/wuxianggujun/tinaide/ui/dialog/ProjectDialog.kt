@@ -217,7 +217,8 @@ class ProjectDialog(
             }
 
             val ok = when (selectedType) {
-                0 -> ProjectTemplateInstaller.installCppCMakeTemplate(requireContext(), projectDir, projectName)
+                0 -> ProjectTemplateInstaller.installCppXmakeTemplate(requireContext(), projectDir, projectName)  // C++ 项目 (xmake)
+                1 -> ProjectTemplateInstaller.installCppSingleFile(projectDir, projectName)  // C++ 单文件
                 else -> false
             }
             if (!ok) {

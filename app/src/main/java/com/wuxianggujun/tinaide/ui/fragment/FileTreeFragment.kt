@@ -77,7 +77,7 @@ class FileTreeFragment : BaseBindingFragment<FragmentFileTreeBinding>(
     }
 
     /**
-     * 构建文件树
+     * 构建文件树（只加载顶层文件）
      */
     private fun buildFileTree(rootDir: File): TreeNode<File> {
         val root = TreeNode.root<File>()
@@ -90,36 +90,12 @@ class FileTreeFragment : BaseBindingFragment<FragmentFileTreeBinding>(
 
         for (file in files) {
             val node = TreeNode(file, 1)
-            if (file.isDirectory) {
-                // 为目录添加空占位符，用于懒加载
-                // 实际子节点将在展开时加载
-                loadDirectoryChildren(node, file)
-            }
+            // 只添加顶层节点，不递归加载子目录
+            // 子目录将在用户点击展开时由 FileNodeViewBinder 懒加载
             root.addChild(node)
         }
 
         return root
-    }
-
-    /**
-     * 加载目录的子文件
-     */
-    private fun loadDirectoryChildren(node: TreeNode<File>, dir: File) {
-        if (!dir.isDirectory) return
-
-        val children = try {
-            dir.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
-        } catch (_: Throwable) {
-            emptyList<File>()
-        }
-
-        for (child in children) {
-            val childNode = TreeNode(child, node.level + 1)
-            if (child.isDirectory) {
-                loadDirectoryChildren(childNode, child)
-            }
-            node.addChild(childNode)
-        }
     }
 
     /**
