@@ -1,5 +1,6 @@
 package com.wuxianggujun.tinaide.core.nativebridge
 
+import android.content.Context
 import android.util.Log
 import com.wuxianggujun.tinaide.TinaApplication
 import java.io.File
@@ -8,12 +9,41 @@ import java.io.File
  * xmake 构建工具 JNI 接口
  * 
  * 通过 libxmake_runner.so 调用 xmake 功能（从 sysroot 加载）
+ * 
+ * 在 Android 上，xmake 内部的进程创建会通过 ProcessBridge 桥接到 Java 层，
+ * 以绕过 fork/exec 限制。
  */
 object XmakeRunner {
     private const val TAG = "XmakeRunner"
     
     @Volatile
     private var loaded = false
+    
+    @Volatile
+    private var processBridgeInitialized = false
+    
+    /**
+     * 初始化进程桥接（在加载 xmake_runner 之前调用）
+     */
+    fun initProcessBridge(context: Context) {
+        if (processBridgeInitialized) return
+        synchronized(this) {
+            if (processBridgeInitialized) return
+            
+            // 初始化 NativeEnv
+            NativeEnv.init(context)
+            
+            // 设置 ProcessBridge 路径
+            ProcessBridge.nativeLibDir = context.applicationInfo.nativeLibraryDir
+            ProcessBridge.sysrootDir = File(context.filesDir, "sysroot").absolutePath
+            
+            Log.i(TAG, "ProcessBridge initialized")
+            Log.i(TAG, "  nativeLibDir: ${ProcessBridge.nativeLibDir}")
+            Log.i(TAG, "  sysrootDir: ${ProcessBridge.sysrootDir}")
+            
+            processBridgeInitialized = true
+        }
+    }
     
     /**
      * 从 sysroot 加载 xmake_runner 库
@@ -22,6 +52,12 @@ object XmakeRunner {
         if (loaded) return
         synchronized(this) {
             if (loaded) return
+            
+            // 确保 ProcessBridge 已初始化
+            if (!processBridgeInitialized) {
+                initProcessBridge(TinaApplication.instance)
+            }
+            
             try {
                 // 从 sysroot 加载 libxmake_runner.so
                 val ctx = TinaApplication.instance
@@ -50,6 +86,17 @@ object XmakeRunner {
                 }
                 
                 if (loadedPath != null) {
+                    // 初始化 Native 层的进程桥接
+                    val nativeLibDir = ctx.applicationInfo.nativeLibraryDir
+                    val sysrootDir = sysrootBase.absolutePath
+                    
+                    try {
+                        nativeInitProcessBridge(nativeLibDir, sysrootDir)
+                        Log.i(TAG, "Native process bridge initialized")
+                    } catch (e: Throwable) {
+                        Log.w(TAG, "Failed to init native process bridge: ${e.message}")
+                    }
+                    
                     loaded = true
                     Log.i(TAG, "Loaded xmake_runner from sysroot: $loadedPath")
                 } else {
@@ -61,6 +108,11 @@ object XmakeRunner {
             }
         }
     }
+    
+    /**
+     * 初始化 Native 层进程桥接
+     */
+    private external fun nativeInitProcessBridge(nativeLibDir: String, sysrootDir: String): Boolean
     
     fun isLoaded(): Boolean = loaded
     
