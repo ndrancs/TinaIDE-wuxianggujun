@@ -41,11 +41,10 @@ posix_spawn() / fork() + exec()  ← 在 Android 上失败！
 
 - 保留 xmake 现有逻辑：上层还是"子进程模型"
 - 底层在 Android 平台实现里：不再直接 `posix_spawn/fork/exec`
-- 改为通过以下方式启动编译器：
-  - **方案 A**：JNI → Java ProcessBuilder（启动位于 `nativeLibraryDir` 的 wrapper）
-  - **方案 B**：`/system/bin/linker64` + clang wrapper .so
+- **关键优化**：由于 TinaIDE 已经将 clang/LLVM/LLD 编译为库并提供了 `NativeCompiler` API，
+  我们直接将"子进程调用"转换为"进程内 API 调用"，无需启动外部进程！
 
-### 2.2 架构图
+### 2.2 架构图（实际实现）
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -63,39 +62,60 @@ posix_spawn() / fork() + exec()  ← 在 Android 上失败！
 │       │                                                     │
 │       ├── [Linux/macOS] → posix_spawn() / fork()           │
 │       │                                                     │
-│       └── [Android] → tb_process_init_android() ← 新增！    │
+│       └── [Android] → tb_process_init_android()            │
 │                │                                            │
 │                ▼                                            │
-│       ┌────────────────────────────────────────┐           │
-│       │  方案 A: JNI → Java ProcessBuilder     │           │
-│       │  方案 B: linker64 + wrapper .so        │           │
-│       └────────────────────────────────────────┘           │
-│                │                                            │
-│                ▼                                            │
-│       被启动的目标必须位于可执行挂载点：                      │
-│       - nativeLibraryDir (/data/app/.../lib/arm64/)        │
-│       - 或通过 linker64 方式执行                            │
+│       JNI 调用 Java ProcessBridge.startProcess()           │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│              ProcessBridge (Java)                           │
+├─────────────────────────────────────────────────────────────┤
+│  解析命令和参数：                                            │
+│  - clang/clang++ → NativeCompiler.emitObj()                │
+│  - ld/lld        → NativeCompiler.linkExeMany()            │
+│  - 其他命令      → ProcessBuilder (fallback)               │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│              NativeCompiler (JNI)                           │
+├─────────────────────────────────────────────────────────────┤
+│  进程内调用已加载的编译器库：                                 │
+│  - libclang-cpp.so (Clang 前端)                             │
+│  - libLLVM-17.so (LLVM 核心)                                │
+│  - liblld*.a (LLD 链接器，静态链接)                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 2.3 优点
+### 2.3 关键优势
+
+这个方案的核心优势是：**完全不需要启动外部进程**！
+
+1. xmake 认为它在调用 clang 子进程
+2. 实际上 ProcessBridge 解析参数后直接调用 NativeCompiler
+3. NativeCompiler 使用已加载的 libclang-cpp.so 进行编译
+4. 整个过程都在同一个进程内完成
+
+### 2.4 优点
 
 1. **改动最小，边界清晰**：只动 tbox 的 Android 平台实现
-2. **xmake 和 Lua 脚本几乎不用碰**
-3. **保留"子进程"语义**：clang 崩溃只杀子进程，不影响主 App
-4. **易于维护**：将来更新 xmake，只需保持 `tb_process_init` 接口不变
+2. **xmake 和 Lua 脚本完全不用碰**
+3. **无需外部进程**：直接复用已有的 NativeCompiler API
+4. **性能更好**：进程内调用比启动子进程快得多
+5. **易于维护**：将来更新 xmake，只需保持 `tb_process_init` 接口不变
 
-### 2.4 重要约束
+### 2.5 注意事项
 
-> ⚠️ **关于 ProcessBuilder 的澄清**：
+> ⚠️ **关于"子进程隔离"的说明**：
 >
-> 使用 `ProcessBuilder` **只能解决**"从 Native 层不方便直接调 Java API"的问题，
-> **不能绕过** Android 对可执行文件路径/W^X 的限制。
+> 由于我们实际上是在同一进程内调用编译器，如果编译器崩溃会影响整个 App。
+> 但实际上 NativeCompiler 已经在生产环境中稳定运行，这个风险是可接受的。
 >
-> 被启动的目标文件仍然必须位于**可执行挂载点**：
-> - `nativeLibraryDir`（如 `/data/app/.../lib/arm64/`）
-> - `/system/bin/` 等系统目录
-> - 或通过 `linker64` 方式执行
+> 如果将来需要真正的进程隔离，可以考虑：
+> - 使用 `linker64 + wrapper.so` 方式启动独立进程
+> - 或者在单独的 Service 进程中运行编译
 
 ---
 
