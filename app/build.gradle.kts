@@ -27,6 +27,19 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // NDK 配置
+        ndk {
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags += listOf("-std=c++17", "-fexceptions", "-frtti")
+                arguments += listOf(
+                    "-DANDROID_STL=c++_shared"
+                )
+            }
+        }
 
     }
 
@@ -69,14 +82,17 @@ android {
         viewBinding = true
     }
 
-    // Native packaging: 保留 libproot.so 调试符号，避免被 strip 导致体积大幅缩小
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+
+    // Native packaging: old devices still rely on legacy jni layout
     packaging {
         jniLibs {
-            // 以传统方式打包 .so（与部分设备兼容性更好）
             useLegacyPackaging = true
-            // 默认 AGP 会 strip 调试符号，导致体积从 ~800KB 缩到 ~200KB。
-            // 显式保留 libproot.so 的符号，确保 APK 中体积与源文件一致。
-            keepDebugSymbols += setOf("**/libproot.so")
         }
     }
 

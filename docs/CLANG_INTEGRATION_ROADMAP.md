@@ -474,13 +474,13 @@ TinaIDE/
 │   │       └── sysroot/                   # Sysroot（不提交 git）
 │   └── build.gradle.kts
 ├── external/
-│   └── embedded-ndk-libs/                 # 构建产物（不提交 git）
+│   └── llvm-build-libs/                 # 构建产物（不提交 git）
 │       ├── arm64-v8a/
 │       ├── x86_64/
 │       └── common-headers/
 │           └── clang/                     # Clang C++ 头文件
 ├── docker/
-│   └── embedded-ndk/                      # Docker 构建脚本
+│   └── llvm-build/                      # Docker 构建脚本
 │       ├── Dockerfile.dev
 │       ├── build-local.ps1
 │       ├── sync-to-app.ps1

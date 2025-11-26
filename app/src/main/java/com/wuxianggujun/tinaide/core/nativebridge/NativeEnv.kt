@@ -37,6 +37,12 @@ object NativeEnv {
         private set
     
     /**
+     * Native 库是否已加载
+     */
+    @Volatile
+    private var nativeLoaded: Boolean = false
+    
+    /**
      * 初始化环境
      * 
      * @param context Application Context
@@ -59,18 +65,52 @@ object NativeEnv {
             ProcessBridge.nativeLibDir = nativeLibDir
             ProcessBridge.sysrootDir = sysrootDir
             
-            // 设置环境变量（供 Native 层使用）
-            try {
-                nativeSetEnv("TINA_NATIVE_LIB_DIR", nativeLibDir)
-                nativeSetEnv("TINA_SYSROOT", sysrootDir)
-                nativeSetEnv("TINA_IDE_MODE", "1")
-                Log.i(TAG, "Environment variables set")
-            } catch (e: UnsatisfiedLinkError) {
-                Log.w(TAG, "Native method not available yet: ${e.message}")
-            }
-            
             initialized = true
             Log.i(TAG, "NativeEnv initialized")
+        }
+    }
+    
+    /**
+     * 设置环境变量（需要 Native 库已加载）
+     */
+    fun setEnv(name: String, value: String) {
+        ensureNativeLoaded()
+        try {
+            nativeSetEnv(name, value)
+            Log.d(TAG, "setEnv: $name=$value")
+        } catch (e: UnsatisfiedLinkError) {
+            Log.w(TAG, "Native method not available: ${e.message}")
+        }
+    }
+    
+    /**
+     * 获取环境变量（需要 Native 库已加载）
+     */
+    fun getEnv(name: String): String? {
+        ensureNativeLoaded()
+        return try {
+            nativeGetEnv(name)
+        } catch (e: UnsatisfiedLinkError) {
+            Log.w(TAG, "Native method not available: ${e.message}")
+            null
+        }
+    }
+    
+    /**
+     * 确保 Native 库已加载
+     */
+    private fun ensureNativeLoaded() {
+        if (nativeLoaded) return
+        synchronized(this) {
+            if (nativeLoaded) return
+            try {
+                // 尝试加载 xmake_runner（包含 nativeSetEnv/nativeGetEnv）
+                System.loadLibrary("xmake_runner")
+                nativeLoaded = true
+            } catch (e: UnsatisfiedLinkError) {
+                // 可能还没编译，忽略
+                Log.d(TAG, "xmake_runner not loaded yet")
+            }
         }
     }
     
@@ -100,13 +140,8 @@ object NativeEnv {
      */
     private external fun nativeSetEnv(name: String, value: String)
     
-    // 静态初始化块，加载 native 库
-    init {
-        try {
-            // 尝试加载包含 nativeSetEnv 的库
-            // 这个方法会在 xmake_runner 或 native_compiler 中实现
-        } catch (e: Throwable) {
-            Log.w(TAG, "Native library not loaded yet")
-        }
-    }
+    /**
+     * 获取环境变量（JNI）
+     */
+    private external fun nativeGetEnv(name: String): String?
 }

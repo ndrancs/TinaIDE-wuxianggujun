@@ -44,7 +44,7 @@ fatal error: 'clang/Basic/DiagnosticCommonKinds.inc' file not found
 
 ### 3. 同步LLVM完整源码头文件
 - ✅ 运行 `.\tools\sync-llvm-headers.ps1` 同步脚本（推荐方式）
-- ✅ 脚本自动从 `docker/embedded-ndk/dev-work/` 复制所有必要文件：
+- ✅ 脚本自动从 `docker/llvm-build/dev-work/` 复制所有必要文件：
   - LLVM源码头文件（src/llvm-project/llvm/include/）
   - LLVM生成的配置文件（build/android/x86_64-api21/include/llvm/Config/）
   - Clang生成的头文件（build/android/x86_64-api21/tools/clang/include/clang/）
@@ -54,7 +54,7 @@ fatal error: 'clang/Basic/DiagnosticCommonKinds.inc' file not found
 - ✅ `clang/Basic/*.inc` - 所有诊断消息和属性定义（85+ 文件）
 - ✅ `clang-generated/AST/*.inc` - AST相关生成文件（AttrDocTable.inc、Opcodes.inc）
 - ✅ `clang-generated/Sema/*.inc` - 语义分析生成文件（OpenCLBuiltins.inc）
-- ✅ 从 `docker/embedded-ndk/dev-work/build/android/x86_64-api21/tools/clang/` 复制
+- ✅ 从 `docker/llvm-build/dev-work/build/android/x86_64-api21/tools/clang/` 复制
 
 ### 5. 验证共享库存在
 - ✅ `jniLibs/x86_64/libclang-cpp.so`
@@ -130,13 +130,13 @@ sysroot: /data/user/0/com.wuxianggujun.tinaide/files/sysroot
 
 ## 一键同步嵌入式 NDK 资源（可选）
 
-如果希望统一同步头文件、JNI 库和 sysroot，可使用：
+使用 `tools/sync-llvm-build.ps1` 即可一次完成头文件、JNI 库与 sysroot 的同步：
 ```powershell
 # x86_64
-./tools/sync-embedded-ndk.ps1 -Abi x86_64
+pwsh ./tools/sync-llvm-build.ps1 -Abi x86_64
 # arm64-v8a
-./tools/sync-embedded-ndk.ps1 -Abi arm64-v8a
+pwsh ./tools/sync-llvm-build.ps1 -Abi arm64-v8a
 ```
 
-该脚本内部会调用 `sync-llvm-headers.ps1`，并将 `.so` 库复制到 `app/src/main/jniLibs/<abi>`，
-同时镜像 `sysroot` 到 `app/src/main/assets/sysroot`。
+该脚本会调用 `sync-llvm-headers.ps1` 生成 `docker/llvm-build/build-output/common-headers`，
+并自动复制到 `external/llvm-build-libs/common-headers`，同时更新 `.so` 与 sysroot 资产。
