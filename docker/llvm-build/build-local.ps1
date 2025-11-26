@@ -1,5 +1,5 @@
 Param(
-  [ValidateSet('arm64-v8a','x86_64')][string]$Abi = 'arm64-v8a',
+  [ValidateSet('arm64-v8a','x86_64')][string[]]$Abi = @('arm64-v8a','x86_64'),
   [int]$ApiLevel = 28,
   [string]$NdkVersion = 'r26d',
   [string]$LlvmTag = 'llvmorg-17.0.6',
@@ -55,9 +55,8 @@ function Exec-In-Dev { param([string]$cmd) & docker exec $ContainerName bash -lc
 
 Ensure-DevContainer -containerName $ContainerName -ndkVersion $NdkVersion
 
-$outDirHost = Join-Path $OutputPath "${Abi}"
-New-Item -ItemType Directory -Force -Path $outDirHost | Out-Null
-$assign = "ABI='$Abi'; API_LEVEL='$ApiLevel'; LLVM_TAG='$LlvmTag'; NDK_VERSION='$NdkVersion'; MODE='$Mode'; ANDROID_BUILD_TYPE='$AndroidBuildType'; ENABLE_ASSERTIONS='$EnableAssertions'; BUILD_CLANGD_HOST='$BuildClangdHost'; BUILD_LLVM_DEBUG_TOOLS_HOST='$BuildLlvmDebugToolsHost';"
+$abiList = if ($Abi -and $Abi.Length -gt 0) { $Abi } else { @('arm64-v8a','x86_64') }
+
 $sessionScript = @'
 set -eux
 case "${ABI}" in
@@ -69,6 +68,13 @@ mkdir -p /work/src /work/build/host /work/build/android/${ABI}-api${API_LEVEL} /
 if [ ! -d /work/src/llvm-project/.git ]; then
   git clone --depth=1 --branch ${LLVM_TAG} https://github.com/llvm/llvm-project.git /work/src/llvm-project
 fi
+cd /work/src/llvm-project
+# Sync existing clone to requested tag/branch when the source already exists (faster incremental builds)
+git fetch origin --tags --depth=1 || true
+git fetch origin ${LLVM_TAG} --depth=1 || true
+git checkout --force ${LLVM_TAG} || git checkout --force origin/${LLVM_TAG} || git checkout --force "$(git rev-parse --abbrev-ref origin/HEAD)"
+git submodule update --init --recursive || true
+cd /
 if [ ! -x /work/build/host/bin/llvm-tblgen ]; then
   cmake -S /work/src/llvm-project/llvm -B /work/build/host -G Ninja \
     -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld" -DLLVM_TARGETS_TO_BUILD="AArch64;X86" -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -259,13 +265,20 @@ printf "MODE=shared-libs\nNDK=%s\nLLVM_TAG=%s\nABI=%s\nAPI_LEVEL=%s\nTRIPLE=%s\n
 (cd /hostout/${ABI} && find . -type f -print0 | sort -z | xargs -0 sha256sum) > /hostout/${ABI}/SHA256SUMS || true
 (cd /hostout/${ABI} && zip -qr llvm-build-${ABI}-api${API_LEVEL}.zip .)
 '@
-Exec-In-Dev "$assign`n$sessionScript"
-$rc = $LASTEXITCODE
-if ($rc -ne 0) {
-  Write-Err "Build failed inside container (exit $rc)"
-  exit $rc
+
+foreach ($currentAbi in $abiList) {
+  Write-Info "Building LLVM artifacts for ABI: $currentAbi"
+  $outDirHost = Join-Path $OutputPath "${currentAbi}"
+  New-Item -ItemType Directory -Force -Path $outDirHost | Out-Null
+  $assign = "ABI='$currentAbi'; API_LEVEL='$ApiLevel'; LLVM_TAG='$LlvmTag'; NDK_VERSION='$NdkVersion'; MODE='$Mode'; ANDROID_BUILD_TYPE='$AndroidBuildType'; ENABLE_ASSERTIONS='$EnableAssertions'; BUILD_CLANGD_HOST='$BuildClangdHost'; BUILD_LLVM_DEBUG_TOOLS_HOST='$BuildLlvmDebugToolsHost';"
+  Exec-In-Dev "$assign`n$sessionScript"
+  $rc = $LASTEXITCODE
+  if ($rc -ne 0) {
+    Write-Err "Build failed inside container (exit $rc) for ABI $currentAbi"
+    exit $rc
+  }
+  Write-Info "Build completed for $currentAbi"
+  Write-Info "Artifacts ready at: $outDirHost"
 }
-Write-Info "Build completed!"
-Write-Info "Artifacts ready at: $outDirHost"
 
 Write-Info "Done."

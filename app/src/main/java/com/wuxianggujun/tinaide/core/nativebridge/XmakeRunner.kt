@@ -7,11 +7,12 @@ import java.io.File
 
 /**
  * xmake 构建工具 JNI 接口
- * 
- * 通过 libxmake_runner.so 调用 xmake 功能（从 sysroot 加载）
- * 
+ *
+ * 当前方案：在 Docker 中完成 xmake/tbox 的定制编译，将产物连同 Lua 脚本
+ * 打包到应用私有目录的 sysroot 后再由 Native 编译链复用。
+ *
  * 在 Android 上，xmake 内部的进程创建会通过 ProcessBridge 桥接到 Java 层，
- * 以绕过 fork/exec 限制。
+ * 将编译器调用转换为 NativeCompiler 的进程内调用，绕过 fork/exec 限制。
  */
 object XmakeRunner {
     private const val TAG = "XmakeRunner"
@@ -32,85 +33,104 @@ object XmakeRunner {
             
             // 初始化 NativeEnv
             NativeEnv.init(context)
-            
+
+            // 确保 sysroot 已完整解压，再下发给 ProcessBridge
+            val sysrootDir = SysrootInstaller.ensureInstalled(context).absolutePath
+
             // 设置 ProcessBridge 路径
             ProcessBridge.nativeLibDir = context.applicationInfo.nativeLibraryDir
-            ProcessBridge.sysrootDir = File(context.filesDir, "sysroot").absolutePath
-            
+            ProcessBridge.sysrootDir = sysrootDir
+
             Log.i(TAG, "ProcessBridge initialized")
             Log.i(TAG, "  nativeLibDir: ${ProcessBridge.nativeLibDir}")
             Log.i(TAG, "  sysrootDir: ${ProcessBridge.sysrootDir}")
-            
+
             processBridgeInitialized = true
         }
     }
     
     /**
-     * 从 sysroot 加载 xmake_runner 库
+     * 加载 xmake_runner 库
+     *
+     * 只允许从 sysroot（Docker 构建的产物）加载，彻底移除 jniLibs 回退。
      */
     fun loadIfNeeded() {
         if (loaded) return
         synchronized(this) {
             if (loaded) return
-            
-            // 确保 ProcessBridge 已初始化
+
+            val ctx = TinaApplication.instance
+
             if (!processBridgeInitialized) {
-                initProcessBridge(TinaApplication.instance)
+                initProcessBridge(ctx)
             }
-            
-            try {
-                // 从 sysroot 加载 libxmake_runner.so
-                val ctx = TinaApplication.instance
-                val sysrootBase = File(ctx.filesDir, "sysroot")
-                val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: ""
-                val triple = when {
-                    abi.contains("arm64", true) -> "aarch64-linux-android"
-                    abi.contains("x86_64", true) -> "x86_64-linux-android"
-                    else -> "aarch64-linux-android"
-                }
-                
-                // 尝试多个可能的路径
-                val candidates = listOf(
-                    File(sysrootBase, "usr/lib/$triple/libxmake_runner.so"),
-                    File(sysrootBase, "usr/lib/$triple/runtime/libxmake_runner.so"),
-                    File(sysrootBase, "usr/bin/libxmake_runner.so")
-                )
-                
-                var loadedPath: String? = null
-                for (candidate in candidates) {
-                    if (candidate.exists()) {
-                        System.load(candidate.absolutePath)
-                        loadedPath = candidate.absolutePath
-                        break
-                    }
-                }
-                
-                if (loadedPath != null) {
-                    // 初始化 Native 层的进程桥接
-                    val nativeLibDir = ctx.applicationInfo.nativeLibraryDir
-                    val sysrootDir = sysrootBase.absolutePath
-                    
-                    try {
-                        nativeInitProcessBridge(nativeLibDir, sysrootDir)
-                        Log.i(TAG, "Native process bridge initialized")
-                    } catch (e: Throwable) {
-                        Log.w(TAG, "Failed to init native process bridge: ${e.message}")
-                    }
-                    
+
+            val sysrootCandidates = resolveSysrootLibraryCandidates(ctx)
+            var lastError: Throwable? = null
+            for (candidate in sysrootCandidates) {
+                if (!candidate.exists()) continue
+                try {
+                    System.load(candidate.absolutePath)
+                    Log.i(TAG, "Loaded xmake_runner from sysroot: ${candidate.absolutePath}")
+                    initNativeProcessBridge(ctx)
                     loaded = true
-                    Log.i(TAG, "Loaded xmake_runner from sysroot: $loadedPath")
-                } else {
-                    throw UnsatisfiedLinkError("libxmake_runner.so not found in sysroot. Tried: ${candidates.map { it.absolutePath }}")
+                    return
+                } catch (t: Throwable) {
+                    lastError = t
+                    Log.w(TAG, "Failed to load ${candidate.absolutePath}: ${t.message}")
                 }
-            } catch (t: Throwable) {
-                Log.e(TAG, "Failed to load xmake_runner: ${t.message}")
-                throw t
             }
+
+            val searched = sysrootCandidates.map { it.absolutePath }
+            val message = buildString {
+                append("libxmake_runner.so not found in sysroot. ")
+                append("Ensure Docker sysroot artifacts are synced via tools/sync scripts. ")
+                append("Candidates: ")
+                append(searched)
+            }
+            Log.e(TAG, message)
+            val error = UnsatisfiedLinkError(message)
+            if (lastError != null) {
+                error.initCause(lastError)
+            }
+            throw error
+        }
+    }
+    
+    private fun resolveSysrootLibraryCandidates(ctx: Context): List<File> {
+        val sysrootBase = SysrootInstaller.ensureInstalled(ctx)
+        val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: ""
+        val triple = when {
+            abi.contains("arm64", true) -> "aarch64-linux-android"
+            abi.contains("x86_64", true) -> "x86_64-linux-android"
+            abi.contains("armeabi", true) -> "arm-linux-androideabi"
+            abi.contains("x86", true) -> "i686-linux-android"
+            else -> "aarch64-linux-android"
+        }
+        return listOf(
+            File(sysrootBase, "usr/lib/$triple/runtime/libxmake_runner.so"),
+            File(sysrootBase, "usr/lib/$triple/libxmake_runner.so"),
+            File(sysrootBase, "usr/bin/libxmake_runner.so")
+        )
+    }
+
+    /**
+     * 初始化 Native 层进程桥接
+     */
+    private fun initNativeProcessBridge(ctx: Context) {
+        val nativeLibDir = ctx.applicationInfo.nativeLibraryDir
+        val sysrootDir = SysrootInstaller.ensureInstalled(ctx).absolutePath
+
+        try {
+            nativeInitProcessBridge(nativeLibDir, sysrootDir)
+            Log.i(TAG, "Native process bridge initialized")
+        } catch (e: Throwable) {
+            Log.w(TAG, "Failed to init native process bridge: ${e.message}")
         }
     }
     
     /**
-     * 初始化 Native 层进程桥接
+     * 初始化 Native 层进程桥接（JNI）
      */
     private external fun nativeInitProcessBridge(nativeLibDir: String, sysrootDir: String): Boolean
     
@@ -167,5 +187,13 @@ object XmakeRunner {
         loadIfNeeded()
         val args = arrayOf("xmake", "f", "-P", projectDir) + options
         return xmake_run(args.size, args)
+    }
+    
+    /**
+     * 获取 xmake 版本
+     */
+    fun version(): Int {
+        loadIfNeeded()
+        return xmake_run(2, arrayOf("xmake", "--version"))
     }
 }

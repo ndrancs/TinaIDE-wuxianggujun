@@ -1,1 +1,0 @@
-tools/clang/include/clang/Basic/AttrList.inc: /work/src/llvm-project/clang/include/clang/Basic/../../clang/Basic/ASTNode.td /work/src/llvm-project/clang/include/clang/Basic/../../clang/Basic/AttrDocs.td /work/src/llvm-project/clang/include/clang/Basic/../../clang/Basic/DeclNodes.td /work/src/llvm-project/clang/include/clang/Basic/../../clang/Basic/StmtNodes.td

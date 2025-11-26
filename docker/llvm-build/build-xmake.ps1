@@ -1,5 +1,5 @@
 Param(
-  [ValidateSet('arm64-v8a','x86_64')][string]$Abi = 'x86_64',
+  [ValidateSet('arm64-v8a','x86_64')][string[]]$Abi = @('arm64-v8a','x86_64'),
   [int]$ApiLevel = 28,
   [string]$ContainerName = 'tina-llvm-build',
   [string]$OutputPath,
@@ -17,12 +17,21 @@ function Write-Err($msg)  { Write-Host "[!] $msg" -ForegroundColor Red }
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $root = Resolve-Path (Join-Path $scriptRoot '..\..')
 
+$templateRunnerPath = Join-Path $root 'docker/llvm-build/templates/xmake_runner.cpp'
+if (-not (Test-Path $templateRunnerPath)) {
+  Write-Err "Missing xmake runner template: $templateRunnerPath"
+  exit 2
+}
+$runnerCppSource = Get-Content -Path $templateRunnerPath -Raw -Encoding UTF8
+$runnerCppSource = $runnerCppSource -replace "`r", ""
+if (-not $runnerCppSource.EndsWith("`n")) {
+  $runnerCppSource += "`n"
+}
+
 if (-not $OutputPath -or [string]::IsNullOrWhiteSpace($OutputPath)) {
   $OutputPath = Join-Path $root 'docker/llvm-build/build-output'
 }
 $outBase = (Resolve-Path $OutputPath).Path
-$outDirHost = Join-Path $outBase $Abi
-New-Item -ItemType Directory -Force -Path (Join-Path $outDirHost 'tools/bin') | Out-Null
 
 # Ensure dev container is running
 $running = (& docker ps --format '{{.Names}}' | Select-String -SimpleMatch $ContainerName) -ne $null
@@ -33,8 +42,9 @@ if (-not $running) {
 
 function Exec-In-Dev { param([string]$cmd) & docker exec $ContainerName bash -lc $cmd }
 
+$abiList = if ($Abi -and $Abi.Length -gt 0) { $Abi } else { @('arm64-v8a','x86_64') }
+
 $cleanFlag = if ($Clean) { "1" } else { "0" }
-$assign = "ABI='$Abi'; API_LEVEL='$ApiLevel'; XMAKE_REPO='$XmakeRepoUrl'; XMAKE_REF='$XmakeRef'; CLEAN_BUILD='$cleanFlag';"
 $session = @'
 set -eux
 case "${ABI}" in
@@ -124,44 +134,9 @@ make DESTDIR="${INSTALL_ROOT}" install
 # Re-link CLI objects into shared lib (libxmake_runner.so)
 RUNNER_DIR="/work/build/tools/xmake-runner"
 mkdir -p "${RUNNER_DIR}"
-cat > "${RUNNER_DIR}/xmake_runner.cpp" <<'EOF'
-#include <jni.h>
-#include <string>
-#include <vector>
-
-extern "C" int main(int, char**);
-
-// JNI 函数：Java_com_wuxianggujun_tinaide_core_nativebridge_XmakeRunner_xmake_1run
-// 对应 Kotlin: external fun xmake_run(argc: Int, argv: Array<String>): Int
-extern "C" JNIEXPORT jint JNICALL
-Java_com_wuxianggujun_tinaide_core_nativebridge_XmakeRunner_xmake_1run(
-    JNIEnv* env, jobject /* this */, jint argc, jobjectArray argv) {
-    
-    // 转换 Java String[] 到 char**
-    std::vector<std::string> args;
-    std::vector<char*> argv_ptrs;
-    
-    for (int i = 0; i < argc; i++) {
-        jstring jstr = (jstring)env->GetObjectArrayElement(argv, i);
-        const char* str = env->GetStringUTFChars(jstr, nullptr);
-        args.push_back(str);
-        env->ReleaseStringUTFChars(jstr, str);
-    }
-    
-    for (auto& arg : args) {
-        argv_ptrs.push_back(const_cast<char*>(arg.c_str()));
-    }
-    argv_ptrs.push_back(nullptr);
-    
-    // 调用 xmake main
-    return main(argc, argv_ptrs.data());
-}
-
-// 保留原有的 C 函数接口（兼容）
-extern "C" __attribute__((visibility("default"))) int xmake_run(int argc, char** argv) {
-    return main(argc, argv);
-}
-EOF
+cat > "${RUNNER_DIR}/xmake_runner.cpp" <<'EOF_RUNNER'
+@@RUNNER_CPP@@
+EOF_RUNNER
 CLI_OBJ_LIST="$(mktemp)"
 find "/work/build/tools/xmake-${ABI}-api${API_LEVEL}/.objs/cli/android/${ABI}/minsize" -name '*.o' > "${CLI_OBJ_LIST}"
 if [ ! -s "${CLI_OBJ_LIST}" ]; then
@@ -220,12 +195,25 @@ fi
 echo "[i] xmake installed to sysroot: ${SYSROOT_BASE}/bin/xmake"
 '@
 
-Write-Info "Building xmake for ABI=$Abi (API=$ApiLevel) in container: $ContainerName"
-$cmd = @"
+$session = $session.Replace('@@RUNNER_CPP@@', $runnerCppSource)
+
+foreach ($currentAbi in $abiList) {
+  Write-Info "Building xmake for ABI=$currentAbi (API=$ApiLevel) in container: $ContainerName"
+  $outDirHost = Join-Path $outBase $currentAbi
+  New-Item -ItemType Directory -Force -Path (Join-Path $outDirHost 'tools/bin') | Out-Null
+  $assign = "ABI='$currentAbi'; API_LEVEL='$ApiLevel'; XMAKE_REPO='$XmakeRepoUrl'; XMAKE_REF='$XmakeRef'; CLEAN_BUILD='$cleanFlag';"
+  $cmd = @"
 $assign
 $session
 "@
-$cmd = $cmd -replace "`r`n", "`n"
-Exec-In-Dev $cmd
-Write-Info "xmake build completed. Binaries at: $(Join-Path $outDirHost 'tools/bin/xmake')"
+  $cmd = $cmd -replace "`r`n", "`n"
+  Exec-In-Dev $cmd
+  $rc = $LASTEXITCODE
+  if ($rc -ne 0) {
+    Write-Err "xmake build failed inside container (exit $rc) for ABI $currentAbi"
+    exit $rc
+  }
+  Write-Info "xmake build completed for ABI=$currentAbi. Binaries at: $(Join-Path $outDirHost 'tools/bin/xmake')"
+}
+
 Write-Info "Done."

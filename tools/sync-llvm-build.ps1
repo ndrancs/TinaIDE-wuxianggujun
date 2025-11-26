@@ -25,6 +25,17 @@ Write-Host "== Sync LLVM build artifacts (ABI=$Abi) ==" -ForegroundColor Cyan
 # 1) Headers (LLVM/Clang) for build-time
 & ./tools/sync-llvm-headers.ps1 -Abi $Abi -ApiLevel $ApiLevel
 
+# Mirror common headers到工程可引用的位置（external/llvm-build-libs/common-headers）
+$srcCommonHeaders = Join-Path $BuildOutputRoot 'common-headers'
+$dstCommonHeaders = Join-Path 'external/llvm-build-libs' 'common-headers'
+if (Test-Path $srcCommonHeaders) {
+  New-Item -ItemType Directory -Force -Path $dstCommonHeaders | Out-Null
+  robocopy $srcCommonHeaders $dstCommonHeaders /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
+  Write-Host "Synced compiler headers -> $dstCommonHeaders" -ForegroundColor Green
+} else {
+  Write-Host "[w] Skip header sync: $srcCommonHeaders not found (run docker build first)" -ForegroundColor Yellow
+}
+
 # 2) Shared libraries to jniLibs
 $srcLibDir = Join-Path (Join-Path $BuildOutputRoot $Abi) (Join-Path 'libs' $Abi)
 $dstLibDir = Join-Path $AppJniLibs $Abi
@@ -201,10 +212,17 @@ if ($srcSysroot -and (Test-Path $srcSysroot)) {
       $zip = New-Object System.IO.Compression.ZipArchive($fs, [System.IO.Compression.ZipArchiveMode]::Create, $false)
       $root = (Resolve-Path $srcSysroot).Path
       $rootLen = $root.Length
+      $prunedBinFiles = @('cmake','ninja','libcmake_runner.so','libninja_runner.so','llvm-symbolizer-host','llvm-objdump-host','llvm-dwarfdump-host','libc++_shared.so')
       Get-ChildItem -LiteralPath $root -Recurse -File | ForEach-Object {
         if ($_.Extension -ieq '.a') { return }
         $rel = $_.FullName.Substring($rootLen).TrimStart([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
         $relZip = $rel -replace '\\','/'
+        if ($relZip -match '^usr/bin/(.+)$') {
+          $name = $matches[1]
+          if ($prunedBinFiles -contains $name) {
+            return
+          }
+        }
         $null = [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $relZip, [System.IO.Compression.CompressionLevel]::Optimal)
       }
     } finally { if ($zip) { $zip.Dispose() }; if ($fs) { $fs.Dispose() } }

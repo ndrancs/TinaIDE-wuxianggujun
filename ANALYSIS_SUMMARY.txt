@@ -3,7 +3,7 @@ TinaIDE 项目架构深度分析 - 执行总结
 ================================================================================
 
 分析日期: 2025年11月10日
-分支: feat/embedded-ndk-tools
+分支: feat/llvm-build-tools
 状态: 库模式Clang/LLVM集成框架完整，编译功能需完成
 
 ================================================================================
@@ -150,7 +150,7 @@ C++层:
   app/src/main/jniLibs/ (预编译库, 308MB)
 
 构建工具:
-  docker/embedded-ndk/
+  docker/llvm-build/
     - Dockerfile.dev (构建镜像)
     - build-local.ps1 (构建脚本)
     - sync-to-app.ps1 (同步脚本)
