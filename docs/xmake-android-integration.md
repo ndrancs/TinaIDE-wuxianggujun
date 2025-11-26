@@ -87,20 +87,16 @@ app/
         ├── NativeEnv.kt                # 环境变量管理
         └── NativeCompiler.kt           # 编译器 JNI 接口
 
-external/xmake/
-└── core/
-    └── src/
-        ├── cli/xmake.c                 # xmake CLI 入口
-        ├── xmake/                      # xmake 核心代码
-        └── tbox/
-            ├── inc/android/
-            │   └── tbox.config.h       # Android 平台配置
-            └── tbox/src/tbox/platform/
-                ├── android/
-                │   ├── process.c       # Android 进程实现
-                │   └── process.h
-                └── posix/
-                    └── process.c       # POSIX 进程实现（含 Android 分支）
+> ⚠️ 仓库已移除早期的 `external/xmake` 子模块。xmake/tbox 源码会在执行
+> `docker/llvm-build/build-xmake.ps1` 时被临时克隆到容器路径 `/work/src/xmake`，
+> 自定义补丁（Android 进程桥接、JNI 入口等）均通过脚本或模板注入，而不是常驻在仓库里。
+
+docker/llvm-build/
+├── build-xmake.ps1                # 克隆 xmake 并产出 libxmake_runner/sysroot
+├── templates/
+│   └── xmake_runner.cpp           # JNI 包装器模板（由脚本写入构建目录）
+├── build-output/<abi>/            # 构建产物：tools/bin、sysroot、libxmake_runner.so
+└── dev-work/                      # 临时源码/缓存（gitignore，脚本运行时创建）
 ```
 
 ## 构建流程

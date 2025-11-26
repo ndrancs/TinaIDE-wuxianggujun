@@ -623,9 +623,12 @@ app/src/main/java/.../nativebridge/
 ├── ProcessBridge.kt           # Java 进程桥接
 └── NativeEnv.kt               # 环境变量管理
 
-external/xmake/core/src/tbox/tbox/src/tbox/platform/android/
-├── process.c                  # Android 进程实现
-└── process.h                  # 头文件
+docker/llvm-build/templates/
+└── xmake_runner.cpp           # JNI 包装器模板（注入 TINA_IDE_MODE、ProcessBridge）
+
+(构建容器) /work/src/xmake/core/src/tbox/tbox/src/tbox/platform/android/
+├── process.c                  # Android 进程实现（运行 build-xmake.ps1 时补丁写入）
+└── process.h                  # 头文件（同上，仓库不再常驻）
 
 app/src/main/cpp/
 └── clang_main.cpp             # Clang wrapper
@@ -634,12 +637,16 @@ app/src/main/cpp/
 ### 6.2 需要修改
 
 ```
-external/xmake/core/src/tbox/tbox/src/tbox/platform/
-└── process.c                  # 添加 Android 分支
+(构建容器) /work/src/xmake/core/src/tbox/tbox/src/tbox/platform/
+└── process.c                  # 添加 Android 分支（在 Docker 构建阶段应用补丁）
 
 app/src/main/java/.../nativebridge/
 └── NativeLoader.kt            # 添加环境初始化
 ```
+
+> 注：上述 `/work/src/xmake/...` 路径仅在运行 `docker/llvm-build/build-xmake.ps1`
+> 时存在，用于说明需要在克隆出来的 xmake/tbox 源码上打的补丁。仓库自身
+> 不再包含 `external/xmake`。
 
 ---
 

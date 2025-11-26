@@ -10,6 +10,7 @@ $srcBuildX64  = Join-Path $DockerRoot "build/android/x86_64-api$ApiLevel/include
 $srcBuildArm  = Join-Path $DockerRoot "build/android/arm64-v8a-api$ApiLevel/include"
 $srcCfgX64    = Join-Path $srcBuildX64  "llvm/Config"
 $srcCfgArm    = Join-Path $srcBuildArm  "llvm/Config"
+$srcClangSrc  = Join-Path $DockerRoot "src/llvm-project/clang/include/clang"
 $srcClangX64  = Join-Path $DockerRoot "build/android/x86_64-api$ApiLevel/tools/clang/include/clang"
 $srcClangArm  = Join-Path $DockerRoot "build/android/arm64-v8a-api$ApiLevel/tools/clang/include/clang"
 
@@ -56,15 +57,22 @@ if ((Test-Path $srcOmpX64) -or (Test-Path $srcOmpArm)) {
   Write-Host "  Skipped: no OMP.inc found in build include" -ForegroundColor DarkYellow
 }
 
+Write-Host "Sync Clang source headers..." -ForegroundColor Cyan
+if (-not (Test-Path $srcClangSrc)) {
+  throw "Missing Clang source headers at $srcClangSrc (run docker build first)"
+}
+New-Item -ItemType Directory -Force -Path $dstClang | Out-Null
+robocopy $srcClangSrc $dstClang /E /NFL /NDL /NJH /NJS /NP | Out-Null
+
 Write-Host "Sync Clang generated headers..." -ForegroundColor Cyan
 if (Test-Path $srcClangX64) {
-  New-Item -ItemType Directory -Force -Path $dstClang | Out-Null
   robocopy $srcClangX64 $dstClang /E /NFL /NDL /NJH /NJS /NP | Out-Null
-  Write-Host "  Copied from x86_64 build" -ForegroundColor Gray
+  Write-Host "  Generated headers from x86_64 build" -ForegroundColor Gray
 } elseif (Test-Path $srcClangArm) {
-  New-Item -ItemType Directory -Force -Path $dstClang | Out-Null
   robocopy $srcClangArm $dstClang /E /NFL /NDL /NJH /NJS /NP | Out-Null
-  Write-Host "  Copied from arm64 build" -ForegroundColor Gray
+  Write-Host "  Generated headers from arm64 build" -ForegroundColor Gray
+} else {
+  Write-Host "  [w] No generated clang headers found. Run build for at least one ABI." -ForegroundColor Yellow
 }
 
 Write-Host "Done! Headers synced to $DestRoot" -ForegroundColor Green
