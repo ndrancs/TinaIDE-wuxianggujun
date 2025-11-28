@@ -180,8 +180,10 @@ PREFIX="/usr"
 
 # 根据 CLEAN_BUILD 参数决定是否清理构建目录
 if [ "${CLEAN_BUILD}" = "1" ]; then
-  echo "[i] Clean build requested, removing BUILD_DIR..."
+  echo "[i] Clean build requested, removing BUILD_DIR and Makefile..."
   rm -rf "${BUILD_DIR}"
+  # 删除旧的 Makefile，强制 configure 重新生成
+  rm -f "${SRC_DIR}/Makefile"
 fi
 rm -rf "${INSTALL_ROOT}"
 mkdir -p "${BUILD_DIR}" "${INSTALL_ROOT}"
