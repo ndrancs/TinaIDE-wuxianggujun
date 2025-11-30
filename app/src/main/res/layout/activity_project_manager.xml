@@ -5,13 +5,14 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <androidx.appcompat.widget.Toolbar
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
         app:title="@string/title_project_manager"
-        app:titleTextColor="@android:color/white" />
+        app:titleTextColor="@color/dark_on_primary"
+        app:popupTheme="@style/ThemeOverlay.Tina.Toolbar" />
 
     <TextView
         android:id="@+id/tv_empty"

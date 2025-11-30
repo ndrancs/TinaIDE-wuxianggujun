@@ -1,11 +1,25 @@
 # xmake Android 集成方案：tbox 进程层 Hook
 
 > **源码位置说明**  
-> 由于仓库已经移除 `external/xmake` 子模块，以下所有对 xmake/tbox 的修改都应在
-> Docker 构建环境中完成。运行 `docker/llvm-build/build-xmake.ps1` 时，脚本会将
-> 官方仓库克隆到容器内 `/work/src/xmake`，本地对应路径是
-> `docker/llvm-build/dev-work/src/xmake`。请在该目录中创建补丁（或维护自己的 fork），
-> 再由 `build-xmake.ps1` 自动应用；否则修改不会出现在最终的 libxmake_runner/sysroot 中。
+> `external/xmake` 目录现在用于保存我们对 xmake/tbox 的所有定制源码。执行
+> `docker/llvm-build/build-xmake.ps1` 时，脚本会先把该目录同步到
+> `docker/llvm-build/dev-work/overlays/xmake`，然后在容器内将其整体覆盖到
+> `/work/src/xmake`（即 upstream 源码）。因此只需在 `external/xmake` 中维护需要改动的
+> 文件即可，构建时会自动套用到 `libxmake_runner`/sysroot。
+>
+> **LLVM/Clang 构建指令**  
+> `docker/llvm-build/build-local.ps1` 与 `docker/llvm-build/build-xmake.ps1` 现在都支持
+> 在一次调用里通过逗号分隔的列表指定多个 ABI，例如
+> `pwsh docker/llvm-build/build-local.ps1 -Abi arm64-v8a,x86_64` 和
+> `pwsh docker/llvm-build/build-xmake.ps1 -Abi arm64-v8a,x86_64`。
+> 脚本会依次为每个 ABI 构建 LLVM/Clang sysroot 与 libxmake_runner。
+>
+> **多 ABI 同步脚本**  
+> 为了同时打包 `x86_64` 与 `arm64-v8a` 的 sysroot，新增了
+> `tools/sync-llvm-build-all.ps1`。不传 `-Abi` 参数时会自动依次调用原来的
+> `tools/sync-llvm-build.ps1`，并将生成的 `sysroot.zip` 重命名为
+> `sysroot-<abi>.zip`，另行制作 `xmake-share.zip`（仅包含 `usr/share/xmake`
+> 的公共资源）。如需保留旧行为，可继续直接调用 `sync-llvm-build.ps1` 并显式指定 ABI。
 
 ## 1. 问题背景
 

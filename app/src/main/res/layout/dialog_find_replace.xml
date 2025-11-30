@@ -41,20 +41,20 @@
         android:layout_marginTop="8dp"
         android:orientation="vertical">
 
-        <CheckBox
+        <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/cb_case_sensitive"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="区分大小写" />
 
-        <CheckBox
+        <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/cb_whole_word"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="全字匹配"
             android:visibility="gone" />
 
-        <CheckBox
+        <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/cb_regex"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

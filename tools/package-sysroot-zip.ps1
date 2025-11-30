@@ -4,7 +4,7 @@ Param(
   [int]$ApiLevel = 26,
   [string]$BuildOutputRoot = 'docker/llvm-build/build-output',
   [string]$AppAssetsDir = 'app/src/main/assets',
-  [string]$ZipName = 'sysroot.zip'
+  [string]$ZipName = ''
 )
 
 Write-Host "== Package sysroot as ZIP (ABI=$Abi, API=$ApiLevel) ==" -ForegroundColor Cyan
@@ -16,7 +16,8 @@ if (-not (Test-Path $srcSysroot)) {
 }
 
 New-Item -ItemType Directory -Force -Path $AppAssetsDir | Out-Null
-$zipPath = Join-Path $AppAssetsDir $ZipName
+$effectiveZipName = if ([string]::IsNullOrWhiteSpace($ZipName)) { "sysroot-$Abi.zip" } else { $ZipName }
+$zipPath = Join-Path $AppAssetsDir $effectiveZipName
 if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -46,4 +47,3 @@ try {
 
 Write-Host "[i] Created: $zipPath" -ForegroundColor Green
 Write-Host "== Done ==" -ForegroundColor Cyan
-

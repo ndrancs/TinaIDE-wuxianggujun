@@ -30,12 +30,52 @@ extern "C" {
     // 初始化 tbox 的 JVM 引用，使进程桥接能够回调 Java 层
     // tb_bool_t 在 tbox 中定义为 int
     int tb_android_init_env(JavaVM* jvm);
+    int tb_android_process_bind_bridge(JNIEnv* env);
 }
 
 // 全局 JVM 引用（用于 ProcessBridge 回调）
 static JavaVM* g_jvm = nullptr;
 static jclass g_runnerClass = nullptr;
 static jmethodID g_logMethod = nullptr;
+
+// TinaIDE: inject Lua init chunk so stripped runtimes regain xpcall support
+static void ensureLuaInitPatched() {
+    static bool patched = false;
+    if (patched) return;
+    static constexpr const char* kLuaInitPatch = R"__TINA__(
+local g = _G
+if type(g) ~= "table" then
+    return
+end
+if type(g.xpcall) == "function" then
+    return
+end
+local table_pack = table.pack or function(...)
+    return {n = select("#", ...), ...}
+end
+local table_unpack = table.unpack or unpack
+g.xpcall = function(func, errhandler, ...)
+    assert(type(func) == "function", "bad argument #1 to 'xpcall' (function expected)")
+    local args = table_pack(...)
+    local results = table_pack(pcall(function()
+        return func(table_unpack(args, 1, args.n))
+    end))
+    if results[1] then
+        return table_unpack(results, 1, results.n)
+    end
+    local err = results[2]
+    if errhandler then
+        local handled = table_pack(pcall(errhandler, err))
+        err = handled[2] or err
+    end
+    return false, err
+end
+)__TINA__";
+    setenv("LUA_INIT", kLuaInitPatch, 1);
+    setenv("LUA_INIT_5_4", kLuaInitPatch, 1);
+    patched = true;
+    LOGI("Injected Lua init chunk to restore xpcall");
+}
 
 // JNI_OnLoad - 保存 JVM 引用
 JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
@@ -383,9 +423,16 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_XmakeRunner_nativeInitProcessBri
     // 语言环境
     setenv("LANG", "C", 1);
     setenv("LC_ALL", "C", 1);
+    ensureLuaInitPatched();
 
     env->ReleaseStringUTFChars(native_lib_dir, lib_dir);
     env->ReleaseStringUTFChars(sysroot_dir, sysroot);
+
+    if (!tb_android_process_bind_bridge(env)) {
+        LOGW("Failed to bind ProcessBridge class - JNI bridge may not relay tool invocations");
+    } else {
+        LOGI("ProcessBridge class cached for JNI bridge");
+    }
 
     // 初始化 tbox 的 Android 进程桥接
     // 这会在 tbox 内部通过 tb_android_process_init() 完成

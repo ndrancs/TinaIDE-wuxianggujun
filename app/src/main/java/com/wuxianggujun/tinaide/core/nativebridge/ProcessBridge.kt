@@ -57,17 +57,21 @@ object ProcessBridge {
         envVars: Array<String>?
     ): String {
         val cmdName = File(command).name
-        Log.d(TAG, "startProcess: command=$cmdName, args=${args?.joinToString(" ")}")
+        val argLine = args?.joinToString(" ") ?: ""
+        Log.i(TAG, "startProcess: command=$cmdName, args=$argLine")
+        logBridgeMessage("startProcess: $cmdName $argLine")
 
         return try {
             when {
-                isCompilerCommand(cmdName) -> handleCompiler(cmdName, args ?: emptyArray())
-                isLinkerCommand(cmdName) -> handleLinker(cmdName, args ?: emptyArray())
-                isArCommand(cmdName) -> handleAr(args ?: emptyArray())
+                isCompilerCommand(cmdName) -> handleCompiler(cmdName, args ?: emptyArray(), workDir)
+                isLinkerCommand(cmdName) -> handleLinker(cmdName, args ?: emptyArray(), workDir)
+                isArCommand(cmdName) -> handleAr(args ?: emptyArray(), workDir)
+                isAndroidRuntimeCommand(cmdName) -> handleAndroidRuntime(cmdName, args ?: emptyArray())
                 else -> handleOtherCommand(command, args, workDir, envVars)
             }
         } catch (e: Exception) {
             Log.e(TAG, "startProcess failed", e)
+            logBridgeMessage("startProcess failed: ${e.message}", true)
             buildJsonResult(-1, "", "ProcessBridge error: ${e.message}")
         }
     }
@@ -88,6 +92,10 @@ object ProcessBridge {
         return name == "ar" || name == "llvm-ar"
     }
 
+    private fun isAndroidRuntimeCommand(name: String): Boolean {
+        return name == "app_process" || name == "app_process32" || name == "app_process64"
+    }
+
     // ==================== 编译器处理 ====================
 
     /**
@@ -95,8 +103,18 @@ object ProcessBridge {
      *
      * 解析参数，调用 NativeCompiler.emitObj()
      */
-    private fun handleCompiler(cmdName: String, args: Array<String>): String {
-        Log.d(TAG, "handleCompiler: $cmdName")
+    private fun handleCompiler(cmdName: String, args: Array<String>, workDir: String?): String {
+        Log.i(TAG, "handleCompiler: $cmdName, args=${args.joinToString(" ")}")
+
+        // 处理版本查询命令 (xmake 用于检测工具链)
+        if (args.any { it == "--version" || it == "-v" || it == "-V" }) {
+            return handleCompilerVersion(cmdName)
+        }
+        
+        // 处理 -dumpmachine (xmake 用于检测 target triple)
+        if (args.any { it == "-dumpmachine" }) {
+            return buildJsonResult(0, defaultTarget.substringBefore("28"), "")
+        }
 
         // 解析参数
         val parsed = parseCompilerArgs(args)
@@ -121,6 +139,9 @@ object ProcessBridge {
                 parsed.sourceFile!!.endsWith(".cxx")
 
         val target = parsed.target ?: defaultTarget
+        val resolvedSource = resolvePath(parsed.sourceFile!!, workDir)
+        val resolvedOutput = resolvePath(parsed.outputFile!!, workDir)
+        val resolvedIncludes = parsed.includeDirs.map { resolvePath(it, workDir) }.toTypedArray()
 
         Log.d(TAG, "  Compiling: ${parsed.sourceFile} -> ${parsed.outputFile}")
         Log.d(TAG, "  target=$target, isCxx=$isCxx")
@@ -137,16 +158,16 @@ object ProcessBridge {
         // 调用 NativeCompiler.emitObj()
         val error = NativeCompiler.emitObj(
             sysrootDir,
-            parsed.sourceFile!!,
-            parsed.outputFile!!,
+            resolvedSource,
+            resolvedOutput,
             target,
             isCxx,
             parsed.flags.toTypedArray(),
-            parsed.includeDirs.toTypedArray()
+            resolvedIncludes
         )
 
         return if (error.isEmpty()) {
-            Log.d(TAG, "  Compile success")
+            Log.i(TAG, "  Compile success")
             buildJsonResult(0, "", "")
         } else {
             Log.w(TAG, "  Compile failed: $error")
@@ -162,16 +183,48 @@ object ProcessBridge {
         // 目前 xmake 通常会分开调用，所以这个分支可能不常用
         return buildJsonResult(-1, "", "Compile-and-link mode not yet supported. Use -c flag.")
     }
+    
+    /**
+     * 处理编译器版本查询 (--version)
+     * xmake 用于检测工具链是否存在
+     */
+    private fun handleCompilerVersion(cmdName: String): String {
+        Log.i(TAG, "handleCompilerVersion: $cmdName")
+        // 返回模拟的 clang 版本信息
+        // 格式参考真实的 clang --version 输出
+        val versionInfo = buildString {
+            if (cmdName.contains("clang")) {
+                appendLine("TinaIDE clang version 17.0.0")
+                appendLine("Target: $defaultTarget")
+                appendLine("Thread model: posix")
+                appendLine("InstalledDir: /data/local/tmp")
+            } else {
+                // gcc 兼容模式
+                appendLine("TinaIDE gcc (clang) version 17.0.0")
+                appendLine("Target: $defaultTarget")
+            }
+        }
+        return buildJsonResult(0, versionInfo, "")
+    }
 
     // ==================== 链接器处理 ====================
 
     /**
      * 处理链接器调用 (ld/lld)
      */
-    private fun handleLinker(cmdName: String, args: Array<String>): String {
-        Log.d(TAG, "handleLinker: $cmdName")
+    private fun handleLinker(cmdName: String, args: Array<String>, workDir: String?): String {
+        Log.i(TAG, "handleLinker: $cmdName, args=${args.joinToString(" ")}")
+
+        // 处理版本查询
+        if (args.any { it == "--version" || it == "-v" || it == "-V" }) {
+            val versionInfo = "TinaIDE LLD 17.0.0 (compatible with GNU linkers)\n"
+            return buildJsonResult(0, versionInfo, "")
+        }
 
         val parsed = parseLinkerArgs(args)
+        val resolvedObjects = parsed.objectFiles.map { resolvePath(it, workDir) }.toTypedArray()
+        val resolvedLibDirs = parsed.libDirs.map { resolvePath(it, workDir) }.toTypedArray()
+        val resolvedOutput = parsed.outputFile?.let { resolvePath(it, workDir) }
 
         if (parsed.objectFiles.isEmpty()) {
             return buildJsonResult(-1, "", "No object files specified")
@@ -182,7 +235,7 @@ object ProcessBridge {
 
         val target = defaultTarget
 
-        Log.d(TAG, "  Linking: ${parsed.objectFiles.size} files -> ${parsed.outputFile}")
+        Log.i(TAG, "  Linking: ${parsed.objectFiles.size} files -> ${parsed.outputFile}")
         Log.d(TAG, "  shared=${parsed.shared}, libDirs=${parsed.libDirs}, libs=${parsed.libs}")
 
         // 确保 NativeLoader 已加载
@@ -196,21 +249,21 @@ object ProcessBridge {
         val error = if (parsed.shared) {
             NativeCompiler.linkSoMany(
                 sysrootDir,
-                parsed.objectFiles.toTypedArray(),
-                parsed.outputFile!!,
+                resolvedObjects,
+                resolvedOutput!!,
                 target,
                 true,  // isCxx
-                parsed.libDirs.toTypedArray(),
+                resolvedLibDirs,
                 parsed.libs.toTypedArray()
             )
         } else {
             NativeCompiler.linkExeMany(
                 sysrootDir,
-                parsed.objectFiles.toTypedArray(),
-                parsed.outputFile!!,
+                resolvedObjects,
+                resolvedOutput!!,
                 target,
                 true,  // isCxx
-                parsed.libDirs.toTypedArray(),
+                resolvedLibDirs,
                 parsed.libs.toTypedArray()
             )
         }
@@ -226,7 +279,15 @@ object ProcessBridge {
 
     // ==================== AR 处理 ====================
 
-    private fun handleAr(args: Array<String>): String {
+    private fun handleAr(args: Array<String>, workDir: String?): String {
+        Log.i(TAG, "handleAr: args=${args.joinToString(" ")}")
+        
+        // 处理版本查询
+        if (args.any { it == "--version" || it == "-v" || it == "-V" }) {
+            val versionInfo = "TinaIDE llvm-ar 17.0.0\n"
+            return buildJsonResult(0, versionInfo, "")
+        }
+        
         // TODO: 实现 ar 功能（创建静态库）
         return buildJsonResult(-1, "", "ar command not yet supported")
     }
@@ -242,7 +303,13 @@ object ProcessBridge {
         workDir: String?,
         envVars: Array<String>?
     ): String {
+        val baseName = File(command).name
+        if (isAndroidRuntimeCommand(baseName)) {
+            return handleAndroidRuntime(baseName, args ?: emptyArray())
+        }
+        val argLine = args?.joinToString(" ") ?: ""
         Log.d(TAG, "handleOtherCommand: $command")
+        logBridgeMessage("handleOtherCommand: $command $argLine")
 
         // 对于非编译器命令，尝试使用 ProcessBuilder
         // 这可能会失败，取决于命令是否在可执行路径
@@ -266,10 +333,31 @@ object ProcessBridge {
 
             buildJsonResult(exitCode, stdout, stderr)
         } catch (e: Exception) {
+            logBridgeMessage("handleOtherCommand failed: $command -> ${e.message}", true)
             buildJsonResult(-1, "", "Failed to execute: $command - ${e.message}")
         }
     }
 
+    private fun handleAndroidRuntime(cmdName: String, args: Array<String>): String {
+        val scriptArg = args.firstOrNull { it.endsWith(".lua") || it.contains("/usr/share/xmake/") }
+        if (scriptArg != null && scriptArg.contains("/usr/share/xmake/")) {
+            val msg = "handleAndroidRuntime: skip lua runner for $scriptArg via $cmdName"
+            Log.i(TAG, msg)
+            logBridgeMessage(msg)
+            return buildJsonResult(0, "", "")
+        }
+        val warn = "handleAndroidRuntime: unsupported invocation $cmdName args=${args.joinToString(" ")}"
+        Log.w(TAG, warn)
+        logBridgeMessage(warn, true)
+        return buildJsonResult(-1, "", "app_process not supported via ProcessBridge")
+    }
+
+    private fun logBridgeMessage(message: String, isError: Boolean = false) {
+        try {
+            XmakeRunner.handleNativeOutput("[bridge] $message", isError)
+        } catch (_: Throwable) {
+        }
+    }
 
     // ==================== 参数解析 ====================
 
@@ -416,5 +504,12 @@ object ProcessBridge {
             .replace("\t", "\\t")
 
         return """{"code":$code,"out":"${escape(out)}","err":"${escape(err)}"}"""
+    }
+
+    private fun resolvePath(path: String, workDir: String?): String {
+        val file = File(path)
+        if (file.isAbsolute) return file.absolutePath
+        if (workDir.isNullOrEmpty()) return file.absolutePath
+        return File(workDir, path).absolutePath
     }
 }

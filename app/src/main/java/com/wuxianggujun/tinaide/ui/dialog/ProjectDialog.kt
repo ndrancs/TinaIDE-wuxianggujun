@@ -1,182 +1,183 @@
 package com.wuxianggujun.tinaide.ui.dialog
 
 import android.app.Dialog
-import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
+import android.content.DialogInterface
 import android.os.Bundle
 import android.os.Environment
-import android.widget.EditText
-import android.widget.Button
-import android.widget.Spinner
+import android.view.LayoutInflater
+import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.TextView
-import android.widget.LinearLayout
-import androidx.fragment.app.DialogFragment
-import com.wuxianggujun.tinaide.extensions.*
-import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 import android.provider.DocumentsContract
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.DialogFragment
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
+import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.ServiceLocator
-import com.wuxianggujun.tinaide.core.get
-import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.core.config.ConfigKeys
+import com.wuxianggujun.tinaide.core.config.IConfigManager
+import com.wuxianggujun.tinaide.core.get
+import com.wuxianggujun.tinaide.extensions.*
 import com.wuxianggujun.tinaide.file.IFileManager
-import java.io.File
 import com.wuxianggujun.tinaide.project.ProjectTemplateInstaller
+import java.io.File
 
 /**
- * 项目对话框 - 新建/打开项目
+ * Material Design 3 风格的项目对话框
  */
 class ProjectDialog(
     private val mode: Mode,
     private val onProjectSelected: (File) -> Unit
 ) : DialogFragment() {
-    
+
     enum class Mode {
-        NEW_PROJECT,    // 新建项目
-        OPEN_PROJECT    // 打开项目
+        NEW_PROJECT,
+        OPEN_PROJECT
     }
-    
+
     private val fileManager: IFileManager by lazy {
         ServiceLocator.get<IFileManager>()
     }
 
-    private var pathInputRef: EditText? = null
+    // 视图引用
+    private var tilProjectPath: TextInputLayout? = null
+    private var etProjectPath: TextInputEditText? = null
 
     private val chooseDirLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         uri ?: return@registerForActivityResult
         val path = resolveTreeUriToPath(uri)
         if (path != null) {
-            pathInputRef?.setText(path)
-            // 记住所选目录为默认根目录
+            etProjectPath?.setText(path)
+            tilProjectPath?.error = null
+            // 记住所选目录
             try {
-                val cfg = ServiceLocator.get<IConfigManager>()
-                cfg.set(ConfigKeys.ProjectRootDir, path)
+                ServiceLocator.get<IConfigManager>().set(ConfigKeys.ProjectRootDir, path)
             } catch (_: Throwable) {}
         } else {
-            requireContext().toastError("无法解析选择的目录")
+            requireContext().toastError(getString(R.string.error_project_path_empty))
         }
     }
-    
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return when (mode) {
             Mode.NEW_PROJECT -> createNewProjectDialog()
             Mode.OPEN_PROJECT -> createOpenProjectDialog()
         }
     }
-    
+
+
     /**
-     * 创建新建项目对话框
+     * 创建 Material Design 3 风格的新建项目对话框
      */
     private fun createNewProjectDialog(): Dialog {
         val context = requireContext()
-        val container = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (16 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
-        
-        // 项目名称输入
-        val nameInput = EditText(context).apply {
-            hint = "项目名称"
-            val padding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-        }
-        container.addView(nameInput)
-        
-        // 项目路径输入
-        val pathInput = EditText(context).apply {
-            hint = "项目路径"
-            val padding = (12 * resources.displayMetrics.density).toInt()
-            setPadding(padding, padding, padding, padding)
-            
-            // 默认路径
-            val cfg = ServiceLocator.get<IConfigManager>()
-            val saved = cfg.get("project.root_dir", "")
-            val defaultPath = if (saved.isNotBlank()) saved else File(
-                Environment.getExternalStorageDirectory(),
-                "TinaIDE/Projects"
-            ).absolutePath
-            setText(defaultPath)
-        }
-        pathInputRef = pathInput
-        container.addView(pathInput)
+        val inflater = LayoutInflater.from(context)
+        val view = inflater.inflate(R.layout.dialog_new_project, null)
 
-        // 选择目录按钮
-        val chooseBtn = Button(context).apply {
-            text = getString(com.wuxianggujun.tinaide.R.string.btn_choose_directory)
-            setOnClickListener { chooseDirLauncher.launch(null) }
-        }
-        container.addView(chooseBtn)
+        // 获取视图引用
+        val tilProjectName = view.findViewById<TextInputLayout>(R.id.til_project_name)
+        val etProjectName = view.findViewById<TextInputEditText>(R.id.et_project_name)
+        tilProjectPath = view.findViewById(R.id.til_project_path)
+        etProjectPath = view.findViewById(R.id.et_project_path)
+        val tilProjectType = view.findViewById<TextInputLayout>(R.id.til_project_type)
+        val dropdownProjectType = view.findViewById<MaterialAutoCompleteTextView>(R.id.dropdown_project_type)
 
-        // 项目类型
-        val typeLabel = TextView(context).apply { text = "项目类型" }
-        container.addView(typeLabel)
-        val typeSpinner = Spinner(context)
-        typeSpinner.adapter = ArrayAdapter(
-            context,
-            android.R.layout.simple_spinner_dropdown_item,
-            resources.getStringArray(com.wuxianggujun.tinaide.R.array.project_types)
-        )
-        container.addView(typeSpinner)
-        
-        return MaterialDialogBuilder.create(context)
-            .setTitle("新建项目")
-            .setView(container)
-            .setPositiveButton("创建") { _, _ ->
-                val projectName = nameInput.text.toString().trim()
-                val projectPath = pathInput.text.toString().trim()
-                
-                if (projectName.isEmpty()) {
-                    context.toastError("项目名称不能为空")
-                    return@setPositiveButton
-                }
-                
-                if (projectPath.isEmpty()) {
-                    context.toastError("项目路径不能为空")
-                    return@setPositiveButton
-                }
-                
-                val selectedType = typeSpinner.selectedItemPosition // 0: C++(CMake)
-                createNewProject(projectName, projectPath, selectedType)
-            }
-            .setNegativeButton("取消", null)
+        // 设置默认路径
+        val cfg = ServiceLocator.get<IConfigManager>()
+        val savedPath = cfg.get("project.root_dir", "")
+        val defaultPath = if (savedPath.isNotBlank()) savedPath else {
+            File(Environment.getExternalStorageDirectory(), "TinaIDE/Projects").absolutePath
+        }
+        etProjectPath?.setText(defaultPath)
+
+        // 设置项目类型下拉菜单
+        val projectTypes = resources.getStringArray(R.array.project_types)
+        val adapter = ArrayAdapter(context, R.layout.item_dropdown_menu, projectTypes)
+        dropdownProjectType.setAdapter(adapter)
+        dropdownProjectType.setText(projectTypes[0], false)
+
+        // 设置路径选择按钮点击事件
+        tilProjectPath?.setEndIconOnClickListener {
+            chooseDirLauncher.launch(null)
+        }
+
+        // 创建对话框
+        val dialog = MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_App_MaterialAlertDialog)
+            .setTitle(R.string.dialog_title_new_project)
+            .setView(view)
+            .setPositiveButton(R.string.btn_create, null)
+            .setNegativeButton(R.string.btn_cancel, null)
             .create()
+
+        // 设置按钮点击事件（防止自动关闭）
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
+                val projectName = etProjectName.text?.toString()?.trim() ?: ""
+                val projectPath = etProjectPath?.text?.toString()?.trim() ?: ""
+                val selectedTypeIndex = projectTypes.indexOf(dropdownProjectType.text.toString())
+
+                // 验证输入
+                var hasError = false
+
+                if (projectName.isEmpty()) {
+                    tilProjectName.error = getString(R.string.error_project_name_empty)
+                    hasError = true
+                } else {
+                    tilProjectName.error = null
+                }
+
+                if (projectPath.isEmpty()) {
+                    tilProjectPath?.error = getString(R.string.error_project_path_empty)
+                    hasError = true
+                } else {
+                    tilProjectPath?.error = null
+                }
+
+                if (!hasError) {
+                    createNewProject(projectName, projectPath, selectedTypeIndex.coerceAtLeast(0))
+                    dialog.dismiss()
+                }
+            }
+        }
+
+        return dialog
     }
-    
+
     /**
      * 创建打开项目对话框
      */
     private fun createOpenProjectDialog(): Dialog {
         val context = requireContext()
-        
-        // 获取常用项目路径（优先配置）
+
         val cfg = ServiceLocator.get<IConfigManager>()
-        val saved = cfg.get("project.root_dir", "")
-        val projectsDir = if (saved.isNotBlank()) File(saved) else File(
-            Environment.getExternalStorageDirectory(),
-            "TinaIDE/Projects"
-        )
-        
+        val savedPath = cfg.get("project.root_dir", "")
+        val projectsDir = if (savedPath.isNotBlank()) File(savedPath) else {
+            File(Environment.getExternalStorageDirectory(), "TinaIDE/Projects")
+        }
+
         val existingProjects = if (projectsDir.exists() && projectsDir.isDirectory) {
             projectsDir.listFiles()?.filter { it.isDirectory }?.map { it.name }?.toTypedArray()
-                ?: arrayOf("暂无项目")
+                ?: arrayOf(getString(R.string.no_projects))
         } else {
-            arrayOf("暂无项目")
+            arrayOf(getString(R.string.no_projects))
         }
-        
-        return MaterialDialogBuilder.create(context)
-            .setTitle("打开项目")
+
+        return MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_App_MaterialAlertDialog)
+            .setTitle(R.string.dialog_title_open_project)
             .setItems(existingProjects) { _, which ->
-                if (existingProjects[which] != "暂无项目") {
+                if (existingProjects[which] != getString(R.string.no_projects)) {
                     val projectDir = File(projectsDir, existingProjects[which])
                     openProject(projectDir)
                 }
             }
-            .setNeutralButton("浏览...") { _, _ ->
-                // TODO: 实现文件浏览器
+            .setNeutralButton(R.string.btn_browse) { _, _ ->
                 context.toastInfo("文件浏览器功能开发中")
             }
-            .setNegativeButton("取消", null)
+            .setNegativeButton(R.string.btn_cancel, null)
             .create()
     }
 
@@ -198,44 +199,43 @@ class ProjectDialog(
             null
         }
     }
-    
+
     /**
-     * 创建新项目（根据所选类型生成模板）
+     * 创建新项目
      */
     private fun createNewProject(projectName: String, projectPath: String, selectedType: Int) {
         try {
             val projectDir = File(projectPath, projectName)
-            
+
             if (projectDir.exists()) {
-                requireContext().toastError("项目已存在")
+                requireContext().toastError(getString(R.string.error_project_exists))
                 return
             }
-            
+
             if (!projectDir.mkdirs()) {
-                requireContext().toastError("创建项目目录失败")
+                requireContext().toastError(getString(R.string.error_create_project_dir))
                 return
             }
 
             val ok = when (selectedType) {
-                0 -> ProjectTemplateInstaller.installCppXmakeTemplate(requireContext(), projectDir, projectName)  // C++ 项目 (xmake)
-                1 -> ProjectTemplateInstaller.installCppSingleFile(projectDir, projectName)  // C++ 单文件
+                0 -> ProjectTemplateInstaller.installCppXmakeTemplate(requireContext(), projectDir, projectName)
+                1 -> ProjectTemplateInstaller.installCppSingleFile(projectDir, projectName)
                 else -> false
             }
+
             if (!ok) {
-                requireContext().toastError("模板生成失败")
+                requireContext().toastError(getString(R.string.error_template_failed))
                 return
             }
-            
-            requireContext().toastSuccess("项目创建成功")
-            
-            // 打开项目
+
+            requireContext().toastSuccess(getString(R.string.success_project_created))
             openProject(projectDir)
-            
+
         } catch (e: Exception) {
             requireContext().handleErrorWithToast(e, "创建项目失败")
         }
     }
-    
+
     /**
      * 打开项目
      */
@@ -247,5 +247,11 @@ class ProjectDialog(
         } catch (e: Exception) {
             requireContext().handleErrorWithToast(e, "打开项目失败")
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        tilProjectPath = null
+        etProjectPath = null
     }
 }

@@ -67,8 +67,8 @@ object NativeLoader {
         if (loaded) return
         synchronized(this) {
             if (loaded) return
-        // 先预加载 libc++_shared（优先 jniLibs，失败再回退 sysroot），确保全局唯一运行时
-        preloadLibcxxOnce()
+        // 注意：libc++_shared.so 应该已经在 TinaApplication.onCreate() 中加载
+        // 这里不再重复加载，避免冲突
         // 加载 LLVM 主库（仅 sysroot runtime），再加载 clang-cpp
         var llvmLoaded = false
         try {

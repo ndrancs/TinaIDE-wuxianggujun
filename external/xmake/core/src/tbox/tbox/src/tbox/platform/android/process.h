@@ -3,6 +3,7 @@
 
 #include "prefix.h"
 #include "../process.h"
+#include <jni.h>
 
 tb_bool_t           tb_android_process_is_enabled(tb_noarg_t);
 tb_process_ref_t    tb_process_init_android(tb_char_t const* pathname,
@@ -22,5 +23,6 @@ tb_void_t           tb_process_priv_set_android(tb_process_ref_t self, tb_cpoint
 tb_void_t           tb_process_resume_android(tb_process_ref_t self);
 tb_void_t           tb_process_suspend_android(tb_process_ref_t self);
 tb_bool_t           tb_process_is_android(tb_process_ref_t self);
+tb_bool_t           tb_android_process_bind_bridge(JNIEnv* env);
 
 #endif

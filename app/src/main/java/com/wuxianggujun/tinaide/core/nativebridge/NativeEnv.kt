@@ -41,6 +41,9 @@ object NativeEnv {
      */
     @Volatile
     private var nativeLoaded: Boolean = false
+
+    @Volatile
+    private var runtimeAbi: String? = null
     
     /**
      * 初始化环境
@@ -56,6 +59,8 @@ object NativeEnv {
             // 获取 nativeLibraryDir
             nativeLibDir = context.applicationInfo.nativeLibraryDir
             Log.i(TAG, "nativeLibDir: $nativeLibDir")
+            runtimeAbi = AbiResolver.detectFromNativeLibDir(nativeLibDir)
+            runtimeAbi?.let { Log.i(TAG, "runtimeAbi: $it") }
             
             // 获取 sysroot 路径
             sysrootDir = File(context.filesDir, "sysroot").absolutePath
@@ -97,20 +102,21 @@ object NativeEnv {
     }
     
     /**
-     * 确保 Native 库已加载
+     * 标记 Native 库已加载（由 XmakeRunner 调用）
+     * 
+     * 注意：xmake_runner 库只能从 sysroot 通过 System.load() 加载，
+     * 不支持从 jniLibs 通过 System.loadLibrary() 加载。
+     */
+    fun markNativeLoaded() {
+        nativeLoaded = true
+    }
+    
+    /**
+     * 检查 Native 库是否已加载
      */
     private fun ensureNativeLoaded() {
-        if (nativeLoaded) return
-        synchronized(this) {
-            if (nativeLoaded) return
-            try {
-                // 尝试加载 xmake_runner（包含 nativeSetEnv/nativeGetEnv）
-                System.loadLibrary("xmake_runner")
-                nativeLoaded = true
-            } catch (e: UnsatisfiedLinkError) {
-                // 可能还没编译，忽略
-                Log.d(TAG, "xmake_runner not loaded yet")
-            }
+        if (!nativeLoaded) {
+            Log.w(TAG, "Native library not loaded yet. Call XmakeRunner.loadIfNeeded() first.")
         }
     }
     
@@ -118,14 +124,11 @@ object NativeEnv {
      * 获取 target triple
      */
     fun getTargetTriple(): String {
-        val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
-        return when {
-            abi.contains("arm64", ignoreCase = true) -> "aarch64-linux-android"
-            abi.contains("x86_64", ignoreCase = true) -> "x86_64-linux-android"
-            abi.contains("armeabi", ignoreCase = true) -> "arm-linux-androideabi"
-            abi.contains("x86", ignoreCase = true) -> "i686-linux-android"
-            else -> "aarch64-linux-android"
-        }
+        val abi = runtimeAbi
+            ?: AbiResolver.detectFromNativeLibDir(nativeLibDir)
+            ?: AbiResolver.prioritizedAbis(nativeLibDir).firstOrNull()
+            ?: "arm64-v8a"
+        return AbiResolver.abiToTargetTriple(abi)
     }
     
     /**

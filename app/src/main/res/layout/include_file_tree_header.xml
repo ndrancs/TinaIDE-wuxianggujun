@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/drawer_header_container"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -20,36 +21,35 @@
         android:maxLines="1"
         android:ellipsize="end"
         android:text="未打开项目"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+        android:textColor="?attr/colorOnSurface" />
 
-    <ImageButton
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_add_file"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:padding="6dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:contentDescription="添加文件"
-        android:src="@android:drawable/ic_menu_add" />
+        app:icon="@drawable/ic_baseline_add_24"
+        app:iconTint="?attr/colorOnSurface" />
 
-    <ImageButton
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_refresh_file_tree"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:padding="6dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:contentDescription="刷新"
-        android:src="@android:drawable/ic_popup_sync" />
+        app:icon="@android:drawable/ic_popup_sync"
+        app:iconTint="?attr/colorOnSurface" />
 
-    <ImageButton
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_view_mode"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:padding="6dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:contentDescription="查看"
-        android:src="@android:drawable/ic_menu_view" />
+        app:icon="@android:drawable/ic_menu_view"
+        app:iconTint="?attr/colorOnSurface" />
 
 </LinearLayout>
 

@@ -25,10 +25,12 @@ static tb_atomic_t       s_virtual_pid = 10000;
 static jclass            s_bridge_class = tb_null;
 static jmethodID         s_bridge_method = tb_null;
 
-static tb_bool_t tb_android_process_init_bridge(JNIEnv* env)
+tb_bool_t tb_android_process_bind_bridge(JNIEnv* env)
 {
     if (!env) return tb_false;
-    if (s_bridge_class && s_bridge_method) return tb_true;
+
+    if (s_bridge_class && s_bridge_method)
+        return tb_true;
 
     jclass localClass = (*env)->FindClass(env, "com/wuxianggujun/tinaide/core/nativebridge/ProcessBridge");
     if (!localClass)
@@ -38,26 +40,36 @@ static tb_bool_t tb_android_process_init_bridge(JNIEnv* env)
         return tb_false;
     }
 
-    s_bridge_class = (jclass)(*env)->NewGlobalRef(env, localClass);
+    jclass globalClass = (jclass)(*env)->NewGlobalRef(env, localClass);
     (*env)->DeleteLocalRef(env, localClass);
-    if (!s_bridge_class)
+    if (!globalClass)
     {
         tb_trace_e("[TinaIDE] Failed to create global ref for ProcessBridge class");
         return tb_false;
     }
 
-    s_bridge_method = (*env)->GetStaticMethodID(env, s_bridge_class,
+    jmethodID method = (*env)->GetStaticMethodID(env, globalClass,
         "startProcess",
         "(Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)Ljava/lang/String;");
-    if (!s_bridge_method)
+    if (!method)
     {
         tb_trace_e("[TinaIDE] Cannot find method: ProcessBridge.startProcess()");
         tb_trace_e("[TinaIDE] Expected signature: (String, String[], String, String[]) -> String");
+        (*env)->DeleteGlobalRef(env, globalClass);
         return tb_false;
     }
-    
-    tb_trace_i("[TinaIDE] ProcessBridge initialized successfully");
+
+    s_bridge_class = globalClass;
+    s_bridge_method = method;
+    tb_trace_i("[TinaIDE] ProcessBridge bound successfully");
     return tb_true;
+}
+
+static tb_bool_t tb_android_process_init_bridge(JNIEnv* env)
+{
+    if (!env) return tb_false;
+    if (s_bridge_class && s_bridge_method) return tb_true;
+    return tb_android_process_bind_bridge(env);
 }
 
 static tb_bool_t tb_android_process_get_env(JNIEnv** out_env)

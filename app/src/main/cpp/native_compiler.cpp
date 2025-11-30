@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <poll.h>
 #include <errno.h>
+#include <cstring>
 #include <typeinfo>
 #include <cxxabi.h>
 
@@ -44,6 +45,39 @@ namespace lld { namespace elf { bool link(llvm::ArrayRef<const char*>, llvm::raw
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN,  "native_compiler", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "native_compiler", __VA_ARGS__)
 
+static bool ensureDirRecursive(const std::string& path) {
+    if (path.empty() || path == ".") {
+        return true;
+    }
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0) {
+        return S_ISDIR(st.st_mode);
+    }
+    if (errno != ENOENT) {
+        LOGE("stat(%s) failed: %s", path.c_str(), strerror(errno));
+        return false;
+    }
+    auto slash = path.find_last_of('/');
+    if (slash != std::string::npos) {
+        std::string parent = path.substr(0, slash);
+        if (!parent.empty() && !ensureDirRecursive(parent)) {
+            return false;
+        }
+    }
+    if (mkdir(path.c_str(), 0775) == 0 || errno == EEXIST || errno == EISDIR) {
+        return true;
+    }
+    LOGE("mkdir(%s) failed: %s", path.c_str(), strerror(errno));
+    return false;
+}
+
+static bool ensureParentDir(const std::string& filePath) {
+    auto slash = filePath.find_last_of('/');
+    if (slash == std::string::npos) return true;
+    std::string dir = filePath.substr(0, slash);
+    if (dir.empty()) return true;
+    return ensureDirRecursive(dir);
+}
 
 
 // ---- Minimal per-arch LLVM target initialization (avoid unresolved symbols) ----
@@ -196,6 +230,10 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_emitObj(
     const std::string objOut  = toStr(jObjOut);
     const std::string target  = toStr(jTarget);
     const bool isCxx = jIsCxx == JNI_TRUE;
+    if (!ensureParentDir(objOut)) {
+        std::string err = "[TinaIDE] Failed to prepare directory for output file: " + objOut;
+        return env->NewStringUTF(err.c_str());
+    }
     // Ensure LLVM target backends are registered so cc1 can emit objects
     static bool sTargetsInitedB = false;
     if (!sTargetsInitedB) {

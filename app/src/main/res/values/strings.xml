@@ -13,6 +13,24 @@
   <string name="editor_empty_hint">点击左侧文件树打开文件开始编辑</string>
   <string name="empty_editor">空编辑器</string>
 
+  <!-- New Project Dialog -->
+  <string name="dialog_title_new_project">新建项目</string>
+  <string name="dialog_title_open_project">打开项目</string>
+  <string name="hint_project_name">项目名称</string>
+  <string name="hint_project_path">项目路径</string>
+  <string name="hint_project_type">项目类型</string>
+  <string name="hint_project_description">项目描述（可选）</string>
+  <string name="btn_create">创建</string>
+  <string name="btn_cancel">取消</string>
+  <string name="btn_browse">浏览…</string>
+  <string name="error_project_name_empty">项目名称不能为空</string>
+  <string name="error_project_path_empty">项目路径不能为空</string>
+  <string name="error_project_exists">项目已存在</string>
+  <string name="error_create_project_dir">创建项目目录失败</string>
+  <string name="error_template_failed">模板生成失败</string>
+  <string name="success_project_created">项目创建成功</string>
+  <string name="no_projects">暂无项目</string>
+
   <!-- Project manager / main screen strings -->
   <string name="project_manager_alpha_notice_title">Alpha 版本公告</string>
   <string name="project_manager_alpha_notice">TinaIDE 仍处于 Alpha 阶段，可能存在崩溃、Bug 和未完成的功能；欢迎在 Issue 区反馈问题和建议。</string>
@@ -39,4 +57,6 @@
   <string name="settings_cat_editor_behavior">编辑行为</string>
   <string name="settings_cat_compiler_options">编译选项</string>
   <string name="settings_cat_compiler_debug_perf">调试与性能</string>
+  <string name="pref_force_sysroot_override_title">调试：始终覆盖 Sysroot 补丁</string>
+  <string name="pref_force_sysroot_override_summary">仅供调试使用。开启后会在每次启动时重新同步 xmake 覆盖文件，方便测试补丁，可能降低首次构建性能。</string>
 </resources>

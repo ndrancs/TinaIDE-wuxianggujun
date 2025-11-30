@@ -3,7 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:iconSpaceReserved="false">
 
-    <!-- 优化级别 -->
     <ListPreference
         android:key="compiler_optimization"
         android:title="优化级别"
@@ -13,7 +12,6 @@
         android:defaultValue="O2"
         app:iconSpaceReserved="false" />
 
-    <!-- 目标架构 -->
     <MultiSelectListPreference
         android:key="compiler_target_arch"
         android:title="目标架构"
@@ -23,7 +21,6 @@
         android:defaultValue="@array/target_arch_default"
         app:iconSpaceReserved="false" />
 
-    <!-- 编译线程数 -->
     <SeekBarPreference
         android:key="compiler_threads"
         android:title="编译线程数"
@@ -34,12 +31,30 @@
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false" />
 
-    <!-- 保留调试信息 -->
     <SwitchPreferenceCompat
         android:key="compiler_debug_symbols"
         android:title="保留调试信息"
         android:summary="在编译结果中保留调试符号"
         android:defaultValue="false"
         app:iconSpaceReserved="false" />
+
+    <PreferenceCategory
+        android:title="工具链调试"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreferenceCompat
+            android:key="compiler_force_sysroot_override"
+            android:title="@string/pref_force_sysroot_override_title"
+            android:summary="@string/pref_force_sysroot_override_summary"
+            android:defaultValue="false"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="reinstall_sysroot"
+            android:title="重新安装 Sysroot"
+            android:summary="从 APK 重新解压编译工具链（更新 APK 后使用）"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
 
 </PreferenceScreen>

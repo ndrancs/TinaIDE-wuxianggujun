@@ -93,6 +93,9 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            // 排除 CMake 自动打包的 libc++_shared.so
+            // 我们使用 sysroot 中的版本，避免重复和冲突
+            excludes += setOf("**/libc++_shared.so")
         }
     }
 

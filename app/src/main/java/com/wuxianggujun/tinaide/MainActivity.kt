@@ -2,12 +2,12 @@ package com.wuxianggujun.tinaide
 
 import android.os.Bundle
 import android.content.Intent
-import androidx.appcompat.widget.Toolbar
+import com.google.android.material.appbar.MaterialToolbar
 import androidx.drawerlayout.widget.DrawerLayout
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.ImageButton
+import com.google.android.material.button.MaterialButton
 import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Lifecycle
@@ -50,7 +50,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private val serviceScope = "MainActivity_${hashCode()}"
 
     private lateinit var drawerLayout: DrawerLayout
-    private lateinit var toolbar: Toolbar
+    private lateinit var toolbar: MaterialToolbar
     private lateinit var uiManager: IUIManager
     private lateinit var outputManager: IOutputManager
     private lateinit var compilerViewModel: CompilerViewModel
@@ -60,29 +60,13 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)  // BaseActivity 已处理主题和沉浸式状态栏
 
-        // Adjust drawer/header for status bar insets to prevent overlap (NavigationView headerView)
+        // 绑定侧边栏头部
         try {
             val nav = binding.navView
             val headerView = if (nav.headerCount > 0) nav.getHeaderView(0) else null
             if (headerView != null) {
-                val headerBinding = IncludeFileTreeHeaderBinding.bind(headerView)
-                navHeaderBinding = headerBinding
-                val headerRoot = headerBinding.root
-                androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(headerRoot) { v, insets ->
-                    val status = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
-                    v.setPadding(v.paddingLeft, status.top, v.paddingRight, v.paddingBottom)
-                    insets
-                }
-                androidx.core.view.ViewCompat.requestApplyInsets(headerRoot)
+                navHeaderBinding = IncludeFileTreeHeaderBinding.bind(headerView)
             }
-            // Ensure NavigationView itself doesn't add unexpected top padding; status bar handled by headerRoot
-            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(nav) { v, insets ->
-                val status = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
-                // Keep nav top padding zero; headerRoot receives inset
-                v.setPadding(v.paddingLeft, 0, v.paddingRight, v.paddingBottom)
-                insets
-            }
-            androidx.core.view.ViewCompat.requestApplyInsets(nav)
         } catch (_: Throwable) { }
 
         initializeServices()
@@ -157,15 +141,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         } else {
             outputManager = ServiceLocator.get<IOutputManager>()
         }
-    }
-
-    private fun showOpenProjectDialog() {
-        val dialog = com.wuxianggujun.tinaide.ui.dialog.ProjectDialog(
-            com.wuxianggujun.tinaide.ui.dialog.ProjectDialog.Mode.OPEN_PROJECT
-        ) { _ ->
-            refreshFileTree()
-        }
-        dialog.show(supportFragmentManager, "OpenProject")
     }
 
     private fun refreshFileTree() {
@@ -264,10 +239,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 drawerLayout.openDrawer(binding.navView)
                 true
             }
-            R.id.action_open_project -> {
-                showOpenProjectDialog()
-                true
-            }
             R.id.action_run -> { onCompileProject(); true }
             R.id.action_build -> { onCompileProject(); true }
             R.id.action_settings -> {
@@ -276,7 +247,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 startActivity(intent)
                 true
             }
-
             else -> super.onOptionsItemSelected(item)
         }
     }

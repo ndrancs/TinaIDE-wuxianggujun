@@ -50,6 +50,8 @@ app/src/main/jniLibs/**/libc++_shared.so
 
 # Sysroot（由同步脚本生成，不提交）
 app/src/main/assets/sysroot/
+app/src/main/assets/*.zip
+!app/src/main/assets/xmake-overrides/**
 
 # Generated LLVM build artifacts (headers/libs/sysroot)
 external/llvm-build-libs/

@@ -3,12 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_open_project"
-        android:title="打开项目"
-        android:icon="@drawable/ic_folder"
-        app:showAsAction="ifRoom|withText" />
-
-    <item
         android:id="@+id/action_build"
         android:title="编译"
         android:icon="@drawable/ic_build"
@@ -25,6 +19,5 @@
         android:title="设置"
         android:icon="@drawable/ic_settings"
         app:showAsAction="never" />
-
 
 </menu>

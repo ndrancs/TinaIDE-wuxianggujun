@@ -1,294 +1,182 @@
-# Material Design 风格指南
+# TinaIDE Material Design 3 规范指南
 
-## 📦 已完成的 Material Design 改造
+## 概述
 
-### 1. Material Dialog（对话框）
+TinaIDE 项目统一使用 **Material Design 3 (MD3)** 设计规范。**禁止** MD2 和 MD3 混用，以确保 UI 风格的一致性和现代感。
 
-#### ✅ 已创建的工具类
-- **`MaterialDialogBuilder`** - 统一的对话框构建器
+## 强制规范
 
-#### 📝 使用示例
+### 1. 主题配置
 
-**信息对话框**
-```kotlin
-MaterialDialogBuilder.showInfo(
-    context = this,
-    title = "提示",
-    message = "操作成功",
-    onPositive = {
-        // 点击确定后的回调
-    }
-)
-```
-
-**确认对话框**
-```kotlin
-MaterialDialogBuilder.showConfirm(
-    context = this,
-    title = "确认删除",
-    message = "确定要删除这个文件吗？",
-    onPositive = {
-        // 确认删除
-    },
-    onNegative = {
-        // 取消操作
-    }
-)
-```
-
-**输入对话框（带验证）**
-```kotlin
-MaterialDialogBuilder.showInput(
-    context = this,
-    title = "添加文件",
-    hint = "文件名，例如 main.cpp",
-    validator = { input ->
-        when {
-            input.isEmpty() -> "文件名不能为空"
-            !input.matches(Regex("[a-zA-Z0-9_.-]+")) -> "文件名包含非法字符"
-            else -> null // 验证通过
-        }
-    },
-    onConfirm = { fileName ->
-        // 创建文件
-    }
-)
-```
-
-**单选列表对话框**
-```kotlin
-val items = arrayOf("选项1", "选项2", "选项3")
-MaterialDialogBuilder.showSingleChoice(
-    context = this,
-    title = "请选择",
-    items = items,
-    selectedIndex = 0,
-    onSelected = { index, item ->
-        // 处理选择
-    }
-)
-```
-
-**多选列表对话框**
-```kotlin
-val items = arrayOf("选项1", "选项2", "选项3")
-val checkedItems = booleanArrayOf(false, true, false)
-
-MaterialDialogBuilder.showMultiChoice(
-    context = this,
-    title = "请选择（可多选）",
-    items = items,
-    checkedItems = checkedItems,
-    onConfirm = { selectedIndices ->
-        // 处理选择结果
-    }
-)
-```
-
-**警告对话框**
-```kotlin
-MaterialDialogBuilder.showWarning(
-    context = this,
-    title = "警告",
-    message = "此操作可能导致数据丢失",
-    onPositive = {
-        // 用户知晓警告
-    }
-)
-```
-
-**错误对话框**
-```kotlin
-MaterialDialogBuilder.showError(
-    context = this,
-    title = "编译失败",
-    message = "main.cpp:10:5 expected ';'",
-    onPositive = {
-        // 关闭对话框
-    }
-)
-```
-
-**进度对话框**
-```kotlin
-val dialog = MaterialDialogBuilder.showProgress(
-    context = this,
-    title = "正在编译",
-    message = "请稍候...",
-    cancelable = false
-)
-
-// 操作完成后关闭
-dialog.dismiss()
-```
-
-**自定义视图对话框**
-```kotlin
-val customView = layoutInflater.inflate(R.layout.custom_dialog, null)
-MaterialDialogBuilder.showCustomView(
-    context = this,
-    title = "自定义对话框",
-    view = customView,
-    positiveText = "确定",
-    negativeText = "取消",
-    onPositive = {
-        // 确定操作
-    }
-)
-```
-
-### 2. Material Icons（图标）
-
-#### ✅ 已创建的图标
-- `ic_file.xml` - 文件图标
-- `ic_folder.xml` - 文件夹图标
-- `ic_settings.xml` - 设置图标
-- `ic_code.xml` - 代码图标
-- `ic_build.xml` - 编译图标
-
-#### 📝 在 XML 中使用
-```xml
-<ImageView
-    android:layout_width="24dp"
-    android:layout_height="24dp"
-    android:src="@drawable/ic_settings"
-    android:tint="?attr/colorPrimary" />
-```
-
-#### 📝 在代码中使用
-```kotlin
-imageView.setImageResource(R.drawable.ic_settings)
-```
-
-### 3. Material Dialog 主题
-
-#### ✅ 已定义的主题
-- `ThemeOverlay.App.MaterialAlertDialog` - 对话框主题
-- `MaterialAlertDialog.App.Title.Text` - 标题文字样式
-- `MaterialAlertDialog.App.Body.Text` - 内容文字样式
-- `Widget.App.Button` - 按钮样式
-
-所有对话框自动应用深色主题，与应用整体风格一致。
-
-### 4. Material Components
-
-#### ✅ TextInputLayout
-用于所有输入框，提供：
-- Material Design 风格的轮廓框
-- 浮动标签
-- 错误提示
-- 字符计数
+应用主题必须继承自 Material 3：
 
 ```xml
-<com.google.android.material.textfield.TextInputLayout
+<!-- ✅ 正确 -->
+<style name="Base.Theme.TinaIDE" parent="Theme.Material3.Dark.NoActionBar">
+
+<!-- ❌ 错误 - 不要使用 MD2 主题 -->
+<style name="Base.Theme.TinaIDE" parent="Theme.MaterialComponents.Dark.NoActionBar">
+```
+
+### 2. 组件使用规范
+
+| 功能 | ✅ MD3 组件 | ❌ 禁止使用 |
+|------|------------|------------|
+| 工具栏 | `MaterialToolbar` | `androidx.appcompat.widget.Toolbar` |
+| 按钮 | `MaterialButton` | `Button`, `AppCompatButton` |
+| 图标按钮 | `MaterialButton` (style IconButton) | `ImageButton` |
+| 复选框 | `MaterialCheckBox` | `CheckBox`, `AppCompatCheckBox` |
+| 单选按钮 | `MaterialRadioButton` | `RadioButton` |
+| 开关 | `MaterialSwitch` | `Switch`, `SwitchCompat` |
+| 进度条 | `CircularProgressIndicator` / `LinearProgressIndicator` | `ProgressBar` |
+| 卡片 | `MaterialCardView` | `CardView` |
+| 文本输入 | `TextInputLayout` + `TextInputEditText` | `EditText` |
+| 下拉菜单 | `MaterialAutoCompleteTextView` | `Spinner` |
+| 对话框 | `MaterialAlertDialogBuilder` | `AlertDialog.Builder` |
+| 分割线 | `MaterialDivider` | `View` with divider background |
+| 浮动按钮 | `FloatingActionButton` / `ExtendedFloatingActionButton` | - |
+| 底部导航 | `BottomNavigationView` | - |
+| 导航抽屉 | `NavigationView` | - |
+
+### 3. 样式继承规范
+
+```xml
+<!-- ✅ 正确 - 使用 Material3 样式 -->
+<style name="Widget.Tina.PopupMenu" parent="Widget.Material3.PopupMenu">
+<style name="TextAppearance.Tina.Body" parent="TextAppearance.Material3.BodyLarge">
+<style name="ThemeOverlay.Tina.Toolbar" parent="ThemeOverlay.Material3.Dark.ActionBar">
+
+<!-- ❌ 错误 - 不要使用 AppCompat 样式 -->
+<style name="Widget.Tina.PopupMenu" parent="Widget.AppCompat.PopupMenu">
+<style name="TextAppearance.Tina.Body" parent="TextAppearance.AppCompat.Body1">
+<style name="ThemeOverlay.Tina.Toolbar" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+```
+
+### 4. 布局文件示例
+
+#### 工具栏
+```xml
+<!-- ✅ 正确 -->
+<com.google.android.material.appbar.MaterialToolbar
+    android:id="@+id/toolbar"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    app:boxBackgroundMode="outline"
-    app:counterEnabled="true"
-    app:counterMaxLength="100"
-    app:errorEnabled="true">
+    android:layout_height="?attr/actionBarSize"
+    app:title="标题"
+    app:titleTextColor="?attr/colorOnPrimary" />
 
-    <com.google.android.material.textfield.TextInputEditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-</com.google.android.material.textfield.TextInputLayout>
+<!-- ❌ 错误 -->
+<androidx.appcompat.widget.Toolbar
+    android:id="@+id/toolbar"
+    ... />
 ```
 
-#### ✅ CircularProgressIndicator
-用于进度指示，替代旧的 ProgressBar：
-
+#### 图标按钮
 ```xml
+<!-- ✅ 正确 -->
+<com.google.android.material.button.MaterialButton
+    style="@style/Widget.Material3.Button.IconButton"
+    android:layout_width="40dp"
+    android:layout_height="40dp"
+    app:icon="@drawable/ic_add"
+    app:iconTint="?attr/colorOnSurface" />
+
+<!-- ❌ 错误 -->
+<ImageButton
+    android:layout_width="36dp"
+    android:layout_height="36dp"
+    android:src="@drawable/ic_add"
+    android:background="?attr/selectableItemBackgroundBorderless" />
+```
+
+#### 进度指示器
+```xml
+<!-- ✅ 正确 -->
 <com.google.android.material.progressindicator.CircularProgressIndicator
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:indeterminate="true" />
+
+<!-- ❌ 错误 -->
+<ProgressBar
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" />
 ```
 
-## 🎨 Material Design 原则
-
-### 统一性
-- ✅ 所有对话框使用 `MaterialDialogBuilder`
-- ✅ 所有图标使用 Material Icons
-- ✅ 统一的颜色主题
-
-### 响应式
-- ✅ 输入验证实时反馈
-- ✅ 按钮状态自动管理
-- ✅ 错误提示友好
-
-### 美观性
-- ✅ 圆角设计
-- ✅ 阴影效果
-- ✅ 动画过渡
-
-## 📋 待改造列表
-
-以下对话框还需要替换为 Material Design 风格：
-
-1. **FileContextMenuDialog** - 文件上下文菜单
-2. **ProjectDialog** - 项目对话框
-3. **EditorContainerFragment** - 编辑器跳转对话框
-4. **InputDialogHelper** - 输入对话框辅助类
-5. **FindReplaceDialog** - 查找替换对话框
-
-## 🚀 如何添加更多 Material Icons
-
-### 方法1：从 Android Studio 导入
-1. 右键 `res/drawable` 文件夹
-2. 选择 `New` → `Vector Asset`
-3. 选择 `Clip Art`，搜索图标
-4. 点击 `Next` → `Finish`
-
-### 方法2：从 Material Design 网站
-访问 https://fonts.google.com/icons
-1. 搜索并下载 SVG 图标
-2. 在 Android Studio 中转换为 Vector Drawable
-
-### 方法3：手动创建
-参考已有的 `ic_*.xml` 文件格式创建。
-
-## 💡 最佳实践
-
-1. **始终使用 MaterialDialogBuilder**
-   - 不要直接使用 `AlertDialog.Builder`
-   - 不要直接使用 `MaterialAlertDialogBuilder`
-
-2. **输入验证**
-   - 使用 `validator` 参数进行实时验证
-   - 提供友好的错误提示
-
-3. **颜色一致性**
-   - 使用主题定义的颜色
-   - 不要硬编码颜色值
-
-4. **图标大小**
-   - 统一使用 24dp × 24dp
-   - 使用 `android:tint` 设置颜色
-
-5. **对话框取消**
-   - 危险操作设置 `cancelable = false`
-   - 普通操作允许点击外部关闭
-
-## 🔧 故障排除
-
-### 对话框样式不生效
-检查主题是否正确继承：
+#### 复选框
 ```xml
-<style name="ThemeOverlay.App.MaterialAlertDialog" 
-       parent="ThemeOverlay.Material3.MaterialAlertDialog">
+<!-- ✅ 正确 -->
+<com.google.android.material.checkbox.MaterialCheckBox
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="选项" />
+
+<!-- ❌ 错误 -->
+<CheckBox
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="选项" />
 ```
 
-### 图标显示不正确
-检查 `android:tint` 属性：
-```xml
-android:tint="?attr/colorOnSurface"
-```
+### 5. Kotlin/Java 代码规范
 
-### 输入框验证失败
-确保 validator 返回 `null` 表示验证通过：
 ```kotlin
-validator = { input ->
-    if (input.isEmpty()) "不能为空" else null
-}
+// ✅ 正确 - 使用 MaterialToolbar
+import com.google.android.material.appbar.MaterialToolbar
+private lateinit var toolbar: MaterialToolbar
+
+// ❌ 错误 - 不要使用 AppCompat Toolbar
+import androidx.appcompat.widget.Toolbar
+private lateinit var toolbar: Toolbar
+
+// ✅ 正确 - 使用 MaterialAlertDialogBuilder
+MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_App_MaterialAlertDialog)
+    .setTitle("标题")
+    .setMessage("内容")
+    .show()
+
+// ❌ 错误 - 不要使用 AlertDialog.Builder
+AlertDialog.Builder(context)
+    .setTitle("标题")
+    .show()
 ```
+
+## 颜色系统
+
+使用 Material 3 的颜色属性：
+
+| 用途 | 属性 |
+|------|------|
+| 主色 | `?attr/colorPrimary` |
+| 主色上的文字 | `?attr/colorOnPrimary` |
+| 次要色 | `?attr/colorSecondary` |
+| 背景色 | `?attr/colorSurface` |
+| 背景上的文字 | `?attr/colorOnSurface` |
+| 错误色 | `?attr/colorError` |
+
+## 文字样式
+
+使用 Material 3 的 TextAppearance：
+
+- `TextAppearance.Material3.DisplayLarge/Medium/Small`
+- `TextAppearance.Material3.HeadlineLarge/Medium/Small`
+- `TextAppearance.Material3.TitleLarge/Medium/Small`
+- `TextAppearance.Material3.BodyLarge/Medium/Small`
+- `TextAppearance.Material3.LabelLarge/Medium/Small`
+
+## 代码审查检查清单
+
+在提交代码前，请确认：
+
+- [ ] 没有使用 `androidx.appcompat.widget.Toolbar`
+- [ ] 没有使用原生 `CheckBox`、`RadioButton`、`Switch`
+- [ ] 没有使用原生 `ProgressBar`
+- [ ] 没有使用原生 `ImageButton`（改用 `MaterialButton` IconButton 样式）
+- [ ] 没有使用 `AlertDialog.Builder`
+- [ ] 没有继承 `Widget.AppCompat.*` 或 `TextAppearance.AppCompat.*` 样式
+- [ ] 没有使用 `ThemeOverlay.AppCompat.*` 主题覆盖
+
+## 参考资源
+
+- [Material Design 3 官方文档](https://m3.material.io/)
+- [Material Components Android](https://github.com/material-components/material-components-android)
+- [Material 3 迁移指南](https://developer.android.com/develop/ui/views/theming/look-and-feel)

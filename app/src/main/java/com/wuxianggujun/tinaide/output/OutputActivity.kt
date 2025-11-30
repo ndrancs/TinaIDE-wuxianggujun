@@ -3,7 +3,7 @@ package com.wuxianggujun.tinaide.output
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import androidx.appcompat.widget.Toolbar
+import com.google.android.material.appbar.MaterialToolbar
 import com.wuxianggujun.tinaide.base.BaseActivity
 import com.wuxianggujun.tinaide.databinding.ActivityOutputBinding
 import io.github.rosemoe.sora.widget.CodeEditor

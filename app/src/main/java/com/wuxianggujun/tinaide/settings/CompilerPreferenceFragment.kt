@@ -1,6 +1,8 @@
 package com.wuxianggujun.tinaide.settings
 
 import android.os.Bundle
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SeekBarPreference
@@ -8,8 +10,13 @@ import androidx.preference.SwitchPreferenceCompat
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.config.IConfigManager
+import com.wuxianggujun.tinaide.core.config.Prefs
 import com.wuxianggujun.tinaide.core.get
+import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
 import com.wuxianggujun.tinaide.utils.Logger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 编译器设置 Fragment。
@@ -30,6 +37,8 @@ class CompilerPreferenceFragment : PreferenceFragmentCompat() {
         setupTargetArchPreference()
         setupThreadsPreference()
         setupDebugSymbolsPreference()
+        setupForceSysrootOverridePreference()
+        setupReinstallSysrootPreference()
     }
 
     private fun setupOptimizationPreference() {
@@ -83,6 +92,51 @@ class CompilerPreferenceFragment : PreferenceFragmentCompat() {
                 val enabled = newValue as Boolean
                 configManager.set("compiler.debugSymbols", enabled)
                 true
+            }
+        }
+    }
+
+    private fun setupForceSysrootOverridePreference() {
+        findPreference<SwitchPreferenceCompat>("compiler_force_sysroot_override")?.apply {
+            isChecked = Prefs.forceSysrootOverrides
+            setOnPreferenceChangeListener { _, newValue ->
+                val enabled = newValue as Boolean
+                Prefs.setForceSysrootOverrides(enabled)
+                true
+            }
+        }
+    }
+
+    private fun setupReinstallSysrootPreference() {
+        findPreference<Preference>("reinstall_sysroot")?.apply {
+            setOnPreferenceClickListener {
+                reinstallSysroot()
+                true
+            }
+        }
+    }
+
+    private fun reinstallSysroot() {
+        val ctx = requireContext().applicationContext
+        val pref = findPreference<Preference>("reinstall_sysroot")
+        
+        pref?.isEnabled = false
+        pref?.summary = "正在重新安装..."
+        
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    SysrootInstaller.forceReinstall(ctx)
+                }
+                pref?.summary = "安装完成！请重启应用以生效"
+                Toast.makeText(ctx, "Sysroot 重新安装完成，请重启应用", Toast.LENGTH_LONG).show()
+                Logger.i("Sysroot reinstalled successfully", tag = "Settings")
+            } catch (e: Exception) {
+                pref?.summary = "安装失败: ${e.message}"
+                Toast.makeText(ctx, "Sysroot 安装失败: ${e.message}", Toast.LENGTH_LONG).show()
+                Logger.e("Failed to reinstall sysroot: ${e.message}", tag = "Settings")
+            } finally {
+                pref?.isEnabled = true
             }
         }
     }

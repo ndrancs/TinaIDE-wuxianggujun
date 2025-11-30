@@ -86,6 +86,9 @@ object ProjectTemplateInstaller {
             
             -- 设置 C++ 标准
             set_languages("c++17")
+
+            -- 使用 envs 工具链（TinaIDE 内置 clang）
+            set_toolchains("envs")
             
             -- 定义目标
             target("$projectName")
@@ -129,7 +132,7 @@ object ProjectTemplateInstaller {
 
             ## 配置
             ```bash
-            xmake f -p android -a arm64-v8a
+            xmake f --toolchain=envs --cc=clang --cxx=clang++
             ```
         """.trimIndent()
         File(destDir, "README.md").writeText(readme)
@@ -151,4 +154,3 @@ object ProjectTemplateInstaller {
     }
 
 }
-

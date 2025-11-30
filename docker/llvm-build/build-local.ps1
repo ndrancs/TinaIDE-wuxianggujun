@@ -1,5 +1,5 @@
 Param(
-  [ValidateSet('arm64-v8a','x86_64')][string[]]$Abi = @('arm64-v8a','x86_64'),
+  [string[]]$Abi = @('arm64-v8a','x86_64'),
   [int]$ApiLevel = 28,
   [string]$NdkVersion = 'r26d',
   [string]$LlvmTag = 'llvmorg-17.0.6',
@@ -55,7 +55,30 @@ function Exec-In-Dev { param([string]$cmd) & docker exec $ContainerName bash -lc
 
 Ensure-DevContainer -containerName $ContainerName -ndkVersion $NdkVersion
 
-$abiList = if ($Abi -and $Abi.Length -gt 0) { $Abi } else { @('arm64-v8a','x86_64') }
+$validAbis = @('arm64-v8a','x86_64')
+function Normalize-AbiList {
+  param([string[]]$values)
+  $result = @()
+  foreach ($value in $values) {
+    if (-not $value) { continue }
+    $parts = $value.Split(',', [System.StringSplitOptions]::RemoveEmptyEntries)
+    foreach ($part in $parts) {
+      $trimmed = $part.Trim()
+      if ($trimmed) { $result += $trimmed }
+    }
+  }
+  return $result
+}
+$normalizedAbi = Normalize-AbiList -values $Abi
+if (-not $normalizedAbi -or $normalizedAbi.Count -eq 0) {
+  $normalizedAbi = $validAbis
+}
+foreach ($entry in $normalizedAbi) {
+  if ($validAbis -notcontains $entry) {
+    throw "Unsupported ABI '$entry'. Valid values: $($validAbis -join ', ')"
+  }
+}
+$abiList = $normalizedAbi
 
 $sessionScript = @'
 set -eux
@@ -271,7 +294,20 @@ foreach ($currentAbi in $abiList) {
   $outDirHost = Join-Path $OutputPath "${currentAbi}"
   New-Item -ItemType Directory -Force -Path $outDirHost | Out-Null
   $assign = "ABI='$currentAbi'; API_LEVEL='$ApiLevel'; LLVM_TAG='$LlvmTag'; NDK_VERSION='$NdkVersion'; MODE='$Mode'; ANDROID_BUILD_TYPE='$AndroidBuildType'; ENABLE_ASSERTIONS='$EnableAssertions'; BUILD_CLANGD_HOST='$BuildClangdHost'; BUILD_LLVM_DEBUG_TOOLS_HOST='$BuildLlvmDebugToolsHost';"
-  Exec-In-Dev "$assign`n$sessionScript"
+  $payload = "$assign`n$sessionScript"
+  $payload = $payload -replace "`r",""
+  $containerTemplate = @'
+cat <<'__TB_BUILD_LOCAL__' > /tmp/tina-build-local.sh
+__TINA_BUILD_LOCAL_PAYLOAD__
+__TB_BUILD_LOCAL__
+bash /tmp/tina-build-local.sh
+rc=$?
+rm -f /tmp/tina-build-local.sh
+exit $rc
+'@
+  $containerCmd = $containerTemplate -replace "__TINA_BUILD_LOCAL_PAYLOAD__", $payload
+  $containerCmd = $containerCmd -replace "`r",""
+  Exec-In-Dev $containerCmd
   $rc = $LASTEXITCODE
   if ($rc -ne 0) {
     Write-Err "Build failed inside container (exit $rc) for ABI $currentAbi"

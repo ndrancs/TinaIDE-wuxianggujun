@@ -71,6 +71,10 @@ object Prefs {
     val compilerOptimizationLevel: String
         get() = sharedPrefs.getString("compiler_optimization", "O2") ?: "O2"
 
+    /** 是否强制在每次启动时覆盖 sysroot 中的 xmake 补丁（调试功能）。 */
+    val forceSysrootOverrides: Boolean
+        get() = sharedPrefs.getBoolean("compiler_force_sysroot_override", false)
+
     // ========== 简单写入方法（供设置界面或业务调用） ==========
 
     fun setTheme(theme: String) {
@@ -95,5 +99,9 @@ object Prefs {
 
     fun setEditorAutoIndent(enabled: Boolean) {
         sharedPrefs.edit().putBoolean("editor_auto_indent", enabled).apply()
+    }
+
+    fun setForceSysrootOverrides(enabled: Boolean) {
+        sharedPrefs.edit().putBoolean("compiler_force_sysroot_override", enabled).apply()
     }
 }

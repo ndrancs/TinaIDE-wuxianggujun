@@ -4,15 +4,20 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingHorizontal="24dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="16dp">
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/text_input_layout"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:boxBackgroundMode="outline"
+        app:boxStrokeColor="@color/text_input_box_stroke"
+        app:hintTextColor="@color/dark_secondary"
         app:counterEnabled="true"
         app:counterMaxLength="100"
+        app:counterTextColor="@color/dark_on_surface"
         app:errorEnabled="true">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -20,7 +25,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text"
-            android:maxLines="1" />
+            android:maxLines="1"
+            android:textColor="@color/dark_on_surface"
+            android:textColorHint="@color/dark_secondary" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
