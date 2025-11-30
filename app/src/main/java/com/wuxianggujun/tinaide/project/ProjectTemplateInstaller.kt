@@ -51,24 +51,6 @@ object ProjectTemplateInstaller {
             }
         """.trimIndent()
         File(destDir, "main.cpp").writeText(mainCpp)
-
-        // 创建 README.md
-        val readme = """
-            # $projectName
-
-            这是一个简单的 C++ 单文件项目。
-
-            ## 编译运行
-
-            使用 g++ 或 clang++ 编译：
-            ```bash
-            g++ main.cpp -o $projectName
-            ./$projectName
-            ```
-
-            或者使用 TinaIDE 的编译功能直接运行。
-        """.trimIndent()
-        File(destDir, "README.md").writeText(readme)
     }
 
     /**
