@@ -221,8 +221,8 @@ class CompileProjectUseCase(
             if (d.exists()) includeDirs += d.absolutePath
         }
 
-        val entrySymbol = "tina_ide_use_main"
-        val flags = mutableListOf("-Wall", "-Wextra", "-fexceptions", "-fcxx-exceptions", "-Dmain=$entrySymbol")
+        val entrySymbol = "main"
+        val flags = mutableListOf("-Wall", "-Wextra", "-fexceptions", "-fcxx-exceptions")
 
         var ok = 0
         var syntaxOk = 0
