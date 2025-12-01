@@ -157,6 +157,14 @@ if [ "${MODE}" = "reconfigure" ] || [ "${MODE}" = "clean" ]; then
   rm -f /work/build/android/${ABI}-api${API_LEVEL}/CMakeCache.txt || true
   rm -rf /work/build/android/${ABI}-api${API_LEVEL}/CMakeFiles || true
 fi
+# Determine if we need threads (clangd requires threads)
+if [ "${BUILD_CLANGD_ANDROID}" = "True" ] || [ "${BUILD_CLANGD_ANDROID}" = "true" ] || [ "${BUILD_CLANGD_ANDROID}" = "1" ]; then
+  ENABLE_THREADS=ON
+  echo "[i] Enabling threads for clangd build"
+else
+  ENABLE_THREADS=OFF
+fi
+
 cmake -S /work/src/llvm-project/llvm -B /work/build/android/${ABI}-api${API_LEVEL} -G Ninja \
   -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld" -DLLVM_TARGETS_TO_BUILD="${LLVM_TARGET}" -DCMAKE_BUILD_TYPE=${ANDROID_BUILD_TYPE} \
   -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=${ANDROID_NDK_HOME} -DCMAKE_ANDROID_ARCH_ABI=${ABI} -DCMAKE_ANDROID_API=${API_LEVEL} \
@@ -166,7 +174,7 @@ cmake -S /work/src/llvm-project/llvm -B /work/build/android/${ABI}-api${API_LEVE
   -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF -DLLVM_ENABLE_LIBXML2=OFF \
   -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF \
   -DLLVM_BUILD_TOOLS=OFF -DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON -DCLANG_LINK_CLANG_DYLIB=ON \
-  -DLLVM_ENABLE_THREADS=OFF \
+  -DLLVM_ENABLE_THREADS=${ENABLE_THREADS} \
   -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS="-femulated-tls" -DCMAKE_CXX_FLAGS="-femulated-tls" \
   -DLLVM_ENABLE_ASSERTIONS=$([ "${ENABLE_ASSERTIONS}" = "True" ] || [ "${ENABLE_ASSERTIONS}" = "true" ] || [ "${ENABLE_ASSERTIONS}" = "1" ] && echo ON || echo OFF) \
   -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \
