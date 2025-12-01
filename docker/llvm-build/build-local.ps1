@@ -15,7 +15,7 @@ Param(
   [bool]$UpdateSource = $false,  # 默认不更新源码，使用本地已有的
   [bool]$ForceClone = $false,    # 强制重新克隆（会删除现有源码）
   # 构建并行度控制（用于解决内存不足问题）
-  [int]$BuildJobs = 0,           # 编译并行度，0=自动检测(nproc)
+  [int]$BuildJobs = 4,           # 编译并行度，默认4（0=自动检测nproc）
   [int]$LinkJobs = 2,            # 链接并行度，默认2（链接clangd需要大量内存）
   # Docker 内存限制
   [string]$DockerMemory = ''     # Docker 内存限制，如 '8g', '16g'，空=不限制
