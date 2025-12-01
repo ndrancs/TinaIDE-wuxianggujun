@@ -9,9 +9,16 @@ Param(
   # Build-type/diagnostics toggles for Android runtime libraries
   [ValidateSet('MinSizeRel','RelWithDebInfo','Debug')][string]$AndroidBuildType = 'MinSizeRel',
   [bool]$EnableAssertions = $false,
-  # Host-side developer tools
-  [bool]$BuildClangdHost = $true,
-  [bool]$BuildLlvmDebugToolsHost = $true
+  # Android-side clangd (as shared library for LSP)
+  [bool]$BuildClangdAndroid = $false,
+  # 源码更新控制
+  [bool]$UpdateSource = $false,  # 默认不更新源码，使用本地已有的
+  [bool]$ForceClone = $false,    # 强制重新克隆（会删除现有源码）
+  # 构建并行度控制（用于解决内存不足问题）
+  [int]$BuildJobs = 0,           # 编译并行度，0=自动检测(nproc)
+  [int]$LinkJobs = 2,            # 链接并行度，默认2（链接clangd需要大量内存）
+  # Docker 内存限制
+  [string]$DockerMemory = ''     # Docker 内存限制，如 '8g', '16g'，空=不限制
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,7 +39,7 @@ New-Item -ItemType Directory -Force -Path $OutputPath | Out-Null
 $outputBase = (Resolve-Path $OutputPath).Path
 
 function Ensure-DevContainer {
-  param([string]$containerName,[string]$ndkVersion)
+  param([string]$containerName,[string]$ndkVersion,[string]$memoryLimit)
   $devImage = "llvm-build-dev:$ndkVersion"
   Write-Info "Ensuring dev image: $devImage"
   & docker build -f (Join-Path $root 'docker/llvm-build/Dockerfile.dev') --build-arg NDK_VERSION=$ndkVersion -t $devImage $root
@@ -44,16 +51,23 @@ function Ensure-DevContainer {
     New-Item -ItemType Directory -Force -Path $workHost | Out-Null
     New-Item -ItemType Directory -Force -Path (Join-Path $workHost 'src'), (Join-Path $workHost 'build'), (Join-Path $workHost 'out') | Out-Null
     Write-Info "Starting dev container: $containerName"
-    & docker run -d --name $containerName -w /work `
-      -v "$($workHost):/work" `
-      -v "$($outputBase):/hostout" `
-      $devImage | Out-Null
+    # 构建 docker run 参数
+    $dockerArgs = @('-d', '--name', $containerName, '-w', '/work')
+    # 添加内存限制（如果指定）
+    if ($memoryLimit -and $memoryLimit -ne '') {
+      $dockerArgs += @('-m', $memoryLimit)
+      # 设置 swap 限制为内存的 2 倍，避免 OOM 时直接被杀
+      $dockerArgs += @('--memory-swap', ($memoryLimit -replace '(\d+)', { [int]$_.Value * 2 }))
+      Write-Info "Docker memory limit: $memoryLimit"
+    }
+    $dockerArgs += @('-v', "$($workHost):/work", '-v', "$($outputBase):/hostout", $devImage)
+    & docker run @dockerArgs | Out-Null
   }
 }
 
 function Exec-In-Dev { param([string]$cmd) & docker exec $ContainerName bash -lc $cmd }
 
-Ensure-DevContainer -containerName $ContainerName -ndkVersion $NdkVersion
+Ensure-DevContainer -containerName $ContainerName -ndkVersion $NdkVersion -memoryLimit $DockerMemory
 
 $validAbis = @('arm64-v8a','x86_64')
 function Normalize-AbiList {
@@ -88,30 +102,52 @@ case "${ABI}" in
   *) echo "Unsupported ABI: ${ABI}"; exit 1;;
 esac
 mkdir -p /work/src /work/build/host /work/build/android/${ABI}-api${API_LEVEL} /hostout/${ABI}
+
+# 计算并行度
+if [ "${BUILD_JOBS}" = "0" ] || [ -z "${BUILD_JOBS}" ]; then
+  COMPILE_JOBS=$(nproc)
+else
+  COMPILE_JOBS=${BUILD_JOBS}
+fi
+# 链接并行度（clangd 链接需要大量内存，默认限制为 1-2）
+if [ -z "${LINK_JOBS}" ]; then
+  LINK_JOBS=2
+fi
+echo "[i] Build parallelism: compile=${COMPILE_JOBS}, link=${LINK_JOBS}"
+
+# 源码管理逻辑
+if [ "${FORCE_CLONE}" = "True" ] || [ "${FORCE_CLONE}" = "true" ] || [ "${FORCE_CLONE}" = "1" ]; then
+  echo "[i] Force clone enabled, removing existing source..."
+  rm -rf /work/src/llvm-project || true
+fi
+
 if [ ! -d /work/src/llvm-project/.git ]; then
+  echo "[i] LLVM source not found, cloning ${LLVM_TAG}..."
   git clone --depth=1 --branch ${LLVM_TAG} https://github.com/llvm/llvm-project.git /work/src/llvm-project
+elif [ "${UPDATE_SOURCE}" = "True" ] || [ "${UPDATE_SOURCE}" = "true" ] || [ "${UPDATE_SOURCE}" = "1" ]; then
+  echo "[i] Updating source to ${LLVM_TAG}..."
+  cd /work/src/llvm-project
+  git fetch origin --tags --depth=1 || true
+  git fetch origin ${LLVM_TAG} --depth=1 || true
+  git checkout --force ${LLVM_TAG} || git checkout --force origin/${LLVM_TAG} || git checkout --force "$(git rev-parse --abbrev-ref origin/HEAD)"
+  git submodule update --init --recursive || true
+  cd /
+else
+  echo "[i] Using existing local source (skip git operations)"
+  echo "[i] Current source version:"
+  cd /work/src/llvm-project && git describe --tags --always 2>/dev/null || echo "unknown"
+  cd /
 fi
-cd /work/src/llvm-project
-# Sync existing clone to requested tag/branch when the source already exists (faster incremental builds)
-git fetch origin --tags --depth=1 || true
-git fetch origin ${LLVM_TAG} --depth=1 || true
-git checkout --force ${LLVM_TAG} || git checkout --force origin/${LLVM_TAG} || git checkout --force "$(git rev-parse --abbrev-ref origin/HEAD)"
-git submodule update --init --recursive || true
-cd /
+
+# 配置 host 构建（仅用于生成 tablegen 工具，用于交叉编译）
 if [ ! -x /work/build/host/bin/llvm-tblgen ]; then
+  echo "[i] Building host tablegen tools for cross-compilation..."
   cmake -S /work/src/llvm-project/llvm -B /work/build/host -G Ninja \
-    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld" -DLLVM_TARGETS_TO_BUILD="AArch64;X86" -DCMAKE_BUILD_TYPE=RelWithDebInfo
-  ninja -C /work/build/host -j$(nproc) llvm-tblgen clang-tblgen || true
-fi
-# Optionally build host developer tools (clangd and common llvm debug tools) and copy to hostout tools/bin
-mkdir -p /hostout/${ABI}/tools/bin
-if [ "${BUILD_CLANGD_HOST}" = "True" ] || [ "${BUILD_CLANGD_HOST}" = "true" ] || [ "${BUILD_CLANGD_HOST}" = "1" ]; then
-  ninja -C /work/build/host -j$(nproc) clangd || true
-  if [ -f /work/build/host/bin/clangd ]; then cp -af /work/build/host/bin/clangd /hostout/${ABI}/tools/bin/clangd-host; fi
-fi
-if [ "${BUILD_LLVM_DEBUG_TOOLS_HOST}" = "True" ] || [ "${BUILD_LLVM_DEBUG_TOOLS_HOST}" = "true" ] || [ "${BUILD_LLVM_DEBUG_TOOLS_HOST}" = "1" ]; then
-  ninja -C /work/build/host -j$(nproc) llvm-symbolizer llvm-objdump llvm-dwarfdump || true
-  for t in llvm-symbolizer llvm-objdump llvm-dwarfdump; do if [ -f /work/build/host/bin/${t} ]; then cp -af /work/build/host/bin/${t} /hostout/${ABI}/tools/bin/${t}-host; fi; done
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld" \
+    -DLLVM_TARGETS_TO_BUILD="AArch64;X86" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_PARALLEL_LINK_JOBS=${LINK_JOBS}
+  ninja -C /work/build/host -j${COMPILE_JOBS} llvm-tblgen clang-tblgen || true
 fi
 # Configure control via MODE: incremental | reconfigure | clean
 if [ "${MODE}" = "clean" ]; then
@@ -122,7 +158,7 @@ if [ "${MODE}" = "reconfigure" ] || [ "${MODE}" = "clean" ]; then
   rm -rf /work/build/android/${ABI}-api${API_LEVEL}/CMakeFiles || true
 fi
 cmake -S /work/src/llvm-project/llvm -B /work/build/android/${ABI}-api${API_LEVEL} -G Ninja \
-  -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TARGETS_TO_BUILD="${LLVM_TARGET}" -DCMAKE_BUILD_TYPE=${ANDROID_BUILD_TYPE} \
+  -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld" -DLLVM_TARGETS_TO_BUILD="${LLVM_TARGET}" -DCMAKE_BUILD_TYPE=${ANDROID_BUILD_TYPE} \
   -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=${ANDROID_NDK_HOME} -DCMAKE_ANDROID_ARCH_ABI=${ABI} -DCMAKE_ANDROID_API=${API_LEVEL} \
   -DLLVM_TABLEGEN=/work/build/host/bin/llvm-tblgen -DCLANG_TABLEGEN=/work/build/host/bin/clang-tblgen \
   -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF \
@@ -133,15 +169,113 @@ cmake -S /work/src/llvm-project/llvm -B /work/build/android/${ABI}-api${API_LEVE
   -DLLVM_ENABLE_THREADS=OFF \
   -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS="-femulated-tls" -DCMAKE_CXX_FLAGS="-femulated-tls" \
   -DLLVM_ENABLE_ASSERTIONS=$([ "${ENABLE_ASSERTIONS}" = "True" ] || [ "${ENABLE_ASSERTIONS}" = "true" ] || [ "${ENABLE_ASSERTIONS}" = "1" ] && echo ON || echo OFF) \
-  -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
-ninja -C /work/build/android/${ABI}-api${API_LEVEL} -j$(nproc) clang-cpp lld lldELF lldCommon
+  -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \
+  -DLLVM_PARALLEL_LINK_JOBS=${LINK_JOBS}
+ninja -C /work/build/android/${ABI}-api${API_LEVEL} -j${COMPILE_JOBS} clang-cpp libclang lld lldELF lldCommon
+
+# Build clangd for Android as a shared library (libclangd.so)
+# This requires clang-tools-extra to be enabled in LLVM_ENABLE_PROJECTS
+if [ "${BUILD_CLANGD_ANDROID}" = "True" ] || [ "${BUILD_CLANGD_ANDROID}" = "true" ] || [ "${BUILD_CLANGD_ANDROID}" = "1" ]; then
+  echo "[i] Building clangd for Android (this may take a while)..."
+  # Build clangd static libraries first
+  ninja -C /work/build/android/${ABI}-api${API_LEVEL} -j${COMPILE_JOBS} clangDaemon clangdSupport clangdMain clangDaemonTweaks || {
+    echo "[w] clangd Android build failed, retrying with reduced parallelism..."
+    ninja -C /work/build/android/${ABI}-api${API_LEVEL} -j1 clangDaemon clangdSupport clangdMain clangDaemonTweaks || true
+  }
+  
+  # Create a wrapper shared library that exports clangd_main
+  # This allows us to dlopen and call clangd from Android
+  CLANGD_WRAPPER_DIR="/work/build/android/${ABI}-api${API_LEVEL}/clangd-wrapper"
+  mkdir -p "${CLANGD_WRAPPER_DIR}"
+  
+  cat > "${CLANGD_WRAPPER_DIR}/clangd_wrapper.cpp" << 'CLANGD_WRAPPER_EOF'
+// clangd wrapper for Android - exports clangd_main as a shared library entry point
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <unistd.h>
+
+// Forward declaration of clangd's main function
+namespace clang {
+namespace clangd {
+int clangdMain(int argc, char *argv[]);
+}
+}
+
+extern "C" {
+
+// Entry point for dlopen/dlsym
+// Returns: exit code from clangd
+// Note: stdin/stdout should be redirected before calling this
+__attribute__((visibility("default")))
+int clangd_main(int argc, char** argv) {
+    return clang::clangd::clangdMain(argc, argv);
+}
+
+// Simplified entry with default arguments
+__attribute__((visibility("default")))
+int clangd_run() {
+    const char* default_args[] = {
+        "clangd",
+        "--background-index=false",
+        "--clang-tidy=false",
+        "--completion-style=detailed",
+        "--pch-storage=memory",
+        "--log=error",
+        nullptr
+    };
+    int argc = 0;
+    while (default_args[argc]) argc++;
+    return clang::clangd::clangdMain(argc, const_cast<char**>(default_args));
+}
+
+} // extern "C"
+CLANGD_WRAPPER_EOF
+
+  # Compile the wrapper
+  ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ \
+    --target=${TRIPLE}${API_LEVEL} \
+    -std=c++17 \
+    -fPIC \
+    -shared \
+    -femulated-tls \
+    -I/work/src/llvm-project/clang-tools-extra/clangd \
+    -I/work/src/llvm-project/clang-tools-extra/clangd/tool \
+    -I/work/src/llvm-project/clang/include \
+    -I/work/src/llvm-project/llvm/include \
+    -I/work/build/android/${ABI}-api${API_LEVEL}/include \
+    -I/work/build/android/${ABI}-api${API_LEVEL}/tools/clang/include \
+    -o "${CLANGD_WRAPPER_DIR}/libclangd.so" \
+    "${CLANGD_WRAPPER_DIR}/clangd_wrapper.cpp" \
+    -L/work/build/android/${ABI}-api${API_LEVEL}/lib \
+    -Wl,--whole-archive \
+    -lclangdMain \
+    -lclangDaemon \
+    -lclangDaemonTweaks \
+    -lclangdSupport \
+    -Wl,--no-whole-archive \
+    -lclang-cpp \
+    -lLLVM \
+    -lc++_shared \
+    -landroid \
+    -llog \
+    || echo "[w] Failed to build libclangd.so wrapper"
+  
+  if [ -f "${CLANGD_WRAPPER_DIR}/libclangd.so" ]; then
+    cp -af "${CLANGD_WRAPPER_DIR}/libclangd.so" /hostout/${ABI}/libs/${ABI}/
+    cp -af "${CLANGD_WRAPPER_DIR}/libclangd.so" /hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/runtime/
+    echo "[i] libclangd.so built successfully for Android"
+  else
+    echo "[w] libclangd.so not found after build attempt"
+  fi
+fi
 
 # Clean destination to avoid duplicate/readonly collisions on host mounts
 rm -rf /hostout/${ABI}/libs/${ABI} /hostout/${ABI}/sysroot /hostout/${ABI}/include || true
 mkdir -p /hostout/${ABI}/libs/${ABI} /hostout/${ABI}/sysroot/usr/include /hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/${API_LEVEL}
 mkdir -p /hostout/${ABI}/include/clang-c /hostout/${ABI}/include/clang /hostout/${ABI}/include/llvm /hostout/${ABI}/include/lld
-mkdir -p /hostout/${ABI}/tools/bin || true
 cp -af /work/build/android/${ABI}-api${API_LEVEL}/lib/libclang-cpp.so* /hostout/${ABI}/libs/${ABI}/ || true
+cp -af /work/build/android/${ABI}-api${API_LEVEL}/lib/libclang.so* /hostout/${ABI}/libs/${ABI}/ || true
 cp -af /work/build/android/${ABI}-api${API_LEVEL}/lib/libLLVM*.so*    /hostout/${ABI}/libs/${ABI}/ || true
 # Export LLD static libraries for in-process linking (build-time only)
 if [ -f /work/build/android/${ABI}-api${API_LEVEL}/lib/liblldCommon.a ]; then
@@ -155,6 +289,7 @@ fi
 # Also place runtime copies under sysroot for on-device loading (avoid jniLibs dependency)
 mkdir -p /hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/runtime || true
 cp -af /work/build/android/${ABI}-api${API_LEVEL}/lib/libclang-cpp.so* /hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/runtime/ || true
+cp -af /work/build/android/${ABI}-api${API_LEVEL}/lib/libclang.so* /hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/runtime/ || true
 cp -af /work/build/android/${ABI}-api${API_LEVEL}/lib/libLLVM*.so*    /hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/runtime/ || true
 if compgen -G "/work/build/android/${ABI}-api${API_LEVEL}/lib/liblld*.so*" > /dev/null; then
   cp -af /work/build/android/${ABI}-api${API_LEVEL}/lib/liblld*.so* /hostout/${ABI}/libs/${ABI}/
@@ -293,7 +428,7 @@ foreach ($currentAbi in $abiList) {
   Write-Info "Building LLVM artifacts for ABI: $currentAbi"
   $outDirHost = Join-Path $OutputPath "${currentAbi}"
   New-Item -ItemType Directory -Force -Path $outDirHost | Out-Null
-  $assign = "ABI='$currentAbi'; API_LEVEL='$ApiLevel'; LLVM_TAG='$LlvmTag'; NDK_VERSION='$NdkVersion'; MODE='$Mode'; ANDROID_BUILD_TYPE='$AndroidBuildType'; ENABLE_ASSERTIONS='$EnableAssertions'; BUILD_CLANGD_HOST='$BuildClangdHost'; BUILD_LLVM_DEBUG_TOOLS_HOST='$BuildLlvmDebugToolsHost';"
+  $assign = "ABI='$currentAbi'; API_LEVEL='$ApiLevel'; LLVM_TAG='$LlvmTag'; NDK_VERSION='$NdkVersion'; MODE='$Mode'; ANDROID_BUILD_TYPE='$AndroidBuildType'; ENABLE_ASSERTIONS='$EnableAssertions'; BUILD_CLANGD_ANDROID='$BuildClangdAndroid'; UPDATE_SOURCE='$UpdateSource'; FORCE_CLONE='$ForceClone'; BUILD_JOBS='$BuildJobs'; LINK_JOBS='$LinkJobs';"
   $payload = "$assign`n$sessionScript"
   $payload = $payload -replace "`r",""
   $containerTemplate = @'

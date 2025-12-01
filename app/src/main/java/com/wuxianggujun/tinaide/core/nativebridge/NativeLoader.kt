@@ -92,15 +92,24 @@ object NativeLoader {
                 abi.contains("x86_64", true) -> "x86_64-linux-android"
                 else -> "aarch64-linux-android"
             }
-            val clangPath = java.io.File(base, "usr/lib/$triple/runtime/libclang-cpp.so")
-            if (clangPath.exists()) {
-                loadAbsoluteOnce(clangPath.absolutePath)
+            // 加载 libclang-cpp.so (Clang C++ API)
+            val clangCppPath = java.io.File(base, "usr/lib/$triple/runtime/libclang-cpp.so")
+            if (clangCppPath.exists()) {
+                loadAbsoluteOnce(clangCppPath.absolutePath)
                 Log.i("NativeLoader", "Loaded clang-cpp from sysroot runtime")
             } else {
-                throw UnsatisfiedLinkError("clang-cpp not found in sysroot runtime: ${clangPath.absolutePath}")
+                Log.w("NativeLoader", "clang-cpp not found: ${clangCppPath.absolutePath}")
+            }
+            // 加载 libclang.so (libclang C API，提供 clang_createIndex 等符号)
+            val libclangPath = java.io.File(base, "usr/lib/$triple/runtime/libclang.so")
+            if (libclangPath.exists()) {
+                loadAbsoluteOnce(libclangPath.absolutePath)
+                Log.i("NativeLoader", "Loaded libclang from sysroot runtime")
+            } else {
+                Log.w("NativeLoader", "libclang not found: ${libclangPath.absolutePath}")
             }
         } catch (t: Throwable) {
-            Log.w("NativeLoader", "Failed to load clang-cpp: ${t.message}")
+            Log.w("NativeLoader", "Failed to load clang libraries: ${t.message}")
         }
         try {
             loadLibraryOnce("native_compiler")

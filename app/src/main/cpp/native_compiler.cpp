@@ -15,6 +15,10 @@
 #include <cstring>
 #include <typeinfo>
 #include <cxxabi.h>
+#include <pthread.h>
+#include <fcntl.h>
+#include <atomic>
+#include <mutex>
 
 #if LLVM_HEADERS_AVAILABLE
 // Clang/LLVM headers for in-process compilation
@@ -29,6 +33,107 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/VirtualFileSystem.h"
 #include "llvm/Support/raw_ostream.h"
+// libclang C API for semantic highlighting
+#include "clang-c/Index.h"
+#endif
+
+// ---- Semantic Token Types for syntax highlighting ----
+enum SemanticTokenType {
+    TOKEN_KEYWORD = 0,
+    TOKEN_TYPE = 1,
+    TOKEN_FUNCTION = 2,
+    TOKEN_VARIABLE = 3,
+    TOKEN_PARAMETER = 4,
+    TOKEN_MEMBER = 5,
+    TOKEN_MACRO = 6,
+    TOKEN_STRING = 7,
+    TOKEN_NUMBER = 8,
+    TOKEN_COMMENT = 9,
+    TOKEN_OPERATOR = 10,
+    TOKEN_NAMESPACE = 11,
+    TOKEN_CLASS = 12,
+    TOKEN_ENUM = 13,
+    TOKEN_ENUM_MEMBER = 14,
+};
+
+#if LLVM_HEADERS_AVAILABLE
+// Map CXCursorKind to SemanticTokenType
+static int cursorKindToTokenType(CXCursorKind kind) {
+    switch (kind) {
+        // 函数相关
+        case CXCursor_FunctionDecl:
+        case CXCursor_CXXMethod:
+        case CXCursor_Constructor:
+        case CXCursor_Destructor:
+        case CXCursor_FunctionTemplate:
+        case CXCursor_CallExpr:
+        case CXCursor_OverloadedDeclRef:  // 重载函数引用
+            return TOKEN_FUNCTION;
+        
+        // 变量相关
+        case CXCursor_VarDecl:
+        case CXCursor_DeclRefExpr:  // 变量引用表达式
+            return TOKEN_VARIABLE;
+        
+        // 参数
+        case CXCursor_ParmDecl:
+            return TOKEN_PARAMETER;
+        
+        // 成员变量
+        case CXCursor_FieldDecl:
+        case CXCursor_MemberRef:
+        case CXCursor_MemberRefExpr:
+            return TOKEN_MEMBER;
+        
+        // 类/结构体
+        case CXCursor_ClassDecl:
+        case CXCursor_StructDecl:
+        case CXCursor_UnionDecl:
+        case CXCursor_ClassTemplate:
+        case CXCursor_ClassTemplatePartialSpecialization:
+        case CXCursor_CXXBaseSpecifier:  // 基类说明符
+            return TOKEN_CLASS;
+        
+        // 枚举
+        case CXCursor_EnumDecl:
+            return TOKEN_ENUM;
+        case CXCursor_EnumConstantDecl:
+            return TOKEN_ENUM_MEMBER;
+        
+        // 命名空间
+        case CXCursor_Namespace:
+        case CXCursor_NamespaceAlias:
+        case CXCursor_NamespaceRef:
+        case CXCursor_UsingDirective:  // using namespace
+        case CXCursor_UsingDeclaration:  // using 声明
+            return TOKEN_NAMESPACE;
+        
+        // 类型相关
+        case CXCursor_TypedefDecl:
+        case CXCursor_TypeAliasDecl:
+        case CXCursor_TypeRef:
+        case CXCursor_TemplateTypeParameter:
+        case CXCursor_TemplateRef:  // 模板引用
+        case CXCursor_NonTypeTemplateParameter:  // 非类型模板参数
+        case CXCursor_TemplateTemplateParameter:  // 模板模板参数
+            return TOKEN_TYPE;
+        
+        // 宏
+        case CXCursor_MacroDefinition:
+        case CXCursor_MacroExpansion:
+        case CXCursor_MacroInstantiation:
+        case CXCursor_InclusionDirective:  // #include 指令
+            return TOKEN_MACRO;
+        
+        // 标签（goto 标签）
+        case CXCursor_LabelStmt:
+        case CXCursor_LabelRef:
+            return TOKEN_VARIABLE;  // 标签当作变量处理
+        
+        default:
+            return -1;  // Unknown type
+    }
+}
 #endif
 
 // Forward declaration to avoid depending on LLD headers at build time.
@@ -936,4 +1041,546 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated
     std::ostringstream oss; oss << "RC=" << rc << "\n";
     if (!out.empty()) oss << out;
     return env->NewStringUTF(oss.str().c_str());
+}
+
+// ---- Semantic Highlighting: getSemanticTokens ----
+// Returns JSON array of semantic tokens: [{"o":offset,"l":length,"t":type}, ...]
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_getSemanticTokens(
+        JNIEnv* env, jclass /*clazz*/, jstring jSysroot, jstring jSrcPath,
+        jstring jTarget, jboolean jIsCxx, jobjectArray jIncludeDirs) {
+#if !LLVM_HEADERS_AVAILABLE
+    // libclang not available
+    return env->NewStringUTF("[]");
+#else
+    auto toStr = [&](jstring s) {
+        const char* c = s ? env->GetStringUTFChars(s, nullptr) : nullptr;
+        std::string o = c ? std::string(c) : std::string();
+        if (c) env->ReleaseStringUTFChars(s, c);
+        return o;
+    };
+
+    const std::string sysroot = toStr(jSysroot);
+    const std::string srcPath = toStr(jSrcPath);
+    const std::string target = toStr(jTarget);
+    const bool isCxx = jIsCxx == JNI_TRUE;
+
+    // Check if source file exists
+    struct stat st;
+    if (stat(srcPath.c_str(), &st) != 0 || !S_ISREG(st.st_mode)) {
+        LOGW("getSemanticTokens: source file not found: %s", srcPath.c_str());
+        return env->NewStringUTF("[]");
+    }
+    const unsigned fileSize = static_cast<unsigned>(st.st_size);
+
+    // Build command line arguments for libclang
+    std::vector<std::string> argStrings;
+    auto push = [&](const char* s) { argStrings.emplace_back(s); };
+    auto push2 = [&](const char* a, const std::string& b) { argStrings.emplace_back(a); argStrings.emplace_back(b); };
+
+    push("-x");
+    push(isCxx ? "c++" : "c");
+    if (isCxx) push("-std=c++17");
+    if (!target.empty()) {
+        push2("-target", target);
+    }
+    push("-DANDROID");
+    push("-D__ANDROID__");
+
+    if (!sysroot.empty()) {
+        push2("--sysroot", sysroot);
+        push2("-isystem", sysroot + "/usr/include");
+        // Derive triple base for arch-specific includes
+        std::string tripleBase = target;
+        while (!tripleBase.empty() && isdigit(static_cast<unsigned char>(tripleBase.back()))) {
+            tripleBase.pop_back();
+        }
+        if (!tripleBase.empty()) {
+            push2("-isystem", sysroot + "/usr/include/" + tripleBase);
+        }
+        push2("-I", sysroot + "/usr/include/c++/v1");
+        push2("-resource-dir", sysroot + "/lib/clang/17");
+    }
+
+    // Add user-specified include directories
+    if (jIncludeDirs != nullptr) {
+        jsize n = env->GetArrayLength(jIncludeDirs);
+        for (jsize i = 0; i < n; ++i) {
+            jstring s = (jstring)env->GetObjectArrayElement(jIncludeDirs, i);
+            std::string dir = toStr(s);
+            if (!dir.empty()) {
+                push2("-I", dir);
+            }
+            if (s) env->DeleteLocalRef(s);
+        }
+    }
+
+    // Convert to const char* array
+    std::vector<const char*> args;
+    args.reserve(argStrings.size());
+    for (const auto& s : argStrings) {
+        args.push_back(s.c_str());
+    }
+
+    // Create libclang index
+    CXIndex index = clang_createIndex(0, 0);
+    if (!index) {
+        LOGE("getSemanticTokens: clang_createIndex failed");
+        return env->NewStringUTF("[]");
+    }
+
+    // Parse the translation unit
+    CXTranslationUnit tu = clang_parseTranslationUnit(
+        index,
+        srcPath.c_str(),
+        args.data(),
+        static_cast<int>(args.size()),
+        nullptr, 0,
+        CXTranslationUnit_DetailedPreprocessingRecord | CXTranslationUnit_KeepGoing
+    );
+
+    if (!tu) {
+        LOGW("getSemanticTokens: clang_parseTranslationUnit failed for %s", srcPath.c_str());
+        clang_disposeIndex(index);
+        return env->NewStringUTF("[]");
+    }
+
+    // Get file handle and source range
+    CXFile file = clang_getFile(tu, srcPath.c_str());
+    if (!file) {
+        LOGW("getSemanticTokens: clang_getFile failed");
+        clang_disposeTranslationUnit(tu);
+        clang_disposeIndex(index);
+        return env->NewStringUTF("[]");
+    }
+
+    CXSourceLocation beginLoc = clang_getLocationForOffset(tu, file, 0);
+    CXSourceLocation endLoc = clang_getLocationForOffset(tu, file, fileSize);
+    CXSourceRange range = clang_getRange(beginLoc, endLoc);
+
+    // Tokenize
+    CXToken* tokens = nullptr;
+    unsigned numTokens = 0;
+    clang_tokenize(tu, range, &tokens, &numTokens);
+
+    // Build JSON result
+    std::ostringstream json;
+    json << "[";
+    bool first = true;
+
+    for (unsigned i = 0; i < numTokens; ++i) {
+        CXToken& token = tokens[i];
+        CXTokenKind tokenKind = clang_getTokenKind(token);
+
+        // Get token location and spelling
+        CXSourceLocation loc = clang_getTokenLocation(tu, token);
+        unsigned offset = 0, line = 0, column = 0;
+        CXFile tokenFile;
+        clang_getSpellingLocation(loc, &tokenFile, &line, &column, &offset);
+
+        CXString spelling = clang_getTokenSpelling(tu, token);
+        const char* sp = clang_getCString(spelling);
+        unsigned length = sp ? static_cast<unsigned>(strlen(sp)) : 0;
+
+        int type = -1;
+
+        if (tokenKind == CXToken_Keyword) {
+            type = TOKEN_KEYWORD;
+        } else if (tokenKind == CXToken_Comment) {
+            type = TOKEN_COMMENT;
+        } else if (tokenKind == CXToken_Literal) {
+            // Distinguish string vs number
+            if (sp && (sp[0] == '"' || sp[0] == '\'' || sp[0] == 'L' || sp[0] == 'u' || sp[0] == 'U' || sp[0] == 'R')) {
+                type = TOKEN_STRING;
+            } else {
+                type = TOKEN_NUMBER;
+            }
+        } else if (tokenKind == CXToken_Punctuation) {
+            type = TOKEN_OPERATOR;
+        } else if (tokenKind == CXToken_Identifier) {
+            // Get semantic information via cursor
+            CXCursor cursor = clang_getCursor(tu, loc);
+            CXCursor refCursor = clang_getCursorReferenced(cursor);
+            
+            if (!clang_Cursor_isNull(refCursor)) {
+                CXCursorKind refKind = clang_getCursorKind(refCursor);
+                type = cursorKindToTokenType(refKind);
+            }
+            
+            // If still unknown, try the cursor itself
+            if (type < 0) {
+                CXCursorKind cursorKind = clang_getCursorKind(cursor);
+                type = cursorKindToTokenType(cursorKind);
+            }
+            
+            // Default identifiers to variable
+            if (type < 0) {
+                type = TOKEN_VARIABLE;
+            }
+        }
+
+        clang_disposeString(spelling);
+
+        // Only emit tokens with valid types
+        if (type >= 0 && length > 0) {
+            if (!first) json << ",";
+            first = false;
+            json << "{\"o\":" << offset << ",\"l\":" << length << ",\"t\":" << type << "}";
+        }
+    }
+
+    json << "]";
+
+    // Cleanup
+    clang_disposeTokens(tu, tokens, numTokens);
+    clang_disposeTranslationUnit(tu);
+    clang_disposeIndex(index);
+
+    return env->NewStringUTF(json.str().c_str());
+#endif
+}
+
+
+// ============================================================================
+// ---- Clangd LSP Server Support (via dlopen/dlsym) ----
+// ============================================================================
+// This section provides JNI functions to start clangd as a shared library
+// and communicate with it via pipes for LSP protocol.
+
+// Global state for clangd server
+namespace {
+    struct ClangdState {
+        void* handle = nullptr;           // dlopen handle for libclangd.so
+        pthread_t thread;                 // Thread running clangd
+        std::atomic<bool> running{false}; // Is clangd running?
+        int stdin_pipe[2] = {-1, -1};     // Pipe for stdin (write end for Java)
+        int stdout_pipe[2] = {-1, -1};    // Pipe for stdout (read end for Java)
+        std::mutex mutex;                 // Protect state changes
+        std::string error;                // Last error message
+        
+        // Function pointer types for clangd entry points
+        using ClangdMainFn = int (*)(int argc, char** argv);
+        using ClangdRunFn = int (*)();
+        
+        ClangdMainFn clangd_main = nullptr;
+        ClangdRunFn clangd_run = nullptr;
+    };
+    
+    ClangdState g_clangd;
+    
+    // Thread function to run clangd
+    void* clangd_thread_func(void* arg) {
+        ClangdState* state = static_cast<ClangdState*>(arg);
+        
+        // Redirect stdin/stdout to pipes
+        int saved_stdin = dup(STDIN_FILENO);
+        int saved_stdout = dup(STDOUT_FILENO);
+        
+        dup2(state->stdin_pipe[0], STDIN_FILENO);   // Read from stdin pipe
+        dup2(state->stdout_pipe[1], STDOUT_FILENO); // Write to stdout pipe
+        
+        // Close unused pipe ends in this thread
+        close(state->stdin_pipe[1]);  // Close write end of stdin pipe
+        close(state->stdout_pipe[0]); // Close read end of stdout pipe
+        
+        LOGI("clangd_thread: starting clangd");
+        
+        int rc = -1;
+        if (state->clangd_run) {
+            // Use simplified entry with default args
+            rc = state->clangd_run();
+        } else if (state->clangd_main) {
+            // Use main entry with custom args
+            const char* argv[] = {
+                "clangd",
+                "--background-index=false",
+                "--clang-tidy=false",
+                "--completion-style=detailed",
+                "--pch-storage=memory",
+                "--log=error",
+                nullptr
+            };
+            int argc = 0;
+            while (argv[argc]) argc++;
+            rc = state->clangd_main(argc, const_cast<char**>(argv));
+        }
+        
+        LOGI("clangd_thread: clangd exited with rc=%d", rc);
+        
+        // Restore stdin/stdout
+        dup2(saved_stdin, STDIN_FILENO);
+        dup2(saved_stdout, STDOUT_FILENO);
+        close(saved_stdin);
+        close(saved_stdout);
+        
+        state->running.store(false);
+        return reinterpret_cast<void*>(static_cast<intptr_t>(rc));
+    }
+}
+
+// Start clangd server from shared library
+// Returns: empty string on success, error message on failure
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_startClangd(
+        JNIEnv* env, jclass /*clazz*/, jstring jLibPath) {
+    std::lock_guard<std::mutex> lock(g_clangd.mutex);
+    
+    if (g_clangd.running.load()) {
+        return env->NewStringUTF("clangd is already running");
+    }
+    
+    std::string libPath = jstringToUtf8(env, jLibPath);
+    if (libPath.empty()) {
+        return env->NewStringUTF("libclangd.so path is empty");
+    }
+    
+    // Check if library exists
+    struct stat st;
+    if (stat(libPath.c_str(), &st) != 0) {
+        std::string err = "libclangd.so not found: " + libPath;
+        return env->NewStringUTF(err.c_str());
+    }
+    
+    // Create pipes
+    if (pipe(g_clangd.stdin_pipe) != 0) {
+        std::string err = std::string("Failed to create stdin pipe: ") + strerror(errno);
+        return env->NewStringUTF(err.c_str());
+    }
+    if (pipe(g_clangd.stdout_pipe) != 0) {
+        close(g_clangd.stdin_pipe[0]);
+        close(g_clangd.stdin_pipe[1]);
+        std::string err = std::string("Failed to create stdout pipe: ") + strerror(errno);
+        return env->NewStringUTF(err.c_str());
+    }
+    
+    // Set non-blocking on the Java-facing ends
+    fcntl(g_clangd.stdin_pipe[1], F_SETFL, O_NONBLOCK);  // Write end for Java
+    fcntl(g_clangd.stdout_pipe[0], F_SETFL, O_NONBLOCK); // Read end for Java
+    
+    // Load libclangd.so
+    g_clangd.handle = dlopen(libPath.c_str(), RTLD_NOW | RTLD_LOCAL);
+    if (!g_clangd.handle) {
+        const char* err = dlerror();
+        std::string errMsg = std::string("dlopen failed: ") + (err ? err : "unknown");
+        close(g_clangd.stdin_pipe[0]); close(g_clangd.stdin_pipe[1]);
+        close(g_clangd.stdout_pipe[0]); close(g_clangd.stdout_pipe[1]);
+        return env->NewStringUTF(errMsg.c_str());
+    }
+    
+    // Find entry points
+    g_clangd.clangd_main = reinterpret_cast<ClangdState::ClangdMainFn>(
+        dlsym(g_clangd.handle, "clangd_main"));
+    g_clangd.clangd_run = reinterpret_cast<ClangdState::ClangdRunFn>(
+        dlsym(g_clangd.handle, "clangd_run"));
+    
+    if (!g_clangd.clangd_main && !g_clangd.clangd_run) {
+        const char* err = dlerror();
+        std::string errMsg = std::string("dlsym failed (no clangd_main or clangd_run): ") + (err ? err : "unknown");
+        dlclose(g_clangd.handle);
+        g_clangd.handle = nullptr;
+        close(g_clangd.stdin_pipe[0]); close(g_clangd.stdin_pipe[1]);
+        close(g_clangd.stdout_pipe[0]); close(g_clangd.stdout_pipe[1]);
+        return env->NewStringUTF(errMsg.c_str());
+    }
+    
+    LOGI("startClangd: loaded libclangd.so, clangd_main=%p, clangd_run=%p",
+         (void*)g_clangd.clangd_main, (void*)g_clangd.clangd_run);
+    
+    // Start clangd thread
+    g_clangd.running.store(true);
+    int rc = pthread_create(&g_clangd.thread, nullptr, clangd_thread_func, &g_clangd);
+    if (rc != 0) {
+        g_clangd.running.store(false);
+        dlclose(g_clangd.handle);
+        g_clangd.handle = nullptr;
+        close(g_clangd.stdin_pipe[0]); close(g_clangd.stdin_pipe[1]);
+        close(g_clangd.stdout_pipe[0]); close(g_clangd.stdout_pipe[1]);
+        std::string err = std::string("pthread_create failed: ") + strerror(rc);
+        return env->NewStringUTF(err.c_str());
+    }
+    
+    LOGI("startClangd: clangd thread started");
+    return env->NewStringUTF("");  // Success
+}
+
+// Stop clangd server
+extern "C" JNIEXPORT void JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_stopClangd(
+        JNIEnv* /*env*/, jclass /*clazz*/) {
+    std::lock_guard<std::mutex> lock(g_clangd.mutex);
+    
+    if (!g_clangd.running.load()) {
+        LOGI("stopClangd: clangd is not running");
+        return;
+    }
+    
+    LOGI("stopClangd: stopping clangd");
+    
+    // Close pipes to signal EOF to clangd
+    if (g_clangd.stdin_pipe[1] >= 0) {
+        close(g_clangd.stdin_pipe[1]);
+        g_clangd.stdin_pipe[1] = -1;
+    }
+    
+    // Wait for thread to finish (with timeout)
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 5;  // 5 second timeout
+    
+    int rc = pthread_timedjoin_np(g_clangd.thread, nullptr, &ts);
+    if (rc == ETIMEDOUT) {
+        LOGW("stopClangd: thread join timed out, cancelling");
+        pthread_cancel(g_clangd.thread);
+        pthread_join(g_clangd.thread, nullptr);
+    }
+    
+    // Close remaining pipes
+    if (g_clangd.stdin_pipe[0] >= 0) { close(g_clangd.stdin_pipe[0]); g_clangd.stdin_pipe[0] = -1; }
+    if (g_clangd.stdout_pipe[0] >= 0) { close(g_clangd.stdout_pipe[0]); g_clangd.stdout_pipe[0] = -1; }
+    if (g_clangd.stdout_pipe[1] >= 0) { close(g_clangd.stdout_pipe[1]); g_clangd.stdout_pipe[1] = -1; }
+    
+    // Unload library
+    if (g_clangd.handle) {
+        dlclose(g_clangd.handle);
+        g_clangd.handle = nullptr;
+    }
+    
+    g_clangd.clangd_main = nullptr;
+    g_clangd.clangd_run = nullptr;
+    g_clangd.running.store(false);
+    
+    LOGI("stopClangd: clangd stopped");
+}
+
+// Check if clangd is running
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_isClangdRunning(
+        JNIEnv* /*env*/, jclass /*clazz*/) {
+    return g_clangd.running.load() ? JNI_TRUE : JNI_FALSE;
+}
+
+// Get file descriptor for writing to clangd stdin
+// Returns: fd >= 0 on success, -1 if not running
+extern "C" JNIEXPORT jint JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_getClangdStdinFd(
+        JNIEnv* /*env*/, jclass /*clazz*/) {
+    if (!g_clangd.running.load()) {
+        return -1;
+    }
+    return g_clangd.stdin_pipe[1];  // Write end
+}
+
+// Get file descriptor for reading from clangd stdout
+// Returns: fd >= 0 on success, -1 if not running
+extern "C" JNIEXPORT jint JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_getClangdStdoutFd(
+        JNIEnv* /*env*/, jclass /*clazz*/) {
+    if (!g_clangd.running.load()) {
+        return -1;
+    }
+    return g_clangd.stdout_pipe[0];  // Read end
+}
+
+// Write data to clangd stdin
+// Returns: number of bytes written, or -1 on error
+extern "C" JNIEXPORT jint JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_writeToClangd(
+        JNIEnv* env, jclass /*clazz*/, jbyteArray jData) {
+    if (!g_clangd.running.load() || g_clangd.stdin_pipe[1] < 0) {
+        return -1;
+    }
+    
+    jsize len = env->GetArrayLength(jData);
+    if (len <= 0) return 0;
+    
+    jbyte* data = env->GetByteArrayElements(jData, nullptr);
+    if (!data) return -1;
+    
+    ssize_t written = write(g_clangd.stdin_pipe[1], data, len);
+    env->ReleaseByteArrayElements(jData, data, JNI_ABORT);
+    
+    if (written < 0) {
+        LOGW("writeToClangd: write failed: %s", strerror(errno));
+        return -1;
+    }
+    
+    return static_cast<jint>(written);
+}
+
+// Read data from clangd stdout
+// Returns: byte array with data, or null if no data available or error
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_readFromClangd(
+        JNIEnv* env, jclass /*clazz*/, jint maxBytes) {
+    if (!g_clangd.running.load() || g_clangd.stdout_pipe[0] < 0) {
+        return nullptr;
+    }
+    
+    if (maxBytes <= 0) maxBytes = 8192;
+    
+    // Check if data is available (non-blocking)
+    struct pollfd pfd;
+    pfd.fd = g_clangd.stdout_pipe[0];
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+    
+    int pr = poll(&pfd, 1, 0);  // Non-blocking poll
+    if (pr <= 0 || !(pfd.revents & POLLIN)) {
+        return nullptr;  // No data available
+    }
+    
+    std::vector<char> buf(maxBytes);
+    ssize_t n = read(g_clangd.stdout_pipe[0], buf.data(), buf.size());
+    
+    if (n <= 0) {
+        if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+            LOGW("readFromClangd: read failed: %s", strerror(errno));
+        }
+        return nullptr;
+    }
+    
+    jbyteArray result = env->NewByteArray(static_cast<jsize>(n));
+    if (result) {
+        env->SetByteArrayRegion(result, 0, static_cast<jsize>(n), 
+                                reinterpret_cast<jbyte*>(buf.data()));
+    }
+    return result;
+}
+
+// Read data from clangd stdout with timeout
+// Returns: byte array with data, or null if timeout or error
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_readFromClangdWithTimeout(
+        JNIEnv* env, jclass /*clazz*/, jint maxBytes, jint timeoutMs) {
+    if (!g_clangd.running.load() || g_clangd.stdout_pipe[0] < 0) {
+        return nullptr;
+    }
+    
+    if (maxBytes <= 0) maxBytes = 8192;
+    if (timeoutMs < 0) timeoutMs = 0;
+    
+    // Wait for data with timeout
+    struct pollfd pfd;
+    pfd.fd = g_clangd.stdout_pipe[0];
+    pfd.events = POLLIN;
+    pfd.revents = 0;
+    
+    int pr = poll(&pfd, 1, timeoutMs);
+    if (pr <= 0 || !(pfd.revents & POLLIN)) {
+        return nullptr;  // Timeout or error
+    }
+    
+    std::vector<char> buf(maxBytes);
+    ssize_t n = read(g_clangd.stdout_pipe[0], buf.data(), buf.size());
+    
+    if (n <= 0) {
+        return nullptr;
+    }
+    
+    jbyteArray result = env->NewByteArray(static_cast<jsize>(n));
+    if (result) {
+        env->SetByteArrayRegion(result, 0, static_cast<jsize>(n), 
+                                reinterpret_cast<jbyte*>(buf.data()));
+    }
+    return result;
 }
