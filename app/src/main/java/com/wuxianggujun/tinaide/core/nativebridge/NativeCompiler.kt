@@ -77,4 +77,77 @@ object NativeCompiler {
         symbol: String,
         timeoutMs: Int
     ): String
+
+    /**
+     * 获取语义 Token 列表，用于语法高亮
+     * @param sysroot sysroot 路径
+     * @param srcPath 源文件路径
+     * @param target 目标三元组 (如 aarch64-linux-android28)
+     * @param isCxx 是否为 C++ 文件
+     * @param includeDirs 额外的 include 目录
+     * @return JSON 格式的 Token 列表: [{"o":offset,"l":length,"t":type}, ...]
+     */
+    external fun getSemanticTokens(
+        sysroot: String,
+        srcPath: String,
+        target: String,
+        isCxx: Boolean,
+        includeDirs: Array<String>
+    ): String
+
+    // ============================================================================
+    // Clangd LSP Server Support
+    // ============================================================================
+
+    /**
+     * 启动 clangd 服务器（从共享库加载）
+     * @param libPath libclangd.so 的完整路径
+     * @return 空字符串表示成功，否则返回错误信息
+     */
+    external fun startClangd(libPath: String): String
+
+    /**
+     * 停止 clangd 服务器
+     */
+    external fun stopClangd()
+
+    /**
+     * 检查 clangd 是否正在运行
+     * @return true 如果 clangd 正在运行
+     */
+    external fun isClangdRunning(): Boolean
+
+    /**
+     * 获取 clangd stdin 的文件描述符（用于写入）
+     * @return 文件描述符，如果 clangd 未运行则返回 -1
+     */
+    external fun getClangdStdinFd(): Int
+
+    /**
+     * 获取 clangd stdout 的文件描述符（用于读取）
+     * @return 文件描述符，如果 clangd 未运行则返回 -1
+     */
+    external fun getClangdStdoutFd(): Int
+
+    /**
+     * 向 clangd 写入数据
+     * @param data 要写入的字节数组
+     * @return 写入的字节数，错误时返回 -1
+     */
+    external fun writeToClangd(data: ByteArray): Int
+
+    /**
+     * 从 clangd 读取数据（非阻塞）
+     * @param maxBytes 最大读取字节数
+     * @return 读取的数据，如果没有数据可用则返回 null
+     */
+    external fun readFromClangd(maxBytes: Int): ByteArray?
+
+    /**
+     * 从 clangd 读取数据（带超时）
+     * @param maxBytes 最大读取字节数
+     * @param timeoutMs 超时时间（毫秒）
+     * @return 读取的数据，如果超时或错误则返回 null
+     */
+    external fun readFromClangdWithTimeout(maxBytes: Int, timeoutMs: Int): ByteArray?
 }

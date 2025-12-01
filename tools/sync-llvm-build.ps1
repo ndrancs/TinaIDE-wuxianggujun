@@ -179,7 +179,7 @@ if (Test-Path $srcLibDir) {
       $prebuiltLibs = Join-Path $abiLibRoot $currentAbi
       if (Test-Path $prebuiltLibs) {
         New-Item -ItemType Directory -Force -Path $dstRuntime | Out-Null
-        $need = @('libclang-cpp.so')
+        $need = @('libclang-cpp.so', 'libclang.so')
         $llvmSo = Get-ChildItem -LiteralPath $prebuiltLibs -Filter 'libLLVM-*.so' -File -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($llvmSo) { $need += $llvmSo.Name } else { Write-Host "[w] libLLVM-*.so not found under $prebuiltLibs" -ForegroundColor Yellow }
         # Do NOT include any LLD shared libs in sysroot runtime (LLD linked statically at build time)

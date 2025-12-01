@@ -128,6 +128,7 @@ dependencies {
     // SoraEditor components
     implementation(project(":sora-editor:editor"))
     implementation(project(":sora-editor:language-textmate"))
+    implementation(project(":sora-editor:editor-lsp"))
 
     implementation(project(":treeview"))
 
