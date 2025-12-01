@@ -8,7 +8,7 @@ Param(
   [ValidateSet('none','zip','mirror')]
   [string]$SysrootMode = 'zip',
   [bool]$CopyLibcxxToJni = $false,  # 使用 sysroot 中的 libc++_shared.so，避免重复
-  [bool]$CopyLlvmToJni   = $false,
+  [bool]$CopyLlvmToJni   = $false
 )
 
 $validAbis = @('arm64-v8a','x86_64')
