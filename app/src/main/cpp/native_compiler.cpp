@@ -229,9 +229,10 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_startClangd(
-        JNIEnv* env, jclass /*clazz*/, jstring jLibPath) {
+        JNIEnv* env, jclass /*clazz*/, jstring jLibPath, jobjectArray jArgs) {
 
     std::string libPath = utils::jstringToUtf8(env, jLibPath);
+    std::vector<std::string> extraArgs = utils::jstringArrayToVector(env, jArgs);
 
     // 创建全局 Clangd 服务器实例（如果尚未创建）
     if (!g_clangdServer) {
@@ -239,7 +240,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_startClangd(
     }
 
     // 启动服务器
-    std::string error = g_clangdServer->start(libPath);
+    std::string error = g_clangdServer->start(libPath, extraArgs);
 
     return utils::utf8ToJstring(env, error);
 }

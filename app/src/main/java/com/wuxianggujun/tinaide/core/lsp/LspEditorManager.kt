@@ -16,6 +16,11 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class LspEditorManager private constructor(private val context: Context) {
 
+    enum class BuildType(val dirName: String) {
+        Debug("debug"),
+        Release("release")
+    }
+
     companion object {
         private const val TAG = "LspEditorManager"
         
@@ -38,9 +43,11 @@ class LspEditorManager private constructor(private val context: Context) {
     
     // 文件路径 -> LspEditor 的映射
     private val editors = ConcurrentHashMap<String, LspEditor>()
+    var buildType: BuildType = BuildType.Debug
     
     // clangd 二进制文件路径
     private var clangdPath: String? = null
+    private var sysrootDir: File? = null
     
     // 是否已初始化
     private var initialized = false
@@ -58,6 +65,8 @@ class LspEditorManager private constructor(private val context: Context) {
             Log.d(TAG, "Already initialized")
             return
         }
+
+        this.sysrootDir = sysrootDir
 
         // 使用 SysrootLibraryLoader 获取正确的 runtime 库目录
         val libraryLoader = SysrootLibraryLoader.getInstance(context)
@@ -118,10 +127,12 @@ class LspEditorManager private constructor(private val context: Context) {
 
         return projects.getOrPut(projectPath) {
             Log.i(TAG, "Creating LspProject for: $projectPath")
+            val compileDir = ensureBuildDir(projectPath, buildType)
+            val serverArgs = buildServerArgs(compileDir)
             LspProject(projectPath).apply {
                 init()
-                // 添加 clangd 服务器定义
-                addServerDefinition(ClangdServerDefinition(clangdPath!!))
+                // ���� clangd ����������
+                addServerDefinition(ClangdServerDefinition(clangdPath!!, serverArgs))
             }
         }
     }
@@ -256,6 +267,23 @@ class LspEditorManager private constructor(private val context: Context) {
         Log.i(TAG, "LSP manager shutdown complete")
     }
 
+    private fun ensureBuildDir(projectPath: String, buildType: BuildType = this.buildType): File {
+        val buildRoot = File(projectPath, "build")
+        val dir = File(buildRoot, buildType.dirName)
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        return dir
+    }
+
+    fun getCompileCommandsFile(
+        projectPath: String,
+        buildType: BuildType = this.buildType
+    ): File {
+        val dir = ensureBuildDir(projectPath, buildType)
+        return File(dir, "compile_commands.json")
+    }
+
     /**
      * 生成 compile_commands.json
      * clangd 需要这个文件来理解项目的编译配置
@@ -266,59 +294,77 @@ class LspEditorManager private constructor(private val context: Context) {
         includeDirs: List<String> = emptyList(),
         defines: List<String> = emptyList(),
         isCxx: Boolean = true,
-        target: String = "aarch64-linux-android28"
+        target: String = "aarch64-linux-android28",
+        buildType: BuildType = this.buildType
     ): File {
-        val compileCommandsFile = File(projectPath, "compile_commands.json")
-        
+        val compileCommandsFile = getCompileCommandsFile(projectPath, buildType)
+        val compileDir = compileCommandsFile.parentFile
+            ?: throw IllegalStateException("compile_commands.json must reside inside a directory")
+        if (!compileDir.exists()) {
+            compileDir.mkdirs()
+        }
+        val objDir = File(compileDir, "obj")
+        if (!objDir.exists()) {
+            objDir.mkdirs()
+        }
+        val sysrootPath = sysrootDir?.absolutePath
+        val tripleBase = deriveTripleBase(target)
+        val apiLevel = deriveApiLevel(target)
+        val resolvedIncludeDirs = (includeDirs + projectPath).distinct()
+
         val commands = sourceFiles.map { sourceFile ->
             val args = mutableListOf<String>().apply {
-                add("clang${if (isCxx) "++" else ""}")
-                add("-c")
-                add(sourceFile)
-                
-                // 目标平台
+                add("clang" + if (isCxx) "++" else "")
                 add("-target")
                 add(target)
-                
-                // C++ 标准
+                sysrootPath?.let { sysroot ->
+                    add("--sysroot=" + sysroot)
+                }
                 if (isCxx) {
                     add("-std=c++17")
                 }
-                
-                // 包含目录
-                includeDirs.forEach { dir ->
-                    add("-I$dir")
-                }
-                
-                // 宏定义
-                defines.forEach { define ->
-                    add("-D$define")
-                }
-                
-                // Android 相关定义
+                add("-c")
+                add(sourceFile)
                 add("-DANDROID")
                 add("-D__ANDROID__")
+                sysrootPath?.let { sysroot ->
+                    add("-D__ANDROID_API__=" + apiLevel)
+                    add("-isystem")
+                    add(sysroot + "/usr/include")
+                    if (tripleBase.isNotEmpty()) {
+                        add("-isystem")
+                        add(sysroot + "/usr/include/" + tripleBase)
+                    }
+                    add("-I" + sysroot + "/usr/include/c++/v1")
+                }
+                resolvedIncludeDirs.forEach { dir ->
+                    add("-I" + dir)
+                }
+                defines.forEach { define ->
+                    add("-D" + define)
+                }
+                val objFile = File(objDir, File(sourceFile).nameWithoutExtension + ".o")
+                add("-o")
+                add(objFile.absolutePath)
             }
-            
             mapOf(
                 "directory" to projectPath,
                 "file" to sourceFile,
                 "arguments" to args
             )
         }
-        
-        // 写入 JSON
+
         val json = buildString {
             append("[\n")
             commands.forEachIndexed { index, cmd ->
                 append("  {\n")
-                append("    \"directory\": \"${cmd["directory"]}\",\n")
-                append("    \"file\": \"${cmd["file"]}\",\n")
+                append("    \"directory\": \"" + cmd["directory"] + "\",\n")
+                append("    \"file\": \"" + cmd["file"] + "\",\n")
                 append("    \"arguments\": [\n")
                 @Suppress("UNCHECKED_CAST")
                 val args = cmd["arguments"] as List<String>
                 args.forEachIndexed { argIndex, arg ->
-                    append("      \"${arg.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+                    append("      \"" + arg.replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
                     if (argIndex < args.size - 1) append(",")
                     append("\n")
                 }
@@ -329,10 +375,43 @@ class LspEditorManager private constructor(private val context: Context) {
             }
             append("]\n")
         }
-        
+
         compileCommandsFile.writeText(json)
         Log.i(TAG, "Generated compile_commands.json at: ${compileCommandsFile.absolutePath}")
-        
+
         return compileCommandsFile
     }
+
+    private fun deriveTripleBase(target: String): String {
+        if (target.isEmpty()) return ""
+        return target.trimEnd { it.isDigit() }
+    }
+
+    private fun deriveApiLevel(target: String): String {
+        val digits = target.takeLastWhile { it.isDigit() }
+        return digits.ifEmpty { "24" }
+    }
+
+
+    private fun buildServerArgs(compileDir: File): List<String> {
+        val args = mutableListOf("--compile-commands-dir=${compileDir.absolutePath}")
+        findClangResourceDir()?.let { resourceDir ->
+            args += "--resource-dir=${resourceDir.absolutePath}"
+            Log.i(TAG, "Using clang resource dir: ${resourceDir.absolutePath}")
+        } ?: Log.w(TAG, "Clang resource dir not found under sysroot; using clangd default")
+        return args
+    }
+
+    private fun findClangResourceDir(): File? {
+        val baseDir = sysrootDir ?: return null
+        val clangRoot = File(baseDir, "lib/clang")
+        if (!clangRoot.exists()) {
+            return null
+        }
+        val versionDirs = clangRoot.listFiles { file -> file.isDirectory } ?: return null
+        return versionDirs.maxByOrNull { it.name }
+    }
+
+
 }
+

@@ -22,8 +22,10 @@ public:
 
     // 启动 clangd 服务器
     // @param libPath libclangd.so 的路径
+    // @param extraArgs clangd_main 额外参数
     // @return 空字符串表示成功，否则返回错误信息
-    std::string start(const std::string& libPath);
+    std::string start(const std::string& libPath,
+                      const std::vector<std::string>& extraArgs = {});
 
     // 停止 clangd 服务器
     void stop();
@@ -71,6 +73,7 @@ private:
 
     ClangdMainFn clangdMain_;               // clangd_main 函数指针
     ClangdRunFn clangdRun_;                 // clangd_run 函数指针
+    std::vector<std::string> clangdArgs_;   // clangd_main 参数
 };
 
 } // namespace lsp

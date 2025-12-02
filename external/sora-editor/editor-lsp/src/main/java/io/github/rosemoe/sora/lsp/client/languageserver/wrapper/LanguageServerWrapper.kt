@@ -80,7 +80,6 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.net.URI
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -334,9 +333,9 @@ class LanguageServerWrapper(
     }
 
     private fun getInitParams(): InitializeParams {
-        val initParams = InitializeParams().apply {
-            rootUri = project.projectUri.toUri().toASCIIString()
-        }
+        val projectUri = project.projectUri.toUri()
+        val projectUriString = projectUri.toASCIIString()
+        val initParams = InitializeParams()
 
         val workspaceClientCapabilities = WorkspaceClientCapabilities().apply {
             applyEdit = false // Not ready to support this feature
@@ -348,8 +347,8 @@ class LanguageServerWrapper(
             configuration = false
         }
         val workspaceFolder = WorkspaceFolder().apply {
-            uri = initParams.rootUri
-            name = File(URI.create(uri)).name
+            uri = projectUriString
+            name = File(project.projectUri.path).name
         }
         // Maybe the user should be allowed to customize the WorkspaceFolder?
         // workspaceFolder.setName("");
@@ -385,8 +384,7 @@ class LanguageServerWrapper(
                     textDocumentClientCapabilities,
                     null
                 )
-            initializationOptions =
-                serverDefinition.getInitializationOptions(URI.create(initParams.rootUri))
+            initializationOptions = serverDefinition.getInitializationOptions(projectUri)
         }
         return initParams
     }

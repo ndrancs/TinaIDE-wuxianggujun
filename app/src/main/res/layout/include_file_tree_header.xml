@@ -7,7 +7,7 @@
     android:orientation="horizontal"
     android:paddingStart="12dp"
     android:paddingEnd="8dp"
-    android:paddingTop="8dp"
+    android:paddingTop="12dp"
     android:paddingBottom="8dp"
     android:gravity="center_vertical"
     android:weightSum="1">
@@ -52,4 +52,3 @@
         app:iconTint="?attr/colorOnSurface" />
 
 </LinearLayout>
-

@@ -1,12 +1,17 @@
 package com.wuxianggujun.tinaide.ui.adapter
 
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.view.ViewCompat
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.treeview.TreeNode
 import com.wuxianggujun.tinaide.treeview.base.BaseNodeViewBinder
 import java.io.File
+import kotlin.math.roundToInt
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 文件节点 ViewBinder
@@ -20,21 +25,37 @@ class FileNodeViewBinder(
     private val iconView: ImageView = itemView.findViewById(R.id.file_icon)
     private val nameView: TextView = itemView.findViewById(R.id.file_name)
     private val expandIcon: ImageView = itemView.findViewById(R.id.expand_icon)
+    private val basePaddingStart = itemView.paddingStart
+    private val basePaddingTop = itemView.paddingTop
+    private val basePaddingEnd = itemView.paddingEnd
+    private val basePaddingBottom = itemView.paddingBottom
+    private val indentPerLevelPx =
+        (itemView.resources.displayMetrics.density * 16f).roundToInt()
 
     override fun bindView(treeNode: TreeNode<File>) {
         val file = treeNode.value ?: return
+
+        applyIndentation(treeNode.level)
 
         // 设置文件名
         nameView.text = file.name
 
         // 设置图标
         if (file.isDirectory) {
+            val hasChildren = directoryHasChildren(treeNode, file)
+            Log.d(
+                TAG,
+                "Bind directory: ${file.absolutePath}, level=${treeNode.level}, expanded=${treeNode.isExpanded}, hasChildren=$hasChildren"
+            )
             iconView.setImageResource(R.drawable.ic_folder)
-            expandIcon.visibility = View.VISIBLE
-
-            // 设置展开/折叠图标
-            expandIcon.rotation = if (treeNode.isExpanded) 90f else 0f
+            if (hasChildren) {
+                expandIcon.visibility = View.VISIBLE
+                updateExpandIcon(treeNode.isExpanded, animate = false)
+            } else {
+                expandIcon.visibility = View.GONE
+            }
         } else {
+            Log.d(TAG, "Bind file: ${file.absolutePath}")
             iconView.setImageResource(getFileIcon(file))
             expandIcon.visibility = View.GONE
         }
@@ -72,7 +93,31 @@ class FileNodeViewBinder(
         }
         
         // 更新展开图标旋转角度
-        expandIcon.rotation = if (expand) 90f else 0f
+        updateExpandIcon(expand, animate = true)
+    }
+    private fun updateExpandIcon(expanded: Boolean, animate: Boolean) {
+        val targetRotation = if (expanded) 0f else -90f
+        if (animate) {
+            expandIcon.animate()
+                .rotation(targetRotation)
+                .setDuration(120L)
+                .start()
+        } else {
+            expandIcon.rotation = targetRotation
+        }
+    }
+
+    private fun applyIndentation(level: Int) {
+        val indentLevel = (level - 1).coerceAtLeast(0)
+        val startPadding = basePaddingStart + indentLevel * indentPerLevelPx
+        // 根据节点层级来偏移，保证树结构可读
+        ViewCompat.setPaddingRelative(
+            itemView,
+            startPadding,
+            basePaddingTop,
+            basePaddingEnd,
+            basePaddingBottom
+        )
     }
     
     /**
@@ -84,15 +129,29 @@ class FileNodeViewBinder(
         // 如果已经加载过子节点，不重复加载
         if (node.getChildren().isNotEmpty()) return
 
+        val dirPath = dir.absolutePath
+        if (loadedDirectories.contains(dirPath)) {
+            Log.d(TAG, "Skip loading cached directory: $dirPath")
+            return
+        }
+
         val children = try {
             dir.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
         } catch (_: Throwable) {
             emptyList<File>()
         }
 
-        for (child in children) {
-            val childNode = TreeNode(child, node.level + 1)
-            node.addChild(childNode)
+        Log.d(TAG, "Loading ${children.size} children for $dirPath")
+        if (children.isEmpty()) {
+            emptyDirectories.add(dirPath)
+        } else {
+            for (child in children) {
+                val childNode = TreeNode(child, node.level + 1)
+                node.addChild(childNode)
+                Log.v(TAG, "  + child ${child.absolutePath}")
+            }
+            loadedDirectories.add(dirPath)
+            emptyDirectories.remove(dirPath)
         }
     }
 
@@ -112,5 +171,36 @@ class FileNodeViewBinder(
             "md" -> R.drawable.ic_file_markdown
             else -> R.drawable.ic_file_default
         }
+    }
+
+    companion object {
+        private const val TAG = "FileNodeViewBinder"
+        private val loadedDirectories: MutableSet<String> =
+            Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
+        private val emptyDirectories: MutableSet<String> =
+            Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
+
+        fun resetLoadedDirectoriesCache() {
+            loadedDirectories.clear()
+            emptyDirectories.clear()
+            Log.d(TAG, "Loaded directories cache cleared")
+        }
+    }
+
+    private fun directoryHasChildren(node: TreeNode<File>, dir: File): Boolean {
+        if (node.getChildren().isNotEmpty()) return true
+        val path = dir.absolutePath
+        if (emptyDirectories.contains(path)) return false
+        if (loadedDirectories.contains(path)) return true
+
+        val hasChildren = try {
+            dir.list()?.isNotEmpty() == true
+        } catch (_: Throwable) {
+            false
+        }
+        if (!hasChildren) {
+            emptyDirectories.add(path)
+        }
+        return hasChildren
     }
 }

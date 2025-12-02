@@ -18,6 +18,7 @@ import com.wuxianggujun.tinaide.extensions.toastError
 import com.wuxianggujun.tinaide.treeview.TreeNode
 import com.wuxianggujun.tinaide.treeview.TreeView
 import com.wuxianggujun.tinaide.ui.adapter.FileNodeViewFactory
+import com.wuxianggujun.tinaide.ui.adapter.FileNodeViewBinder
 import com.wuxianggujun.tinaide.ui.dialog.FileContextMenuDialog
 import java.io.File
 
@@ -66,6 +67,7 @@ class FileTreeFragment : BaseBindingFragment<FragmentFileTreeBinding>(
     private fun loadProjectFiles(rootPath: String) {
         val rootDir = File(rootPath)
         if (rootDir.exists() && rootDir.isDirectory) {
+            FileNodeViewBinder.resetLoadedDirectoriesCache()
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                 val root = buildFileTree(rootDir)
 

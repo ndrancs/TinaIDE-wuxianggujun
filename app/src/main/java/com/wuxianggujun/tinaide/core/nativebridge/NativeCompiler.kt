@@ -87,7 +87,10 @@ object NativeCompiler {
      * @param libPath libclangd.so 的完整路径
      * @return 空字符串表示成功，否则返回错误信息
      */
-    external fun startClangd(libPath: String): String
+    external fun startClangd(
+        libPath: String,
+        args: Array<String> = emptyArray()
+    ): String
 
     /**
      * 停止 clangd 服务器

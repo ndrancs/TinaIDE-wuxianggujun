@@ -44,6 +44,16 @@ import com.wuxianggujun.tinaide.ui.IUIManager
 import com.wuxianggujun.tinaide.ui.UIManager
 import com.wuxianggujun.tinaide.output.IOutputManager
 import com.wuxianggujun.tinaide.output.OutputManager
+import com.wuxianggujun.tinaide.core.lsp.LspEditorManager
+import com.wuxianggujun.tinaide.core.lsp.LspEditorManager.BuildType
+import com.wuxianggujun.tinaide.core.lsp.CppProjectScanner
+import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
+import com.wuxianggujun.tinaide.BuildConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePaddingRelative
 class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::inflate) {
 
     // 用于在 ServiceLocator 中隔离与本 Activity 绑定的服务
@@ -66,6 +76,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             val headerView = if (nav.headerCount > 0) nav.getHeaderView(0) else null
             if (headerView != null) {
                 navHeaderBinding = IncludeFileTreeHeaderBinding.bind(headerView)
+                applyDrawerHeaderInsets()
             }
         } catch (_: Throwable) { }
 
@@ -109,12 +120,30 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         toolbar.setOnMenuItemClickListener { item ->
             onOptionsItemSelected(item)
         }
-
         drawerLayout = binding.drawerLayout
         setupFileTreeHeader()
 
         uiManager.restoreLayoutState()
         refreshFileTree()
+    }
+
+    private fun applyDrawerHeaderInsets() {
+        val header = navHeaderBinding?.drawerHeaderContainer ?: return
+        val baseStart = header.paddingStart
+        val baseTop = header.paddingTop
+        val baseEnd = header.paddingEnd
+        val baseBottom = header.paddingBottom
+
+        ViewCompat.setOnApplyWindowInsetsListener(header) { view, insets ->
+            val topInset = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+            view.updatePaddingRelative(
+                start = baseStart,
+                top = baseTop + topInset,
+                end = baseEnd,
+                bottom = baseBottom
+            )
+            insets
+        }
     }
     private fun initializeServices() {
         if (!ServiceLocator.isRegistered(IConfigManager::class.java)) {
@@ -226,6 +255,50 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         compilerViewModel.compile()
     }
 
+    private fun onGenerateCompileCommands(): Boolean {
+        val fileManager = ServiceLocator.get<IFileManager>()
+        val project = fileManager.getCurrentProject()
+        if (project == null) {
+            toastError("请先打开项目")
+            return true
+        }
+
+        lifecycleScope.launch {
+            showLoading("正在生成 compile_commands.json...", cancelable = false)
+            try {
+                val generatedPath = withContext(Dispatchers.IO) {
+                    val context = applicationContext
+                    val sysrootDir = SysrootInstaller.ensureInstalled(context)
+                    val lspManager = LspEditorManager.getInstance(context).apply {
+                        initialize(sysrootDir)
+                        buildType = if (BuildConfig.DEBUG) BuildType.Debug else BuildType.Release
+                    }
+                    val sourceFiles = CppProjectScanner.collectSourceFiles(project.rootPath)
+                    if (sourceFiles.isEmpty()) {
+                        throw IllegalStateException("项目中没有可用的 C/C++ 源文件")
+                    }
+                    val includeDirs = CppProjectScanner.collectIncludeDirs(project.rootPath)
+                    val isCxx = CppProjectScanner.hasCppSources(sourceFiles)
+                    val result = lspManager.generateCompileCommands(
+                        projectPath = project.rootPath,
+                        sourceFiles = sourceFiles,
+                        includeDirs = includeDirs,
+                        isCxx = isCxx,
+                        buildType = lspManager.buildType
+                    )
+                    result.absolutePath
+                }
+                toastSuccess("已生成 compile_commands.json\n$generatedPath")
+            } catch (e: Exception) {
+                Logger.e("Failed to generate compile_commands.json", e, "MainActivity")
+                toastError("生成失败：${e.message}")
+            } finally {
+                hideLoading()
+            }
+        }
+        return true
+    }
+
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         // 菜单已经通过 toolbar.inflateMenu 设置
         // 这里也需要填充菜单，避免系统回调时清空已有菜单
@@ -247,8 +320,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 startActivity(intent)
                 true
             }
+            R.id.action_generate_compile_commands -> onGenerateCompileCommands()
             else -> super.onOptionsItemSelected(item)
         }
     }
 }
-

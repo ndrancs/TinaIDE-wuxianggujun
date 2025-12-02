@@ -2,18 +2,22 @@ package com.wuxianggujun.tinaide.ui.fragment
 
 import android.os.Bundle
 import android.view.View
+import com.wuxianggujun.tinaide.BuildConfig
 import com.wuxianggujun.tinaide.base.BaseBindingFragment
 import com.wuxianggujun.tinaide.databinding.FragmentEditorBinding
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.lsp.ClangdServerDefinition
 import com.wuxianggujun.tinaide.core.lsp.LspEditorManager
+import com.wuxianggujun.tinaide.core.lsp.LspEditorManager.BuildType
 import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
+import com.wuxianggujun.tinaide.extensions.toastInfo
 import io.github.rosemoe.sora.lsp.editor.LspEditor
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 编辑器 Fragment
@@ -101,6 +105,7 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
                 // 初始化 LSP 管理器
                 val lspManager = LspEditorManager.getInstance(context)
                 lspManager.initialize(sysrootDir)
+                lspManager.buildType = if (BuildConfig.DEBUG) BuildType.Debug else BuildType.Release
                 
                 // 使用 LSP
                 if (lspManager.isAvailable()) {
@@ -124,23 +129,14 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
         android.util.Log.i(TAG, "Setting up LSP for: $path (project: $projPath)")
         
         try {
-            // 生成 compile_commands.json（如果不存在）
-            val compileCommandsFile = java.io.File(projPath, "compile_commands.json")
+            val compileCommandsFile = lspManager.getCompileCommandsFile(projPath, lspManager.buildType)
             if (!compileCommandsFile.exists()) {
-                // 收集项目中的源文件
-                val sourceFiles = collectSourceFiles(projPath)
-                val includeDirs = collectIncludeDirs(projPath)
-                
-                if (sourceFiles.isNotEmpty()) {
-                    lspManager.generateCompileCommands(
-                        projectPath = projPath,
-                        sourceFiles = sourceFiles,
-                        includeDirs = includeDirs,
-                        isCxx = path.endsWith(".cpp") || path.endsWith(".cc") || path.endsWith(".cxx")
-                    )
+                withContext(Dispatchers.Main) {
+                    requireContext().toastInfo("未检测到 compile_commands.json，请在右上角菜单中手动生成后重新打开文件")
                 }
+                return
             }
-            
+
             // 创建 LSP 编辑器
             lspEditor = lspManager.createLspEditor(path, projPath, codeEditor)
             
@@ -153,42 +149,6 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Error setting up LSP for: $path", e)
         }
-    }
-    
-    /**
-     * 收集项目中的源文件
-     */
-    private fun collectSourceFiles(projectPath: String): List<String> {
-        val sourceFiles = mutableListOf<String>()
-        val projectDir = java.io.File(projectPath)
-        
-        val extensions = setOf("c", "cpp", "cc", "cxx")
-        
-        projectDir.walkTopDown()
-            .filter { it.isFile && it.extension.lowercase() in extensions }
-            .forEach { sourceFiles.add(it.absolutePath) }
-        
-        return sourceFiles
-    }
-    
-    /**
-     * 收集项目中的 include 目录
-     */
-    private fun collectIncludeDirs(projectPath: String): List<String> {
-        val includeDirs = mutableListOf<String>()
-        val projectDir = java.io.File(projectPath)
-        
-        // 常见的 include 目录名
-        val includeNames = setOf("include", "includes", "inc", "src", "headers")
-        
-        projectDir.walkTopDown()
-            .filter { it.isDirectory && it.name.lowercase() in includeNames }
-            .forEach { includeDirs.add(it.absolutePath) }
-        
-        // 添加项目根目录
-        includeDirs.add(projectPath)
-        
-        return includeDirs
     }
     
     private fun setupEditor() {

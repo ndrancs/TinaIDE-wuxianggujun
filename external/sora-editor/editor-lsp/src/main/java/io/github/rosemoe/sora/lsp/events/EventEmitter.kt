@@ -47,8 +47,11 @@ class EventEmitter {
     }
 
     fun <T : EventListener> getEventListener(clazz: Class<T>): T? {
-        return listeners.flatMap { it.value }
-            .find { it::class.java == clazz } as? T?
+        return listeners.values
+            .asSequence()
+            .flatMap { it.asSequence() }
+            .firstOrNull { clazz.isInstance(it) }
+            ?.let { clazz.cast(it) }
     }
 
     fun <T : EventListener> removeListener(listenerClass: Class<T>) {
@@ -173,18 +176,39 @@ abstract class AsyncEventListener : EventListener {
 class EventContext {
     private val data = HashMap<String, Any>()
 
-    fun <T : Any> get(key: String): T {
-        return data[key] as T
+    fun <T : Any> get(key: String, clazz: Class<T>): T {
+        val value = data[key] ?: throw IllegalStateException("No value found for key: $key")
+        require(clazz.isInstance(value)) {
+            "Value for $key is ${value::class.java.name}, expected ${clazz.name}"
+        }
+        return clazz.cast(value)!!
     }
 
-    fun <T : Any> getOrDefault(key: String, default: T): T {
-        return data.getOrDefault(key, default) as T
+    inline fun <reified T : Any> get(key: String): T {
+        return get(key, T::class.java)
     }
 
-    fun <T : Any> getOrNull(key: String): T? {
-        return data[key] as? T?
+    fun <T : Any> getOrDefault(key: String, default: T, clazz: Class<T>): T {
+        val value = data[key] ?: return default
+        return if (clazz.isInstance(value)) {
+            clazz.cast(value)!!
+        } else {
+            default
+        }
     }
 
+    inline fun <reified T : Any> getOrDefault(key: String, default: T): T {
+        return getOrDefault(key, default, T::class.java)
+    }
+
+    fun <T : Any> getOrNull(key: String, clazz: Class<T>): T? {
+        val value = data[key] ?: return null
+        return if (clazz.isInstance(value)) clazz.cast(value) else null
+    }
+
+    inline fun <reified T : Any> getOrNull(key: String): T? {
+        return getOrNull(key, T::class.java)
+    }
     fun put(key: String, value: Any?) {
         data[key] = value ?: return
     }
@@ -194,8 +218,13 @@ class EventContext {
         data[value::class.java.name] = value
     }
 
-    fun <T : Any> remove(key: String): T? {
-        return data.remove(key) as? T?
+    fun <T : Any> remove(key: String, clazz: Class<T>): T? {
+        val value = data.remove(key) ?: return null
+        return if (clazz.isInstance(value)) clazz.cast(value) else null
+    }
+
+    inline fun <reified T : Any> remove(key: String): T? {
+        return remove(key, T::class.java)
     }
 
     fun <T : Any> getByClass(clazz: Class<T>): T? {
@@ -225,7 +254,7 @@ inline fun <reified T : Any> EventContext.get(): T {
 }
 
 inline fun <reified T : EventListener> EventEmitter.getEventListener(): T? {
-    return getEventListener(T::class.java) as T?
+    return getEventListener(T::class.java)
 }
 
 object EventType

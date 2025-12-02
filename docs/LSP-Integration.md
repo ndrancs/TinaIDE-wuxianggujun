@@ -139,7 +139,15 @@ if (lspManager.isAvailable()) {
 
 ### 3. compile_commands.json
 
-clangd 需要 `compile_commands.json` 来理解项目的编译配置。`LspEditorManager` 会自动生成：
+clangd 需要 `compile_commands.json` 来理解项目的编译配置。现在 TinaIDE 不再在后台自动生成该文件，完全交由用户控制。生成方式：
+
+1. 打开目标项目。
+2. 在主界面右上角菜单选择 **“生成 compile_commands.json”**。
+3. TinaIDE 会在 **项目目录的 `build/<buildType>/` 目录** 下写入该文件（同时创建 `obj/` 等临时目录）。`buildType` 会根据 `BuildConfig.DEBUG` 选择 `build/debug` 或 `build/release`，所有 LSP 构建产物都集中在 `build/` 目录中，便于 CLion 等工具类似的手动操作体验。
+
+如果你手动删除 `build` 目录或想更新配置，只需再次点击菜单项或在构建流程中触发即可，LSP 不会再擅自覆盖你的手动调整。
+
+在代码里也可以直接调用：
 
 ```kotlin
 lspManager.generateCompileCommands(
@@ -152,7 +160,7 @@ lspManager.generateCompileCommands(
 )
 ```
 
-生成的文件格式：
+生成的文件会保存在 `/<project>/build/debug/compile_commands.json`（或 `release` 目录），格式如下：
 
 ```json
 [

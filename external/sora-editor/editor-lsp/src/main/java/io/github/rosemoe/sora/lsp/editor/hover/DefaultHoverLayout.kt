@@ -13,9 +13,6 @@ import io.github.rosemoe.sora.lsp.editor.text.SimpleMarkdownRenderer
 import io.github.rosemoe.sora.lsp.editor.text.curvedTextScale
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
 import org.eclipse.lsp4j.Hover
-import org.eclipse.lsp4j.MarkedString
-import org.eclipse.lsp4j.MarkupContent
-import org.eclipse.lsp4j.jsonrpc.messages.Either
 
 class DefaultHoverLayout : HoverLayout {
     private lateinit var window: HoverWindow
@@ -95,14 +92,7 @@ class DefaultHoverLayout : HoverLayout {
     }
 
     private fun buildHoverText(hover: Hover): CharSequence {
-        val hoverContents = hover.contents ?: return ""
-        val rawText = if (hoverContents.isLeft) {
-            val items = hoverContents.left.orEmpty()
-            items.joinToString("\n\n") { either -> formatMarkedStringEither(either) }
-        } else {
-            val markup = hoverContents.right
-            formatMarkupContent(markup)
-        }
+        val rawText = hover.renderMarkdownContent()
 
         return markdownRenderer.render(
             markdown = rawText,
@@ -112,36 +102,5 @@ class DefaultHoverLayout : HoverLayout {
             codeTypeface = codeTypeface,
             linkColor = highlightColor
         )
-    }
-
-    private fun formatMarkedStringEither(either: Either<String, MarkedString>?): String {
-        if (either == null) {
-            return ""
-        }
-        return if (either.isLeft) {
-            either.left ?: ""
-        } else {
-            formatMarkedString(either.right)
-        }
-    }
-
-    private fun formatMarkedString(markedString: MarkedString?): String {
-        if (markedString == null) {
-            return ""
-        }
-        val language = markedString.language
-        val value = markedString.value ?: return ""
-        if (language.isNullOrEmpty()) {
-            return value
-        }
-        return "```$language\n$value\n```"
-    }
-
-    private fun formatMarkupContent(markupContent: MarkupContent?): String {
-        if (markupContent == null) {
-            return ""
-        }
-        val value = markupContent.value
-        return value ?: ""
     }
 }

@@ -36,7 +36,7 @@ class NinjaBuildGenerator {
         val content = buildNinjaContent(config, sourceFiles, ndkPath)
         
         return File(config.buildDir, "build.ninja").apply {
-            parentFile.mkdirs()
+            parentFile?.mkdirs()
             writeText(content)
         }
     }

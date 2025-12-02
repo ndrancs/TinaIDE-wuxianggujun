@@ -1,6 +1,7 @@
 package com.wuxianggujun.tinaide.file
 
 import android.content.Context
+import android.os.Build
 import android.os.FileObserver
 import android.util.Log
 import com.wuxianggujun.tinaide.core.ServiceLifecycle
@@ -183,31 +184,49 @@ class FileManager(private val context: Context) : IFileManager, ServiceLifecycle
     override fun addFileWatcher(path: String, listener: FileChangeListener) {
         fileListeners.getOrPut(path) { mutableListOf() }.add(listener)
         if (!fileWatchers.containsKey(path)) {
-            // 使用非弃用的 FileObserver 构造函数（监听所有事件，在 onEvent 中自行筛选）
-            val observer = object : FileObserver(path) {
-                override fun onEvent(event: Int, child: String?) {
-                    val base = File(path)
-                    val file = if (child != null) File(base, child) else base
-                    try {
-                        if ((event and CREATE) != 0 || (event and MOVED_TO) != 0) {
-                            notifyFileCreated(file)
-                        }
-                        if ((event and MODIFY) != 0 || (event and CLOSE_WRITE) != 0) {
-                            notifyFileModified(file)
-                        }
-                        if ((event and DELETE) != 0 || (event and DELETE_SELF) != 0 || (event and MOVED_FROM) != 0) {
-                            notifyFileDeleted(file)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error handling file event: $event for $file", e)
+            val watchDir = File(path)
+            val mask = FileObserver.CREATE or FileObserver.MOVED_TO or FileObserver.MODIFY or
+                FileObserver.CLOSE_WRITE or FileObserver.DELETE or FileObserver.DELETE_SELF or
+                FileObserver.MOVED_FROM
+            val observer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                object : FileObserver(watchDir, mask) {
+                    override fun onEvent(event: Int, child: String?) {
+                        handleFileEvent(watchDir, event, child)
+                    }
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                object : FileObserver(path, mask) {
+                    override fun onEvent(event: Int, child: String?) {
+                        handleFileEvent(watchDir, event, child)
                     }
                 }
             }
             observer.startWatching()
             fileWatchers[path] = observer
+        } else {
+            // watcher 已存在，只需记录额外 listener
         }
     }
 
+    private fun handleFileEvent(directory: File, event: Int, child: String?) {
+        val file = if (child != null) File(directory, child) else directory
+        try {
+            if ((event and FileObserver.CREATE) != 0 || (event and FileObserver.MOVED_TO) != 0) {
+                notifyFileCreated(file)
+            }
+            if ((event and FileObserver.MODIFY) != 0 || (event and FileObserver.CLOSE_WRITE) != 0) {
+                notifyFileModified(file)
+            }
+            if ((event and FileObserver.DELETE) != 0 || (event and FileObserver.DELETE_SELF) != 0 ||
+                (event and FileObserver.MOVED_FROM) != 0
+            ) {
+                notifyFileDeleted(file)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error handling file event: $event for $file", e)
+        }
+    }
     override fun removeFileWatcher(path: String) {
         fileWatchers[path]?.let { it.stopWatching() }
         fileWatchers.remove(path)

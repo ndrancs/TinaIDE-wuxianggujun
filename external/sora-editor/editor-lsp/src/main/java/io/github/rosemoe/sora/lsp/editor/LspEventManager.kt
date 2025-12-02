@@ -115,10 +115,10 @@ class LspEventManager(
     /**
      * For language server, some option need to be set, you can get the relevant option and set the values freely by this
      */
-    fun <T> getOption(optionClass: Class<T>): T? {
+    fun <T : Any> getOption(optionClass: Class<T>): T? {
         for (option in options) {
             if (optionClass.isInstance(option)) {
-                return option as? T?
+                return optionClass.cast(option)
             }
         }
         return null
@@ -151,6 +151,6 @@ inline fun <reified T : EventListener> LspEventManager.getEventListener(): T? {
     return getEventListener(T::class.java)
 }
 
-inline fun <reified T> LspEventManager.getOption(): T? {
+inline fun <reified T : Any> LspEventManager.getOption(): T? {
     return getOption(T::class.java)
 }

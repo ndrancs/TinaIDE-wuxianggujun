@@ -5,6 +5,7 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
     <!-- 主内容区域 -->
@@ -54,7 +55,10 @@
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        app:headerLayout="@layout/nav_drawer_content"
-        android:background="?android:attr/colorBackground" />
+        android:fitsSystemWindows="true"
+        android:clipToPadding="false"
+        android:background="?android:attr/colorBackground"
+        app:insetForeground="@android:color/transparent"
+        app:headerLayout="@layout/nav_drawer_content" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

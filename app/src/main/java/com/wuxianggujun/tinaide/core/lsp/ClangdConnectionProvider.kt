@@ -63,7 +63,12 @@ class ClangdConnectionProvider(
         Log.i(TAG, "Starting clangd via JNI: $clangdPath")
         Log.i(TAG, "Working directory: $workingDir")
         
-        val error = NativeCompiler.startClangd(clangdPath)
+        val argsArray = extraArgs.toTypedArray()
+        if (argsArray.isNotEmpty()) {
+            Log.i(TAG, "clangd extra args: ${argsArray.joinToString()}")
+        }
+
+        val error = NativeCompiler.startClangd(clangdPath, argsArray)
         if (error.isNotEmpty()) {
             throw IOException("Failed to start clangd via JNI: $error")
         }

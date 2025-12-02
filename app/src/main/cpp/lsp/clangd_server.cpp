@@ -12,6 +12,21 @@
 #include <cstring>
 #include <dirent.h>
 
+namespace {
+
+std::vector<std::string> buildDefaultClangdArgs() {
+    return {
+        "clangd",
+        "--background-index=false",
+        "--clang-tidy=false",
+        "--completion-style=detailed",
+        "--pch-storage=memory",
+        "--log=verbose"
+    };
+}
+
+} // namespace
+
 namespace tinaide {
 namespace lsp {
 
@@ -64,23 +79,19 @@ void* ClangdServer::clangdThreadFunc(void* arg) {
     LOGI("clangd_thread: starting clangd");
 
     int rc = -1;
-    if (server->clangdRun_) {
+    if (server->clangdMain_) {
+        if (server->clangdArgs_.empty()) {
+            server->clangdArgs_ = buildDefaultClangdArgs();
+        }
+        std::vector<char*> argv;
+        argv.reserve(server->clangdArgs_.size());
+        for (auto& arg : server->clangdArgs_) {
+            argv.push_back(const_cast<char*>(arg.c_str()));
+        }
+        rc = server->clangdMain_(static_cast<int>(argv.size()), argv.data());
+    } else if (server->clangdRun_) {
         // 使用简化入口
         rc = server->clangdRun_();
-    } else if (server->clangdMain_) {
-        // 使用主入口，带自定义参数
-        const char* argv[] = {
-            "clangd",
-            "--background-index=false",
-            "--clang-tidy=false",
-            "--completion-style=detailed",
-            "--pch-storage=memory",
-            "--log=verbose",  // 改为 verbose 以获取更多调试信息
-            nullptr
-        };
-        int argc = 0;
-        while (argv[argc]) argc++;
-        rc = server->clangdMain_(argc, const_cast<char**>(argv));
     }
 
     LOGI("clangd_thread: clangd exited with rc=%d", rc);
@@ -109,7 +120,8 @@ void* ClangdServer::clangdThreadFunc(void* arg) {
     return reinterpret_cast<void*>(static_cast<intptr_t>(rc));
 }
 
-std::string ClangdServer::start(const std::string& libPath) {
+std::string ClangdServer::start(const std::string& libPath,
+                                const std::vector<std::string>& extraArgs) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (running_.load()) {
@@ -242,6 +254,10 @@ std::string ClangdServer::start(const std::string& libPath) {
 
     LOGI("startClangd: found symbols - clangd_main=%p, clangd_run=%p",
          (void*)clangdMain_, (void*)clangdRun_);
+
+    // 构建最终参数（默认参数 + 额外参数）
+    clangdArgs_ = buildDefaultClangdArgs();
+    clangdArgs_.insert(clangdArgs_.end(), extraArgs.begin(), extraArgs.end());
 
     // 启动 clangd 线程
     running_.store(true);
