@@ -557,6 +557,47 @@ void ClangdLSPServer::sendLargeResponse(const json::Value& response) {
 
 ### 5.2 兼容性策略
 
+**Stage 2 当前进度（2025-12-04）**
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| Mock LSP Server 与 ControlChannel 对接 | ✅ | `mock_lsp_server` 已提供 Hover/Completion/Definition/References 响应，Native 客户端默认连接该调试端点。 |
+| NativeLspClient 初始化链路 | ✅ | 初始化阶段会配置 socket、启动/停止 mock、创建 `SharedMemoryTransport` 并拉起 I/O/Worker 线程。 |
+| 文本同步通知链路 | ✅ | `didOpen/didChange/didClose` 现已使用二进制协议发送全量内容，Mock Server 会缓存文件 URI/版本，为接入真实 clangd 做准备。 |
+| 自检工具链 | ✅ | `NativeLspClientSelfTest` + Benchmark Activity 按钮，可在设备上验证 Stage 2 链路。 |
+| 真实 clangd/Hybrid 接入 | ✅ | `ClangdProcess` 现在可启动真实 clangd，并通过 `ClangdControlBridge` 将 ControlChannel ↔ JSON-RPC 线程桥接。 |
+| JSON ↔ FlatBuffers 转换 | ✅ | `JsonRpcConverter` 已完成请求/响应的双向转换逻辑，下一步接入 ClangdProcess 即可打通真实链路。 |
+| 构建工具链自检 | ✅ | `tools/build-and-install-all-abi.ps1` 现在会在编译前自动调用 `tools/setup-flatc.ps1` 下载宿主机 flatc，避免再度触发交叉 ABI 版本无法执行的问题；同时清理阶段改用 `externalNativeBuildClean*` 任务并在任务缺失时仅给出警告，确保脚本不会因为 Gradle 的命名差异而提前退出。 |
+
+**Stage 3 当前进度（2025-12-05）**
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| Native/Mock 模式切换 | ✅ | `NativeLspService` 新增 `NativeLspMode` 与 `setServerMode()`，在初始化前通过 `android.system.Os.setenv` 写入 `TINAIDE_NATIVE_LSP_USE_MOCK`/`TINAIDE_LSP_SOCKET`，无需手动导出环境变量即可切换真实 clangd。 |
+| Mock/clangd 自检 | ✅ | `SharedMemoryBenchmarkActivity` 增加两个按钮（Mock、clangd），底层调用改造后的 `NativeLspClientSelfTest.run(mode)`，可在设备上分别验证两种链路，并会自动从应用内 sysroot 推导出 `libclangd.so` 路径（或在缺失时直接提示路径/安装方法）。 |
+| 测试指引 | ✅ | 文档附带最新步骤：准备 clangd 二进制 → 打开共享内存测试 Activity → 选择对应按钮 → 查看输出/Logcat，失败时 `TestResult` 会显示缺失依赖或异常原因。 |
+| Editor 文档桥接 | ✅ | `NativeLspDocumentBridge` 监听 CodeEditor 的 `ContentChangeEvent`，自动发送 `didOpen/didChange/didClose`，真实 clangd 能解析用户当前编辑的源文件。 |
+| Editor Native Hover | ✅ | `NativeLspRequestBridge` + `EditorFragment` 订阅光标变更，自动调用 Native Hover 并以 Toast 形式展示，验证 Native 结果通路。 |
+| Clangd 路径自动发现 | ✅ | `NativeLspBinaryResolver` 会扫描 sysroot (`files/sysroot/usr/lib/<triple>/runtime/`) 中的 `libclangd.so` 并通过 `NativeLspService.setDefaultClangdBinary()` 注入，避免手工配置 `/data/data/.../clangd`；Benchmark 自检与编辑器两条链路均已接入。 |
+
+**Stage 3 剩余任务（待执行）**
+
+1. **Native Completion/Definition UI 接管**：目前仅 Hover 走通 Native 通路，下一步需要在 `LspEditorManager`/`EditorFragment` 中切换补全、跳转、引用等交互到 Native 结果，并实现与缓存/取消的对接。
+2. **Diagnostics & compile_commands 自动化**：REAL 模式依赖正确的 `compile_commands.json` 与 clangd 诊断回传，需实现文档同步后的 diagnostics 转发、错误面板渲染，以及一键生成/刷新 compile_commands 的入口。
+3. **真实场景自检扩展**：在 Benchmark Activity 外，还需补充 instrumentation/monkey 测试脚本，验证长时间运行下的内存、FD、线程稳定性，并记录性能基线。
+4. **回退策略与灰度**：补全 Native 功能后，需要在 `LspConfig` 中实现按 AB/开关回退旧 Java LSP 客户端的逻辑，并制定监控指标（崩溃率、Hover/Completion latency）以支撑灰度上线。
+
+运行步骤（真实 clangd 模式示例）：
+1. 将可执行 clangd 拷贝到 `/data/data/com.wuxianggujun.tinaide/clangd` 或在 `NativeLspClientSelfTest.run()` 里传入其它路径。
+2. 打开「共享内存性能测试」Activity，先运行 Mock 测试确保链路可用，再点击「Native LSP 自检（clangd）」。
+3. 观察界面输出或 Logcat，若缺少 compile_commands.json/clangd 二进制会直接显示在 `CaseResult` 描述中。
+
+> **提示**：自 2025/12/05 起，Native 文档桥与自检工具会自动调用 `NativeLspBinaryResolver`，优先在应用的 sysroot (`files/sysroot/usr/lib/<target-triple>/runtime/`) 下寻找 `libclangd.so` 并将找到的路径注入 `NativeLspService`。因此只要完成 `SysrootInstaller.ensureInstalled()`，就不需要再手动输入路径；若 sysroot 中确实缺失，对应的自检用例会给出完整的路径提示并建议重新解压 sysroot。
+
+编辑器侧也默认打开 Native 文档桥接：`EditorFragment` 在加载 C/C++ 文件时会通过 `NativeLspDocumentBridge` 初始化 NativeLspService，并监听 `CodeEditor` 文本变更后 300ms 内同步 `didChange`。因此切换到真实 clangd 后，无需额外手动上报文档。
+
+在 Debug 构建下，光标停留 150ms 会触发 `NativeLspRequestBridge` 请求 Hover，Toast 中显示 “Native Hover: ...” 文本即可确认 Stage 3 结果通路（Mock/Real 模式都适用）。
+
 **渐进式切换**：
 ```kotlin
 // 配置开关

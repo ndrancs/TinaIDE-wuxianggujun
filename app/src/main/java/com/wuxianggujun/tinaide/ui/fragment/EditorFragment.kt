@@ -9,9 +9,15 @@ import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.lsp.ClangdServerDefinition
 import com.wuxianggujun.tinaide.core.lsp.LspEditorManager
 import com.wuxianggujun.tinaide.core.lsp.LspEditorManager.BuildType
+import com.wuxianggujun.tinaide.core.lsp.NativeLspDocumentBridge
+import com.wuxianggujun.tinaide.core.lsp.NativeLspRequestBridge
 import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
 import com.wuxianggujun.tinaide.editor.language.cpp.CppTreeSitterLanguageProvider
 import com.wuxianggujun.tinaide.extensions.toastInfo
+import com.wuxianggujun.tinaide.lsp.model.HoverResult
+import io.github.rosemoe.sora.event.SelectionChangeEvent
+import io.github.rosemoe.sora.event.SubscriptionReceipt
+import io.github.rosemoe.sora.widget.subscribeEvent
 import io.github.rosemoe.sora.lsp.editor.LspEditor
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
@@ -31,6 +37,9 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     private lateinit var codeEditor: CodeEditor
     private var filePath: String? = null
     private var lspEditor: LspEditor? = null
+    private var nativeLspHandle: NativeLspDocumentBridge.Handle? = null
+    private var hoverSubscription: SubscriptionReceipt<SelectionChangeEvent>? = null
+    private var lastNativeHoverSignature: String? = null
     
     companion object {
         private const val ARG_FILE_PATH = "file_path"
@@ -98,6 +107,17 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
         }
 
         applyCppSyntaxHighlight()
+
+        if (shouldAttachNativeBridge(path)) {
+            nativeLspHandle?.dispose()
+            nativeLspHandle = NativeLspDocumentBridge.bind(
+                requireContext().applicationContext,
+                codeEditor,
+                path,
+                projectPath
+            )
+            subscribeNativeHover(path)
+        }
         
         // 异步初始化语言支持
         CoroutineScope(Dispatchers.IO).launch {
@@ -267,6 +287,10 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
         return lspEditor?.isConnected == true
     }
 
+    private fun shouldAttachNativeBridge(path: String): Boolean {
+        return BuildConfig.DEBUG && ClangdServerDefinition.isCppFile(path)
+    }
+
     private fun applyCppSyntaxHighlight() {
         try {
             val language = CppTreeSitterLanguageProvider.create(requireContext())
@@ -283,7 +307,53 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
             LspEditorManager.getInstance(requireContext().applicationContext).closeEditor(path)
         }
         lspEditor = null
+        nativeLspHandle?.dispose()
+        nativeLspHandle = null
+        hoverSubscription?.unsubscribe()
+        hoverSubscription = null
         
         super.onDestroyView()
+    }
+
+    private fun subscribeNativeHover(path: String) {
+        hoverSubscription?.unsubscribe()
+        hoverSubscription = codeEditor.subscribeEvent<SelectionChangeEvent> { _, _ ->
+            if (!shouldAttachNativeBridge(path)) {
+                return@subscribeEvent
+            }
+            val cursor = codeEditor.cursor
+            if (cursor.isSelected) {
+                return@subscribeEvent
+            }
+            requestNativeHover(path, cursor.leftLine, cursor.leftColumn)
+        }
+    }
+
+    private fun requestNativeHover(filePath: String, line: Int, column: Int) {
+        NativeLspRequestBridge.requestHover(
+            filePath = filePath,
+            line = line,
+            column = column,
+            workDir = projectPath
+        ) { result ->
+            if (result != null) {
+                showNativeHover(result)
+            }
+        }
+    }
+
+    private fun showNativeHover(result: HoverResult) {
+        val normalized = result.content.trim()
+        if (normalized.isEmpty()) {
+            return
+        }
+        val signature = "${result.startLine}:${result.startCharacter}:$normalized"
+        if (signature == lastNativeHoverSignature) {
+            return
+        }
+        lastNativeHoverSignature = signature
+        binding.root.post {
+            requireContext().toastInfo("Native Hover: $normalized")
+        }
     }
 }

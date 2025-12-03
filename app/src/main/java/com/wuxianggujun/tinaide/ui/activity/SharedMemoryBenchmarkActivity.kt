@@ -8,6 +8,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.lsp.SharedMemoryTest
 import com.wuxianggujun.tinaide.core.lsp.HybridTransportTest
+import com.wuxianggujun.tinaide.core.lsp.NativeLspClientSelfTest
+import com.wuxianggujun.tinaide.lsp.NativeLspMode
 import kotlinx.coroutines.*
 
 /**
@@ -20,6 +22,8 @@ class SharedMemoryBenchmarkActivity : AppCompatActivity() {
     private lateinit var btnSimpleTest: Button
     private lateinit var btnFullBenchmark: Button
     private lateinit var btnHybridTest: Button
+    private lateinit var btnNativeLspMockTest: Button
+    private lateinit var btnNativeLspRealTest: Button
     private lateinit var btnClear: Button
     
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -48,6 +52,21 @@ class SharedMemoryBenchmarkActivity : AppCompatActivity() {
             setTextColor(android.graphics.Color.WHITE)
             setOnClickListener { runHybridTest() }
         }
+
+        btnNativeLspMockTest = Button(this).apply {
+            text = "Native LSP 自检（Mock）"
+        }
+        btnNativeLspMockTest.setOnClickListener {
+            runNativeLspClientTest(NativeLspMode.MOCK, btnNativeLspMockTest)
+        }
+
+        btnNativeLspRealTest = Button(this).apply {
+            text = "Native LSP 自检（clangd）"
+        }
+        btnNativeLspRealTest.setOnClickListener {
+            runNativeLspClientTest(NativeLspMode.REAL, btnNativeLspRealTest)
+        }
+
         btnClear = Button(this).apply {
             text = "清空输出"
             setOnClickListener { outputText.text = "" }
@@ -56,6 +75,8 @@ class SharedMemoryBenchmarkActivity : AppCompatActivity() {
         layout.addView(btnSimpleTest)
         layout.addView(btnFullBenchmark)
         layout.addView(btnHybridTest)
+        layout.addView(btnNativeLspMockTest)
+        layout.addView(btnNativeLspRealTest)
         layout.addView(btnClear)
         
         // 输出
@@ -155,6 +176,23 @@ class SharedMemoryBenchmarkActivity : AppCompatActivity() {
                     e.printStackTrace()
                     btnHybridTest.isEnabled = true
                 }
+            }
+        }
+    }
+
+    private fun runNativeLspClientTest(mode: NativeLspMode, triggerButton: Button) {
+        triggerButton.isEnabled = false
+        appendOutput("\n========= Native LSP 客户端自检 (${mode.name}) =========")
+        appendOutput("目标：验证 Stage 2 请求链路 (Hover/Completion/Definition/References)")
+
+        scope.launch(Dispatchers.IO) {
+            val result = NativeLspClientSelfTest.run(mode = mode, context = applicationContext)
+            withContext(Dispatchers.Main) {
+                result.cases.forEach { case ->
+                    appendOutput("${if (case.passed) "✅" else "❌"} ${case.name}: ${case.message}")
+                }
+                appendOutput("模式: ${result.mode.name}，通过率: ${(result.passRate * 100).toInt()}%")
+                triggerButton.isEnabled = true
             }
         }
     }
