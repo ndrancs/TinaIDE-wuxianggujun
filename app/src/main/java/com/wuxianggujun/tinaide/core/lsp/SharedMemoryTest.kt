@@ -13,7 +13,7 @@ object SharedMemoryTest {
     
     init {
         try {
-            System.loadLibrary("native-compiler")
+            System.loadLibrary("native_compiler")
         } catch (e: UnsatisfiedLinkError) {
             Log.e(TAG, "Failed to load native library", e)
         }
