@@ -1,5 +1,21 @@
 package com.wuxianggujun.tinaide.lsp
 
+import android.system.ErrnoException
+import android.system.Os
+import android.system.OsConstants
+import android.util.Log
+import com.wuxianggujun.tinaide.lsp.model.CompletionResult
+import com.wuxianggujun.tinaide.lsp.model.HoverResult
+import com.wuxianggujun.tinaide.lsp.model.Location
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+
+enum class NativeLspMode {
+    MOCK,
+    REAL
+}
+
 /**
  * Native LSP 服务
  *
@@ -31,6 +47,16 @@ object NativeLspService {
     }
 
     private const val TAG = "NativeLspService"
+    private const val DEFAULT_CLANGD_PATH = "/data/data/com.wuxianggujun.tinaide/clangd"
+
+    @Volatile
+    private var currentMode: NativeLspMode = NativeLspMode.MOCK
+
+    @Volatile
+    private var currentSocketOverride: String? = null
+
+    @Volatile
+    private var overrideClangdPath: String? = null
 
     // ========================================================================
     // 生命周期管理
@@ -54,6 +80,35 @@ object NativeLspService {
      * 检查是否已初始化
      */
     external fun nativeIsInitialized(): Boolean
+
+    // ========================================================================
+    // 服务器模式配置
+    // ========================================================================
+
+    /**
+     * 调整 Native 端使用的服务模式（Mock/Real clangd），并可选指定 socket。
+     */
+    fun setServerMode(mode: NativeLspMode, socketPath: String? = null) {
+        applyServerMode(mode, socketPath)
+    }
+
+    fun getServerMode(): NativeLspMode = currentMode
+
+    /**
+     * 允许在 Kotlin 侧提前告知真实的 libclangd.so 路径，
+     * 供 initialize() 默认使用，避免硬编码 /data/data/.../clangd。
+     */
+    fun setDefaultClangdBinary(path: String?) {
+        if (path.isNullOrBlank()) {
+            return
+        }
+        overrideClangdPath = path
+        Log.i(TAG, "Configured clangd binary: $path")
+    }
+
+    fun getConfiguredClangdBinary(): String? = overrideClangdPath
+
+    fun defaultClangdBinaryPath(): String = DEFAULT_CLANGD_PATH
 
     // ========================================================================
     // LSP 请求接口
@@ -122,14 +177,24 @@ object NativeLspService {
      * 获取 Hover 结果
      *
      * @param requestId 请求 ID
-     * @return Hover 内容（Markdown），null 表示未完成
+     * @return Hover 结果，null 表示未完成
      */
-    external fun nativeGetHoverResult(requestId: Long): String?
+    external fun nativeGetHoverResult(requestId: Long): HoverResult?
 
-    // TODO: 添加其他结果获取方法
-    // - nativeGetCompletionResult
-    // - nativeGetDefinitionResult
-    // - nativeGetReferencesResult
+    /**
+     * 获取 Completion 结果
+     */
+    external fun nativeGetCompletionResult(requestId: Long): CompletionResult?
+
+    /**
+     * 获取 Definition 结果
+     */
+    external fun nativeGetDefinitionResult(requestId: Long): MutableList<Location>?
+
+    /**
+     * 获取 References 结果
+     */
+    external fun nativeGetReferencesResult(requestId: Long): MutableList<Location>?
 
     // ========================================================================
     // 文件管理
@@ -150,6 +215,51 @@ object NativeLspService {
      */
     external fun nativeDidCloseTextDocument(fileUri: String)
 
+    private const val POLL_INTERVAL_MS = 10L
+    private const val RESULT_TIMEOUT_MS = 5_000L
+
+    private fun applyServerMode(mode: NativeLspMode, socketPath: String?) {
+        currentMode = mode
+        currentSocketOverride = socketPath
+        val mockFlag = if (mode == NativeLspMode.MOCK) "1" else "0"
+        setEnvSafe("TINAIDE_NATIVE_LSP_USE_MOCK", mockFlag)
+        if (socketPath.isNullOrBlank()) {
+            clearEnvSafe("TINAIDE_LSP_SOCKET")
+        } else {
+            setEnvSafe("TINAIDE_LSP_SOCKET", socketPath)
+        }
+    }
+
+    private fun setEnvSafe(key: String, value: String) {
+        try {
+            Os.setenv(key, value, true)
+        } catch (err: ErrnoException) {
+            Log.w(TAG, "setenv($key) failed: ${err.message}")
+        }
+    }
+
+    private fun clearEnvSafe(key: String) {
+        try {
+            Os.unsetenv(key)
+        } catch (err: ErrnoException) {
+            if (err.errno != OsConstants.ENOENT) {
+                Log.w(TAG, "unsetenv($key) failed: ${err.message}")
+            }
+        }
+    }
+
+    private suspend fun <T> waitForResult(fetch: () -> T?): T? {
+        val maxAttempts = (RESULT_TIMEOUT_MS / POLL_INTERVAL_MS).toInt()
+        repeat(maxAttempts) {
+            val result = fetch()
+            if (result != null) {
+                return result
+            }
+            delay(POLL_INTERVAL_MS)
+        }
+        return null
+    }
+
     // ========================================================================
     // Kotlin 高级封装（可选）
     // ========================================================================
@@ -157,27 +267,73 @@ object NativeLspService {
     /**
      * 初始化（使用默认路径）
      */
-    fun initialize(clangdPath: String = "/data/data/com.wuxianggujun.tinaide/clangd", workDir: String = "/"): Boolean {
-        return nativeInitialize(clangdPath, workDir)
+    fun initialize(
+        clangdPath: String = DEFAULT_CLANGD_PATH,
+        workDir: String = "/",
+        mode: NativeLspMode = currentMode,
+        socketPath: String? = currentSocketOverride
+    ): Boolean {
+        applyServerMode(mode, socketPath)
+        val effectiveClangdPath = resolveClangdPath(clangdPath)
+        return nativeInitialize(effectiveClangdPath, workDir)
     }
 
     /**
      * Hover 请求（协程友好）
      */
-    suspend fun requestHoverAsync(fileUri: String, line: Int, character: Int): String? {
-        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun requestHoverAsync(fileUri: String, line: Int, character: Int): HoverResult? {
+        return withContext(Dispatchers.IO) {
             val requestId = nativeRequestHover(fileUri, line, character)
-
-            // 轮询等待结果（TODO: 优化为回调机制）
-            var result: String? = null
-            var attempts = 0
-            while (result == null && attempts < 500) {  // 最多 5 秒
-                kotlinx.coroutines.delay(10)
-                result = nativeGetHoverResult(requestId)
-                attempts++
-            }
-
-            result
+            waitForResult { nativeGetHoverResult(requestId) }
         }
+    }
+
+    /**
+     * Completion 请求（协程友好）
+     */
+    suspend fun requestCompletionAsync(
+        fileUri: String,
+        line: Int,
+        character: Int,
+        triggerKind: Int = 1,
+        triggerCharacter: String = ""
+    ): CompletionResult? {
+        return withContext(Dispatchers.IO) {
+            val requestId = nativeRequestCompletion(fileUri, line, character, triggerKind, triggerCharacter)
+            waitForResult { nativeGetCompletionResult(requestId) }
+        }
+    }
+
+    /**
+     * Definition 请求（协程友好）
+     */
+    suspend fun requestDefinitionAsync(fileUri: String, line: Int, character: Int): List<Location>? {
+        return withContext(Dispatchers.IO) {
+            val requestId = nativeRequestDefinition(fileUri, line, character)
+            waitForResult { nativeGetDefinitionResult(requestId)?.toList() }
+        }
+    }
+
+    /**
+     * References 请求（协程友好）
+     */
+    suspend fun requestReferencesAsync(
+        fileUri: String,
+        line: Int,
+        character: Int,
+        includeDeclaration: Boolean = true
+    ): List<Location>? {
+        return withContext(Dispatchers.IO) {
+            val requestId = nativeRequestReferences(fileUri, line, character, includeDeclaration)
+            waitForResult { nativeGetReferencesResult(requestId)?.toList() }
+        }
+    }
+
+    private fun resolveClangdPath(candidate: String): String {
+        val override = overrideClangdPath
+        if (!override.isNullOrBlank()) {
+            return override
+        }
+        return candidate
     }
 }
