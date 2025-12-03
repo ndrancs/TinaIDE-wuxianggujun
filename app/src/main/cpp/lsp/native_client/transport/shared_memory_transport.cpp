@@ -1,13 +1,24 @@
-// 共享内存传输层实现（POC 简化版）
+// 共享内存传输层实现 - 集成控制通道
 
 #include "shared_memory_transport.h"
-#include "../../../utils/logging.h"
+#include <android/log.h>
 #include <cstring>
+
+#define LOG_TAG "SharedMemoryTransport"
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 namespace tinaide {
 namespace lsp {
 
 // ==================== SharedMemoryTransport 实现 ====================
+
+SharedMemoryTransport::SharedMemoryTransport(std::shared_ptr<ControlChannel> channel)
+    : channel_(std::move(channel)) {
+    if (!channel_ || !channel_->isConnected()) {
+        LOGE("Control channel not connected!");
+    }
+}
 
 bool SharedMemoryTransport::send(uint32_t request_id, const std::vector<char>& data, bool use_compression) {
     if (data.size() >= SHMEM_THRESHOLD) {
@@ -21,42 +32,57 @@ bool SharedMemoryTransport::send(uint32_t request_id, const std::vector<char>& d
 
 bool SharedMemoryTransport::sendViaSharedMemory(uint32_t request_id, const std::vector<char>& data) {
     LOGI("Sending via shared memory: request_id=%u, size=%zu", request_id, data.size());
-    
+
+    if (!channel_ || !channel_->isConnected()) {
+        LOGE("Control channel not available");
+        return false;
+    }
+
     // 创建共享内存区域
     auto region = SharedMemoryHelper::createRegion("lsp_data", data.size());
     if (!region || !region->isValid()) {
         LOGE("Failed to create shared memory");
         return false;
     }
-    
+
     // 映射并写入数据
     void* ptr = region->map();
     if (!ptr) {
         LOGE("Failed to map shared memory");
         return false;
     }
-    
+
     memcpy(ptr, data.data(), data.size());
-    
-    // 发送文件描述符（这里简化，实际需要通过控制通道）
-    LOGI("Shared memory ready: fd=%d, size=%zu", region->getFd(), data.size());
-    
-    // 如果有回调，触发
-    if (data_callback_) {
-        data_callback_(request_id, data);
+    region->unmap();
+
+    // 通过控制通道发送文件描述符
+    ChannelError err = channel_->sendSharedMemoryFd(request_id, region->getFd(), data.size());
+    if (err != ChannelError::SUCCESS) {
+        LOGE("Failed to send FD: %s", channel_->getLastError().c_str());
+        return false;
     }
-    
+
+    LOGI("Shared memory sent successfully: fd=%d, size=%zu", region->getFd(), data.size());
     return true;
 }
 
 bool SharedMemoryTransport::sendInline(uint32_t request_id, const std::vector<char>& data) {
     LOGI("Sending inline: request_id=%u, size=%zu", request_id, data.size());
-    
-    // 简化：直接触发回调
-    if (data_callback_) {
-        data_callback_(request_id, data);
+
+    if (!channel_ || !channel_->isConnected()) {
+        LOGE("Control channel not available");
+        return false;
     }
-    
+
+    // 通过控制通道直接发送数据
+    std::vector<uint8_t> payload(data.begin(), data.end());
+    ChannelError err = channel_->sendData(request_id, payload);
+    if (err != ChannelError::SUCCESS) {
+        LOGE("Failed to send inline data: %s", channel_->getLastError().c_str());
+        return false;
+    }
+
+    LOGI("Inline data sent successfully");
     return true;
 }
 

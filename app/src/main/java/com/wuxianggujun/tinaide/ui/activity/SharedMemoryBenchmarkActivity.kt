@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.lsp.SharedMemoryTest
+import com.wuxianggujun.tinaide.core.lsp.HybridTransportTest
 import kotlinx.coroutines.*
 
 /**
@@ -18,6 +19,7 @@ class SharedMemoryBenchmarkActivity : AppCompatActivity() {
     private lateinit var scrollView: ScrollView
     private lateinit var btnSimpleTest: Button
     private lateinit var btnFullBenchmark: Button
+    private lateinit var btnHybridTest: Button
     private lateinit var btnClear: Button
     
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -40,13 +42,20 @@ class SharedMemoryBenchmarkActivity : AppCompatActivity() {
             text = "运行完整性能测试"
             setOnClickListener { runFullBenchmark() }
         }
+        btnHybridTest = Button(this).apply {
+            text = "混合传输测试 (NEW!)"
+            setBackgroundColor(android.graphics.Color.parseColor("#4CAF50"))
+            setTextColor(android.graphics.Color.WHITE)
+            setOnClickListener { runHybridTest() }
+        }
         btnClear = Button(this).apply {
             text = "清空输出"
             setOnClickListener { outputText.text = "" }
         }
-        
+
         layout.addView(btnSimpleTest)
         layout.addView(btnFullBenchmark)
+        layout.addView(btnHybridTest)
         layout.addView(btnClear)
         
         // 输出
@@ -115,7 +124,41 @@ class SharedMemoryBenchmarkActivity : AppCompatActivity() {
             }
         }
     }
-    
+
+    private fun runHybridTest() {
+        btnHybridTest.isEnabled = false
+        appendOutput("\n========= 混合传输测试 =========")
+        appendOutput("测试控制通道 + 共享内存集成")
+
+        scope.launch(Dispatchers.IO) {
+            try {
+                val result = HybridTransportTest.runAllTests()
+
+                withContext(Dispatchers.Main) {
+                    if (result.allPassed) {
+                        appendOutput("✅ 所有测试通过！")
+                        appendOutput("- 小数据（2KB）: 控制通道传输 ✅")
+                        appendOutput("- 大数据（50KB）: 共享内存传输 ✅")
+                        appendOutput("- 自动阈值切换: 正常 ✅")
+                    } else {
+                        appendOutput("❌ 部分测试失败")
+                        result.tests.forEach { (name, passed) ->
+                            appendOutput("  ${if (passed) "✅" else "❌"} $name")
+                        }
+                    }
+                    appendOutput("通过率: ${(result.passRate * 100).toInt()}%")
+                    btnHybridTest.isEnabled = true
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    appendOutput("❌ 异常: ${e.message}")
+                    e.printStackTrace()
+                    btnHybridTest.isEnabled = true
+                }
+            }
+        }
+    }
+
     private fun appendOutput(text: String) {
         outputText.append(text + "\n")
         scrollView.post {

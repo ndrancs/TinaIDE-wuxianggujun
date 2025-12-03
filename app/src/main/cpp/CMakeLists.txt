@@ -23,6 +23,8 @@ add_library(native_compiler SHARED
     lsp/native_client/transport/control_channel.cpp
     # 共享内存测试 JNI
     shared_memory_test_jni.cpp
+    # 混合传输测试 JNI
+    hybrid_transport_test_jni.cpp
 )
 # 允许共享库中存在由其他共享库在运行时解析的未定义符号
 # 修复在链接 lld 静态库时对 libLLVM-17.so 中符号的解析约束（禁用 -z defs 效果）

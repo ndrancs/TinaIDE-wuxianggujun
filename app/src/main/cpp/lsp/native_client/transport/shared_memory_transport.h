@@ -5,6 +5,7 @@
 #define TINAIDE_SHARED_MEMORY_TRANSPORT_H
 
 #include "shared_memory_helper.h"
+#include "control_channel.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -28,17 +29,22 @@ struct TransportHeader {
 
 /**
  * 共享内存传输层
- * 
+ *
  * 设计策略：
  * - 小数据（< 4KB）：直接通过控制通道传输
  * - 大数据（>= 4KB）：使用共享内存零拷贝传输
+ * - 集成 ControlChannel 实现完整的混合传输
  */
 class SharedMemoryTransport {
 public:
     static constexpr size_t SHMEM_THRESHOLD = 4096;  // 4KB 阈值
     static constexpr size_t MAX_INLINE_SIZE = 8192;  // 最大内联大小
-    
-    SharedMemoryTransport() = default;
+
+    /**
+     * 构造函数
+     * @param channel 控制通道（必须已连接）
+     */
+    explicit SharedMemoryTransport(std::shared_ptr<ControlChannel> channel);
     ~SharedMemoryTransport() = default;
     
     /**
@@ -75,8 +81,9 @@ public:
     void setDataCallback(DataCallback callback) { data_callback_ = std::move(callback); }
     
 private:
+    std::shared_ptr<ControlChannel> channel_;
     DataCallback data_callback_;
-    
+
     // 辅助函数
     bool sendViaSharedMemory(uint32_t request_id, const std::vector<char>& data);
     bool sendInline(uint32_t request_id, const std::vector<char>& data);
