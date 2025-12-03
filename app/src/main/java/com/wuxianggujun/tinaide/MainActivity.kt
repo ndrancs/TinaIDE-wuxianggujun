@@ -321,6 +321,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 true
             }
             R.id.action_generate_compile_commands -> onGenerateCompileCommands()
+            R.id.action_shared_memory_test -> {
+                // 打开共享内存性能测试界面
+                val intent = Intent(this, com.wuxianggujun.tinaide.ui.activity.SharedMemoryBenchmarkActivity::class.java)
+                startActivity(intent)
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

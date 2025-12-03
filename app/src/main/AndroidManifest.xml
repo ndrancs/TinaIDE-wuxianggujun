@@ -58,6 +58,11 @@
             android:exported="false"
             android:label="设置"
             android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".ui.activity.SharedMemoryBenchmarkActivity"
+            android:exported="false"
+            android:label="共享内存性能测试"
+            android:parentActivityName=".MainActivity" />
         <!-- Termux components declared in library manifest -->
     </application>
 

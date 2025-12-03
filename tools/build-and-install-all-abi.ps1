@@ -35,7 +35,7 @@ if (-not (Test-Path $apkPath)) {
 Write-Host "Installing $apkPath via adb..." -ForegroundColor Cyan
 & $adbExe install -r $apkPath | Out-Host
 
-Write-Host "Launching com.wuxianggujun.tinaide/.MainActivity" -ForegroundColor Cyan
-& $adbExe shell am start -n com.wuxianggujun.tinaide/.MainActivity | Out-Host
+Write-Host "Launching com.wuxianggujun.tinaide/.ui.ProjectManagerActivity" -ForegroundColor Cyan
+& $adbExe shell am start -n com.wuxianggujun.tinaide/.ui.ProjectManagerActivity | Out-Host
 
 Write-Host "Build and install completed." -ForegroundColor Green

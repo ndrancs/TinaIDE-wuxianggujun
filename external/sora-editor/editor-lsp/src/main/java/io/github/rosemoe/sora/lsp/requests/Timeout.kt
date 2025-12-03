@@ -1,4 +1,3 @@
-/******************************************************************************* kỷ James  master branches/master  2 rows 04:59 PM  2 rows   04/06/2024  (local)   OFFLINE /LOCKS:.NonBlocking_Closed  (1):
 /*******************************************************************************
  *    sora-editor - the awesome code editor for Android
  *    https://github.com/Rosemoe/sora-editor
@@ -43,6 +42,7 @@ enum class Timeouts(val defaultTimeout: Int) {
     SHUTDOWN(8000),
     SYMBOLS(3000),
     WILLSAVE(3000)
+}
 
 /**
  * An object containing the Timeout for the various requests

@@ -26,4 +26,10 @@
         android:icon="@android:drawable/ic_menu_upload"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/action_shared_memory_test"
+        android:title="🚀 共享内存性能测试"
+        android:icon="@android:drawable/ic_menu_info_details"
+        app:showAsAction="never" />
+
 </menu>

@@ -9,7 +9,6 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
-import kotlin.math.minOf
 
 /**
  * clangd 连接提供器
@@ -199,7 +198,7 @@ class ClangdConnectionProvider(
             // 先从缓冲区读取
             if (buffer != null && bufferPos < bufferLen) {
                 val available = bufferLen - bufferPos
-                val toRead = minOf(available, len)
+                val toRead = min(available, len)
                 System.arraycopy(buffer!!, bufferPos, b, off, toRead)
                 bufferPos += toRead
                 if (bufferPos >= bufferLen) {
@@ -226,7 +225,7 @@ class ClangdConnectionProvider(
         }
         
         private fun processReadData(data: ByteArray, b: ByteArray, off: Int, len: Int): Int {
-            val toRead = minOf(data.size, len)
+            val toRead = min(data.size, len)
             System.arraycopy(data, 0, b, off, toRead)
             
             // 如果读取的数据比请求的多，缓存剩余部分
