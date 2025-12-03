@@ -14,7 +14,7 @@ object HybridTransportTest {
     private const val TAG = "HybridTransportTest"
 
     init {
-        System.loadLibrary("native-compiler")
+        System.loadLibrary("native_compiler")
     }
 
     /**

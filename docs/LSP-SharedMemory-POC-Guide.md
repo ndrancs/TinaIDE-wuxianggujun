@@ -73,7 +73,7 @@ cd TinaIDE
 
 查看生成的 so 文件：
 ```powershell
-ls app\build\intermediates\cmake\debug\obj\arm64-v8a\libnative-compiler.so
+ls app\build\intermediates\cmake\debug\obj\arm64-v8a\libnative_compiler.so
 ```
 
 应该看到文件大小增加（新增了共享内存代码）。
@@ -199,7 +199,7 @@ I/SharedMemoryTest: 平均性能提升: 65.2%
 ```kotlin
 // 确保在 SharedMemoryTest 中正确加载
 init {
-    System.loadLibrary("native-compiler")
+    System.loadLibrary("native_compiler")
 }
 ```
 
