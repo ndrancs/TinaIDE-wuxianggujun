@@ -88,13 +88,16 @@ class LogView @JvmOverloads constructor(
      */
     fun appendLog(text: String) {
         val content = this.text
-        // insert 方法需要 (line, column, text) 三个参数
-        content.insert(content.lineCount, 0, text)
-        // 滚动到底部
+        val totalLines = content.lineCount
+        val targetLine = if (totalLines > 0) totalLines - 1 else 0
+        val targetColumn = content.getColumnCount(targetLine)
+        content.insert(targetLine, targetColumn, text)
         post {
             val lineCount = content.lineCount
             if (lineCount > 0) {
-                setSelection(lineCount - 1, 0)
+                val lastLine = lineCount - 1
+                val lastColumn = content.getColumnCount(lastLine)
+                setSelection(lastLine, lastColumn)
             }
         }
     }
