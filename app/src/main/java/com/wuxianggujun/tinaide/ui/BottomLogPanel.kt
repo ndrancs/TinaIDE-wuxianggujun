@@ -59,37 +59,37 @@ class BottomLogPanel(
         setupLspStatus()
         bindOutputIfNeeded()
     }
-+
-+    private fun bindOutputIfNeeded() {
-+        if (outputManager?.getOutputMode() != IOutputManager.OutputMode.BOTTOM_PANEL) {
-+            OutputManager.setLogView(null)
-+            return
-+        }
-+
-+        outputListener = object : IOutputManager.OutputListener {
-+            override fun onOutputAppended(text: String) {
-+                binding.logView.post {
-+                    binding.logView.appendLog(text)
-+                }
-+            }
-+
-+            override fun onOutputCleared() {
-+                binding.logView.post {
-+                    binding.logView.clearLog()
-+                }
-+            }
-+        }
-+
-+        outputManager?.let { manager ->
-+            val existing = manager.getOutput()
-+            if (existing.isNotEmpty()) {
-+                binding.logView.setText(existing)
-+            }
-+            outputListener?.let { manager.addOutputListener(it) }
-+        }
-+
-+        OutputManager.setLogView(binding.logView)
-+    }
+
+    private fun bindOutputIfNeeded() {
+        if (outputManager?.getOutputMode() != IOutputManager.OutputMode.BOTTOM_PANEL) {
+            OutputManager.setLogView(null)
+            return
+        }
+
+        outputListener = object : IOutputManager.OutputListener {
+            override fun onOutputAppended(text: String) {
+                binding.logView.post {
+                    binding.logView.appendLog(text)
+                }
+            }
+
+            override fun onOutputCleared() {
+                binding.logView.post {
+                    binding.logView.clearLog()
+                }
+            }
+        }
+
+        outputManager?.let { manager ->
+            val existing = manager.getOutput()
+            if (existing.isNotEmpty()) {
+                binding.logView.setText(existing)
+            }
+            outputListener?.let { manager.addOutputListener(it) }
+        }
+
+        OutputManager.setLogView(binding.logView)
+    }
     
     private fun setupToolbar() {
         binding.btnCompile.setOnClickListener {
