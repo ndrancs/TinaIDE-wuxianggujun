@@ -47,6 +47,7 @@ class TsScopedVariables(tree: TSTree, text: UTF16String, val spec: TsLanguageSpe
     init {
         if (spec.localsDefinitionIndices.isNotEmpty()) {
             TSQueryCursor.create().use { cursor ->
+                cursor.setAllowChangedNodes(true)
                 cursor.exec(spec.tsQuery, tree.rootNode)
                 var match = cursor.nextMatch()
                 val captures = mutableListOf<TSQueryCapture>()

@@ -209,6 +209,7 @@ open class TsAnalyzeManager(val languageSpec: TsLanguageSpec, var theme: TsTheme
             }
             val blocks = mutableListOf<CodeBlock>()
             TSQueryCursor.create().use {
+                it.setAllowChangedNodes(true)
                 it.exec(languageSpec.blocksQuery, tree!!.rootNode)
                 var match = it.nextMatch()
                 while (match != null) {
