@@ -259,11 +259,15 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun onCompileProject() {
-        // 清空日志
-        bottomLogPanel.clearLog()
-        // 展开底部面板
-        bottomLogPanel.expand()
-        // 交给 ViewModel + UseCase 在后台线程编译
+        when (outputManager.getOutputMode()) {
+            IOutputManager.OutputMode.BOTTOM_PANEL -> {
+                bottomLogPanel.clearLog()
+                bottomLogPanel.expand()
+            }
+            IOutputManager.OutputMode.ACTIVITY -> {
+                outputManager.showOutput()
+            }
+        }
         compilerViewModel.compile()
     }
 
