@@ -9,6 +9,7 @@
 #include "../transport/control_channel.h"
 #include "lsp_request_manager.h"
 #include "lsp_result_cache.h"
+#include <functional>
 #include <memory>
 #include <string>
 #include <optional>
@@ -120,6 +121,9 @@ public:
      * 取消请求
      */
     void cancelRequest(uint64_t request_id);
+
+    using DiagnosticsCallback = std::function<void(const ProtocolHandler::DiagnosticsResult&)>;
+    void setDiagnosticsCallback(DiagnosticsCallback callback);
 
     // ========================================================================
     // 结果获取接口（非阻塞）
@@ -262,6 +266,8 @@ private:
     // ========================================================================
 
     std::atomic<uint64_t> next_request_id_{1};
+    DiagnosticsCallback diagnostics_callback_;
+    std::mutex diagnostics_mutex_;
 
     uint64_t generateRequestId() {
         return next_request_id_.fetch_add(1, std::memory_order_relaxed);

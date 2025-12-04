@@ -173,6 +173,25 @@ public:
      */
     std::optional<std::vector<Location>> parseReferencesResponse(const protocol::Response* response);
 
+    struct Diagnostic {
+        uint32_t start_line;
+        uint32_t start_character;
+        uint32_t end_line;
+        uint32_t end_character;
+        uint8_t severity;
+        std::string message;
+        std::string source;
+        std::string code;
+    };
+
+    struct DiagnosticsResult {
+        std::string file_uri;
+        uint32_t version;
+        std::vector<Diagnostic> diagnostics;
+    };
+
+    std::optional<DiagnosticsResult> parseDiagnosticsResponse(const protocol::Response* response);
+
     // ========================================================================
     // 工具方法
     // ========================================================================

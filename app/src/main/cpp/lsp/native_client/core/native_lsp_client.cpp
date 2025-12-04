@@ -347,6 +347,11 @@ void NativeLspClient::cancelRequest(uint64_t request_id) {
     removePendingRequest(request_id);
 }
 
+void NativeLspClient::setDiagnosticsCallback(DiagnosticsCallback callback) {
+    std::lock_guard<std::mutex> lock(diagnostics_mutex_);
+    diagnostics_callback_ = std::move(callback);
+}
+
 // ============================================================================
 // 结果获取接口
 // ============================================================================
@@ -668,14 +673,6 @@ bool NativeLspClient::handleControlMessage(const Message& msg) {
         return false;
     }
 
-    auto info_opt = getRequestInfo(msg.header.request_id);
-    if (!info_opt.has_value()) {
-        LOGW("Received response for unknown request %llu",
-             (unsigned long long)msg.header.request_id);
-        return false;
-    }
-    auto info = *info_opt;
-
     auto response_opt = protocol_handler_->parseResponse(payload);
     if (!response_opt.has_value()) {
         LOGE("Failed to parse response for request %llu",
@@ -688,6 +685,31 @@ bool NativeLspClient::handleControlMessage(const Message& msg) {
     }
 
     const protocol::Response* response = response_opt.value();
+    auto method = response->method();
+
+    if (method == protocol::Method::PUBLISH_DIAGNOSTICS) {
+        auto diagnostics = protocol_handler_->parseDiagnosticsResponse(response);
+        if (diagnostics.has_value()) {
+            DiagnosticsCallback callback_copy;
+            {
+                std::lock_guard<std::mutex> lock(diagnostics_mutex_);
+                callback_copy = diagnostics_callback_;
+            }
+            if (callback_copy) {
+                callback_copy(diagnostics.value());
+            }
+        }
+        return true;
+    }
+
+    auto info_opt = getRequestInfo(msg.header.request_id);
+    if (!info_opt.has_value()) {
+        LOGW("Received response for unknown request %llu",
+             (unsigned long long)msg.header.request_id);
+        return false;
+    }
+    auto info = *info_opt;
+
     bool stored = false;
 
     if (!result_cache_) {

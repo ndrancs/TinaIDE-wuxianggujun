@@ -55,6 +55,10 @@ std::string valueToString(const Value* v) {
         return std::string();
     }
 
+    if (auto number = v->getAsInteger()) {
+        return std::to_string(*number);
+    }
+
     if (auto s = v->getAsString()) {
         return s->str();
     }
@@ -346,6 +350,73 @@ bool buildReferencesPayload(const Value& value,
     return true;
 }
 
+bool buildDiagnosticsNotificationPayload(const Value& value,
+                                         flatbuffers::FlatBufferBuilder& builder,
+                                         flatbuffers::Offset<void>& out_data,
+                                         protocol::ResponseData& out_type,
+                                         std::string& error) {
+    const Object* params = value.getAsObject();
+    if (!params) {
+        error = "diagnostics params missing";
+        return false;
+    }
+
+    std::string file_uri;
+    uint32_t version = 0;
+    if (auto text_doc = params->getObject("textDocument")) {
+        if (auto uri = text_doc->getString("uri")) {
+            file_uri = uri->str();
+        }
+        if (auto ver = text_doc->get("version")) {
+            if (auto ver_int = ver->getAsInteger()) {
+                version = static_cast<uint32_t>(*ver_int);
+            }
+        }
+    }
+
+    std::vector<flatbuffers::Offset<protocol::Diagnostic>> diagnostics_vec;
+    if (auto diagnostics = params->getArray("diagnostics")) {
+        diagnostics_vec.reserve(diagnostics->size());
+        for (const auto& entry : *diagnostics) {
+            const Object* diag_obj = entry.getAsObject();
+            if (!diag_obj) {
+                continue;
+            }
+            auto range_obj = diag_obj->getObject("range");
+            uint32_t start_line = 0, start_char = 0, end_line = 0, end_char = 0;
+            if (!parseRange(range_obj, start_line, start_char, end_line, end_char)) {
+                continue;
+            }
+            uint8_t severity = 0;
+            if (auto sev = diag_obj->get("severity")) {
+                if (auto sev_int = sev->getAsInteger()) {
+                    severity = static_cast<uint8_t>(*sev_int);
+                }
+            }
+            std::string message = diag_obj->getString("message") ? diag_obj->getString("message")->str() : "";
+            std::string source = diag_obj->getString("source") ? diag_obj->getString("source")->str() : "";
+            std::string code = valueToString(diag_obj->get("code"));
+
+            protocol::Position start(start_line, start_char);
+            protocol::Position end(end_line, end_char);
+            protocol::Range range(start, end);
+
+            auto message_offset = builder.CreateString(message);
+            auto source_offset = builder.CreateString(source);
+            auto code_offset = builder.CreateString(code);
+            auto diag_fb = protocol::CreateDiagnostic(builder, &range, severity, message_offset, source_offset, code_offset);
+            diagnostics_vec.push_back(diag_fb);
+        }
+    }
+
+    auto uri_offset = builder.CreateString(file_uri);
+    auto diagnostics_offset = builder.CreateVector(diagnostics_vec);
+    auto notif = protocol::CreateDiagnosticsNotification(builder, uri_offset, version, diagnostics_offset);
+    out_type = protocol::ResponseData::DiagnosticsNotification;
+    out_data = notif.Union();
+    return true;
+}
+
 bool isNotificationMethod(protocol::Method method) {
     return method == protocol::Method::DID_OPEN ||
            method == protocol::Method::DID_CHANGE ||
@@ -569,7 +640,13 @@ bool JsonRpcConverter::buildResponse(protocol::Method method,
     std::string error_message;
     const Value* result_value = nullptr;
 
-    if (auto error_obj = root->getObject("error")) {
+    if (method == protocol::Method::PUBLISH_DIAGNOSTICS) {
+        result_value = root->get("params");
+        if (!result_value) {
+            error = "diagnostics notification missing params";
+            return false;
+        }
+    } else if (auto error_obj = root->getObject("error")) {
         status = protocol::Status::ERROR;
         if (auto message = error_obj->getString("message")) {
             error_message = message->str();
@@ -600,6 +677,9 @@ bool JsonRpcConverter::buildResponse(protocol::Method method,
                 break;
             case protocol::Method::REFERENCES:
                 ok = buildReferencesPayload(*result_value, builder, data_offset, data_type, error);
+                break;
+            case protocol::Method::PUBLISH_DIAGNOSTICS:
+                ok = buildDiagnosticsNotificationPayload(*result_value, builder, data_offset, data_type, error);
                 break;
             default:
                 error = "method not supported for response conversion";

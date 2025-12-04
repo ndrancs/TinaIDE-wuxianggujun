@@ -21,6 +21,7 @@ enum Method : uint16 {
     SIGNATURE_HELP = 8,
     RENAME = 9,
     WORKSPACE_SYMBOLS = 10,
+    PUBLISH_DIAGNOSTICS = 11,
     DID_OPEN = 100,
     DID_CHANGE = 101,
     DID_CLOSE = 102
@@ -136,6 +137,22 @@ table ReferencesResponse {
     locations: [Location];  // 引用位置列表
 }
 
+/// Diagnostic 信息
+table Diagnostic {
+    range: Range (required);
+    severity: uint8;
+    message: string;
+    source: string;
+    code: string;
+}
+
+/// PublishDiagnostics 通知
+table DiagnosticsNotification {
+    file_uri: string (required);
+    version: uint32;
+    diagnostics: [Diagnostic];
+}
+
 /// DidOpen 通知（全量同步）
 table DidOpenTextDocumentNotification {
     file_id: uint32;
@@ -177,7 +194,8 @@ union ResponseData {
     HoverResponse,
     CompletionResponse,
     DefinitionResponse,
-    ReferencesResponse
+    ReferencesResponse,
+    DiagnosticsNotification
 }
 
 /// 通用请求

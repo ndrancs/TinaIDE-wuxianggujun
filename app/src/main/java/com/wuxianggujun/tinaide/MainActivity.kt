@@ -44,8 +44,8 @@ import com.wuxianggujun.tinaide.ui.IUIManager
 import com.wuxianggujun.tinaide.ui.UIManager
 import com.wuxianggujun.tinaide.output.IOutputManager
 import com.wuxianggujun.tinaide.output.OutputManager
-import com.wuxianggujun.tinaide.core.lsp.LspEditorManager
-import com.wuxianggujun.tinaide.core.lsp.LspEditorManager.BuildType
+import com.wuxianggujun.tinaide.core.lsp.CompileCommandsGenerator
+import com.wuxianggujun.tinaide.core.lsp.CompileCommandsGenerator.BuildVariant
 import com.wuxianggujun.tinaide.core.lsp.CppProjectScanner
 import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
 import com.wuxianggujun.tinaide.BuildConfig
@@ -269,24 +269,19 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 val generatedPath = withContext(Dispatchers.IO) {
                     val context = applicationContext
                     val sysrootDir = SysrootInstaller.ensureInstalled(context)
-                    val lspManager = LspEditorManager.getInstance(context).apply {
-                        initialize(sysrootDir)
-                        buildType = if (BuildConfig.DEBUG) BuildType.Debug else BuildType.Release
-                    }
-                    val sourceFiles = CppProjectScanner.collectSourceFiles(project.rootPath)
-                    if (sourceFiles.isEmpty()) {
+                    val scan = CppProjectScanner.scanProject(project.rootPath)
+                    if (scan.sourceFiles.isEmpty()) {
                         throw IllegalStateException("项目中没有可用的 C/C++ 源文件")
                     }
-                    val includeDirs = CppProjectScanner.collectIncludeDirs(project.rootPath)
-                    val isCxx = CppProjectScanner.hasCppSources(sourceFiles)
-                    val result = lspManager.generateCompileCommands(
+                    val variant = if (BuildConfig.DEBUG) BuildVariant.Debug else BuildVariant.Release
+                    CompileCommandsGenerator.generate(
                         projectPath = project.rootPath,
-                        sourceFiles = sourceFiles,
-                        includeDirs = includeDirs,
-                        isCxx = isCxx,
-                        buildType = lspManager.buildType
-                    )
-                    result.absolutePath
+                        sysrootDir = sysrootDir,
+                        sourceFiles = scan.sourceFiles,
+                        includeDirs = scan.includeDirs,
+                        isCxx = scan.hasCppSources,
+                        variant = variant
+                    ).absolutePath
                 }
                 toastSuccess("已生成 compile_commands.json\n$generatedPath")
             } catch (e: Exception) {

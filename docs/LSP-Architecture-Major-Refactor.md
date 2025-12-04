@@ -1,133 +1,8 @@
-# LSP 架构级大重构方案
+## 混合架构方案
 
-> **文档版本**: v2.0 - 激进重构版  
-> **创建日期**: 2025-12-03  
-> **作者**: Claude Code  
-> **目标**: 架构级重构，突破现有性能瓶颈上限
+### 核心设计理念
 
----
-
-## 目录
-
-- [1. 为什么需要大重构](#1-为什么需要大重构)
-- [2. 四种激进重构方案](#2-四种激进重构方案)
-- [3. 推荐方案详解](#3-推荐方案详解)
-- [4. 技术选型与实现](#4-技术选型与实现)
-- [5. 架构演进路径](#5-架构演进路径)
-- [6. 风险与挑战](#6-风险与挑战)
-- [7. 实施路线图](#7-实施路线图)
-
----
-
-## 1. 为什么需要大重构
-
-### 1.1 现有架构的根本限制
-
-渐进式优化（Phase 1-3）只能解决**表层问题**，但无法突破以下**架构级瓶颈**：
-
-| 限制 | 根本原因 | 理论上限 |
-|------|---------|---------|
-| **JNI 开销** | Java ↔ Native 数据拷贝 | 无法彻底消除 |
-| **管道 IO** | 内核态拷贝 + poll 轮询 | 单次传输延迟 ~1-2ms |
-| **JSON 序列化** | 文本协议解析慢 | 比二进制慢 3-5 倍 |
-| **进程隔离** | IPC 固有开销 | 上下文切换 ~10-100μs |
-| **协议标准** | 必须遵循 LSP 规范 | 无法定制优化 |
-
-### 1.2 大重构的目标
-
-**突破理论上限，实现以下目标：**
-
-| 指标 | 渐进式优化后 | 大重构目标 | 提升 |
-|------|-------------|-----------|------|
-| 首次 hover | < 5s | **< 1s** | **5倍** |
-| 后续 hover | < 500ms | **< 50ms** | **10倍** |
-| 大文件 completion | ~2s | **< 200ms** | **10倍** |
-| 内存占用 | ~200MB | **< 150MB** | **优化 25%** |
-| 启动时间 | ~5s | **< 2s** | **2.5倍** |
-
-### 1.3 适用场景
-
-**大重构适合以下情况：**
-- ✅ 团队有充足的开发资源（2-3 名全职工程师，3-6 个月）
-- ✅ 愿意承担架构变更风险
-- ✅ 追求极致性能，打造差异化体验
-- ✅ 有能力维护复杂的 Native 代码
-
-**不适合的情况：**
-- ❌ 资源有限，需要快速见效
-- ❌ 团队缺乏 C++ 开发经验
-- ❌ 项目稳定性优先于性能
-
----
-
-## 2. 四种激进重构方案
-
-### 方案对比矩阵
-
-| 方案 | 性能提升 | 开发难度 | 维护成本 | 兼容性 | 推荐度 |
-|------|---------|---------|---------|--------|--------|
-| **方案A: 全 Native LSP** | ⭐⭐⭐⭐⭐ | 🔴 极高 | 🔴 极高 | ⚠️ 差 | ⭐⭐⭐ |
-| **方案B: 共享内存 + 二进制协议** | ⭐⭐⭐⭐ | 🔴 高 | 🟡 中高 | ⚠️ 中 | ⭐⭐⭐⭐ |
-| **方案C: clangd 进程内集成** | ⭐⭐⭐⭐⭐ | 🔴 极高 | 🔴 高 | ❌ 极差 | ⭐⭐ |
-| **方案D: 混合架构（推荐）** | ⭐⭐⭐⭐ | 🟡 中高 | 🟢 中 | ✅ 好 | ⭐⭐⭐⭐⭐ |
-
----
-
-## 3. 推荐方案详解：方案D - 混合架构
-
-### 3.1 核心设计理念
-
-**平衡性能、稳定性与兼容性：**
-1. **Native LSP 客户端** - 下沉核心通信逻辑到 C++
-2. **共享内存通信** - 大数据零拷贝传输
-3. **保留 clangd 进程** - 崩溃隔离，使用标准 clangd binary
-4. **混合协议** - 小请求用二进制，大响应用共享内存
-
-### 3.2 新架构图
-
-```
-┌─────────────────────────────────────────────────┐
-│           Java/Kotlin UI 层                      │
-│  - EditorFragment                               │
-│  - 仅负责 UI 展示和用户交互                      │
-└───────────────┬─────────────────────────────────┘
-                │ 轻量 JNI 调用（仅传递指令）
-                ▼
-┌─────────────────────────────────────────────────┐
-│     Native LSP Client (C++)                     │ ← 新增核心层
-│  ┌──────────────────────────────────────────┐   │
-│  │  LspRequestManager                        │   │
-│  │  - 请求队列管理                           │   │
-│  │  - 防抖、优先级、取消                     │   │
-│  └──────────────────────────────────────────┘   │
-│  ┌──────────────────────────────────────────┐   │
-│  │  ProtocolHandler                          │   │
-│  │  - 二进制协议编解码                       │   │
-│  │  - JSON fallback（兼容模式）             │   │
-│  └──────────────────────────────────────────┘   │
-│  ┌──────────────────────────────────────────┐   │
-│  │  SharedMemoryTransport                    │   │
-│  │  - ashmem 零拷贝传输                      │   │
-│  │  - 大数据响应（> 4KB）使用共享内存       │   │
-│  └──────────────────────────────────────────┘   │
-│  ┌──────────────────────────────────────────┐   │
-│  │  ResultCache (C++ 实现)                   │   │
-│  │  - LRU 缓存，避免重复查询                │   │
-│  └──────────────────────────────────────────┘   │
-└───────────────┬─────────────────────────────────┘
-                │ 控制通道（小请求）
-                │ + 共享内存（大响应）
-                ▼
-┌─────────────────────────────────────────────────┐
-│        clangd Server (独立进程)                  │
-│  - 标准 clangd binary                           │
-│  - 修改启动参数支持共享内存模式                  │
-└─────────────────────────────────────────────────┘
-```
-
-### 3.3 关键技术创新
-
-#### ① Native LSP 客户端层
+#### LspRequestManager
 
 **优势**：
 - ✅ 消除 Java ↔ Native 大数据拷贝
@@ -144,7 +19,51 @@ interface LspService {
 }
 ```
 
-#### ② 共享内存传输（ashmem）
+#### ProtocolHandler 转换器
+
+**原生**：
+```cpp
+// 替代 JSON 的高性能二进制格式
+struct LspRequest {
+    uint32_t request_id;
+    uint16_t method;     // enum: HOVER=1, COMPLETION=2, ...
+    uint16_t flags;
+    uint32_t payload_size;
+    // 变长 payload（使用 flatbuffers 或 protobuf）
+};
+
+// 示例：hover 请求
+struct HoverRequest {
+    uint32_t file_id;    // 文件 ID（避免传递完整路径）
+    uint32_t line;
+    uint32_t column;
+};
+
+```
+
+**对比 JSON**：
+```json
+// JSON (134 bytes)
+{
+  "jsonrpc": "2.0",
+  "id": 123,
+  "method": "textDocument/hover",
+  "params": {
+    "textDocument": {"uri": "file:///path/to/file.cpp"},
+    "position": {"line": 42, "character": 15}
+  }
+}
+
+// 二进制 (24 bytes，节省 82%)
+[request_id:4][method:2][flags:2][file_id:4][line:4][col:4][padding:4]
+```
+
+**性能提升**：
+- ✅ 序列化速度：JSON ~1ms → Binary ~0.05ms（20倍）
+- ✅ 数据体积：减少 60-80%
+- ✅ 解析速度：无需 JSON 解析器
+
+#### SharedMemoryTransport 二진大内容通信
 
 **原理**：
 ```cpp
@@ -172,50 +91,7 @@ void* clientPtr = mmap(..., received_fd, ...);
 - ✅ completion 响应可能 50-100KB，节省大量拷贝时间
 - ✅ 避免管道缓冲区限制
 
-#### ③ 二进制协议（自定义 LSP-Binary）
-
-**设计**：
-```cpp
-// 替代 JSON 的高性能二进制格式
-struct LspRequest {
-    uint32_t request_id;
-    uint16_t method;     // enum: HOVER=1, COMPLETION=2, ...
-    uint16_t flags;
-    uint32_t payload_size;
-    // 变长 payload（使用 flatbuffers 或 protobuf）
-};
-
-// 示例：hover 请求
-struct HoverRequest {
-    uint32_t file_id;    // 文件 ID（避免传递完整路径）
-    uint32_t line;
-    uint32_t column;
-};
-```
-
-**对比 JSON**：
-```json
-// JSON (134 bytes)
-{
-  "jsonrpc": "2.0",
-  "id": 123,
-  "method": "textDocument/hover",
-  "params": {
-    "textDocument": {"uri": "file:///path/to/file.cpp"},
-    "position": {"line": 42, "character": 15}
-  }
-}
-
-// 二进制 (24 bytes，节省 82%)
-[request_id:4][method:2][flags:2][file_id:4][line:4][col:4][padding:4]
-```
-
-**性能提升**：
-- ✅ 序列化速度：JSON ~1ms → Binary ~0.05ms（20倍）
-- ✅ 数据体积：减少 60-80%
-- ✅ 解析速度：无需 JSON 解析器
-
-#### ④ C++ 结果缓存
+#### ResultCache 缓存单独上层
 
 **实现**：
 ```cpp
@@ -250,9 +126,17 @@ public:
 
 ---
 
-## 4. 技术选型与实现
+## 当前进度总结
 
-### 4.1 核心技术栈
+**Stage 2 完成**：Mock LSP Server、NativeLspClient 初始化链路、文本同步通知链路、自检工具链、真实 clangd 接入、JSON ↔ FlatBuffers 转换、构建工具链自检。
+
+**Stage 3 完成**：Native/Mock 模式切换、Mock/clangd 自检、Editor 文档桥接、Editor Native Hover、Clangd 路径自动发现、Completion/Definition 桥接、Tree-sitter Completion 接管、Native Definition/References UI 入口、Native-only LSP 策略、Legacy Java LSP 清理、compile_commands 自动生成、Completion Kind 对齐。
+
+---
+
+## 技术选型与实现
+
+### 3.1 核心技术栈
 
 | 组件 | 技术选型 | 理由 |
 |------|---------|------|
@@ -263,9 +147,9 @@ public:
 | **线程模型** | C++ `std::thread` + 事件循环 | 避免 Kotlin 协程开销 |
 | **缓存** | C++ `std::unordered_map` + LRU | 高性能原生实现 |
 
-### 4.2 关键实现细节
+### 3.2 关键实现细节
 
-#### 4.2.1 共享内存传输实现
+#### 3.2.1 共享内存传输实现
 
 ```cpp
 // shared_memory_transport.h
@@ -311,7 +195,7 @@ private:
 };
 ```
 
-#### 4.2.2 二进制协议定义（FlatBuffers）
+#### 3.2.2 二进制协议定义（FlatBuffers）
 
 ```flatbuffers
 // lsp_protocol.fbs
@@ -356,7 +240,7 @@ table Response {
 root_type Request;
 ```
 
-#### 4.2.3 Native LSP 客户端核心逻辑
+#### 3.2.3 Native LSP 客户端核心逻辑
 
 ```cpp
 // native_lsp_client.h
@@ -415,7 +299,7 @@ uint64_t NativeLspClient::requestHover(uint32_t file_id, uint32_t line, uint32_t
 }
 ```
 
-#### 4.2.4 JNI 简化接口
+#### 3.2.4 JNI 简化接口
 
 ```cpp
 // native_lsp_jni.cpp
@@ -474,9 +358,9 @@ class LspManager {
         }
     }
 }
-```
+```    
 
-### 4.3 clangd 修改（可选）
+### 3.3 clangd 修改（可选）
 
 **如果需要 clangd 侧支持共享内存**（可选，不修改也可工作）：
 
@@ -515,9 +399,9 @@ void ClangdLSPServer::sendLargeResponse(const json::Value& response) {
 
 ---
 
-## 5. 架构演进路径
+## 架构演进路径
 
-### 5.1 分阶段实施
+### 4.1 分阶段实施
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -555,7 +439,8 @@ void ClangdLSPServer::sendLargeResponse(const json::Value& response) {
 └─────────────────────────────────────────────────┘
 ```
 
-### 5.2 兼容性策略
+
+### 4.2 兼容性策略
 
 **Stage 2 当前进度（2025-12-04）**
 
@@ -580,14 +465,19 @@ void ClangdLSPServer::sendLargeResponse(const json::Value& response) {
 | Editor Native Hover | ✅ | `NativeLspRequestBridge` + `EditorFragment` 订阅光标变更，自动调用 Native Hover 并以 Toast 形式展示，验证 Native 结果通路。 |
 | Clangd 路径自动发现 | ✅ | `NativeLspBinaryResolver` 会扫描 sysroot (`files/sysroot/usr/lib/<triple>/runtime/`) 中的 `libclangd.so` 并通过 `NativeLspService.setDefaultClangdBinary()` 注入，避免手工配置 `/data/data/.../clangd`；Benchmark 自检与编辑器两条链路均已接入。 |
 | Completion/Definition 桥接 | ✅ | `NativeLspRequestBridge` 新增 Completion/Definition/References API，EditorFragment 在 Debug 模式下会显示顶层补全项与 Definition 结果，验证 Native 结果链路。 |
-| Tree-sitter Completion 接管 | ✅ | `CppTreeSitterLanguageProvider` 覆写 `requireAutoComplete`，当 CodeEditor 触发补全时直接调用 Native completion 结果并映射为 `SimpleCompletionItem`，Sora 自动补全面板已显示真实 clangd 数据。 |
+| Tree-sitter Completion 接管 | ✅ | `CppTreeSitterLanguageProvider` 覆写 `requireAutoComplete`，当 CodeEditor 触发补全时直接调用 Native completion 结果并映射为 `SimpleCompletionItem`，Sora 自动补全年板已显示真实 clangd 数据。 |
+| Native Definition/References UI 入口 | ✅ | 编辑器工具栏增加 “Native 定义/引用” 按钮，`EditorFragment` 通过弹窗展示 `Location` 列表并支持跨文件跳转，形成最小可行的导航体验。 |
+| Native-only LSP 策略 | ✅ | `LspConfig.useNativeClient` 现固定为 `true`，不再提供 Legacy Java LSP 回退选项，所有 C/C++ 文档均直接接入 Native 管线。 |
+| Legacy Java LSP 清理 | ✅ | 删除 `LspEditorManager`、`ClangdConnectionProvider` 与 editor-lsp 依赖，EditorFragment 仅绑定 `NativeLspDocumentBridge`，彻底消除双管线互斥问题。 |
+| compile_commands 自动生成 | ✅ | 若项目缺少 `build/<variant>/compile_commands.json`，EditorFragment + 新的 `CompileCommandsGenerator` 会先扫描源文件、sysroot 后自动生成，无需再倚赖 Legacy LSP。 |
+| Completion Kind 对齐 | ✅ | `CppTreeSitterLanguageProvider` 生成的 `SimpleCompletionItem` 现在调用 `.kind(CompletionItemKind)`，与官方 Sora API 一致，避免类型不匹配并可复用内置图标逻辑。 |
+| Diagnostics 回传链路 | ✅ | clangd `publishDiagnostics` 经过 `JsonRpcConverter` → `NativeLspClient` → `NativeLspService.handleNativeDiagnostics()` 事件流，EditorFragment 将结果转换为 Sora `DiagnosticsContainer` 渲染下划线与 tooltip。 |
 
 **Stage 3 剩余任务（待执行）**
 
-1. **Native Definition/References UI 接管**：补全面板已接入 Native 数据，仍需将 Definition/References 注入 Sora 或现有跳转面板（而非 Toast），完成 Native 结果的交互闭环。
-2. **Diagnostics & compile_commands 自动化**：REAL 模式依赖正确的 `compile_commands.json` 与 clangd 诊断回传，需实现文档同步后的 diagnostics 转发、错误面板渲染，以及一键生成/刷新 compile_commands 的入口。
-3. **真实场景自检扩展**：在 Benchmark Activity 外，还需补充 instrumentation/monkey 测试脚本，验证长时间运行下的内存、FD、线程稳定性，并记录性能基线。
-4. **回退策略与灰度**：补全 Native 功能后，需要在 `LspConfig` 中实现按 AB/开关回退旧 Java LSP 客户端的逻辑，并制定监控指标（崩溃率、Hover/Completion latency）以支撑灰度上线。
+1. **Native Definition/References UI 接管（正式面板）**：工具栏入口已可查阅/跳转，下一步需把结果对接 Sora 原生的 “跳转定义/引用列表” 组件，支持持久展示与二次操作。
+2. **真实场景自检扩展**：在 Benchmark Activity 外，还需补充 instrumentation/monkey 测试脚本，验证长时间运行下的内存、FD、线程稳定性，并记录性能基线。
+3. **Native-only 稳定性监控**：既然已去除 Legacy 管线，需补充专门的 ANR/崩溃/延迟观察脚本，确保 clangd I/O 异常（如 transport error）能被快速侦测并提示用户修复 compile_commands/sysroot，而不是静默失效。
 
 运行步骤（真实 clangd 模式示例）：
 1. 将可执行 clangd 拷贝到 `/data/data/com.wuxianggujun.tinaide/clangd` 或在 `NativeLspClientSelfTest.run()` 里传入其它路径。
@@ -600,194 +490,7 @@ void ClangdLSPServer::sendLargeResponse(const json::Value& response) {
 
 在 Debug 构建下，光标停留 150ms 会触发 `NativeLspRequestBridge` 请求 Hover，Toast 中显示 “Native Hover: ...” 文本即可确认 Stage 3 结果通路（Mock/Real 模式都适用）。
 
-**渐进式切换**：
-```kotlin
-// 配置开关
-object LspConfig {
-    var useNativeClient = BuildConfig.DEBUG  // 开发版默认启用
-    
-    fun getLspClient(): LspClient {
-        return if (useNativeClient && isNativeSupported()) {
-            NativeLspClient()  // 新实现
-        } else {
-            LegacyLspClient()  // 旧实现（保留）
-        }
-    }
-}
-```
-
-**AB 测试**：
-- 初期：10% 用户使用 Native 实现
-- 中期：50% 用户
-- 稳定后：100% 切换，移除旧代码
-
----
-
-## 6. 风险与挑战
-
-### 6.1 技术风险
-
-| 风险 | 等级 | 缓解措施 |
-|------|------|---------|
-| **共享内存泄漏** | 🔴 高 | RAII 封装、详尽测试、valgrind 检测 |
-| **Native 崩溃** | 🔴 高 | 隔离保护、崩溃上报、自动降级到旧实现 |
-| **FD 泄漏** | 🟡 中 | 自动管理生命周期、监控 fd 数量 |
-| **协议兼容性** | 🟡 中 | 保留 JSON fallback 模式 |
-| **多线程竞态** | 🟡 中 | 严格的锁策略、TSan 检测 |
-
-### 6.2 工程挑战
-
-| 挑战 | 难度 | 应对策略 |
-|------|------|---------|
-| **C++ 代码量大** | 高 | 分阶段实施、代码复用 |
-| **调试困难** | 中高 | Native 日志、lldb 调试、单元测试 |
-| **维护成本** | 高 | 文档完善、代码审查、自动化测试 |
-| **团队技能** | 中 | 技术培训、引入 C++ 专家 |
-
----
-
-## 7. 实施路线图
-
-### 7.1 时间表（总计 16-24周）
-
-| 阶段 | 周数 | 人力 | 交付物 |
-|------|------|------|--------|
-| Stage 1 | 4-6周 | 2人 | 共享内存 + 二进制协议 + 框架 |
-| Stage 2 | 6-8周 | 2-3人 | 核心功能 Native 实现 |
-| Stage 3 | 4-6周 | 2人 | 全面替换 + 测试 |
-| Stage 4 | 2-4周 | 1人 | 高级优化（可选）|
-
-**关键里程碑**：
-- M1 (Week 6): 共享内存传输可用，性能测试通过
-- M2 (Week 14): hover 和 completion Native 实现可用
-- M3 (Week 20): 完整替换，用户 AB 测试
-- M4 (Week 24): 全量上线，移除旧代码
-
-### 7.2 资源需求
-
-**团队配置**：
-- 1 名资深 C++ 工程师（架构设计 + 核心实现）
-- 1 名 Android 工程师（JNI 集成 + Kotlin 层）
-- 1 名测试工程师（性能测试 + 稳定性验证）
-
-**技术储备**：
-- ✅ C++17 熟练
-- ✅ Android NDK 开发经验
-- ✅ 共享内存/IPC 机制了解
-- ✅ FlatBuffers/Protobuf 使用经验
-- ⚠️ clangd 内部机制（可选，如果需要修改 clangd）
-
----
-
-## 8. 总结：大重构 vs 渐进式优化
-
-### 对比表
-
-| 维度 | 渐进式优化 | 大重构（混合架构）|
-|------|-----------|------------------|
-| **性能提升** | 3-5倍 | **10倍+** |
-| **开发周期** | 6-8周 | **16-24周** |
-| **技术风险** | 低 | **中高** |
-| **维护成本** | 低 | **中高** |
-| **团队要求** | 中 | **高（需要 C++ 专家）** |
-| **可回滚性** | 容易 | **中等** |
-| **投入产出比** | 高 | 中（长期看高）|
-
-### 决策建议
-
-**选择渐进式优化，如果：**
-- ⏱️ 需要快速见效（2-3个月）
-- 👥 团队规模小或 C++ 经验不足
-- 💰 资源有限
-- 🔒 稳定性优先
-
-**选择大重构，如果：**
-- 🚀 追求极致性能，打造差异化竞争力
-- ⏰ 可以接受 4-6 个月开发周期
-- 👨‍💻 有经验丰富的 C++/Android 团队
-- 💎 愿意长期投入维护高性能架构
-
-### 混合策略（最优）
-
-**第一阶段（0-3个月）**：
-- 实施渐进式优化（Phase 1-3）
-- 快速见效，提升用户体验
-- 验证优化方向正确性
-
-**第二阶段（3-9个月）**：
-- 并行启动大重构
-- 基于第一阶段经验优化设计
-- 降低风险，提高成功率
-
----
-
-## 附录：参考实现
-
-### A1: 共享内存 Helper
-
-```cpp
-// shared_memory_helper.h
-class SharedMemoryHelper {
-public:
-    static int createRegion(const char* name, size_t size) {
-        #if __ANDROID_API__ >= 29
-            return ASharedMemory_create(name, size);
-        #else
-            return ashmem_create_region(name, size);
-        #endif
-    }
-    
-    static void setProtection(int fd, int prot) {
-        #if __ANDROID_API__ >= 29
-            ASharedMemory_setProt(fd, prot);
-        #else
-            ashmem_set_prot_region(fd, prot);
-        #endif
-    }
-};
-```
-
-### A2: FlatBuffers 代码生成
-
-```bash
-# 编译 schema
-flatc --cpp --gen-object-api lsp_protocol.fbs
-
-# 使用生成的代码
-#include "lsp_protocol_generated.h"
-auto request = tinaide::lsp::CreateHoverRequest(builder, file_id, position);
-```
-
-### A3: 性能对比测试脚本
-
-```kotlin
-@Test
-fun performanceComparison() {
-    val iterations = 1000
-    
-    // 测试旧实现
-    val legacyTime = measureTimeMillis {
-        repeat(iterations) {
-            legacyLspClient.hover(testFile, testPosition)
-        }
-    }
-    
-    // 测试新实现
-    val nativeTime = measureTimeMillis {
-        repeat(iterations) {
-            nativeLspClient.hover(testFile, testPosition)
-        }
-    }
-    
-    val improvement = (legacyTime - nativeTime) * 100.0 / legacyTime
-    println("Performance improvement: ${improvement}%")
-    assertTrue("至少提升 500%", improvement > 500)
-}
-```
-
----
-
-**文档结束**
-
-> 本方案适用于有充足资源、追求极致性能的团队。  
-> 如有疑问，请联系架构组。
+**Native-only 策略（2025-12-05 更新）**：
+- `LspConfig.useNativeClient` 恒为 `true`，IDE 内任何触发点都只会初始化 Native 管线。
+- Legacy Java 代码、依赖与 gradle module 已全部移除，不再存在隐藏快捷键或兜底逻辑。
+- 若遇到 clangd transport error，需通过 sysroot/compile_commands 自检与日志排查，后续会在 "Native-only 稳定性监控" 任务中补齐提示。

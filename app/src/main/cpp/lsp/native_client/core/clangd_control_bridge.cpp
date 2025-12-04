@@ -166,7 +166,15 @@ void ClangdControlBridge::responseLoop() {
                 LOGW("Failed to send response for request %llu", static_cast<unsigned long long>(request_id));
             }
         } else if (auto method_name = obj->getString("method")) {
-            LOGI("clangd notification: %s", method_name->str().c_str());
+            auto method_str = method_name->str();
+            if (method_str == "textDocument/publishDiagnostics") {
+                uint64_t diag_id = notification_sequence_.fetch_add(1, std::memory_order_relaxed);
+                if (!sendResponse(protocol::Method::PUBLISH_DIAGNOSTICS, diag_id, json)) {
+                    LOGW("Failed to forward diagnostics notification");
+                }
+            } else {
+                LOGI("clangd notification: %s", method_str.c_str());
+            }
         }
     }
 }

@@ -13,6 +13,14 @@
 
 using namespace tinaide::lsp;
 
+namespace {
+JavaVM* g_java_vm = nullptr;
+jclass g_nativeServiceClass = nullptr;
+jclass g_diagnosticItemClass = nullptr;
+jmethodID g_handleDiagnosticsMethod = nullptr;
+jmethodID g_diagnosticItemCtor = nullptr;
+} // namespace
+
 // ============================================================================
 // JNI 辅助函数
 // ============================================================================
@@ -222,7 +230,148 @@ jobject createLocationList(JNIEnv* env, const std::vector<ProtocolHandler::Locat
     return list_obj;
 }
 
+jobject createDiagnosticItemObject(JNIEnv* env, const ProtocolHandler::Diagnostic& diagnostic) {
+    if (!g_diagnosticItemClass || !g_diagnosticItemCtor) {
+        return nullptr;
+    }
+
+    jstring message = stringToJstring(env, diagnostic.message);
+    jstring source = diagnostic.source.empty() ? nullptr : stringToJstring(env, diagnostic.source);
+    jstring code = diagnostic.code.empty() ? nullptr : stringToJstring(env, diagnostic.code);
+
+    jobject obj = env->NewObject(
+        g_diagnosticItemClass,
+        g_diagnosticItemCtor,
+        static_cast<jint>(diagnostic.start_line),
+        static_cast<jint>(diagnostic.start_character),
+        static_cast<jint>(diagnostic.end_line),
+        static_cast<jint>(diagnostic.end_character),
+        static_cast<jint>(diagnostic.severity),
+        message,
+        source,
+        code
+    );
+
+    env->DeleteLocalRef(message);
+    if (source) {
+        env->DeleteLocalRef(source);
+    }
+    if (code) {
+        env->DeleteLocalRef(code);
+    }
+    return obj;
+}
+
+void dispatchDiagnosticsToJava(const ProtocolHandler::DiagnosticsResult& result) {
+    if (!g_java_vm || !g_nativeServiceClass || !g_handleDiagnosticsMethod || !g_diagnosticItemClass) {
+        return;
+    }
+    JNIEnv* env = nullptr;
+    bool need_detach = false;
+    if (g_java_vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+        if (g_java_vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
+            return;
+        }
+        need_detach = true;
+    }
+
+    jstring file_uri = stringToJstring(env, result.file_uri);
+    jobjectArray diagnostics_array = env->NewObjectArray(
+        static_cast<jsize>(result.diagnostics.size()),
+        g_diagnosticItemClass,
+        nullptr
+    );
+
+    for (size_t i = 0; i < result.diagnostics.size(); ++i) {
+        jobject diag_obj = createDiagnosticItemObject(env, result.diagnostics[i]);
+        if (diag_obj) {
+            env->SetObjectArrayElement(diagnostics_array, static_cast<jsize>(i), diag_obj);
+            env->DeleteLocalRef(diag_obj);
+        }
+    }
+
+    env->CallStaticVoidMethod(
+        g_nativeServiceClass,
+        g_handleDiagnosticsMethod,
+        file_uri,
+        diagnostics_array
+    );
+
+    env->DeleteLocalRef(file_uri);
+    env->DeleteLocalRef(diagnostics_array);
+
+    if (need_detach) {
+        g_java_vm->DetachCurrentThread();
+    }
+}
+
 } // anonymous namespace
+
+extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void*) {
+    g_java_vm = vm;
+    JNIEnv* env = nullptr;
+    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+        g_java_vm = nullptr;
+        return JNI_ERR;
+    }
+
+    jclass service_cls = env->FindClass("com/wuxianggujun/tinaide/lsp/NativeLspService");
+    if (!service_cls) {
+        return JNI_ERR;
+    }
+    g_nativeServiceClass = reinterpret_cast<jclass>(env->NewGlobalRef(service_cls));
+    env->DeleteLocalRef(service_cls);
+    if (!g_nativeServiceClass) {
+        return JNI_ERR;
+    }
+
+    g_handleDiagnosticsMethod = env->GetStaticMethodID(
+        g_nativeServiceClass,
+        "handleNativeDiagnostics",
+        "(Ljava/lang/String;[Lcom/wuxianggujun/tinaide/lsp/model/DiagnosticItem;)V"
+    );
+    if (!g_handleDiagnosticsMethod) {
+        return JNI_ERR;
+    }
+
+    jclass diag_cls = env->FindClass("com/wuxianggujun/tinaide/lsp/model/DiagnosticItem");
+    if (!diag_cls) {
+        return JNI_ERR;
+    }
+    g_diagnosticItemClass = reinterpret_cast<jclass>(env->NewGlobalRef(diag_cls));
+    env->DeleteLocalRef(diag_cls);
+    if (!g_diagnosticItemClass) {
+        return JNI_ERR;
+    }
+
+    g_diagnosticItemCtor = env->GetMethodID(
+        g_diagnosticItemClass,
+        "<init>",
+        "(IIIIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
+    );
+    if (!g_diagnosticItemCtor) {
+        return JNI_ERR;
+    }
+
+    return JNI_VERSION_1_6;
+}
+
+extern "C" JNIEXPORT void JNICALL JNI_OnUnload(JavaVM*, void*) {
+    JNIEnv* env = nullptr;
+    if (g_java_vm && g_java_vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) == JNI_OK) {
+        if (g_nativeServiceClass) {
+            env->DeleteGlobalRef(g_nativeServiceClass);
+            g_nativeServiceClass = nullptr;
+        }
+        if (g_diagnosticItemClass) {
+            env->DeleteGlobalRef(g_diagnosticItemClass);
+            g_diagnosticItemClass = nullptr;
+        }
+    }
+    g_handleDiagnosticsMethod = nullptr;
+    g_diagnosticItemCtor = nullptr;
+    g_java_vm = nullptr;
+}
 
 // ============================================================================
 // 生命周期管理
@@ -242,6 +391,11 @@ Java_com_wuxianggujun_tinaide_lsp_NativeLspService_nativeInitialize(
 
     auto* client = NativeLspClient::getInstance();
     bool success = client->initialize(clangd_path, work_dir);
+    if (success) {
+        client->setDiagnosticsCallback([](const ProtocolHandler::DiagnosticsResult& result) {
+            dispatchDiagnosticsToJava(result);
+        });
+    }
 
     LOGD("nativeInitialize: success=%d", success);
     return static_cast<jboolean>(success);

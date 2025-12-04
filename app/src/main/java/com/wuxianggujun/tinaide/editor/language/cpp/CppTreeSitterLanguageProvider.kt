@@ -230,10 +230,12 @@ private object CppNativeCompletionDispatcher {
             .takeIf { it.isNotBlank() }
             ?: documentation.takeIf { it.isNotBlank() }
             ?: ""
-        return SimpleCompletionItem(label, description, prefixLength, commit).apply {
-            kind(mapKind(kind))
-            filterText = label
-            sortText = label
+        val safeLabel = label.ifBlank { commit }
+        val mappedKind = mapKind(kind)
+        return SimpleCompletionItem(safeLabel, description, prefixLength, commit).apply {
+            kind(mappedKind)
+            filterText = safeLabel.toString()
+            sortText = safeLabel.toString()
             if (deprecated) {
                 desc("$description (deprecated)")
             }

@@ -61,6 +61,7 @@ private:
 
     std::string clangd_buffer_;
     std::mutex clangd_write_mutex_;
+    std::atomic<uint64_t> notification_sequence_{1};
 };
 
 } // namespace lsp

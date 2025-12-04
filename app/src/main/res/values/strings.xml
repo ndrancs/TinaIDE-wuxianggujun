@@ -57,4 +57,8 @@
   <string name="settings_cat_editor_behavior">编辑行为</string>
   <string name="settings_cat_compiler_options">编译选项</string>
   <string name="settings_cat_compiler_debug_perf">调试与性能</string>
+
+  <!-- Native LSP UI -->
+  <string name="native_definition_results">Native 定义列表</string>
+  <string name="native_references_results">Native 引用列表</string>
 </resources>

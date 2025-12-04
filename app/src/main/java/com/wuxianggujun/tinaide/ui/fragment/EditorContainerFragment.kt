@@ -18,6 +18,7 @@ import com.wuxianggujun.tinaide.core.get
 import com.wuxianggujun.tinaide.editor.EditorTab
 import com.wuxianggujun.tinaide.editor.IEditorManager
 import com.wuxianggujun.tinaide.ui.adapter.EditorTabAdapter
+import com.wuxianggujun.tinaide.lsp.model.Location
 import java.io.File
 
 /**
@@ -67,6 +68,24 @@ class EditorContainerFragment : BaseBindingFragment<FragmentEditorContainerBindi
         
         binding.btnGotoLine.setOnClickListener {
             showGotoLineDialog()
+        }
+
+        binding.btnNativeDefinition.setOnClickListener {
+            val fragment = getCurrentEditorFragment()
+            if (fragment == null) {
+                requireContext().toastInfo("没有打开的 C/C++ 文件")
+            } else {
+                fragment.openNativeDefinitionPicker()
+            }
+        }
+
+        binding.btnNativeReferences.setOnClickListener {
+            val fragment = getCurrentEditorFragment()
+            if (fragment == null) {
+                requireContext().toastInfo("没有打开的 C/C++ 文件")
+            } else {
+                fragment.openNativeReferencesPicker()
+            }
         }
         
         binding.btnSave.setOnClickListener {
@@ -235,6 +254,14 @@ class EditorContainerFragment : BaseBindingFragment<FragmentEditorContainerBindi
         setupTabLongClickListeners()
         
         android.util.Log.d("EditorContainer", "TabLayout visibility: ${if (tabLayout.visibility == View.VISIBLE) "VISIBLE" else "GONE"}")
+    }
+
+    fun openLocation(location: Location) {
+        val targetFile = File(location.filePath)
+        openFile(targetFile)
+        viewPager.post {
+            getCurrentEditorFragment()?.jumpToLocation(location)
+        }
     }
     
     /**

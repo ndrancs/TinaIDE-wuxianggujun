@@ -97,6 +97,24 @@
                 app:icon="@android:drawable/ic_menu_directions"
                 app:iconTint="?attr/colorOnSurface" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_native_definition"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="Native 跳转定义"
+                app:icon="@android:drawable/ic_menu_compass"
+                app:iconTint="?attr/colorOnSurface" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_native_references"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="Native 引用列表"
+                app:icon="@android:drawable/ic_menu_myplaces"
+                app:iconTint="?attr/colorOnSurface" />
+
             <com.google.android.material.divider.MaterialDivider
                 android:layout_width="1dp"
                 android:layout_height="24dp"

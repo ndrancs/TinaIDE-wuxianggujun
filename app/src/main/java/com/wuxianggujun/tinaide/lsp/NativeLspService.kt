@@ -1,12 +1,17 @@
 package com.wuxianggujun.tinaide.lsp
 
+import android.os.Handler
+import android.os.Looper
 import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
 import android.util.Log
 import com.wuxianggujun.tinaide.lsp.model.CompletionResult
+import com.wuxianggujun.tinaide.lsp.model.DiagnosticItem
 import com.wuxianggujun.tinaide.lsp.model.HoverResult
 import com.wuxianggujun.tinaide.lsp.model.Location
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArraySet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -57,6 +62,9 @@ object NativeLspService {
 
     @Volatile
     private var overrideClangdPath: String? = null
+    private val diagnosticsListeners = CopyOnWriteArraySet<DiagnosticsListener>()
+    private val diagnosticsCache = ConcurrentHashMap<String, List<DiagnosticItem>>()
+    private val diagnosticsHandler = Handler(Looper.getMainLooper())
 
     // ========================================================================
     // 生命周期管理
@@ -335,5 +343,35 @@ object NativeLspService {
             return override
         }
         return candidate
+    }
+
+    // ========================================================================
+    // Diagnostics
+    // ========================================================================
+
+    fun interface DiagnosticsListener {
+        fun onDiagnostics(fileUri: String, diagnostics: List<DiagnosticItem>)
+    }
+
+    fun addDiagnosticsListener(listener: DiagnosticsListener) {
+        diagnosticsListeners.add(listener)
+    }
+
+    fun removeDiagnosticsListener(listener: DiagnosticsListener) {
+        diagnosticsListeners.remove(listener)
+    }
+
+    fun latestDiagnostics(fileUri: String): List<DiagnosticItem> =
+        diagnosticsCache[fileUri].orEmpty()
+
+    @JvmStatic
+    fun handleNativeDiagnostics(fileUri: String, diagnostics: Array<DiagnosticItem>) {
+        val snapshot = diagnostics.toList()
+        diagnosticsCache[fileUri] = snapshot
+        diagnosticsHandler.post {
+            diagnosticsListeners.forEach { listener ->
+                listener.onDiagnostics(fileUri, snapshot)
+            }
+        }
     }
 }

@@ -413,6 +413,43 @@ std::optional<std::vector<ProtocolHandler::Location>> ProtocolHandler::parseRefe
     return locations;
 }
 
+std::optional<ProtocolHandler::DiagnosticsResult> ProtocolHandler::parseDiagnosticsResponse(
+    const Response* response
+) {
+    if (!response || response->data_type() != ResponseData::DiagnosticsNotification) {
+        return std::nullopt;
+    }
+
+    auto diag_resp = response->data_as_DiagnosticsNotification();
+    if (!diag_resp) {
+        return std::nullopt;
+    }
+
+    DiagnosticsResult result;
+    result.file_uri = diag_resp->file_uri() ? diag_resp->file_uri()->str() : "";
+    result.version = diag_resp->version();
+
+    if (diag_resp->diagnostics()) {
+        for (const auto* diag : *diag_resp->diagnostics()) {
+            if (!diag || !diag->range()) {
+                continue;
+            }
+            Diagnostic entry;
+            entry.start_line = diag->range()->start().line();
+            entry.start_character = diag->range()->start().character();
+            entry.end_line = diag->range()->end().line();
+            entry.end_character = diag->range()->end().character();
+            entry.severity = diag->severity();
+            entry.message = diag->message() ? diag->message()->str() : "";
+            entry.source = diag->source() ? diag->source()->str() : "";
+            entry.code = diag->code() ? diag->code()->str() : "";
+            result.diagnostics.push_back(std::move(entry));
+        }
+    }
+
+    return result;
+}
+
 // ============================================================================
 // 工具方法
 // ============================================================================

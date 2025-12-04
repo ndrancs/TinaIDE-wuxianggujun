@@ -1,33 +1,42 @@
 package com.wuxianggujun.tinaide.ui.fragment
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import androidx.lifecycle.lifecycleScope
 import com.wuxianggujun.tinaide.BuildConfig
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.base.BaseBindingFragment
 import com.wuxianggujun.tinaide.databinding.FragmentEditorBinding
-import com.wuxianggujun.tinaide.R
-import com.wuxianggujun.tinaide.core.lsp.ClangdServerDefinition
-import com.wuxianggujun.tinaide.core.lsp.LspEditorManager
-import com.wuxianggujun.tinaide.core.lsp.LspEditorManager.BuildType
+import com.wuxianggujun.tinaide.core.lsp.CompileCommandsGenerator
+import com.wuxianggujun.tinaide.core.lsp.CompileCommandsGenerator.BuildVariant
+import com.wuxianggujun.tinaide.core.lsp.CppProjectScanner
+import com.wuxianggujun.tinaide.core.lsp.LspConfig
 import com.wuxianggujun.tinaide.core.lsp.NativeLspDocumentBridge
 import com.wuxianggujun.tinaide.core.lsp.NativeLspRequestBridge
 import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
 import com.wuxianggujun.tinaide.editor.EditorDocumentExtras
 import com.wuxianggujun.tinaide.editor.language.cpp.CppTreeSitterLanguageProvider
 import com.wuxianggujun.tinaide.extensions.toastInfo
-import com.wuxianggujun.tinaide.lsp.model.HoverResult
+import com.wuxianggujun.tinaide.extensions.toastWarning
+import com.wuxianggujun.tinaide.lsp.NativeLspService
 import com.wuxianggujun.tinaide.lsp.model.CompletionResult
+import com.wuxianggujun.tinaide.lsp.model.DiagnosticItem
+import com.wuxianggujun.tinaide.lsp.model.HoverResult
 import com.wuxianggujun.tinaide.lsp.model.Location
 import io.github.rosemoe.sora.event.SelectionChangeEvent
 import io.github.rosemoe.sora.event.SubscriptionReceipt
-import io.github.rosemoe.sora.widget.subscribeEvent
-import io.github.rosemoe.sora.lsp.editor.LspEditor
+import io.github.rosemoe.sora.text.Content
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
-import kotlinx.coroutines.CoroutineScope
+import io.github.rosemoe.sora.widget.subscribeEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import io.github.rosemoe.sora.lang.diagnostic.DiagnosticDetail
+import io.github.rosemoe.sora.lang.diagnostic.DiagnosticRegion
+import io.github.rosemoe.sora.lang.diagnostic.DiagnosticsContainer
 
 /**
  * 编辑器 Fragment
@@ -39,12 +48,13 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
 ) {
     private lateinit var codeEditor: CodeEditor
     private var filePath: String? = null
-    private var lspEditor: LspEditor? = null
     private var nativeLspHandle: NativeLspDocumentBridge.Handle? = null
     private var hoverSubscription: SubscriptionReceipt<SelectionChangeEvent>? = null
     private var lastNativeHoverSignature: String? = null
     private var lastNativeCompletionSignature: String? = null
     private var lastNativeDefinitionSignature: String? = null
+    private var diagnosticsListener: NativeLspService.DiagnosticsListener? = null
+    private var currentFileUri: String? = null
     
     companion object {
         private const val ARG_FILE_PATH = "file_path"
@@ -100,83 +110,35 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     }
     
     /**
-     * 根据文件类型设置语言支持
-     * 使用 LSP (clangd) 提供 C/C++ 语言支持
+     * 根据文件类型设置语言支持（Native LSP / Tree-sitter）
      */
     private fun setupLanguage() {
         val path = filePath ?: return
-        
-        // 检查是否为 C/C++ 文件
-        if (!ClangdServerDefinition.isCppFile(path)) {
+
+        if (!isCppFile(path)) {
             android.util.Log.d(TAG, "Not a C/C++ file: $path")
+            clearDiagnostics()
             return
         }
 
         applyCppSyntaxHighlight()
 
-        if (shouldAttachNativeBridge(path)) {
-            nativeLspHandle?.dispose()
-            nativeLspHandle = NativeLspDocumentBridge.bind(
-                requireContext().applicationContext,
-                codeEditor,
-                path,
-                projectPath
-            )
-            subscribeNativeHover(path)
+        if (!shouldAttachNativeBridge(path)) {
+            android.util.Log.i(TAG, "Native LSP disabled for $path, skip bridge attachment")
+            clearDiagnostics()
+            return
         }
-        
-        // 异步初始化语言支持
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val context = requireContext().applicationContext
-                val sysrootDir = SysrootInstaller.ensureInstalled(context)
-                
-                // 初始化 LSP 管理器
-                val lspManager = LspEditorManager.getInstance(context)
-                lspManager.initialize(sysrootDir)
-                lspManager.buildType = if (BuildConfig.DEBUG) BuildType.Debug else BuildType.Release
-                
-                // 使用 LSP
-                if (lspManager.isAvailable()) {
-                    setupLspLanguage(path, lspManager)
-                } else {
-                    android.util.Log.w(TAG, "LSP not available for: $path")
-                    android.util.Log.w(TAG, "Please ensure libclangd.so is installed in sysroot/usr/lib/<triple>/runtime/")
-                }
-            } catch (e: Exception) {
-                android.util.Log.e(TAG, "Error setting up language support", e)
-            }
-        }
-    }
-    
-    /**
-     * 设置 LSP 语言支持 (clangd)
-     */
-    private suspend fun setupLspLanguage(path: String, lspManager: LspEditorManager) {
-        val projPath = projectPath ?: java.io.File(path).parent ?: return
-        
-        android.util.Log.i(TAG, "Setting up LSP for: $path (project: $projPath)")
-        
-        try {
-            val compileCommandsFile = lspManager.getCompileCommandsFile(projPath, lspManager.buildType)
-            if (!compileCommandsFile.exists()) {
-                withContext(Dispatchers.Main) {
-                    requireContext().toastInfo("未检测到 compile_commands.json，请在右上角菜单中手动生成后重新打开文件")
-                }
-                return
-            }
 
-            // 创建 LSP 编辑器
-            lspEditor = lspManager.createLspEditor(path, projPath, codeEditor)
-            
-            if (lspEditor != null) {
-                android.util.Log.i(TAG, "LSP editor created successfully for: $path")
-            } else {
-                android.util.Log.w(TAG, "Failed to create LSP editor for: $path")
-                android.util.Log.w(TAG, "Check logcat for ClangdConnectionProvider errors")
+        val projectDir = projectPath
+        if (projectDir != null) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                ensureCompileCommandsGenerated(projectDir)
+                attachNativeBridge(path)
+                subscribeDiagnostics(path)
             }
-        } catch (e: Exception) {
-            android.util.Log.e(TAG, "Error setting up LSP for: $path", e)
+        } else {
+            attachNativeBridge(path)
+            subscribeDiagnostics(path)
         }
     }
     
@@ -279,22 +241,102 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
         codeEditor.colorScheme = scheme
     }
     
-    /**
-     * 获取 LSP 编辑器实例（如果使用 LSP）
-     */
-    fun getLspEditor(): LspEditor? {
-        return lspEditor
+    fun openNativeDefinitionPicker() {
+        val path = filePath ?: run {
+            requireContext().toastInfo("没有打开的文件")
+            return
+        }
+        if (!shouldAttachNativeBridge(path)) {
+            requireContext().toastInfo("Native LSP 仅支持 C/C++ 文件")
+            return
+        }
+        val cursor = codeEditor.cursor
+        NativeLspRequestBridge.requestDefinition(
+            filePath = path,
+            line = cursor.leftLine,
+            column = cursor.leftColumn,
+            workDir = projectPath
+        ) { locations ->
+            if (locations.isNullOrEmpty()) {
+                requireContext().toastInfo("未找到定义")
+            } else {
+                showLocationDialog(
+                    title = getString(R.string.native_definition_results),
+                    locations = locations
+                )
+            }
+        }
     }
-    
-    /**
-     * 检查是否正在使用 LSP
-     */
-    fun isUsingLsp(): Boolean {
-        return lspEditor?.isConnected == true
+
+    fun openNativeReferencesPicker(includeDeclaration: Boolean = true) {
+        val path = filePath ?: run {
+            requireContext().toastInfo("没有打开的文件")
+            return
+        }
+        if (!shouldAttachNativeBridge(path)) {
+            requireContext().toastInfo("Native LSP 仅支持 C/C++ 文件")
+            return
+        }
+        val cursor = codeEditor.cursor
+        NativeLspRequestBridge.requestReferences(
+            filePath = path,
+            line = cursor.leftLine,
+            column = cursor.leftColumn,
+            includeDeclaration = includeDeclaration,
+            workDir = projectPath
+        ) { locations ->
+            if (locations.isNullOrEmpty()) {
+                requireContext().toastInfo("未找到引用")
+            } else {
+                showLocationDialog(
+                    title = getString(R.string.native_references_results),
+                    locations = locations
+                )
+            }
+        }
+    }
+
+    fun jumpToLocation(location: Location) {
+        val targetLine = location.startLine.coerceAtLeast(0)
+        val targetColumn = location.startCharacter.coerceAtLeast(0)
+        binding.root.post {
+            codeEditor.setSelection(targetLine, targetColumn)
+        }
+    }
+
+    private fun showLocationDialog(title: String, locations: List<Location>) {
+        val displayItems = locations.map { formatLocation(it) }.toTypedArray()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(title)
+            .setItems(displayItems) { _, index ->
+                locations.getOrNull(index)?.let { navigateToLocation(it) }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun formatLocation(location: Location): String {
+        val fileName = java.io.File(location.filePath).name
+        val line = location.startLine + 1
+        val column = location.startCharacter + 1
+        return "$fileName:$line:$column"
+    }
+
+    private fun navigateToLocation(location: Location) {
+        if (location.filePath == filePath) {
+            jumpToLocation(location)
+            return
+        }
+        val host = parentFragment as? EditorContainerFragment
+        if (host != null) {
+            host.openLocation(location)
+        } else {
+            requireContext().toastWarning("无法打开 ${location.filePath}")
+        }
     }
 
     private fun shouldAttachNativeBridge(path: String): Boolean {
-        return BuildConfig.DEBUG && ClangdServerDefinition.isCppFile(path)
+        return LspConfig.useNativeClient && isCppFile(path)
     }
 
     private fun applyCppSyntaxHighlight() {
@@ -308,15 +350,13 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     }
     
     override fun onDestroyView() {
-        // 关闭 LSP 编辑器
-        filePath?.let { path ->
-            LspEditorManager.getInstance(requireContext().applicationContext).closeEditor(path)
-        }
-        lspEditor = null
         nativeLspHandle?.dispose()
         nativeLspHandle = null
         hoverSubscription?.unsubscribe()
         hoverSubscription = null
+        diagnosticsListener?.let { NativeLspService.removeDiagnosticsListener(it) }
+        diagnosticsListener = null
+        currentFileUri = null
         
         super.onDestroyView()
     }
@@ -412,5 +452,142 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
             val preview = "${location.filePath}:${location.startLine + 1}"
             requireContext().toastInfo("Native Definition ▸ $preview")
         }
+    }
+
+    private fun attachNativeBridge(filePath: String) {
+        nativeLspHandle?.dispose()
+        nativeLspHandle = NativeLspDocumentBridge.bind(
+            requireContext().applicationContext,
+            codeEditor,
+            filePath,
+            projectPath
+        )
+        subscribeNativeHover(filePath)
+    }
+
+    private fun subscribeDiagnostics(filePath: String) {
+        val fileUri = Uri.fromFile(java.io.File(filePath)).toString()
+        currentFileUri = fileUri
+        diagnosticsListener?.let { NativeLspService.removeDiagnosticsListener(it) }
+        val listener = NativeLspService.DiagnosticsListener { uri, diagnostics ->
+            if (uri == currentFileUri) {
+                applyDiagnostics(diagnostics)
+            }
+        }
+        diagnosticsListener = listener
+        NativeLspService.addDiagnosticsListener(listener)
+        applyDiagnostics(NativeLspService.latestDiagnostics(fileUri))
+    }
+
+    private fun applyDiagnostics(diagnostics: List<DiagnosticItem>) {
+        if (!isAdded) return
+        val container = buildDiagnosticsContainer(diagnostics)
+        binding.root.post {
+            codeEditor.setDiagnostics(container)
+        }
+    }
+
+    private fun buildDiagnosticsContainer(diagnostics: List<DiagnosticItem>): DiagnosticsContainer? {
+        if (diagnostics.isEmpty()) {
+            return null
+        }
+        val text = codeEditor.text
+        val container = DiagnosticsContainer()
+        diagnostics.forEach { item ->
+            val start = safeCharIndex(text, item.startLine, item.startCharacter)
+            val end = safeCharIndex(text, item.endLine, item.endCharacter).coerceAtLeast(start + 1)
+            val severity = mapSeverity(item)
+            val detail = DiagnosticDetail(
+                briefMessage = item.message,
+                detailedMessage = item.source ?: item.code ?: ""
+            )
+            val region = DiagnosticRegion(
+                start,
+                end,
+                severity,
+                item.code?.hashCode()?.toLong() ?: 0L,
+                detail
+            )
+            container.addDiagnostic(region)
+        }
+        return container
+    }
+
+    private fun safeCharIndex(text: Content, line: Int, column: Int): Int {
+        val clampedLine = line.coerceIn(0, (text.lineCount - 1).coerceAtLeast(0))
+        val clampedColumn = column.coerceAtLeast(0)
+        return runCatching { text.getCharIndex(clampedLine, clampedColumn) }.getOrDefault(0)
+    }
+
+    private fun mapSeverity(item: DiagnosticItem): Short = when (item.severity) {
+        1 -> DiagnosticRegion.SEVERITY_ERROR
+        2 -> DiagnosticRegion.SEVERITY_WARNING
+        3 -> DiagnosticRegion.SEVERITY_TYPO
+        4 -> DiagnosticRegion.SEVERITY_TYPO
+        else -> DiagnosticRegion.SEVERITY_WARNING
+    }
+
+    private fun clearDiagnostics() {
+        diagnosticsListener?.let { NativeLspService.removeDiagnosticsListener(it) }
+        diagnosticsListener = null
+        currentFileUri = null
+        binding.root.post { codeEditor.setDiagnostics(null) }
+    }
+
+    private suspend fun ensureCompileCommandsGenerated(projectDir: String) {
+        val variant = if (BuildConfig.DEBUG) BuildVariant.Debug else BuildVariant.Release
+        val target = CompileCommandsGenerator.getCompileCommandsFile(projectDir, variant)
+        if (target.exists()) {
+            android.util.Log.d(TAG, "compile_commands.json already exists at ${target.absolutePath}")
+            return
+        }
+
+        val context = requireContext().applicationContext
+        val sysrootDir = runCatching { SysrootInstaller.ensureInstalled(context) }
+            .onFailure {
+                android.util.Log.e(TAG, "Sysroot installation failed", it)
+                withContext(Dispatchers.Main) {
+                    requireContext().toastWarning("未准备好 sysroot，无法生成 compile_commands.json")
+                }
+            }
+            .getOrNull() ?: return
+
+        val scan = CppProjectScanner.scanProject(projectDir)
+        if (scan.sourceFiles.isEmpty()) {
+            withContext(Dispatchers.Main) {
+                requireContext().toastWarning("未找到任何 C/C++ 源文件，跳过 compile_commands 自动生成")
+            }
+            return
+        }
+
+        android.util.Log.i(
+            TAG,
+            "Generating compile_commands.json automatically (sources=${scan.sourceFiles.size})"
+        )
+
+        runCatching {
+            CompileCommandsGenerator.generate(
+                projectPath = projectDir,
+                sysrootDir = sysrootDir,
+                sourceFiles = scan.sourceFiles,
+                includeDirs = scan.includeDirs,
+                isCxx = scan.hasCppSources,
+                variant = variant
+            )
+        }.onSuccess {
+            withContext(Dispatchers.Main) {
+                requireContext().toastInfo("已自动生成 compile_commands.json")
+            }
+        }.onFailure {
+            android.util.Log.e(TAG, "Failed to auto generate compile_commands.json", it)
+            withContext(Dispatchers.Main) {
+                requireContext().toastWarning("生成 compile_commands.json 失败：${it.message}")
+            }
+        }
+    }
+
+    private fun isCppFile(path: String): Boolean {
+        val ext = path.substringAfterLast('.', "").lowercase()
+        return ext in setOf("c", "cpp", "cc", "cxx", "m", "mm", "h", "hpp", "hh", "hxx")
     }
 }
