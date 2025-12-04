@@ -1,14 +1,12 @@
 package com.wuxianggujun.tinaide.ui
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.databinding.BottomSheetLogPanelBinding
-import com.wuxianggujun.tinaide.lsp.LspDebugPanel
 import com.wuxianggujun.tinaide.lsp.NativeLspService
 import com.wuxianggujun.tinaide.output.IOutputManager
 import com.wuxianggujun.tinaide.output.LogLevel
@@ -37,6 +35,8 @@ class BottomLogPanel(
         null
     }
     private var outputListener: IOutputManager.OutputListener? = null
+    private var initListener: NativeLspService.InitializationListener? = null
+    private var healthListener: NativeLspService.HealthListener? = null
     
     init {
         // 加载布局
@@ -57,15 +57,23 @@ class BottomLogPanel(
         
         setupToolbar()
         setupLspStatus()
-        bindOutputIfNeeded()
+        initListener = NativeLspService.InitializationListener { isInitialized ->
+            binding.root.post {
+                val message = if (isInitialized) "LSP 已连接" else "LSP 未连接"
+                updateLspStatus(isInitialized, message)
+            }
+        }
+        healthListener = NativeLspService.HealthListener { event ->
+            binding.root.post {
+                updateLspStatus(false, "LSP 异常: ${event.message}")
+            }
+        }
+        initListener?.let { NativeLspService.addInitializationListener(it) }
+        healthListener?.let { NativeLspService.addHealthListener(it) }
+        bindOutput()
     }
 
-    private fun bindOutputIfNeeded() {
-        if (outputManager?.getOutputMode() != IOutputManager.OutputMode.BOTTOM_PANEL) {
-            OutputManager.setLogView(null)
-            return
-        }
-
+    private fun bindOutput() {
         outputListener = object : IOutputManager.OutputListener {
             override fun onOutputAppended(text: String) {
                 binding.logView.post {
@@ -117,20 +125,9 @@ class BottomLogPanel(
     }
     
     private fun setupLspStatus() {
-        // 监听 LSP 健康状态
-        NativeLspService.addHealthListener(NativeLspService.HealthListener { event ->
-            updateLspStatus(
-                connected = false,
-                message = "LSP Error: ${event.message}"
-            )
-        })
-        
-        // 初始状态
-        if (NativeLspService.nativeIsInitialized()) {
-            updateLspStatus(connected = true, message = "LSP 已连接")
-        } else {
-            updateLspStatus(connected = false, message = "LSP 未连接")
-        }
+        val initialized = NativeLspService.nativeIsInitialized()
+        val message = if (initialized) "LSP 已连接" else "LSP 未连接"
+        updateLspStatus(initialized, message)
     }
     
     fun updateLspStatus(connected: Boolean, message: String) {
@@ -182,6 +179,8 @@ class BottomLogPanel(
         outputListener?.let { listener ->
             outputManager?.removeOutputListener(listener)
         }
+        initListener?.let { NativeLspService.removeInitializationListener(it) }
+        healthListener?.let { NativeLspService.removeHealthListener(it) }
         OutputManager.setLogView(null)
     }
     

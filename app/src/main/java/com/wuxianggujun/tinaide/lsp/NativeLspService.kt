@@ -15,7 +15,6 @@ import java.util.concurrent.CopyOnWriteArraySet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import com.wuxianggujun.tinaide.lsp.LspDebugPanel
 
 enum class NativeLspMode {
     MOCK,
@@ -64,8 +63,9 @@ object NativeLspService {
     @Volatile
     private var overrideClangdPath: String? = null
     private val diagnosticsListeners = CopyOnWriteArraySet<DiagnosticsListener>()
+    private val initializationListeners = CopyOnWriteArraySet<InitializationListener>()
     private val diagnosticsCache = ConcurrentHashMap<String, List<DiagnosticItem>>()
-    private val diagnosticsHandler = Handler(Looper.getMainLooper())
+    private val mainThreadHandler = Handler(Looper.getMainLooper())
 
     // ========================================================================
     // 生命周期管理
@@ -284,7 +284,9 @@ object NativeLspService {
     ): Boolean {
         applyServerMode(mode, socketPath)
         val effectiveClangdPath = resolveClangdPath(clangdPath)
-        return nativeInitialize(effectiveClangdPath, workDir)
+        val success = nativeInitialize(effectiveClangdPath, workDir)
+        notifyInitializationListeners(success && nativeIsInitialized())
+        return success
     }
 
     /**
@@ -384,12 +386,35 @@ object NativeLspService {
         healthListeners.remove(listener)
     }
 
+    fun interface InitializationListener {
+        fun onInitializationChanged(initialized: Boolean)
+    }
+
+    fun addInitializationListener(listener: InitializationListener) {
+        initializationListeners.add(listener)
+        mainThreadHandler.post {
+            listener.onInitializationChanged(nativeIsInitialized())
+        }
+    }
+
+    fun removeInitializationListener(listener: InitializationListener) {
+        initializationListeners.remove(listener)
+    }
+
     fun addDiagnosticsListener(listener: DiagnosticsListener) {
         diagnosticsListeners.add(listener)
     }
 
     fun removeDiagnosticsListener(listener: DiagnosticsListener) {
         diagnosticsListeners.remove(listener)
+    }
+
+    private fun notifyInitializationListeners(initialized: Boolean) {
+        mainThreadHandler.post {
+            initializationListeners.forEach { listener ->
+                listener.onInitializationChanged(initialized)
+            }
+        }
     }
 
     fun latestDiagnostics(fileUri: String): List<DiagnosticItem> =
@@ -399,10 +424,26 @@ object NativeLspService {
     fun handleNativeDiagnostics(fileUri: String, diagnostics: Array<DiagnosticItem>) {
         val snapshot = diagnostics.toList()
         diagnosticsCache[fileUri] = snapshot
-        diagnosticsHandler.post {
+        mainThreadHandler.post {
             diagnosticsListeners.forEach { listener ->
                 listener.onDiagnostics(fileUri, snapshot)
             }
         }
+    }
+
+    @JvmStatic
+    fun handleNativeHealthEvent(typeName: String, message: String) {
+        val eventType = runCatching { HealthEventType.valueOf(typeName) }
+            .getOrElse {
+                Log.w(TAG, "Unknown health event type: $typeName, fallback to TRANSPORT_ERROR")
+                HealthEventType.TRANSPORT_ERROR
+            }
+        val event = HealthEvent(eventType, message)
+        mainThreadHandler.post {
+            healthListeners.forEach { listener ->
+                listener.onHealthEvent(event)
+            }
+        }
+        notifyInitializationListeners(false)
     }
 }
