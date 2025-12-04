@@ -12,6 +12,7 @@ import com.wuxianggujun.tinaide.core.lsp.LspEditorManager.BuildType
 import com.wuxianggujun.tinaide.core.lsp.NativeLspDocumentBridge
 import com.wuxianggujun.tinaide.core.lsp.NativeLspRequestBridge
 import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
+import com.wuxianggujun.tinaide.editor.EditorDocumentExtras
 import com.wuxianggujun.tinaide.editor.language.cpp.CppTreeSitterLanguageProvider
 import com.wuxianggujun.tinaide.extensions.toastInfo
 import com.wuxianggujun.tinaide.lsp.model.HoverResult
@@ -87,7 +88,8 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
                 if (file.exists() && file.isFile) {
                     val content = file.readText()
                     android.util.Log.d(TAG, "Loading file: $path, content length: ${content.length}")
-                    codeEditor.setText(content)
+                    val extras = EditorDocumentExtras.create(filePath = path, projectPath = projectPath)
+                    codeEditor.setText(content, extras)
                 } else {
                     android.util.Log.e(TAG, "File not found or not a file: $path")
                 }

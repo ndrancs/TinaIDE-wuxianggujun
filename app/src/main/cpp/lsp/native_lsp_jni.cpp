@@ -3,6 +3,7 @@
 
 #include <jni.h>
 #include <string>
+#include <vector>
 #include <android/log.h>
 #include "lsp/native_client/core/native_lsp_client.h"
 
@@ -31,6 +32,194 @@ std::string jstringToString(JNIEnv* env, jstring jstr) {
 // 将 std::string 转换为 jstring
 jstring stringToJstring(JNIEnv* env, const std::string& str) {
     return env->NewStringUTF(str.c_str());
+}
+
+jobject createHoverResultObject(JNIEnv* env, const ProtocolHandler::HoverResult& result) {
+    jclass cls = env->FindClass("com/wuxianggujun/tinaide/lsp/model/HoverResult");
+    if (!cls) {
+        LOGE("HoverResult class not found");
+        return nullptr;
+    }
+    jmethodID ctor = env->GetMethodID(cls, "<init>", "(Ljava/lang/String;IIII)V");
+    if (!ctor) {
+        LOGE("HoverResult constructor not found");
+        env->DeleteLocalRef(cls);
+        return nullptr;
+    }
+    jstring content = stringToJstring(env, result.content);
+    jobject obj = env->NewObject(
+        cls,
+        ctor,
+        content,
+        static_cast<jint>(result.start_line),
+        static_cast<jint>(result.start_character),
+        static_cast<jint>(result.end_line),
+        static_cast<jint>(result.end_character)
+    );
+    env->DeleteLocalRef(content);
+    env->DeleteLocalRef(cls);
+    return obj;
+}
+
+jobject createCompletionItemObject(JNIEnv* env, const ProtocolHandler::CompletionItem& item) {
+    jclass cls = env->FindClass("com/wuxianggujun/tinaide/lsp/model/CompletionItem");
+    if (!cls) {
+        LOGE("CompletionItem class not found");
+        return nullptr;
+    }
+    jmethodID ctor = env->GetMethodID(
+        cls,
+        "<init>",
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ)V"
+    );
+    if (!ctor) {
+        LOGE("CompletionItem ctor not found");
+        env->DeleteLocalRef(cls);
+        return nullptr;
+    }
+
+    jstring label = stringToJstring(env, item.label);
+    jstring detail = stringToJstring(env, item.detail);
+    jstring insert_text = stringToJstring(env, item.insert_text);
+    jstring documentation = stringToJstring(env, item.documentation);
+
+    jobject obj = env->NewObject(
+        cls,
+        ctor,
+        label,
+        detail,
+        insert_text,
+        documentation,
+        static_cast<jint>(item.kind),
+        static_cast<jboolean>(item.deprecated)
+    );
+
+    env->DeleteLocalRef(label);
+    env->DeleteLocalRef(detail);
+    env->DeleteLocalRef(insert_text);
+    env->DeleteLocalRef(documentation);
+    env->DeleteLocalRef(cls);
+    return obj;
+}
+
+jobject createArrayList(JNIEnv* env) {
+    jclass list_cls = env->FindClass("java/util/ArrayList");
+    if (!list_cls) {
+        LOGE("ArrayList class not found");
+        return nullptr;
+    }
+    jmethodID ctor = env->GetMethodID(list_cls, "<init>", "()V");
+    if (!ctor) {
+        LOGE("ArrayList ctor not found");
+        env->DeleteLocalRef(list_cls);
+        return nullptr;
+    }
+    jobject list_obj = env->NewObject(list_cls, ctor);
+    env->DeleteLocalRef(list_cls);
+    return list_obj;
+}
+
+bool addToList(JNIEnv* env, jobject list_obj, jobject element) {
+    jclass list_cls = env->GetObjectClass(list_obj);
+    jmethodID add_method = env->GetMethodID(list_cls, "add", "(Ljava/lang/Object;)Z");
+    if (!add_method) {
+        LOGE("ArrayList.add not found");
+        env->DeleteLocalRef(list_cls);
+        return false;
+    }
+    env->CallBooleanMethod(list_obj, add_method, element);
+    env->DeleteLocalRef(list_cls);
+    return true;
+}
+
+jobject createCompletionResultObject(JNIEnv* env, const ProtocolHandler::CompletionResult& result) {
+    jobject list_obj = createArrayList(env);
+    if (!list_obj) {
+        return nullptr;
+    }
+
+    for (const auto& item : result.items) {
+        jobject item_obj = createCompletionItemObject(env, item);
+        if (!item_obj) {
+            env->DeleteLocalRef(list_obj);
+            return nullptr;
+        }
+        addToList(env, list_obj, item_obj);
+        env->DeleteLocalRef(item_obj);
+    }
+
+    jclass cls = env->FindClass("com/wuxianggujun/tinaide/lsp/model/CompletionResult");
+    if (!cls) {
+        env->DeleteLocalRef(list_obj);
+        LOGE("CompletionResult class not found");
+        return nullptr;
+    }
+    jmethodID ctor = env->GetMethodID(cls, "<init>", "(Ljava/util/List;Z)V");
+    if (!ctor) {
+        env->DeleteLocalRef(cls);
+        env->DeleteLocalRef(list_obj);
+        LOGE("CompletionResult ctor not found");
+        return nullptr;
+    }
+
+    jobject obj = env->NewObject(
+        cls,
+        ctor,
+        list_obj,
+        static_cast<jboolean>(result.is_incomplete)
+    );
+
+    env->DeleteLocalRef(cls);
+    env->DeleteLocalRef(list_obj);
+    return obj;
+}
+
+jobject createLocationObject(JNIEnv* env, const ProtocolHandler::Location& location) {
+    jclass cls = env->FindClass("com/wuxianggujun/tinaide/lsp/model/Location");
+    if (!cls) {
+        LOGE("Location class not found");
+        return nullptr;
+    }
+    jmethodID ctor = env->GetMethodID(cls, "<init>", "(Ljava/lang/String;IIII)V");
+    if (!ctor) {
+        LOGE("Location ctor not found");
+        env->DeleteLocalRef(cls);
+        return nullptr;
+    }
+
+    jstring file_path = stringToJstring(env, location.file_path);
+    jobject obj = env->NewObject(
+        cls,
+        ctor,
+        file_path,
+        static_cast<jint>(location.start_line),
+        static_cast<jint>(location.start_character),
+        static_cast<jint>(location.end_line),
+        static_cast<jint>(location.end_character)
+    );
+
+    env->DeleteLocalRef(file_path);
+    env->DeleteLocalRef(cls);
+    return obj;
+}
+
+jobject createLocationList(JNIEnv* env, const std::vector<ProtocolHandler::Location>& locations) {
+    jobject list_obj = createArrayList(env);
+    if (!list_obj) {
+        return nullptr;
+    }
+
+    for (const auto& location : locations) {
+        jobject loc_obj = createLocationObject(env, location);
+        if (!loc_obj) {
+            env->DeleteLocalRef(list_obj);
+            return nullptr;
+        }
+        addToList(env, list_obj, loc_obj);
+        env->DeleteLocalRef(loc_obj);
+    }
+
+    return list_obj;
 }
 
 } // anonymous namespace
@@ -177,10 +366,10 @@ Java_com_wuxianggujun_tinaide_lsp_NativeLspService_nativeCancelRequest(
 // 结果获取接口（简化版，返回 null 或 Java 对象）
 // ============================================================================
 
-extern "C" JNIEXPORT jstring JNICALL
+extern "C" JNIEXPORT jobject JNICALL
 Java_com_wuxianggujun_tinaide_lsp_NativeLspService_nativeGetHoverResult(
     JNIEnv* env,
-    jclass clazz,
+    jclass /*clazz*/,
     jlong requestId
 ) {
     auto* client = NativeLspClient::getInstance();
@@ -190,13 +379,53 @@ Java_com_wuxianggujun_tinaide_lsp_NativeLspService_nativeGetHoverResult(
         return nullptr;  // 未完成
     }
 
-    // 简化：直接返回 content 字符串
-    // TODO: 返回完整的 HoverResult 对象
-    return stringToJstring(env, result->content);
+    return createHoverResultObject(env, result.value());
 }
 
-// TODO: 实现其他结果获取函数（Completion, Definition, References）
-// 需要创建对应的 Java 类并进行复杂的对象构建
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_wuxianggujun_tinaide_lsp_NativeLspService_nativeGetCompletionResult(
+    JNIEnv* env,
+    jclass /*clazz*/,
+    jlong requestId
+) {
+    auto* client = NativeLspClient::getInstance();
+    auto result = client->getCompletionResult(static_cast<uint64_t>(requestId));
+    if (!result.has_value()) {
+        return nullptr;
+    }
+
+    return createCompletionResultObject(env, result.value());
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_wuxianggujun_tinaide_lsp_NativeLspService_nativeGetDefinitionResult(
+    JNIEnv* env,
+    jclass /*clazz*/,
+    jlong requestId
+) {
+    auto* client = NativeLspClient::getInstance();
+    auto result = client->getDefinitionResult(static_cast<uint64_t>(requestId));
+    if (!result.has_value()) {
+        return nullptr;
+    }
+
+    return createLocationList(env, result.value());
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_wuxianggujun_tinaide_lsp_NativeLspService_nativeGetReferencesResult(
+    JNIEnv* env,
+    jclass /*clazz*/,
+    jlong requestId
+) {
+    auto* client = NativeLspClient::getInstance();
+    auto result = client->getReferencesResult(static_cast<uint64_t>(requestId));
+    if (!result.has_value()) {
+        return nullptr;
+    }
+
+    return createLocationList(env, result.value());
+}
 
 // ============================================================================
 // 文件管理

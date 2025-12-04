@@ -580,10 +580,11 @@ void ClangdLSPServer::sendLargeResponse(const json::Value& response) {
 | Editor Native Hover | ✅ | `NativeLspRequestBridge` + `EditorFragment` 订阅光标变更，自动调用 Native Hover 并以 Toast 形式展示，验证 Native 结果通路。 |
 | Clangd 路径自动发现 | ✅ | `NativeLspBinaryResolver` 会扫描 sysroot (`files/sysroot/usr/lib/<triple>/runtime/`) 中的 `libclangd.so` 并通过 `NativeLspService.setDefaultClangdBinary()` 注入，避免手工配置 `/data/data/.../clangd`；Benchmark 自检与编辑器两条链路均已接入。 |
 | Completion/Definition 桥接 | ✅ | `NativeLspRequestBridge` 新增 Completion/Definition/References API，EditorFragment 在 Debug 模式下会显示顶层补全项与 Definition 结果，验证 Native 结果链路。 |
+| Tree-sitter Completion 接管 | ✅ | `CppTreeSitterLanguageProvider` 覆写 `requireAutoComplete`，当 CodeEditor 触发补全时直接调用 Native completion 结果并映射为 `SimpleCompletionItem`，Sora 自动补全面板已显示真实 clangd 数据。 |
 
 **Stage 3 剩余任务（待执行）**
 
-1. **Native Completion/Definition UI 接管**：目前仅以 Toast 形式展示顶层结果，下一步需要真正把 Native Completion/Definition 注入 Sora 的自动补全面板与跳转动作，替换旧 Java LSP 的 UI 行为。
+1. **Native Definition/References UI 接管**：补全面板已接入 Native 数据，仍需将 Definition/References 注入 Sora 或现有跳转面板（而非 Toast），完成 Native 结果的交互闭环。
 2. **Diagnostics & compile_commands 自动化**：REAL 模式依赖正确的 `compile_commands.json` 与 clangd 诊断回传，需实现文档同步后的 diagnostics 转发、错误面板渲染，以及一键生成/刷新 compile_commands 的入口。
 3. **真实场景自检扩展**：在 Benchmark Activity 外，还需补充 instrumentation/monkey 测试脚本，验证长时间运行下的内存、FD、线程稳定性，并记录性能基线。
 4. **回退策略与灰度**：补全 Native 功能后，需要在 `LspConfig` 中实现按 AB/开关回退旧 Java LSP 客户端的逻辑，并制定监控指标（崩溃率、Hover/Completion latency）以支撑灰度上线。

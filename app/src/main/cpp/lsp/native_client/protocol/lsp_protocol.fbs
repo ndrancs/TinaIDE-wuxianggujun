@@ -20,7 +20,10 @@ enum Method : uint16 {
     CODE_ACTION = 7,
     SIGNATURE_HELP = 8,
     RENAME = 9,
-    WORKSPACE_SYMBOLS = 10
+    WORKSPACE_SYMBOLS = 10,
+    DID_OPEN = 100,
+    DID_CHANGE = 101,
+    DID_CLOSE = 102
 }
 
 /// 请求状态
@@ -133,6 +136,27 @@ table ReferencesResponse {
     locations: [Location];  // 引用位置列表
 }
 
+/// DidOpen 通知（全量同步）
+table DidOpenTextDocumentNotification {
+    file_id: uint32;
+    file_uri: string (required);
+    language_id: string;
+    version: uint32;
+    content: string;
+}
+
+/// DidChange 通知（全量同步）
+table DidChangeTextDocumentNotification {
+    file_id: uint32;
+    version: uint32;
+    content: string;
+}
+
+/// DidClose 通知
+table DidCloseTextDocumentNotification {
+    file_id: uint32;
+}
+
 // ====================================================================================
 // 通用请求/响应包装器
 // ====================================================================================
@@ -142,7 +166,10 @@ union RequestData {
     HoverRequest,
     CompletionRequest,
     DefinitionRequest,
-    ReferencesRequest
+    ReferencesRequest,
+    DidOpenTextDocumentNotification,
+    DidChangeTextDocumentNotification,
+    DidCloseTextDocumentNotification
 }
 
 /// 响应数据 Union
