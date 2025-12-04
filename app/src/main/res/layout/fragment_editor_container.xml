@@ -168,16 +168,14 @@
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:text="0" />
 
-            <ImageButton
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_navigation_results_close"
                 style="@style/Widget.Material3.Button.IconButton"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/native_navigation_close"
-                android:padding="8dp"
-                android:src="@android:drawable/ic_menu_close_clear_cancel"
-                android:tint="?attr/colorOnSurface" />
+                app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                app:iconTint="?attr/colorOnSurface" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
