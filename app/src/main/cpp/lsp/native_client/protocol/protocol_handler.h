@@ -85,6 +85,27 @@ public:
         bool include_declaration = true
     );
 
+    std::vector<uint8_t> buildDidOpenNotification(
+        uint64_t request_id,
+        uint32_t file_id,
+        const std::string& file_uri,
+        const std::string& language_id,
+        uint32_t version,
+        const std::string& content
+    );
+
+    std::vector<uint8_t> buildDidChangeNotification(
+        uint64_t request_id,
+        uint32_t file_id,
+        uint32_t version,
+        const std::string& content
+    );
+
+    std::vector<uint8_t> buildDidCloseNotification(
+        uint64_t request_id,
+        uint32_t file_id
+    );
+
     /**
      * 构建取消请求
      */

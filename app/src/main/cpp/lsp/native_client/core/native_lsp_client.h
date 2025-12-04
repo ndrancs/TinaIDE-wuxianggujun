@@ -11,6 +11,7 @@
 #include "lsp_result_cache.h"
 #include <memory>
 #include <string>
+#include <optional>
 #include <atomic>
 #include <thread>
 #include <mutex>
@@ -22,6 +23,7 @@ namespace lsp {
 
 // 前向声明
 class ClangdProcess;
+class MockLspServer;
 
 /**
  * Native LSP 客户端
@@ -190,7 +192,8 @@ private:
     std::unique_ptr<SharedMemoryTransport> transport_;
     std::unique_ptr<LspRequestManager> request_manager_;
     std::unique_ptr<LspResultCache> result_cache_;
-    // std::unique_ptr<ClangdProcess> clangd_process_;  // TODO: 实现 clangd 进程管理
+    std::unique_ptr<ClangdProcess> clangd_process_;
+    ChannelConfig channel_config_;
 
     // ========================================================================
     // 线程模型
@@ -202,12 +205,48 @@ private:
     std::atomic<bool> initialized_{false};
     std::atomic<bool> running_{false};
 
+    struct PendingRequestInfo {
+        protocol::Method method;
+        uint32_t file_id;
+        uint32_t line;
+        uint32_t character;
+        uint32_t file_version;
+        bool completed = false;
+    };
+
+    std::mutex pending_request_mutex_;
+    std::unordered_map<uint64_t, PendingRequestInfo> pending_requests_;
+
     // ========================================================================
     // 工作线程函数
     // ========================================================================
 
     void ioThreadFunc();       // I/O 事件循环
     void workerThreadFunc();   // 请求处理循环
+
+    // ========================================================================
+    // 内部辅助
+    // ========================================================================
+
+    bool enqueueRequest(
+        protocol::Method method,
+        uint64_t request_id,
+        std::vector<uint8_t> data,
+        uint32_t file_id,
+        uint32_t line,
+        uint32_t character,
+        uint32_t file_version,
+        RequestPriority priority = RequestPriority::NORMAL
+    );
+
+    RequestPriority priorityForMethod(protocol::Method method) const;
+    void removePendingRequest(uint64_t request_id);
+    void markRequestCompleted(uint64_t request_id);
+    std::optional<PendingRequestInfo> getRequestInfo(uint64_t request_id);
+    bool handleControlMessage(const Message& msg);
+    bool extractPayloadFromMessage(const Message& msg, std::vector<uint8_t>& payload);
+    bool sendNotificationPacket(uint64_t request_id, const std::vector<uint8_t>& data);
+    std::string resolveSocketPath(const std::string& work_dir) const;
 
     // ========================================================================
     // 文件映射（URI <-> ID）

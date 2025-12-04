@@ -23,7 +23,19 @@ function Resolve-PlatformKey {
         throw "Unsupported host OS. Please install flatc manually."
     }
 
-    $arch = $runtime::ProcessArchitecture.ToString().ToLowerInvariant()
+    $archValue = $null
+    try {
+        $archValue = $runtime::ProcessArchitecture
+    } catch {
+        $archValue = $null
+    }
+
+    $arch = if ($archValue) {
+        $archValue.ToString().ToLowerInvariant()
+    } else {
+        if ([IntPtr]::Size -eq 8) { "x64" } else { "x86" }
+    }
+
     switch ($arch) {
         "x64"   { $arch = "x86_64" }
         "arm64" { $arch = "arm64" }

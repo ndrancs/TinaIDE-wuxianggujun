@@ -43,7 +43,7 @@ std::vector<uint8_t> ProtocolHandler::buildHoverRequest(
         hover_req.Union()
     );
 
-    builder_.Finish(request);
+    FinishRequestBuffer(builder_, request);
 
     // 提取数据
     uint8_t* buf = builder_.GetBufferPointer();
@@ -87,7 +87,7 @@ std::vector<uint8_t> ProtocolHandler::buildCompletionRequest(
         comp_req.Union()
     );
 
-    builder_.Finish(request);
+    FinishRequestBuffer(builder_, request);
 
     uint8_t* buf = builder_.GetBufferPointer();
     size_t size = builder_.GetSize();
@@ -119,7 +119,7 @@ std::vector<uint8_t> ProtocolHandler::buildDefinitionRequest(
         def_req.Union()
     );
 
-    builder_.Finish(request);
+    FinishRequestBuffer(builder_, request);
 
     uint8_t* buf = builder_.GetBufferPointer();
     size_t size = builder_.GetSize();
@@ -158,11 +158,111 @@ std::vector<uint8_t> ProtocolHandler::buildReferencesRequest(
         ref_req.Union()
     );
 
-    builder_.Finish(request);
+    FinishRequestBuffer(builder_, request);
 
     uint8_t* buf = builder_.GetBufferPointer();
     size_t size = builder_.GetSize();
 
+    return std::vector<uint8_t>(buf, buf + size);
+}
+
+std::vector<uint8_t> ProtocolHandler::buildDidOpenNotification(
+    uint64_t request_id,
+    uint32_t file_id,
+    const std::string& file_uri,
+    const std::string& language_id,
+    uint32_t version,
+    const std::string& content
+) {
+    resetBuilder();
+
+    auto uri_offset = builder_.CreateString(file_uri);
+    auto lang_offset = language_id.empty() ? 0 : builder_.CreateString(language_id);
+    auto content_offset = builder_.CreateString(content);
+
+    auto open_notif = CreateDidOpenTextDocumentNotification(
+        builder_,
+        file_id,
+        uri_offset,
+        lang_offset,
+        version,
+        content_offset
+    );
+
+    auto request = CreateRequest(
+        builder_,
+        request_id,
+        Method::DID_OPEN,
+        Priority::NORMAL,
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count(),
+        RequestData::DidOpenTextDocumentNotification,
+        open_notif.Union()
+    );
+
+    FinishRequestBuffer(builder_, request);
+    uint8_t* buf = builder_.GetBufferPointer();
+    size_t size = builder_.GetSize();
+    return std::vector<uint8_t>(buf, buf + size);
+}
+
+std::vector<uint8_t> ProtocolHandler::buildDidChangeNotification(
+    uint64_t request_id,
+    uint32_t file_id,
+    uint32_t version,
+    const std::string& content
+) {
+    resetBuilder();
+
+    auto content_offset = builder_.CreateString(content);
+    auto change_notif = CreateDidChangeTextDocumentNotification(
+        builder_,
+        file_id,
+        version,
+        content_offset
+    );
+
+    auto request = CreateRequest(
+        builder_,
+        request_id,
+        Method::DID_CHANGE,
+        Priority::NORMAL,
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count(),
+        RequestData::DidChangeTextDocumentNotification,
+        change_notif.Union()
+    );
+
+    FinishRequestBuffer(builder_, request);
+    uint8_t* buf = builder_.GetBufferPointer();
+    size_t size = builder_.GetSize();
+    return std::vector<uint8_t>(buf, buf + size);
+}
+
+std::vector<uint8_t> ProtocolHandler::buildDidCloseNotification(
+    uint64_t request_id,
+    uint32_t file_id
+) {
+    resetBuilder();
+
+    auto close_notif = CreateDidCloseTextDocumentNotification(builder_, file_id);
+    auto request = CreateRequest(
+        builder_,
+        request_id,
+        Method::DID_CLOSE,
+        Priority::NORMAL,
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()
+        ).count(),
+        RequestData::DidCloseTextDocumentNotification,
+        close_notif.Union()
+    );
+
+    FinishRequestBuffer(builder_, request);
+    uint8_t* buf = builder_.GetBufferPointer();
+    size_t size = builder_.GetSize();
     return std::vector<uint8_t>(buf, buf + size);
 }
 
