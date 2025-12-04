@@ -15,6 +15,8 @@ import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
 import com.wuxianggujun.tinaide.editor.language.cpp.CppTreeSitterLanguageProvider
 import com.wuxianggujun.tinaide.extensions.toastInfo
 import com.wuxianggujun.tinaide.lsp.model.HoverResult
+import com.wuxianggujun.tinaide.lsp.model.CompletionResult
+import com.wuxianggujun.tinaide.lsp.model.Location
 import io.github.rosemoe.sora.event.SelectionChangeEvent
 import io.github.rosemoe.sora.event.SubscriptionReceipt
 import io.github.rosemoe.sora.widget.subscribeEvent
@@ -40,6 +42,8 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     private var nativeLspHandle: NativeLspDocumentBridge.Handle? = null
     private var hoverSubscription: SubscriptionReceipt<SelectionChangeEvent>? = null
     private var lastNativeHoverSignature: String? = null
+    private var lastNativeCompletionSignature: String? = null
+    private var lastNativeDefinitionSignature: String? = null
     
     companion object {
         private const val ARG_FILE_PATH = "file_path"
@@ -337,12 +341,12 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
             workDir = projectPath
         ) { result ->
             if (result != null) {
-                showNativeHover(result)
+                showNativeHover(filePath, line, column, result)
             }
         }
     }
 
-    private fun showNativeHover(result: HoverResult) {
+    private fun showNativeHover(filePath: String, line: Int, column: Int, result: HoverResult) {
         val normalized = result.content.trim()
         if (normalized.isEmpty()) {
             return
@@ -354,6 +358,57 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
         lastNativeHoverSignature = signature
         binding.root.post {
             requireContext().toastInfo("Native Hover: $normalized")
+        }
+        requestNativeCompletion(filePath, line, column)
+        requestNativeDefinition(filePath, line, column)
+    }
+
+    private fun requestNativeCompletion(filePath: String, line: Int, column: Int) {
+        NativeLspRequestBridge.requestCompletion(
+            filePath = filePath,
+            line = line,
+            column = column,
+            workDir = projectPath
+        ) { result ->
+            showNativeCompletion(line, column, result)
+        }
+    }
+
+    private fun showNativeCompletion(line: Int, column: Int, result: CompletionResult?) {
+        val first = result?.items?.firstOrNull() ?: return
+        val signature = "$line:$column:${first.label}"
+        if (signature == lastNativeCompletionSignature) {
+            return
+        }
+        lastNativeCompletionSignature = signature
+        binding.root.post {
+            requireContext().toastInfo("Native Completion ▸ ${first.label}")
+        }
+    }
+
+    private fun requestNativeDefinition(filePath: String, line: Int, column: Int) {
+        NativeLspRequestBridge.requestDefinition(
+            filePath = filePath,
+            line = line,
+            column = column,
+            workDir = projectPath
+        ) { locations ->
+            showNativeDefinition(locations?.firstOrNull())
+        }
+    }
+
+    private fun showNativeDefinition(location: Location?) {
+        if (location == null) {
+            return
+        }
+        val signature = "${location.filePath}:${location.startLine}:${location.startCharacter}"
+        if (signature == lastNativeDefinitionSignature) {
+            return
+        }
+        lastNativeDefinitionSignature = signature
+        binding.root.post {
+            val preview = "${location.filePath}:${location.startLine + 1}"
+            requireContext().toastInfo("Native Definition ▸ $preview")
         }
     }
 }
