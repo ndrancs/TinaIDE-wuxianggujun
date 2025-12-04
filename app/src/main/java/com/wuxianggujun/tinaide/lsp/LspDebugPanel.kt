@@ -3,7 +3,7 @@ package com.wuxianggujun.tinaide.lsp
 import android.content.Context
 import android.util.Log
 import com.wuxianggujun.tinaide.output.LogLevel
-import com.wuxianggujun.tinaide.output.OutputManager
+import com.wuxianggujun.tinaide.ui.BottomLogBuffer
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -158,12 +158,7 @@ object LspDebugPanel {
             LogLevel.FAIL -> Log.e(TAG, fullMessage)
         }
         
-        // 输出到 OutputManager（如果可用）
-        try {
-            OutputManager.appendLog(level, fullMessage)
-        } catch (e: Exception) {
-            // OutputManager 可能未初始化，忽略
-        }
+        BottomLogBuffer.append(level, fullMessage)
     }
     
     fun logRaw(message: String) {

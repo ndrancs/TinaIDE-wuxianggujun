@@ -5,12 +5,9 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.wuxianggujun.tinaide.R
-import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.databinding.BottomSheetLogPanelBinding
 import com.wuxianggujun.tinaide.lsp.NativeLspService
-import com.wuxianggujun.tinaide.output.IOutputManager
 import com.wuxianggujun.tinaide.output.LogLevel
-import com.wuxianggujun.tinaide.output.OutputManager
 
 /**
  * 底部日志面板管理器
@@ -29,12 +26,7 @@ class BottomLogPanel(
     
     private val binding: BottomSheetLogPanelBinding
     private val bottomSheetBehavior: BottomSheetBehavior<*>
-    private val outputManager: IOutputManager? = try {
-        ServiceLocator.get(IOutputManager::class.java)
-    } catch (_: Throwable) {
-        null
-    }
-    private var outputListener: IOutputManager.OutputListener? = null
+    private var logListener: BottomLogBuffer.LogListener? = null
     private var initListener: NativeLspService.InitializationListener? = null
     private var healthListener: NativeLspService.HealthListener? = null
     
@@ -70,33 +62,19 @@ class BottomLogPanel(
         }
         initListener?.let { NativeLspService.addInitializationListener(it) }
         healthListener?.let { NativeLspService.addHealthListener(it) }
-        bindOutput()
+        bindLogs()
     }
 
-    private fun bindOutput() {
-        outputListener = object : IOutputManager.OutputListener {
-            override fun onOutputAppended(text: String) {
-                binding.logView.post {
-                    binding.logView.appendLog(text)
-                }
-            }
-
-            override fun onOutputCleared() {
-                binding.logView.post {
-                    binding.logView.clearLog()
-                }
+    private fun bindLogs() {
+        logListener = BottomLogBuffer.LogListener { entry ->
+            binding.logView.post {
+                binding.logView.appendLog(entry.level, entry.message)
             }
         }
-
-        outputManager?.let { manager ->
-            val existing = manager.getOutput()
-            if (existing.isNotEmpty()) {
-                binding.logView.setText(existing)
-            }
-            outputListener?.let { manager.addOutputListener(it) }
+        logListener?.let { listener ->
+            BottomLogBuffer.replayTo(listener)
+            BottomLogBuffer.addListener(listener)
         }
-
-        OutputManager.setLogView(binding.logView)
     }
     
     private fun setupToolbar() {
@@ -147,6 +125,7 @@ class BottomLogPanel(
     }
     
     fun clearLog() {
+        BottomLogBuffer.clear()
         binding.logView.clearLog()
     }
     
@@ -176,12 +155,10 @@ class BottomLogPanel(
     }
 
     fun destroy() {
-        outputListener?.let { listener ->
-            outputManager?.removeOutputListener(listener)
-        }
+        logListener?.let { BottomLogBuffer.removeListener(it) }
+        logListener = null
         initListener?.let { NativeLspService.removeInitializationListener(it) }
         healthListener?.let { NativeLspService.removeHealthListener(it) }
-        OutputManager.setLogView(null)
     }
     
     private fun Int.dpToPx(): Int {
