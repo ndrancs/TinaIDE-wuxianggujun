@@ -75,7 +75,7 @@ class BottomLogPanel(
         outputManager?.let { manager ->
             val existing = manager.getOutput()
             if (existing.isNotEmpty()) {
-                binding.logView.appendLog(existing)
+                binding.logView.setText(existing)
             }
             outputListener?.let { manager.addOutputListener(it) }
         }
