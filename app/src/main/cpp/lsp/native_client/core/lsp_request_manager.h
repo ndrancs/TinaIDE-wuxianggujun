@@ -53,6 +53,7 @@ struct RequestEntry {
     uint32_t file_id;                       // 文件 ID（用于防抖）
     uint32_t line;                          // 行号
     uint32_t character;                     // 列号
+    uint32_t file_version;                  // 文件版本号（用于调试/缓存）
 
     // 时间戳
     std::chrono::steady_clock::time_point created_at;   // 创建时间
@@ -112,6 +113,7 @@ public:
         uint32_t file_id = 0,
         uint32_t line = 0,
         uint32_t character = 0,
+        uint32_t file_version = 0,
         uint32_t timeout_ms = 5000,
         std::function<void(RequestStatus)> callback = nullptr
     );

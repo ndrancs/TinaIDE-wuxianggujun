@@ -25,6 +25,7 @@ import com.wuxianggujun.tinaide.extensions.handleErrorWithToast
 import com.wuxianggujun.tinaide.ui.CompilerViewModel
 import com.wuxianggujun.tinaide.ui.CompileState
 import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
+import com.wuxianggujun.tinaide.lsp.model.Diagnostic
 import com.wuxianggujun.tinaide.utils.FileUtils
 import com.wuxianggujun.tinaide.utils.Logger
 import java.io.File
@@ -67,7 +68,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private lateinit var uiManager: IUIManager
     private lateinit var outputManager: IOutputManager
     private lateinit var compilerViewModel: CompilerViewModel
-    private lateinit var bottomLogPanel: com.wuxianggujun.tinaide.ui.BottomLogPanel
+    private lateinit var bottomPanelManager: com.wuxianggujun.tinaide.ui.BottomPanelManager
 
     private var navHeaderBinding: IncludeFileTreeHeaderBinding? = null
 
@@ -94,14 +95,17 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                         }
                         is CompileState.Compiling -> {
                             showLoading("正在编译项目...", cancelable = false)
+                            bottomPanelManager.setBuildSucceeded(false)
                         }
                         is CompileState.Success -> {
                             hideLoading()
                             toastSuccess("编译完成")
+                            bottomPanelManager.setBuildSucceeded(true)
                         }
                         is CompileState.Error -> {
                             hideLoading()
                             toastError(state.message)
+                            bottomPanelManager.setBuildSucceeded(false)
                         }
                     }
                 }
@@ -180,10 +184,19 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         updateProjectHeaderName()
     }
     private fun setupBottomPanel() {
-        bottomLogPanel = com.wuxianggujun.tinaide.ui.BottomLogPanel(
+        bottomPanelManager = com.wuxianggujun.tinaide.ui.BottomPanelManager(
+            activity = this,
             container = binding.bottomPanelContainer,
             onCompile = { onCompileProject() },
-            onStop = { /* TODO: 实现停止功能 */ }
+            onStop = { /* TODO: 实现停止功能 */ },
+            onOpenOutput = { 
+                // 打开编译输出界面
+                outputManager.showOutput()
+            },
+            onDiagnosticClick = { diagnostic ->
+                // TODO: 跳转到诊断对应的代码位置
+                toastInfo("诊断: ${diagnostic.message} (${diagnostic.uri}:${diagnostic.range.start.line + 1})")
+            }
         )
     }
 
@@ -250,8 +263,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         )
     }
     override fun onDestroy() {
-        if (::bottomLogPanel.isInitialized) {
-            bottomLogPanel.destroy()
+        if (::bottomPanelManager.isInitialized) {
+            bottomPanelManager.destroy()
         }
         super.onDestroy()
         // 只清理 Activity 级服务（UIManager），EditorManager 为应用级单例不清理
@@ -261,8 +274,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private fun onCompileProject() {
         when (outputManager.getOutputMode()) {
             IOutputManager.OutputMode.BOTTOM_PANEL -> {
-                bottomLogPanel.clearLog()
-                bottomLogPanel.expand()
+                bottomPanelManager.clearBuildLog()
+                bottomPanelManager.switchToBuildLog()
+                bottomPanelManager.expand()
             }
             IOutputManager.OutputMode.ACTIVITY -> {
                 outputManager.showOutput()

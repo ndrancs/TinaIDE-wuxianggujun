@@ -270,6 +270,9 @@ private:
 
     // 移除指定条目
     void remove(typename std::list<CacheEntry>::iterator it);
+
+    // 计算命中率（调用者需持有锁）
+    double computeHitRateLocked() const;
 };
 
 } // namespace lsp

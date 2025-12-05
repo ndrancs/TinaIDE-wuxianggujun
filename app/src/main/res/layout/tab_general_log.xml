@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 日志 Tab 布局 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface">
+
+    <!-- 工具栏 -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:scrollbars="none"
+        android:background="?attr/colorSurfaceVariant">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:gravity="center_vertical">
+
+            <!-- 清空日志 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_clear"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="清空"
+                app:icon="@drawable/ic_clear"
+                app:iconTint="?attr/colorOnSurfaceVariant" />
+
+            <!-- 保存日志 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_save"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="保存"
+                app:icon="@drawable/ic_save"
+                app:iconTint="?attr/colorOnSurfaceVariant" />
+
+            <!-- LSP 状态指示器 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
+
+                <View
+                    android:id="@+id/lsp_status_indicator"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/lsp_status_indicator"
+                    android:backgroundTint="?attr/colorError" />
+
+                <TextView
+                    android:id="@+id/tv_lsp_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="LSP 未连接"
+                    android:textSize="12sp"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+    <!-- 通用日志显示区域 -->
+    <com.wuxianggujun.tinaide.output.LogTextView
+        android:id="@+id/general_log_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>

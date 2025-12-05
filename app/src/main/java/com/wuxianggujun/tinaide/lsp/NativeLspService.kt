@@ -55,7 +55,7 @@ object NativeLspService {
     private const val DEFAULT_CLANGD_PATH = "/data/data/com.wuxianggujun.tinaide/clangd"
 
     @Volatile
-    private var currentMode: NativeLspMode = NativeLspMode.MOCK
+    private var currentMode: NativeLspMode = NativeLspMode.REAL
 
     @Volatile
     private var currentSocketOverride: String? = null

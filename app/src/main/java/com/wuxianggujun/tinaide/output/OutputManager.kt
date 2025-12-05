@@ -123,14 +123,14 @@ class OutputManager(private val context: Context) : IOutputManager {
         private const val TAG = "OutputManager"
         
         @Volatile
-        private var logView: LogView? = null
+        private var logTextView: LogTextView? = null
         
-        fun setLogView(view: LogView?) {
-            logView = view
+        fun setLogView(view: LogTextView?) {
+            logTextView = view
         }
         
         fun appendLog(level: LogLevel, message: String) {
-            logView?.appendLog(level, message)
+            logTextView?.appendLog(level, message)
         }
     }
 }

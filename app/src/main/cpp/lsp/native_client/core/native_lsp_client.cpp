@@ -557,7 +557,7 @@ void NativeLspClient::didChangeTextDocument(
     }
 
     if (result_cache_) {
-        result_cache_->invalidateFile(file_id);
+        result_cache_->invalidateFileVersion(file_id, version);
     }
 
     if (!protocol_handler_) {
@@ -946,7 +946,8 @@ bool NativeLspClient::enqueueRequest(
         final_priority,
         file_id,
         line,
-        character
+        character,
+        file_version
     );
 
     if (!ok) {

@@ -236,13 +236,7 @@ size_t LspResultCache::maxSize() const {
 
 double LspResultCache::getHitRate() const {
     std::lock_guard<std::mutex> lock(mutex_);
-
-    uint64_t total = hits_ + misses_;
-    if (total == 0) {
-        return 0.0;
-    }
-
-    return static_cast<double>(hits_) / static_cast<double>(total);
+    return computeHitRateLocked();
 }
 
 void LspResultCache::resetStats() {
@@ -290,8 +284,9 @@ std::optional<CacheValue> LspResultCache::get(const CacheKey& key) {
     auto it = cache_map_.find(key);
     if (it == cache_map_.end()) {
         misses_++;
+        double hit_rate = computeHitRateLocked();
         LOGD("Cache miss (method=%d, file=%u, line=%u, char=%u, hit_rate=%.2f%%)",
-             (int)key.method, key.file_id, key.line, key.character, getHitRate() * 100.0);
+             (int)key.method, key.file_id, key.line, key.character, hit_rate * 100.0);
         return std::nullopt;
     }
 
@@ -299,8 +294,9 @@ std::optional<CacheValue> LspResultCache::get(const CacheKey& key) {
     hits_++;
     moveToFront(it->second);
 
+    double hit_rate = computeHitRateLocked();
     LOGD("Cache hit (method=%d, file=%u, line=%u, char=%u, hit_rate=%.2f%%)",
-         (int)key.method, key.file_id, key.line, key.character, getHitRate() * 100.0);
+         (int)key.method, key.file_id, key.line, key.character, hit_rate * 100.0);
 
     return it->second->value;
 }
@@ -336,6 +332,14 @@ void LspResultCache::remove(typename std::list<CacheEntry>::iterator it) {
 
     cache_map_.erase(it->key);
     lru_list_.erase(it);
+}
+
+double LspResultCache::computeHitRateLocked() const {
+    uint64_t total = hits_ + misses_;
+    if (total == 0) {
+        return 0.0;
+    }
+    return static_cast<double>(hits_) / static_cast<double>(total);
 }
 
 } // namespace lsp

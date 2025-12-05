@@ -31,6 +31,7 @@ bool LspRequestManager::enqueue(
     uint32_t file_id,
     uint32_t line,
     uint32_t character,
+    uint32_t file_version,
     uint32_t timeout_ms,
     std::function<void(RequestStatus)> callback
 ) {
@@ -79,6 +80,7 @@ bool LspRequestManager::enqueue(
     entry.file_id = file_id;
     entry.line = line;
     entry.character = character;
+    entry.file_version = file_version;
     entry.created_at = std::chrono::steady_clock::now();
     entry.timeout = std::chrono::milliseconds(timeout_ms);
     entry.callback = std::move(callback);
@@ -87,8 +89,15 @@ bool LspRequestManager::enqueue(
     pending_queue_.push(entry);
     request_map_[request_id] = entry;
 
-    LOGD("Enqueued request %llu (method=%d, priority=%d, queue_size=%zu)",
-         (unsigned long long)request_id, (int)method, (int)priority, pending_queue_.size());
+    LOGD("Enqueued request %llu (method=%d, priority=%d, queue_size=%zu, file=%u, line=%u, char=%u, version=%u)",
+         (unsigned long long)request_id,
+         (int)method,
+         (int)priority,
+         pending_queue_.size(),
+         file_id,
+         line,
+         character,
+         file_version);
 
     // 通知等待的线程
     cv_.notify_one();
@@ -125,8 +134,14 @@ std::optional<RequestEntry> LspRequestManager::dequeue(uint32_t wait_timeout_ms)
     entry.status = RequestStatus::IN_PROGRESS;
     request_map_[entry.request_id] = entry;
 
-    LOGD("Dequeued request %llu (method=%d, priority=%d)",
-         (unsigned long long)entry.request_id, (int)entry.method, (int)entry.priority);
+    LOGD("Dequeued request %llu (method=%d, priority=%d, file=%u, line=%u, char=%u, version=%u)",
+         (unsigned long long)entry.request_id,
+         (int)entry.method,
+         (int)entry.priority,
+         entry.file_id,
+         entry.line,
+         entry.character,
+         entry.file_version);
 
     return entry;
 }

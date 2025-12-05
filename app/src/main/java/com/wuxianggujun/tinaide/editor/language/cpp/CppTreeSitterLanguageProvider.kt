@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import com.itsaky.androidide.treesitter.cpp.TSLanguageCpp
 import com.wuxianggujun.tinaide.editor.EditorDocumentExtras
+import com.wuxianggujun.tinaide.core.lsp.NativeLspDocumentBridge
 import com.wuxianggujun.tinaide.lsp.NativeLspService
 import com.wuxianggujun.tinaide.lsp.model.CompletionItem as NativeCompletionItem
 import io.github.rosemoe.sora.editor.ts.LocalsCaptureSpec
@@ -22,11 +23,16 @@ import io.github.rosemoe.sora.text.ContentReference
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Provides Tree-sitter powered syntax highlighting for C/C++ sources.
@@ -177,6 +183,8 @@ private fun TsThemeBuilder.applyCppTheme() {
 private object CppNativeCompletionDispatcher {
 
     private const val TAG = "CppNativeCompletion"
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val completionJobs = ConcurrentHashMap<String, Job>()
 
     fun publish(
         content: ContentReference,
@@ -191,61 +199,127 @@ private object CppNativeCompletionDispatcher {
             Log.w(TAG, "Native client unavailable for completion ($filePath)")
             return false
         }
-        val prefixLength = computePrefixLength(content, position)
+        val completionContext = computeCompletionContext(content, position)
+        val prefixLength = completionContext.replacementLength
         val fileUri = Uri.fromFile(File(filePath)).toString()
-        Log.d(TAG, "Completion request -> file=$filePath line=${position.line} col=${position.column}")
-        val completionResult = try {
-            runBlocking(Dispatchers.IO) {
-                NativeLspService.requestCompletionAsync(
+        val key = buildKey(filePath, position)
+        Log.d(
+            TAG,
+            "Completion request -> file=$filePath line=${position.line} col=${position.column} key=$key prefix='${completionContext.scopePrefix}'"
+        )
+
+        completionJobs[key]?.cancel()
+        completionJobs[key] = scope.launch {
+            try {
+                runCatching {
+                    NativeLspDocumentBridge.flushPendingSync(filePath)
+                }.onFailure {
+                    Log.w(TAG, "Failed to flush pending sync before completion", it)
+                }
+                val completionResult = NativeLspService.requestCompletionAsync(
                     fileUri = fileUri,
                     line = position.line,
                     character = position.column
                 )
+
+                if (completionResult == null) {
+                    Log.d(TAG, "Completion result empty for key=$key")
+                    return@launch
+                }
+
+                val items = completionResult.items.map {
+                    it.toCompletionItem(prefixLength, completionContext.scopePrefix)
+                }
+                if (items.isEmpty()) {
+                    Log.d(TAG, "No completion items returned for key=$key")
+                    return@launch
+                }
+
+                withContext(Dispatchers.Main) {
+                    try {
+                        publisher.checkCancelled()
+                    } catch (cancelled: CancellationException) {
+                        Log.d(TAG, "Publisher cancelled before completion applied for key=$key")
+                        return@withContext
+                    }
+                    if (items.isNotEmpty()) {
+                        val preview = items.take(5).joinToString { item -> item.label.toString() }
+                        Log.d(
+                            TAG,
+                            "Completion result -> file=$filePath line=${position.line} col=${position.column} items=${items.size} preview=$preview"
+                        )
+                    }
+                    publisher.addItems(items)
+                    publisher.updateList(true)
+                }
+            } catch (cancelled: CancellationException) {
+                Log.d(TAG, "Completion coroutine cancelled for key=$key")
+            } catch (t: Throwable) {
+                Log.e(TAG, "Completion request failed for key=$key", t)
+            } finally {
+                completionJobs.remove(key)
             }
-        } catch (cancelled: CancellationException) {
-            Log.d(TAG, "Completion cancelled for $filePath:${position.line}:${position.column}")
-            return false
-        } catch (interrupted: InterruptedException) {
-            Log.w(TAG, "Completion interrupted for $filePath", interrupted)
-            Thread.currentThread().interrupt()
-            return false
-        } catch (t: Throwable) {
-            Log.e(TAG, "Completion request failed for $filePath", t)
-            return false
-        } ?: run {
-            Log.d(TAG, "Completion result empty for $filePath:${position.line}:${position.column}")
-            return false
         }
-        publisher.checkCancelled()
-        val items = completionResult.items.map {
-            it.toCompletionItem(prefixLength)
-        }
-        if (items.isEmpty()) {
-            Log.d(TAG, "No completion items returned for $filePath:${position.line}:${position.column}")
-            return false
-        }
-        Log.d(TAG, "Completion result -> file=$filePath line=${position.line} col=${position.column} items=${items.size}")
-        publisher.addItems(items)
-        publisher.updateList(true)
         return true
     }
 
-    private fun computePrefixLength(content: ContentReference, position: CharPosition): Int {
-        val lineText = runCatching { content.getLine(position.line) }.getOrNull() ?: return 0
+    private data class CompletionContext(
+        val replacementLength: Int,
+        val scopePrefix: String
+    )
+
+    private fun computeCompletionContext(
+        content: ContentReference,
+        position: CharPosition
+    ): CompletionContext {
+        val lineText = runCatching { content.getLine(position.line) }.getOrNull() ?: return CompletionContext(0, "")
         val caret = position.column.coerceIn(0, lineText.length)
-        var cursor = caret - 1
-        while (cursor >= 0 && isIdentifierChar(lineText[cursor])) {
-            cursor--
+        var identifierStart = caret
+        while (identifierStart > 0 && isIdentifierChar(lineText[identifierStart - 1])) {
+            identifierStart--
         }
-        val start = max(0, cursor + 1)
-        return caret - start
+        val scopeStart = findScopeStart(lineText, identifierStart)
+        val scopePrefix = lineText.substring(scopeStart, identifierStart)
+        return CompletionContext(
+            replacementLength = caret - identifierStart,
+            scopePrefix = scopePrefix
+        )
     }
 
     private fun isIdentifierChar(ch: Char): Boolean {
         return ch == '_' || ch == '$' || ch.isLetterOrDigit()
     }
 
-    private fun NativeCompletionItem.toCompletionItem(prefixLength: Int): SimpleCompletionItem {
+    private fun findScopeStart(lineText: String, identifierStart: Int): Int {
+        var scopeCursor = identifierStart
+        while (scopeCursor >= 2) {
+            val firstColon = scopeCursor - 1
+            val secondColon = scopeCursor - 2
+            if (lineText[firstColon] == ':' && lineText[secondColon] == ':') {
+                var prefixCursor = secondColon
+                while (prefixCursor > 0 && isIdentifierChar(lineText[prefixCursor - 1])) {
+                    prefixCursor--
+                }
+                if (prefixCursor == secondColon) {
+                    // 遇到 :: 但左侧没有标识符，停止
+                    break
+                }
+                scopeCursor = prefixCursor
+            } else {
+                break
+            }
+        }
+        return scopeCursor
+    }
+
+    private fun buildKey(filePath: String, position: CharPosition): String {
+        return "$filePath:${position.line}:${position.column}"
+    }
+
+    private fun NativeCompletionItem.toCompletionItem(
+        prefixLength: Int,
+        scopePrefix: String
+    ): SimpleCompletionItem {
         val commit = insertText.ifBlank { label }
         val description = detail
             .takeIf { it.isNotBlank() }
@@ -255,7 +329,8 @@ private object CppNativeCompletionDispatcher {
         val mappedKind = mapKind(kind)
         return SimpleCompletionItem(safeLabel, description, prefixLength, commit).apply {
             kind(mappedKind)
-            filterText = safeLabel.toString()
+            val scopedFilter = scopePrefix + safeLabel.toString()
+            filterText = if (scopePrefix.isNotEmpty()) scopedFilter else safeLabel.toString()
             sortText = safeLabel.toString()
             if (deprecated) {
                 desc("$description (deprecated)")

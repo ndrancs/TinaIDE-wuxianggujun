@@ -58,6 +58,11 @@ object NativeLspDocumentBridge {
         sessions.remove(absolutePath)?.dispose()
     }
 
+    suspend fun flushPendingSync(filePath: String) {
+        val absolutePath = File(filePath).absolutePath
+        sessions[absolutePath]?.flushPendingSync()
+    }
+
     class Handle internal constructor(private val key: String) {
         fun dispose() {
             NativeLspDocumentBridge.dispose(key)
@@ -120,15 +125,25 @@ object NativeLspDocumentBridge {
             pendingSync?.cancel()
             pendingSync = workerScope.launch {
                 delay(300)
-                val snapshot = readEditorText()
-                val nextVersion = incrementVersion()
-                LspDebugPanel.onDocumentChanged(fileUri, nextVersion)
-                val changeResult = runCatching {
-                    NativeLspService.nativeDidChangeTextDocument(fileUri, snapshot, nextVersion)
-                }
-                if (changeResult.isFailure) {
-                    Log.e(TAG, "Failed to send didChange", changeResult.exceptionOrNull())
-                }
+                sendSnapshot()
+            }
+        }
+
+        suspend fun flushPendingSync() {
+            if (disposed || !opened) return
+            pendingSync?.cancel()
+            sendSnapshot()
+        }
+
+        private suspend fun sendSnapshot() {
+            val snapshot = readEditorText()
+            val nextVersion = incrementVersion()
+            LspDebugPanel.onDocumentChanged(fileUri, nextVersion)
+            val changeResult = runCatching {
+                NativeLspService.nativeDidChangeTextDocument(fileUri, snapshot, nextVersion)
+            }
+            if (changeResult.isFailure) {
+                Log.e(TAG, "Failed to send didChange", changeResult.exceptionOrNull())
             }
         }
         private suspend fun readEditorText(): String {
@@ -144,7 +159,13 @@ object NativeLspDocumentBridge {
 
         private suspend fun ensureNativeClient(): Boolean {
             if (NativeLspService.nativeIsInitialized()) {
-                return true
+                val activeMode = NativeLspService.getServerMode()
+                if (activeMode == resolvedMode) {
+                    return true
+                }
+                Log.w(TAG, "Native LSP running in $activeMode, restarting for ${resolvedMode.name}")
+                runCatching { NativeLspService.nativeShutdown() }
+                    .onFailure { Log.w(TAG, "Failed to shutdown existing NativeLspService cleanly", it) }
             }
             NativeLspService.setServerMode(resolvedMode)
             val workDir = projectPath ?: "/"

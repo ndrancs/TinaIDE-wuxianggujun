@@ -14,6 +14,7 @@ import com.wuxianggujun.tinaide.core.nativebridge.SysrootLibraryLoader
 import com.wuxianggujun.tinaide.core.nativebridge.NativeLoader
 import com.wuxianggujun.tinaide.file.FileManager
 import com.wuxianggujun.tinaide.file.IFileManager
+import com.wuxianggujun.tinaide.utils.LogcatMonitor
 
 class TinaApplication : Application() {
 
@@ -27,6 +28,9 @@ class TinaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        
+        // 启动 Logcat 监听（自动捕获所有 Android Log 输出）
+        LogcatMonitor.start(packageName)
         
         // 注册全局 Crash 处理器（仅日志→交还系统处理，避免 UI 卡死）
         CrashHandler.install()

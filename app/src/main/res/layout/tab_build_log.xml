@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 构建日志 Tab 布局 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface">
+
+    <!-- 工具栏 -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:scrollbars="none"
+        android:background="?attr/colorSurfaceVariant">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:gravity="center_vertical">
+
+            <!-- 编译按钮 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_compile"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="编译"
+                app:icon="@drawable/ic_play"
+                app:iconTint="?attr/colorPrimary" />
+
+            <!-- 停止按钮 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_stop"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="停止"
+                app:icon="@drawable/ic_stop"
+                app:iconTint="?attr/colorError" />
+
+            <!-- 清空日志 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_clear"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="清空"
+                app:icon="@drawable/ic_clear"
+                app:iconTint="?attr/colorOnSurfaceVariant" />
+
+            <!-- 打开输出界面按钮 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_open_output"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="打开输出"
+                android:enabled="false"
+                app:icon="@drawable/ic_play"
+                app:iconTint="?attr/colorOnSurfaceVariant" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+    <!-- 构建日志显示区域 -->
+    <com.wuxianggujun.tinaide.output.LogTextView
+        android:id="@+id/build_log_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>
