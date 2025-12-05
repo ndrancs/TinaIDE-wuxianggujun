@@ -209,9 +209,14 @@ uint64_t NativeLspClient::requestHover(
         return 0;
     }
 
-    uint64_t request_id = generateRequestId();
     uint32_t file_id = getFileId(file_uri);
     uint32_t file_version = getFileVersion(file_uri);
+
+    // 取消同一文件的旧 hover 请求，避免 clangd 处理无效请求
+    // 注意：Java 层也会取消对应的协程，所以这里取消不会导致 Java 层空等
+    cancelPendingRequestsForFile(protocol::Method::HOVER, file_id);
+
+    uint64_t request_id = generateRequestId();
 
     LOGD("requestHover: id=%llu, file=%s, line=%u, char=%u",
          (unsigned long long)request_id, file_uri.c_str(), line, character);
@@ -251,9 +256,14 @@ uint64_t NativeLspClient::requestCompletion(
         return 0;
     }
 
-    uint64_t request_id = generateRequestId();
     uint32_t file_id = getFileId(file_uri);
     uint32_t file_version = getFileVersion(file_uri);
+
+    // 取消同一文件的旧补全请求，避免 clangd 处理无效请求
+    // 注意：Java 层也会取消对应的协程，所以这里取消不会导致 Java 层空等
+    cancelPendingRequestsForFile(protocol::Method::COMPLETION, file_id);
+
+    uint64_t request_id = generateRequestId();
 
     LOGD("requestCompletion: id=%llu, file=%s, line=%u, char=%u",
          (unsigned long long)request_id, file_uri.c_str(), line, character);
@@ -370,9 +380,31 @@ void NativeLspClient::cancelRequest(uint64_t request_id) {
 
     LOGD("cancelRequest: id=%llu", (unsigned long long)request_id);
 
+    // 检查请求状态，如果已发送则需要通知 clangd 取消
+    bool need_notify_clangd = false;
     if (request_manager_) {
+        auto status = request_manager_->getStatus(request_id);
+        if (status.has_value() && 
+            (status.value() == RequestStatus::SENT || 
+             status.value() == RequestStatus::IN_PROGRESS)) {
+            need_notify_clangd = true;
+        }
         request_manager_->cancel(request_id);
     }
+
+    // 向 clangd 发送取消通知
+    if (need_notify_clangd && protocol_handler_ && transport_) {
+        auto cancel_data = protocol_handler_->buildCancelRequest(request_id);
+        std::vector<char> payload(cancel_data.begin(), cancel_data.end());
+        if (!transport_->send(static_cast<uint32_t>(request_id & 0xFFFFFFFFu), payload)) {
+            LOGW("Failed to send cancel notification for request %llu", 
+                 (unsigned long long)request_id);
+        } else {
+            LOGD("Sent cancel notification for request %llu", 
+                 (unsigned long long)request_id);
+        }
+    }
+
     removePendingRequest(request_id);
 }
 
@@ -428,11 +460,21 @@ std::optional<ProtocolHandler::HoverResult> NativeLspClient::getHoverResult(uint
 
 std::optional<ProtocolHandler::CompletionResult> NativeLspClient::getCompletionResult(uint64_t request_id) {
     if (!initialized_.load() || !result_cache_) {
+        LOGD("getCompletionResult: not initialized or no cache");
         return std::nullopt;
     }
 
     auto info = getRequestInfo(request_id);
-    if (!info.has_value() || info->method != protocol::Method::COMPLETION || !info->completed) {
+    if (!info.has_value()) {
+        LOGD("getCompletionResult: request %llu not found in pending", (unsigned long long)request_id);
+        return std::nullopt;
+    }
+    if (info->method != protocol::Method::COMPLETION) {
+        LOGD("getCompletionResult: request %llu is not COMPLETION", (unsigned long long)request_id);
+        return std::nullopt;
+    }
+    if (!info->completed) {
+        // 请求还没完成，这是正常的轮询情况，不需要日志
         return std::nullopt;
     }
 
@@ -444,7 +486,12 @@ std::optional<ProtocolHandler::CompletionResult> NativeLspClient::getCompletionR
     );
 
     if (result.has_value()) {
+        LOGD("getCompletionResult: found %zu items for request %llu", 
+             result->items.size(), (unsigned long long)request_id);
         removePendingRequest(request_id);
+    } else {
+        LOGW("getCompletionResult: cache miss for request %llu (file=%u, line=%u, char=%u, ver=%u)",
+             (unsigned long long)request_id, info->file_id, info->line, info->character, info->file_version);
     }
 
     return result;
@@ -556,9 +603,9 @@ void NativeLspClient::didChangeTextDocument(
         file_versions_[file_uri] = version;
     }
 
-    if (result_cache_) {
-        result_cache_->invalidateFileVersion(file_id, version);
-    }
+    // 注意：不再在 didChange 时立即使缓存失效
+    // 因为这会导致正在进行的请求的响应无法被正确获取
+    // 缓存会通过 LRU 策略自然淘汰旧条目
 
     if (!protocol_handler_) {
         return;
@@ -796,6 +843,10 @@ bool NativeLspClient::handleControlMessage(const Message& msg) {
             case protocol::Method::COMPLETION: {
                 auto completion = protocol_handler_->parseCompletionResponse(response);
                 if (completion.has_value()) {
+                    LOGI("Completion response: request=%llu items=%zu file=%u line=%u char=%u ver=%u",
+                         (unsigned long long)msg.header.request_id,
+                         completion->items.size(),
+                         info.file_id, info.line, info.character, info.file_version);
                     result_cache_->putCompletion(
                         info.file_id,
                         info.line,
@@ -993,6 +1044,114 @@ std::optional<NativeLspClient::PendingRequestInfo> NativeLspClient::getRequestIn
         return std::nullopt;
     }
     return it->second;
+}
+
+void NativeLspClient::cancelPendingRequestsForMethod(protocol::Method method) {
+    if (!request_manager_) {
+        return;
+    }
+
+    // 收集需要取消的已发送请求
+    std::vector<uint64_t> sent_requests;
+    {
+        std::lock_guard<std::mutex> lock(pending_request_mutex_);
+        for (const auto& pair : pending_requests_) {
+            if (pair.second.method == method && !pair.second.completed) {
+                auto status = request_manager_->getStatus(pair.first);
+                if (status.has_value() && 
+                    (status.value() == RequestStatus::SENT || 
+                     status.value() == RequestStatus::IN_PROGRESS)) {
+                    sent_requests.push_back(pair.first);
+                }
+            }
+        }
+    }
+
+    // 向 clangd 发送取消通知，并在 request_manager_ 中标记为已取消
+    for (uint64_t request_id : sent_requests) {
+        // 在 request_manager_ 中标记为已取消
+        request_manager_->cancel(request_id);
+        
+        // 向 clangd 发送取消通知
+        if (protocol_handler_ && transport_) {
+            auto cancel_data = protocol_handler_->buildCancelRequest(request_id);
+            std::vector<char> payload(cancel_data.begin(), cancel_data.end());
+            if (transport_->send(static_cast<uint32_t>(request_id & 0xFFFFFFFFu), payload)) {
+                LOGD("Sent cancel notification for in-flight request %llu", 
+                     (unsigned long long)request_id);
+            }
+        }
+    }
+
+    // 取消队列中的待处理请求
+    int cancelled = request_manager_->cancelPendingForMethod(method);
+    if (cancelled > 0 || !sent_requests.empty()) {
+        LOGD("cancelPendingRequestsForMethod: cancelled %d pending, %zu in-flight for method %d",
+             cancelled, sent_requests.size(), static_cast<int>(method));
+    }
+
+    // 清理 pending_requests_
+    {
+        std::lock_guard<std::mutex> lock(pending_request_mutex_);
+        for (uint64_t request_id : sent_requests) {
+            pending_requests_.erase(request_id);
+        }
+    }
+}
+
+void NativeLspClient::cancelPendingRequestsForFile(protocol::Method method, uint32_t file_id) {
+    if (!request_manager_) {
+        return;
+    }
+
+    // 收集需要取消的请求（同一文件、同一方法类型）
+    std::vector<uint64_t> requests_to_cancel;
+    {
+        std::lock_guard<std::mutex> lock(pending_request_mutex_);
+        for (const auto& pair : pending_requests_) {
+            if (pair.second.method == method && 
+                pair.second.file_id == file_id && 
+                !pair.second.completed) {
+                requests_to_cancel.push_back(pair.first);
+            }
+        }
+    }
+
+    if (requests_to_cancel.empty()) {
+        return;
+    }
+
+    // 取消这些请求
+    for (uint64_t request_id : requests_to_cancel) {
+        auto status = request_manager_->getStatus(request_id);
+        bool is_in_flight = status.has_value() && 
+            (status.value() == RequestStatus::SENT || 
+             status.value() == RequestStatus::IN_PROGRESS);
+
+        // 在 request_manager_ 中标记为已取消
+        request_manager_->cancel(request_id);
+
+        // 如果请求已发送给 clangd，发送取消通知
+        if (is_in_flight && protocol_handler_ && transport_) {
+            auto cancel_data = protocol_handler_->buildCancelRequest(request_id);
+            std::vector<char> payload(cancel_data.begin(), cancel_data.end());
+            if (transport_->send(static_cast<uint32_t>(request_id & 0xFFFFFFFFu), payload)) {
+                LOGD("Sent cancel notification for in-flight request %llu (file=%u)", 
+                     (unsigned long long)request_id, file_id);
+            }
+        }
+    }
+
+    LOGD("cancelPendingRequestsForFile: cancelled %zu requests for method %d, file %u",
+         requests_to_cancel.size(), static_cast<int>(method), file_id);
+
+    // 清理 pending_requests_
+    {
+        std::lock_guard<std::mutex> lock(pending_request_mutex_);
+        for (uint64_t request_id : requests_to_cancel) {
+            pending_requests_.erase(request_id);
+        }
+    }
 }
 
 std::string NativeLspClient::resolveSocketPath(const std::string& work_dir) const {

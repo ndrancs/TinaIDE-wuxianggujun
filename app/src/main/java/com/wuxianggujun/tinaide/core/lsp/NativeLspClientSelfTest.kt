@@ -2,13 +2,12 @@ package com.wuxianggujun.tinaide.core.lsp
 
 import android.content.Context
 import android.util.Log
-import com.wuxianggujun.tinaide.lsp.NativeLspMode
 import com.wuxianggujun.tinaide.lsp.NativeLspService
 import java.io.File
 
 /**
  * Native LSP 客户端链路自检
- * 用于 Stage 2 验证 Hover / Completion / Definition / References 是否打通
+ * 用于验证 Hover / Completion / Definition / References 是否打通
  */
 object NativeLspClientSelfTest {
 
@@ -23,14 +22,13 @@ object NativeLspClientSelfTest {
     )
 
     data class TestResult(
-        val cases: List<CaseResult>,
-        val mode: NativeLspMode
+        val cases: List<CaseResult>
     ) {
         val allPassed: Boolean get() = cases.all { it.passed }
         val passRate: Double get() = if (cases.isEmpty()) 0.0 else cases.count { it.passed }.toDouble() / cases.size
 
         fun printSummary() {
-            Log.i(TAG, "========= Native LSP 自检报告 (${mode.name}) =========")
+            Log.i(TAG, "========= Native LSP 自检报告 =========")
             cases.forEach { case ->
                 Log.i(TAG, "${if (case.passed) "✅" else "❌"} ${case.name}: ${case.message}")
             }
@@ -52,13 +50,11 @@ object NativeLspClientSelfTest {
     }
 
     fun run(
-        mode: NativeLspMode = NativeLspMode.MOCK,
         context: Context? = null,
         clangdPath: String? = null,
         workDir: String = DEFAULT_WORK_DIR
     ): TestResult {
         val cases = mutableListOf<CaseResult>()
-        cases += CaseResult("ServerMode", true, mode.name)
 
         val resolvedClangdPath = when {
             !clangdPath.isNullOrBlank() -> clangdPath
@@ -66,29 +62,28 @@ object NativeLspClientSelfTest {
             else -> null
         } ?: DEFAULT_CLANGD_PATH
 
-        if (mode == NativeLspMode.REAL) {
-            val clangdFile = File(resolvedClangdPath)
-            if (!clangdFile.exists()) {
-                cases += CaseResult(
-                    "Clangd binary",
-                    false,
-                    "未找到 $resolvedClangdPath，请先安装 sysroot 或在 run() 传入路径"
-                )
-                return TestResult(cases, mode)
-            }
-            NativeLspService.setDefaultClangdBinary(clangdFile.absolutePath)
+        val clangdFile = File(resolvedClangdPath)
+        if (!clangdFile.exists()) {
+            cases += CaseResult(
+                "Clangd binary",
+                false,
+                "未找到 $resolvedClangdPath，请先安装 sysroot 或在 run() 传入路径"
+            )
+            return TestResult(cases)
         }
+        NativeLspService.setDefaultClangdBinary(clangdFile.absolutePath)
+        cases += CaseResult("Clangd binary", true, resolvedClangdPath)
 
         var initialized = false
         try {
-            val initSuccess = NativeLspService.initialize(resolvedClangdPath, workDir, mode)
+            val initSuccess = NativeLspService.initialize(resolvedClangdPath, workDir)
             initialized = initSuccess
             cases += CaseResult("Initialize", initSuccess, if (initSuccess) "" else "Native 初始化失败")
             if (!initSuccess) {
-                return TestResult(cases, mode)
+                return TestResult(cases)
             }
 
-            val fileUri = "file:///mock/project/main.cpp"
+            val fileUri = "file:///test/project/main.cpp"
             val content = """
                 int add(int a, int b) { return a + b; }
                 int main() { return add(40, 2); }
@@ -133,6 +128,6 @@ object NativeLspClientSelfTest {
             }
         }
 
-        return TestResult(cases, mode)
+        return TestResult(cases)
     }
 }

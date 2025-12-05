@@ -31,6 +31,7 @@ private:
     bool readClangdMessage(std::string& out_json);
     bool parseHeaders(size_t header_end, size_t& body_offset, size_t& content_length);
     void handleRequest(const protocol::Request* request);
+    void handleCancelRequest(uint64_t request_id);
     bool dispatchJson(protocol::Method method,
                       uint64_t request_id,
                       const std::string& json);

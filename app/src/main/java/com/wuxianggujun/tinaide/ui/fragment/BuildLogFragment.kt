@@ -53,6 +53,16 @@ class BuildLogFragment : Fragment() {
         setupToolbar()
     }
     
+    override fun onResume() {
+        super.onResume()
+        _binding?.buildLogView?.onBecomeVisible()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        _binding?.buildLogView?.onBecomeInvisible()
+    }
+    
     private fun setupToolbar() {
         binding.btnCompile.setOnClickListener {
             onCompile?.invoke()
@@ -97,6 +107,18 @@ class BuildLogFragment : Fragment() {
      */
     fun setOutputButtonEnabled(enabled: Boolean) {
         binding.btnOpenOutput.isEnabled = enabled
+    }
+    
+    /**
+     * 通知可见性变化（由 BottomPanelManager 调用）
+     * 当底部面板收起时暂停日志刷新，展开时恢复
+     */
+    fun notifyVisibilityChanged(visible: Boolean) {
+        if (visible) {
+            _binding?.buildLogView?.onBecomeVisible()
+        } else {
+            _binding?.buildLogView?.onBecomeInvisible()
+        }
     }
     
     override fun onDestroyView() {

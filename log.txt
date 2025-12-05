@@ -1,0 +1,286 @@
+2025-12-06 14:43:19.402 28259-28349 ProfileInstaller        com.wuxianggujun.tinaide             D  Installing profile for com.wuxianggujun.tinaide
+2025-12-06 14:43:56.675   435-23949 ActivityManager         system_server                        I  START u0 {cmp=com.wuxianggujun.tinaide/.MainActivity} from uid 10069
+2025-12-06 14:43:56.683 28259-28259 ActivityThread          com.wuxianggujun.tinaide             W  handleWindowVisibility: no activity for token android.os.BinderProxy@cabaf2a
+2025-12-06 14:43:56.771 28259-28259 Lifecycle               com.wuxianggujun.tinaide             D  MainActivity created
+2025-12-06 14:43:56.827 28259-28259 MainActivity            com.wuxianggujun.tinaide             D  Project name updated to: 1111
+2025-12-06 14:43:56.969 28259-28264 nggujun.tinaid          com.wuxianggujun.tinaide             I  Compiler allocated 4MB to compile void android.widget.TextView.<init>(android.content.Context, android.util.AttributeSet, int, int)
+2025-12-06 14:43:57.089 28259-28259 nggujun.tinaid          com.wuxianggujun.tinaide             W  Accessing hidden method Landroid/view/View;->getAccessibilityDelegate()Landroid/view/View$AccessibilityDelegate; (light greylist, linking)
+2025-12-06 14:43:57.104 28259-28259 MainActivity            com.wuxianggujun.tinaide             D  Project name updated to: 1111
+2025-12-06 14:43:57.116 28259-28259 TabLayout               com.wuxianggujun.tinaide             W  MODE_SCROLLABLE + GRAVITY_FILL is not supported, GRAVITY_START will be used instead
+2025-12-06 14:43:57.163 28259-28259 Lifecycle               com.wuxianggujun.tinaide             D  EditorContainerFragment view created
+2025-12-06 14:43:57.174 28259-28259 Lifecycle               com.wuxianggujun.tinaide             D  FileTreeFragment view created
+2025-12-06 14:43:57.193 28259-28259 Choreographer           com.wuxianggujun.tinaide             I  Skipped 30 frames!  The application may be doing too much work on its main thread.
+2025-12-06 14:43:57.257 28259-28299 EGL_adreno              com.wuxianggujun.tinaide             E  [getAttribValue] Bad attribute idx
+2025-12-06 14:43:57.257 28259-28299 EGL_adreno              com.wuxianggujun.tinaide             D  eglGetConfigAttrib: bad attrib 0x3339
+2025-12-06 14:43:57.286 28259-28299 EGL_adreno              com.wuxianggujun.tinaide             E  tid 28299: eglSurfaceAttrib(1615): error 0x3009 (EGL_BAD_MATCH)
+2025-12-06 14:43:57.286 28259-28299 OpenGLRenderer          com.wuxianggujun.tinaide             W  Failed to set EGL_SWAP_BEHAVIOR on surface 0x7f0c6733c580, error=EGL_BAD_MATCH
+2025-12-06 14:43:57.500   435-462   ActivityManager         system_server                        I  Displayed com.wuxianggujun.tinaide/.MainActivity: +808ms
+2025-12-06 14:44:05.188 28259-28259 EditorContainer         com.wuxianggujun.tinaide             D  Opening file: /storage/emulated/0/TinaIDE/Projects/1111/main.cpp
+2025-12-06 14:44:05.189 28259-28259 EditorManager           com.wuxianggujun.tinaide             D  Created tab for file: /storage/emulated/0/TinaIDE/Projects/1111/main.cpp, tab id: c4e49bca-e73a-4a4e-ad1c-cf4a45ebbe4a
+2025-12-06 14:44:05.189 28259-28259 EditorContainer         com.wuxianggujun.tinaide             D  Created new tab: c4e49bca-e73a-4a4e-ad1c-cf4a45ebbe4a
+2025-12-06 14:44:05.194 28259-28259 EditorContainer         com.wuxianggujun.tinaide             D  Tab added, total tabs: 1
+2025-12-06 14:44:05.194 28259-28259 EditorContainer         com.wuxianggujun.tinaide             D  TabLayout visibility: VISIBLE
+2025-12-06 14:44:05.198 28259-28259 EditorTabAdapter        com.wuxianggujun.tinaide             D  Creating fragment for position 0, file: /storage/emulated/0/TinaIDE/Projects/1111/main.cpp
+2025-12-06 14:44:05.214 28259-28259 CodeEditor              com.wuxianggujun.tinaide             V  sora-editor
+                                                                                                    Copyright (C) Rosemoe roses2020@qq.com
+                                                                                                    This project is distributed under the LGPL v2.1 license
+2025-12-06 14:44:05.226 28259-28259 nggujun.tinaid          com.wuxianggujun.tinaide             W  Accessing hidden method Landroid/graphics/Paint;->getTextRunAdvances([CIIIIZ[FI)F (light greylist, linking)
+2025-12-06 14:44:05.290 28259-28259 Lifecycle               com.wuxianggujun.tinaide             D  EditorFragment view created
+2025-12-06 14:44:05.295 28259-28259 EditorFragment          com.wuxianggujun.tinaide             D  Loading file: /storage/emulated/0/TinaIDE/Projects/1111/main.cpp, content length: 95
+2025-12-06 14:44:05.409 28259-28259 EditorFragment          com.wuxianggujun.tinaide             I  Applied Tree-sitter language for: /storage/emulated/0/TinaIDE/Projects/1111/main.cpp
+2025-12-06 14:44:05.412 28259-28259 EditorFragment          com.wuxianggujun.tinaide             D  compile_commands.json already exists at /storage/emulated/0/TinaIDE/Projects/1111/build/debug/compile_commands.json
+2025-12-06 14:44:05.414 28259-28259 NativeLspBinResolver    com.wuxianggujun.tinaide             I  Resolved clangd binary for ABI=x86_64 at /data/user/0/com.wuxianggujun.tinaide/files/sysroot/usr/lib/x86_64-linux-android/runtime/libclangd.so
+2025-12-06 14:44:05.414 28259-28259 NativeLspService        com.wuxianggujun.tinaide             I  Configured clangd binary: /data/user/0/com.wuxianggujun.tinaide/files/sysroot/usr/lib/x86_64-linux-android/runtime/libclangd.so
+2025-12-06 14:44:05.415 28259-28287 NativeLspDocBridge      com.wuxianggujun.tinaide             I  LSP initializing: clangd=/data/user/0/com.wuxianggujun.tinaide/files/sysroot/usr/lib/x86_64-linux-android/runtime/libclangd.so, workDir=/storage/emulated/0/TinaIDE/Projects/1111
+2025-12-06 14:44:05.415 28259-28287 NativeLspJNI            com.wuxianggujun.tinaide             D  nativeInitialize called
+2025-12-06 14:44:05.415 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             I  Initializing NativeLspClient...
+2025-12-06 14:44:05.415 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             I  clangd_path: /data/user/0/com.wuxianggujun.tinaide/files/sysroot/usr/lib/x86_64-linux-android/runtime/libclangd.so
+2025-12-06 14:44:05.415 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             I  work_dir: /storage/emulated/0/TinaIDE/Projects/1111
+2025-12-06 14:44:05.416 28259-28287 ControlChannel          com.wuxianggujun.tinaide             E  connect() failed: Connection refused
+2025-12-06 14:44:05.416 28259-28528 ClangdProcess           com.wuxianggujun.tinaide             I  Found compile_commands.json in build/debug
+2025-12-06 14:44:05.416 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  startClangd: preloading dependencies from: /data/user/0/com.wuxianggujun.tinaide/files/sysroot/usr/lib/x86_64-linux-android/runtime
+2025-12-06 14:44:05.419 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  Preloaded LLVM library: /data/user/0/com.wuxianggujun.tinaide/files/sysroot/usr/lib/x86_64-linux-android/runtime/libLLVM-17.so
+2025-12-06 14:44:05.421 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  Preloaded libclang-cpp.so
+2025-12-06 14:44:05.425 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  Preloaded libc++_shared.so
+2025-12-06 14:44:05.425 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  startClangd: loading libclangd.so from: /data/user/0/com.wuxianggujun.tinaide/files/sysroot/usr/lib/x86_64-linux-android/runtime/libclangd.so
+2025-12-06 14:44:05.453 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  startClangd: libclangd.so loaded successfully
+2025-12-06 14:44:05.453 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  startClangd: found symbols - clangd_main=0x7f0c47a18f40, clangd_run=0x7f0c47a18f70
+2025-12-06 14:44:05.453 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  startClangd: detected sysroot at /data/user/0/com.wuxianggujun.tinaide/files/sysroot
+2025-12-06 14:44:05.453 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  startClangd: using clang resource dir /data/user/0/com.wuxianggujun.tinaide/files/sysroot/lib/clang/17
+2025-12-06 14:44:05.453 28259-28528 TinaIDE                 com.wuxianggujun.tinaide             I  startClangd: clangd thread started
+2025-12-06 14:44:05.454 28259-28495 FileManager             com.wuxianggujun.tinaide             D  File deleted: /storage/emulated/0/TinaIDE/Projects/1111/native_lsp_control.sock
+2025-12-06 14:44:05.454 28259-28495 FileManager             com.wuxianggujun.tinaide             D  File created: /storage/emulated/0/TinaIDE/Projects/1111/native_lsp_control.sock
+2025-12-06 14:44:05.455 28259-28528 ControlChannel          com.wuxianggujun.tinaide             I  Server created on /storage/emulated/0/TinaIDE/Projects/1111/native_lsp_control.sock
+2025-12-06 14:44:05.455 28259-28528 ClangdControlBridge     com.wuxianggujun.tinaide             I  Waiting for NativeLspClient to connect on /storage/emulated/0/TinaIDE/Projects/1111/native_lsp_control.sock
+2025-12-06 14:44:05.467 28259-28529 TinaIDE                 com.wuxianggujun.tinaide             I  clangd_thread: starting clangd
+2025-12-06 14:44:05.516 28259-28287 ControlChannel          com.wuxianggujun.tinaide             I  Connected to /storage/emulated/0/TinaIDE/Projects/1111/native_lsp_control.sock (fd=54)
+2025-12-06 14:44:05.516 28259-28528 ControlChannel          com.wuxianggujun.tinaide             I  Client connected (fd=50)
+2025-12-06 14:44:05.518 28259-28528 ClangdControlBridge     com.wuxianggujun.tinaide             I  Clangd control bridge started
+2025-12-06 14:44:05.518 28259-28528 ClangdProcess           com.wuxianggujun.tinaide             I  Real clangd server ready on /storage/emulated/0/TinaIDE/Projects/1111/native_lsp_control.sock
+2025-12-06 14:44:05.519 28259-28287 LspRequestManager       com.wuxianggujun.tinaide             D  LspRequestManager created with debounce delay: 300 ms
+2025-12-06 14:44:05.519 28259-28287 LspResultCache          com.wuxianggujun.tinaide             D  LspResultCache created with max_size=1000
+2025-12-06 14:44:05.519 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             I  NativeLspClient initialized successfully
+2025-12-06 14:44:05.519 28259-28287 NativeLspJNI            com.wuxianggujun.tinaide             D  nativeInitialize: success=1
+2025-12-06 14:44:05.519 28259-28287 NativeLspDocBridge      com.wuxianggujun.tinaide             I  LSP initialized successfully
+2025-12-06 14:44:05.520 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             I  I/O thread started
+2025-12-06 14:44:05.520 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             I  Worker thread started
+2025-12-06 14:44:05.523 28259-28287 NativeLspDocBridge      com.wuxianggujun.tinaide             D  Document opened: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp
+2025-12-06 14:44:05.523 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             D  didOpenTextDocument: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp
+2025-12-06 14:44:05.523 28259-28287 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=1, size=272
+2025-12-06 14:44:05.523 28259-28287 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:05.524 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=1 method=100 to clangd
+2025-12-06 14:44:05.524 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=1 method=100 json={"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"languageId":"cpp","text":"#include <iostream>\n\nint main() {\n    std::cout << \"Hello, 1111!\" << std::endl;\n    return 0;\n}","uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp","version":1}}}
+2025-12-06 14:44:05.525 28259-28287 NativeLspDocBridge      com.wuxianggujun.tinaide             I  Native LSP synced document: /storage/emulated/0/TinaIDE/Projects/1111/main.cpp
+2025-12-06 14:44:07.080 28259-28287 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Launching Hover request key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:2:12 workDir=/storage/emulated/0/TinaIDE/Projects/1111
+2025-12-06 14:44:07.229 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: appended 189 bytes from clangd
+2025-12-06 14:44:07.229 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: message ready payload=166 bytes
+2025-12-06 14:44:07.229 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             I  Received from clangd: json={"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"diagnostics":[],"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp","version":1}}
+2025-12-06 14:44:07.229 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  Delivered response to client: request=1 method=11 payload=96 bytes
+2025-12-06 14:44:07.229 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: forwarded diagnostics notification id=1
+2025-12-06 14:44:07.229 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  ioThread: received control message type=1 request=1 payload=96 bytes
+2025-12-06 14:44:07.229 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  handleControlMessage: response method=11 request=1 status=2
+2025-12-06 14:44:07.232 28259-28288 NativeLspJNI            com.wuxianggujun.tinaide             D  nativeRequestHover: file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=2, char=12
+2025-12-06 14:44:07.232 28259-28288 NativeLspClient         com.wuxianggujun.tinaide             D  requestHover: id=2, file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=2, char=12
+2025-12-06 14:44:07.232 28259-28288 LspRequestManager       com.wuxianggujun.tinaide             D  Enqueued request 2 (method=1, priority=2, queue_size=1, file=1, line=2, char=12, version=1)
+2025-12-06 14:44:07.233 28259-28534 LspRequestManager       com.wuxianggujun.tinaide             D  Dequeued request 2 (method=1, priority=2, file=1, line=2, char=12, version=1)
+2025-12-06 14:44:07.233 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             D  Sending request 2 method=1 file=1 line=2 char=12
+2025-12-06 14:44:07.233 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=2, size=88
+2025-12-06 14:44:07.233 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:07.233 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=2 method=1 to clangd
+2025-12-06 14:44:07.233 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=2 method=1 json={"id":2,"jsonrpc":"2.0","method":"textDocument/hover","params":{"position":{"character":12,"line":2},"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp"}}}
+2025-12-06 14:44:07.240 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: appended 60 bytes from clangd
+2025-12-06 14:44:07.240 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: message ready payload=38 bytes
+2025-12-06 14:44:07.240 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             I  Received from clangd: json={"id":2,"jsonrpc":"2.0","result":null}
+2025-12-06 14:44:07.240 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: parsed response id=2
+2025-12-06 14:44:07.240 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  Delivered response to client: request=2 method=1 payload=96 bytes
+2025-12-06 14:44:07.240 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: forwarded response id=2 method=1
+2025-12-06 14:44:07.243 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  ioThread: received control message type=1 request=2 payload=96 bytes
+2025-12-06 14:44:07.243 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  handleControlMessage: response method=1 request=2 status=2
+2025-12-06 14:44:07.243 28259-28533 LspResultCache          com.wuxianggujun.tinaide             D  Cached result (method=1, file=1, line=2, char=12, version=1, size=1/1000)
+2025-12-06 14:44:07.243 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  Response stored in cache: method=1 request=2 file=1 line=2 char=12
+2025-12-06 14:44:07.244 28259-28288 LspResultCache          com.wuxianggujun.tinaide             D  Cache hit (method=1, file=1, line=2, char=12, hit_rate=100.00%)
+2025-12-06 14:44:07.255 28259-28259 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Hover result ready for key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:2:12
+2025-12-06 14:44:07.810 28259-28288 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Launching Hover request key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:3:45 workDir=/storage/emulated/0/TinaIDE/Projects/1111
+2025-12-06 14:44:07.961 28259-28287 NativeLspJNI            com.wuxianggujun.tinaide             D  nativeRequestHover: file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=3, char=45
+2025-12-06 14:44:07.961 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             D  requestHover: id=3, file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=3, char=45
+2025-12-06 14:44:07.961 28259-28287 LspRequestManager       com.wuxianggujun.tinaide             D  Enqueued request 3 (method=1, priority=2, queue_size=1, file=1, line=3, char=45, version=1)
+2025-12-06 14:44:07.961 28259-28534 LspRequestManager       com.wuxianggujun.tinaide             D  Dequeued request 3 (method=1, priority=2, file=1, line=3, char=45, version=1)
+2025-12-06 14:44:07.961 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             D  Sending request 3 method=1 file=1 line=3 char=45
+2025-12-06 14:44:07.961 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=3, size=88
+2025-12-06 14:44:07.961 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:07.961 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=3 method=1 to clangd
+2025-12-06 14:44:07.961 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=3 method=1 json={"id":3,"jsonrpc":"2.0","method":"textDocument/hover","params":{"position":{"character":45,"line":3},"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp"}}}
+2025-12-06 14:44:07.962 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: appended 60 bytes from clangd
+2025-12-06 14:44:07.962 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: message ready payload=38 bytes
+2025-12-06 14:44:07.962 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             I  Received from clangd: json={"id":3,"jsonrpc":"2.0","result":null}
+2025-12-06 14:44:07.962 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: parsed response id=3
+2025-12-06 14:44:07.962 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  Delivered response to client: request=3 method=1 payload=96 bytes
+2025-12-06 14:44:07.962 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: forwarded response id=3 method=1
+2025-12-06 14:44:07.962 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  ioThread: received control message type=1 request=3 payload=96 bytes
+2025-12-06 14:44:07.962 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  handleControlMessage: response method=1 request=3 status=2
+2025-12-06 14:44:07.962 28259-28533 LspResultCache          com.wuxianggujun.tinaide             D  Cached result (method=1, file=1, line=3, char=45, version=1, size=2/1000)
+2025-12-06 14:44:07.962 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  Response stored in cache: method=1 request=3 file=1 line=3 char=45
+2025-12-06 14:44:07.974 28259-28287 LspResultCache          com.wuxianggujun.tinaide             D  Cache hit (method=1, file=1, line=3, char=45, hit_rate=100.00%)
+2025-12-06 14:44:07.988 28259-28259 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Hover result ready for key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:3:45
+2025-12-06 14:44:08.899 28259-28288 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Launching Hover request key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:1 workDir=/storage/emulated/0/TinaIDE/Projects/1111
+2025-12-06 14:44:09.050 28259-28556 NativeLspJNI            com.wuxianggujun.tinaide             D  nativeRequestHover: file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=1
+2025-12-06 14:44:09.050 28259-28556 NativeLspClient         com.wuxianggujun.tinaide             D  requestHover: id=4, file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=1
+2025-12-06 14:44:09.050 28259-28556 LspRequestManager       com.wuxianggujun.tinaide             D  Enqueued request 4 (method=1, priority=2, queue_size=1, file=1, line=4, char=1, version=1)
+2025-12-06 14:44:09.050 28259-28534 LspRequestManager       com.wuxianggujun.tinaide             D  Dequeued request 4 (method=1, priority=2, file=1, line=4, char=1, version=1)
+2025-12-06 14:44:09.050 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             D  Sending request 4 method=1 file=1 line=4 char=1
+2025-12-06 14:44:09.050 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=4, size=88
+2025-12-06 14:44:09.051 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:09.051 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=4 method=1 to clangd
+2025-12-06 14:44:09.051 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=4 method=1 json={"id":4,"jsonrpc":"2.0","method":"textDocument/hover","params":{"position":{"character":1,"line":4},"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp"}}}
+2025-12-06 14:44:09.052 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: appended 60 bytes from clangd
+2025-12-06 14:44:09.052 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: message ready payload=38 bytes
+2025-12-06 14:44:09.052 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             I  Received from clangd: json={"id":4,"jsonrpc":"2.0","result":null}
+2025-12-06 14:44:09.052 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: parsed response id=4
+2025-12-06 14:44:09.052 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  Delivered response to client: request=4 method=1 payload=96 bytes
+2025-12-06 14:44:09.052 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: forwarded response id=4 method=1
+2025-12-06 14:44:09.052 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  ioThread: received control message type=1 request=4 payload=96 bytes
+2025-12-06 14:44:09.052 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  handleControlMessage: response method=1 request=4 status=2
+2025-12-06 14:44:09.052 28259-28533 LspResultCache          com.wuxianggujun.tinaide             D  Cached result (method=1, file=1, line=4, char=1, version=1, size=3/1000)
+2025-12-06 14:44:09.052 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  Response stored in cache: method=1 request=4 file=1 line=4 char=1
+2025-12-06 14:44:09.061 28259-28556 LspResultCache          com.wuxianggujun.tinaide             D  Cache hit (method=1, file=1, line=4, char=1, hit_rate=100.00%)
+2025-12-06 14:44:09.062 28259-28259 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Hover result ready for key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:1
+2025-12-06 14:44:09.200 28259-28556 NativeLspDocBridge      com.wuxianggujun.tinaide             D  Document changed: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, version=2
+2025-12-06 14:44:09.200 28259-28556 NativeLspClient         com.wuxianggujun.tinaide             D  didChangeTextDocument: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, version=2
+2025-12-06 14:44:09.200 28259-28556 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=5, size=192
+2025-12-06 14:44:09.201 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=5 method=101 to clangd
+2025-12-06 14:44:09.201 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=5 method=101 json={"jsonrpc":"2.0","method":"textDocument/didChange","params":{"contentChanges":[{"text":"#include <iostream>\n\nint main() {\n    std::cout << \"Hello, 1111!\" << std::endl;\n\t\n    return 0;\n}"}],"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp","version":2}}}
+2025-12-06 14:44:09.201 28259-28556 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:09.227 28259-28556 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Launching Hover request key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:2 workDir=/storage/emulated/0/TinaIDE/Projects/1111
+2025-12-06 14:44:09.227 28259-28557 CppNativeCompletion     com.wuxianggujun.tinaide             D  Completion request -> file=/storage/emulated/0/TinaIDE/Projects/1111/main.cpp line=4 col=2 key=/storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:2 prefix=''
+2025-12-06 14:44:09.231 28259-28556 NativeLspDocBridge      com.wuxianggujun.tinaide             D  Document changed: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, version=3
+2025-12-06 14:44:09.231 28259-28556 NativeLspClient         com.wuxianggujun.tinaide             D  didChangeTextDocument: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, version=3
+2025-12-06 14:44:09.231 28259-28556 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=6, size=192
+2025-12-06 14:44:09.231 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=6 method=101 to clangd
+2025-12-06 14:44:09.231 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=6 method=101 json={"jsonrpc":"2.0","method":"textDocument/didChange","params":{"contentChanges":[{"text":"#include <iostream>\n\nint main() {\n    std::cout << \"Hello, 1111!\" << std::endl;\n\ts\n    return 0;\n}"}],"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp","version":3}}}
+2025-12-06 14:44:09.232 28259-28556 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:09.283 28259-28556 NativeLspClient         com.wuxianggujun.tinaide             D  requestCompletion: id=7, file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=2
+2025-12-06 14:44:09.283 28259-28556 LspRequestManager       com.wuxianggujun.tinaide             D  Enqueued request 7 (method=2, priority=3, queue_size=1, file=1, line=4, char=2, version=3)
+2025-12-06 14:44:09.286 28259-28534 LspRequestManager       com.wuxianggujun.tinaide             D  Dequeued request 7 (method=2, priority=3, file=1, line=4, char=2, version=3)
+2025-12-06 14:44:09.286 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             D  Sending request 7 method=2 file=1 line=4 char=2
+2025-12-06 14:44:09.286 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=7, size=96
+2025-12-06 14:44:09.286 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:09.286 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=7 method=2 to clangd
+2025-12-06 14:44:09.286 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=7 method=2 json={"id":7,"jsonrpc":"2.0","method":"textDocument/completion","params":{"context":{"triggerKind":1},"position":{"character":2,"line":4},"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp"}}}
+2025-12-06 14:44:09.377 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: appended 367 bytes from clangd
+2025-12-06 14:44:09.377 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: message ready payload=344 bytes
+2025-12-06 14:44:09.377 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             I  Received from clangd: json={"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"diagnostics":[{"code":"undeclared_var_use","message":"Use of undeclared identifier 's'","range":{"end":{"character":2,"line":4},"start":{"character":1,"line":4}},"severity":1,"source":"clang"}],"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp","version":3}}
+2025-12-06 14:44:09.377 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  Delivered response to client: request=2 method=11 payload=224 bytes
+2025-12-06 14:44:09.377 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: forwarded diagnostics notification id=2
+2025-12-06 14:44:09.377 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  ioThread: received control message type=1 request=2 payload=224 bytes
+2025-12-06 14:44:09.377 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  handleControlMessage: response method=11 request=2 status=2
+2025-12-06 14:44:09.379 28259-28287 NativeLspJNI            com.wuxianggujun.tinaide             D  nativeRequestHover: file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=2
+2025-12-06 14:44:09.379 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             D  requestHover: id=8, file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=2
+2025-12-06 14:44:09.379 28259-28287 LspRequestManager       com.wuxianggujun.tinaide             D  Enqueued request 8 (method=1, priority=2, queue_size=1, file=1, line=4, char=2, version=3)
+2025-12-06 14:44:09.380 28259-28534 LspRequestManager       com.wuxianggujun.tinaide             D  Dequeued request 8 (method=1, priority=2, file=1, line=4, char=2, version=3)
+2025-12-06 14:44:09.380 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             D  Sending request 8 method=1 file=1 line=4 char=2
+2025-12-06 14:44:09.380 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=8, size=88
+2025-12-06 14:44:09.380 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:09.380 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=8 method=1 to clangd
+2025-12-06 14:44:09.380 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=8 method=1 json={"id":8,"jsonrpc":"2.0","method":"textDocument/hover","params":{"position":{"character":2,"line":4},"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp"}}}
+2025-12-06 14:44:09.383 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: appended 60 bytes from clangd
+2025-12-06 14:44:09.383 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: message ready payload=38 bytes
+2025-12-06 14:44:09.383 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             I  Received from clangd: json={"id":8,"jsonrpc":"2.0","result":null}
+2025-12-06 14:44:09.383 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: parsed response id=8
+2025-12-06 14:44:09.383 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  Delivered response to client: request=8 method=1 payload=96 bytes
+2025-12-06 14:44:09.383 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: forwarded response id=8 method=1
+2025-12-06 14:44:09.383 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  ioThread: received control message type=1 request=8 payload=96 bytes
+2025-12-06 14:44:09.383 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  handleControlMessage: response method=1 request=8 status=2
+2025-12-06 14:44:09.383 28259-28533 LspResultCache          com.wuxianggujun.tinaide             D  Cached result (method=1, file=1, line=4, char=2, version=3, size=4/1000)
+2025-12-06 14:44:09.383 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  Response stored in cache: method=1 request=8 file=1 line=4 char=2
+2025-12-06 14:44:09.394 28259-28556 LspResultCache          com.wuxianggujun.tinaide             D  Cache hit (method=1, file=1, line=4, char=2, hit_rate=100.00%)
+2025-12-06 14:44:09.394 28259-28259 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Hover result ready for key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:2
+2025-12-06 14:44:09.414 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: appended 8192 bytes from clangd
+2025-12-06 14:44:09.415 28259-28532 chatty                  com.wuxianggujun.tinaide             I  uid=10069(com.wuxianggujun.tinaide) DefaultDispatch identical 3 lines
+2025-12-06 14:44:09.415 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: appended 8192 bytes from clangd
+2025-12-06 14:44:09.415 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: appended 4612 bytes from clangd
+2025-12-06 14:44:09.416 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  readClangdMessage: message ready payload=45547 bytes
+2025-12-06 14:44:09.416 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             I  Received from clangd: json={"id":7,"jsonrpc":"2.0","result":{"isIncomplete":true,"items":[{"filterText":"std","insertText":"std","insertTextFormat":1,"kind":9,"label":" std","score":1.59995436668396,"sortText":"403334b2std","textEdit":{"newText":"std","range":{"end":{"character":2,"line":4},"start":{"character":1,"line":4}}}},{"filterText":"short","insertText":"short","insertTextFormat":1,"kind":14,"label":" short","score":0.8373723030090332,"sortText":"40a9a1f8short","textEdit":{"newText":"short","range":{"end":{"charact... (truncated, total 45547 bytes)
+2025-12-06 14:44:09.417 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: parsed response id=7
+2025-12-06 14:44:09.430 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  Delivered response to client: request=7 method=2 payload=14960 bytes
+2025-12-06 14:44:09.430 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  ioThread: received control message type=1 request=7 payload=14960 bytes
+2025-12-06 14:44:09.430 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  handleControlMessage: response method=2 request=7 status=2
+2025-12-06 14:44:09.430 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             I  Completion response: request=7 items=100 file=1 line=4 char=2 ver=3
+2025-12-06 14:44:09.430 28259-28533 LspResultCache          com.wuxianggujun.tinaide             D  Cached result (method=2, file=1, line=4, char=2, version=3, size=5/1000)
+2025-12-06 14:44:09.430 28259-28533 NativeLspClient         com.wuxianggujun.tinaide             D  Response stored in cache: method=2 request=7 file=1 line=4 char=2
+2025-12-06 14:44:09.431 28259-28532 ClangdControlBridge     com.wuxianggujun.tinaide             D  responseLoop: forwarded response id=7 method=2
+2025-12-06 14:44:09.438 28259-28560 LspResultCache          com.wuxianggujun.tinaide             D  Cache hit (method=2, file=1, line=4, char=2, hit_rate=100.00%)
+2025-12-06 14:44:09.438 28259-28560 NativeLspClient         com.wuxianggujun.tinaide             D  getCompletionResult: found 100 items for request 7
+2025-12-06 14:44:09.450 28259-28259 CppNativeCompletion     com.wuxianggujun.tinaide             D  Completion result -> file=/storage/emulated/0/TinaIDE/Projects/1111/main.cpp line=4 col=2 items=100 preview= std,  short,  signed,  sizeof(expression-or-type),  sizeof...(parameter-pack)
+2025-12-06 14:44:09.459 28259-28259 nggujun.tinaid          com.wuxianggujun.tinaide             W  Accessing hidden method Landroid/text/SpannableStringInternal;->length()I (light greylist, linking)
+2025-12-06 14:44:09.577 28259-28299 EGL_adreno              com.wuxianggujun.tinaide             E  [getAttribValue] Bad attribute idx
+2025-12-06 14:44:09.577 28259-28299 EGL_adreno              com.wuxianggujun.tinaide             D  eglGetConfigAttrib: bad attrib 0x3339
+2025-12-06 14:44:09.595 28259-28299 EGL_adreno              com.wuxianggujun.tinaide             E  tid 28299: eglSurfaceAttrib(1615): error 0x3009 (EGL_BAD_MATCH)
+2025-12-06 14:44:09.595 28259-28299 OpenGLRenderer          com.wuxianggujun.tinaide             W  Failed to set EGL_SWAP_BEHAVIOR on surface 0x7f0c44551c80, error=EGL_BAD_MATCH
+2025-12-06 14:44:15.106 28259-28287 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Launching Hover request key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:1 workDir=/storage/emulated/0/TinaIDE/Projects/1111
+2025-12-06 14:44:15.106 28259-28582 CppNativeCompletion     com.wuxianggujun.tinaide             D  Completion request -> file=/storage/emulated/0/TinaIDE/Projects/1111/main.cpp line=4 col=1 key=/storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:1 prefix=''
+2025-12-06 14:44:15.131 28259-28288 NativeLspDocBridge      com.wuxianggujun.tinaide             D  Document changed: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, version=4
+2025-12-06 14:44:15.131 28259-28288 NativeLspClient         com.wuxianggujun.tinaide             D  didChangeTextDocument: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, version=4
+2025-12-06 14:44:15.132 28259-28288 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=9, size=192
+2025-12-06 14:44:15.132 28259-28288 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:15.132 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=9 method=101 to clangd
+2025-12-06 14:44:15.132 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=9 method=101 json={"jsonrpc":"2.0","method":"textDocument/didChange","params":{"contentChanges":[{"text":"#include <iostream>\n\nint main() {\n    std::cout << \"Hello, 1111!\" << std::endl;\n\t\n    return 0;\n}"}],"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp","version":4}}}
+2025-12-06 14:44:15.182 28259-28288 NativeLspClient         com.wuxianggujun.tinaide             D  requestCompletion: id=10, file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=1
+2025-12-06 14:44:15.182 28259-28288 LspRequestManager       com.wuxianggujun.tinaide             D  Enqueued request 10 (method=2, priority=3, queue_size=1, file=1, line=4, char=1, version=4)
+2025-12-06 14:44:15.183 28259-28534 LspRequestManager       com.wuxianggujun.tinaide             D  Dequeued request 10 (method=2, priority=3, file=1, line=4, char=1, version=4)
+2025-12-06 14:44:15.183 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             D  Sending request 10 method=2 file=1 line=4 char=1
+2025-12-06 14:44:15.183 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=10, size=96
+2025-12-06 14:44:15.183 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:15.183 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=10 method=2 to clangd
+2025-12-06 14:44:15.183 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=10 method=2 json={"id":10,"jsonrpc":"2.0","method":"textDocument/completion","params":{"context":{"triggerKind":1},"position":{"character":1,"line":4},"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp"}}}
+2025-12-06 14:44:15.257 28259-28288 NativeLspJNI            com.wuxianggujun.tinaide             D  nativeRequestHover: file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=1
+2025-12-06 14:44:15.257 28259-28288 NativeLspClient         com.wuxianggujun.tinaide             D  requestHover: id=11, file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=1
+2025-12-06 14:44:15.257 28259-28288 LspRequestManager       com.wuxianggujun.tinaide             D  Enqueued request 11 (method=1, priority=2, queue_size=1, file=1, line=4, char=1, version=4)
+2025-12-06 14:44:15.257 28259-28534 LspRequestManager       com.wuxianggujun.tinaide             D  Dequeued request 11 (method=1, priority=2, file=1, line=4, char=1, version=4)
+2025-12-06 14:44:15.257 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             D  Sending request 11 method=1 file=1 line=4 char=1
+2025-12-06 14:44:15.257 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=11, size=88
+2025-12-06 14:44:15.257 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:15.257 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=11 method=1 to clangd
+2025-12-06 14:44:15.257 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=11 method=1 json={"id":11,"jsonrpc":"2.0","method":"textDocument/hover","params":{"position":{"character":1,"line":4},"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp"}}}
+2025-12-06 14:44:15.458 28259-28288 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Launching Hover request key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:2 workDir=/storage/emulated/0/TinaIDE/Projects/1111
+2025-12-06 14:44:15.459 28259-28584 CppNativeCompletion     com.wuxianggujun.tinaide             D  Completion request -> file=/storage/emulated/0/TinaIDE/Projects/1111/main.cpp line=4 col=2 key=/storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:2 prefix=''
+2025-12-06 14:44:15.459 28259-28288 CppNativeCompletion     com.wuxianggujun.tinaide             D  Completion coroutine cancelled for key=/storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:1
+2025-12-06 14:44:15.460 28259-28287 NativeLspDocBridge      com.wuxianggujun.tinaide             D  Document changed: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, version=5
+2025-12-06 14:44:15.460 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             D  didChangeTextDocument: file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, version=5
+2025-12-06 14:44:15.460 28259-28287 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=12, size=192
+2025-12-06 14:44:15.460 28259-28287 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:15.460 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=12 method=101 to clangd
+2025-12-06 14:44:15.460 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=12 method=101 json={"jsonrpc":"2.0","method":"textDocument/didChange","params":{"contentChanges":[{"text":"#include <iostream>\n\nint main() {\n    std::cout << \"Hello, 1111!\" << std::endl;\n\ts\n    return 0;\n}"}],"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp","version":5}}}
+2025-12-06 14:44:15.511 28259-28287 LspRequestManager       com.wuxianggujun.tinaide             D  Cancelled request 10
+2025-12-06 14:44:15.511 28259-28287 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=10, size=32
+2025-12-06 14:44:15.511 28259-28287 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:15.511 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             D  Sent cancel notification for in-flight request 10 (file=1)
+2025-12-06 14:44:15.511 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             D  cancelPendingRequestsForFile: cancelled 1 requests for method 2, file 1
+2025-12-06 14:44:15.511 28259-28287 NativeLspClient         com.wuxianggujun.tinaide             D  requestCompletion: id=13, file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=2
+2025-12-06 14:44:15.511 28259-28287 LspRequestManager       com.wuxianggujun.tinaide             D  Enqueued request 13 (method=2, priority=3, queue_size=1, file=1, line=4, char=2, version=5)
+2025-12-06 14:44:15.511 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Received cancel request for id=10
+2025-12-06 14:44:15.511 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Removed pending request 10 from tracking (not sending $/cancelRequest to clangd)
+2025-12-06 14:44:15.511 28259-28534 LspRequestManager       com.wuxianggujun.tinaide             D  Dequeued request 13 (method=2, priority=3, file=1, line=4, char=2, version=5)
+2025-12-06 14:44:15.511 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             D  Sending request 13 method=2 file=1 line=4 char=2
+2025-12-06 14:44:15.511 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=13, size=96
+2025-12-06 14:44:15.511 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:15.511 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=13 method=2 to clangd
+2025-12-06 14:44:15.511 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=13 method=2 json={"id":13,"jsonrpc":"2.0","method":"textDocument/completion","params":{"context":{"triggerKind":1},"position":{"character":2,"line":4},"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp"}}}
+2025-12-06 14:44:15.609 28259-28560 NativeLspJNI            com.wuxianggujun.tinaide             D  nativeRequestHover: file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=2
+2025-12-06 14:44:15.609 28259-28560 LspRequestManager       com.wuxianggujun.tinaide             D  Cancelled request 11
+2025-12-06 14:44:15.609 28259-28560 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=11, size=32
+2025-12-06 14:44:15.609 28259-28560 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:15.609 28259-28560 NativeLspClient         com.wuxianggujun.tinaide             D  Sent cancel notification for in-flight request 11 (file=1)
+2025-12-06 14:44:15.609 28259-28560 NativeLspClient         com.wuxianggujun.tinaide             D  cancelPendingRequestsForFile: cancelled 1 requests for method 1, file 1
+2025-12-06 14:44:15.609 28259-28560 NativeLspClient         com.wuxianggujun.tinaide             D  requestHover: id=14, file=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp, line=4, char=2
+2025-12-06 14:44:15.609 28259-28560 LspRequestManager       com.wuxianggujun.tinaide             D  Enqueued request 14 (method=1, priority=2, queue_size=1, file=1, line=4, char=2, version=5)
+2025-12-06 14:44:15.609 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Received cancel request for id=11
+2025-12-06 14:44:15.609 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Removed pending request 11 from tracking (not sending $/cancelRequest to clangd)
+2025-12-06 14:44:15.610 28259-28534 LspRequestManager       com.wuxianggujun.tinaide             D  Dequeued request 14 (method=1, priority=2, file=1, line=4, char=2, version=5)
+2025-12-06 14:44:15.610 28259-28534 NativeLspClient         com.wuxianggujun.tinaide             D  Sending request 14 method=1 file=1 line=4 char=2
+2025-12-06 14:44:15.610 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Sending inline: request_id=14, size=88
+2025-12-06 14:44:15.610 28259-28534 SharedMemoryTransport   com.wuxianggujun.tinaide             I  Inline data sent successfully
+2025-12-06 14:44:15.610 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             D  Forwarding request id=14 method=1 to clangd
+2025-12-06 14:44:15.610 28259-28531 ClangdControlBridge     com.wuxianggujun.tinaide             I  Sent to clangd: request=14 method=1 json={"id":14,"jsonrpc":"2.0","method":"textDocument/hover","params":{"position":{"character":2,"line":4},"textDocument":{"uri":"file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp"}}}
+2025-12-06 14:44:20.647 28259-28259 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Hover result is null for key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:1
+2025-12-06 14:44:20.890 28259-28601 CppNativeCompletion     com.wuxianggujun.tinaide             D  Completion result empty for key=/storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:2
+2025-12-06 14:44:20.975 28259-28259 NativeLspRequestBridge  com.wuxianggujun.tinaide             D  Hover result is null for key=file:///storage/emulated/0/TinaIDE/Projects/1111/main.cpp:4:2

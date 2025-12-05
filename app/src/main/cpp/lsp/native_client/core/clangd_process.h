@@ -1,9 +1,8 @@
-// ClangdProcess - 管理 clangd/mock 服务端生命周期
+// ClangdProcess - 管理 clangd 服务端生命周期
 #ifndef TINAIDE_CLANGD_PROCESS_H
 #define TINAIDE_CLANGD_PROCESS_H
 
 #include "../transport/control_channel.h"
-#include "../mock/mock_lsp_server.h"
 #include "clangd_control_bridge.h"
 #include "lsp/clangd_server.h"
 #include <memory>
@@ -26,16 +25,13 @@ public:
     const std::string& socketPath() const { return socket_path_; }
 
 private:
-    bool startMockServer(const ChannelConfig& config);
     bool startRealProcess(const std::string& clangd_path,
                           const std::string& work_dir,
                           const ChannelConfig& config);
 
-    std::unique_ptr<MockLspServer> mock_server_;
     std::unique_ptr<ClangdServer> clangd_server_;
     std::unique_ptr<ClangdControlBridge> bridge_;
     bool running_ = false;
-    bool use_mock_ = true;
     std::string socket_path_;
 };
 

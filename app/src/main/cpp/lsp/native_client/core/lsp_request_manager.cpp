@@ -112,38 +112,47 @@ bool LspRequestManager::enqueue(
 std::optional<RequestEntry> LspRequestManager::dequeue(uint32_t wait_timeout_ms) {
     std::unique_lock<std::mutex> lock(mutex_);
 
-    // 等待队列非空
-    if (pending_queue_.empty()) {
-        if (wait_timeout_ms == 0) {
-            // 永久等待
-            cv_.wait(lock, [this] { return !pending_queue_.empty(); });
-        } else {
-            // 超时等待
-            auto timeout = std::chrono::milliseconds(wait_timeout_ms);
-            if (!cv_.wait_for(lock, timeout, [this] { return !pending_queue_.empty(); })) {
-                return std::nullopt;  // 超时
+    while (true) {
+        // 等待队列非空
+        if (pending_queue_.empty()) {
+            if (wait_timeout_ms == 0) {
+                // 永久等待
+                cv_.wait(lock, [this] { return !pending_queue_.empty(); });
+            } else {
+                // 超时等待
+                auto timeout = std::chrono::milliseconds(wait_timeout_ms);
+                if (!cv_.wait_for(lock, timeout, [this] { return !pending_queue_.empty(); })) {
+                    return std::nullopt;  // 超时
+                }
             }
         }
+
+        // 取出队首
+        RequestEntry entry = pending_queue_.top();
+        pending_queue_.pop();
+
+        // 检查请求是否已被取消（在 request_map_ 中不存在或状态为 CANCELLED）
+        auto it = request_map_.find(entry.request_id);
+        if (it == request_map_.end() || it->second.status == RequestStatus::CANCELLED) {
+            LOGD("Skipping cancelled request %llu", (unsigned long long)entry.request_id);
+            continue;  // 跳过已取消的请求，继续取下一个
+        }
+
+        // 更新状态
+        entry.status = RequestStatus::IN_PROGRESS;
+        request_map_[entry.request_id] = entry;
+
+        LOGD("Dequeued request %llu (method=%d, priority=%d, file=%u, line=%u, char=%u, version=%u)",
+             (unsigned long long)entry.request_id,
+             (int)entry.method,
+             (int)entry.priority,
+             entry.file_id,
+             entry.line,
+             entry.character,
+             entry.file_version);
+
+        return entry;
     }
-
-    // 取出队首
-    RequestEntry entry = pending_queue_.top();
-    pending_queue_.pop();
-
-    // 更新状态
-    entry.status = RequestStatus::IN_PROGRESS;
-    request_map_[entry.request_id] = entry;
-
-    LOGD("Dequeued request %llu (method=%d, priority=%d, file=%u, line=%u, char=%u, version=%u)",
-         (unsigned long long)entry.request_id,
-         (int)entry.method,
-         (int)entry.priority,
-         entry.file_id,
-         entry.line,
-         entry.character,
-         entry.file_version);
-
-    return entry;
 }
 
 std::vector<RequestEntry> LspRequestManager::dequeueBatch(size_t max_count) {

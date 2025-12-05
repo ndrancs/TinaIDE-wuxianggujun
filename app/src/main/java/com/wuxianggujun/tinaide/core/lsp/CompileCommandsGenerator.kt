@@ -50,6 +50,11 @@ object CompileCommandsGenerator {
         }
 
         val sysrootPath = sysrootDir?.absolutePath
+        val resourceDir = sysrootDir?.let { findClangResourceDir(it) }
+        val resourceIncludeDir = resourceDir?.let { File(it, "include") }?.takeIf { it.exists() }
+        if (sysrootDir != null && resourceDir == null) {
+            Log.w(TAG, "Clang resource dir missing under ${sysrootDir.absolutePath}/lib/clang")
+        }
         val tripleBase = deriveTripleBase(target)
         val apiLevel = deriveApiLevel(target)
         val resolvedIncludeDirs = (includeDirs + projectPath).distinct()
@@ -62,6 +67,23 @@ object CompileCommandsGenerator {
                 sysrootPath?.let { sysroot ->
                     add("--sysroot=$sysroot")
                 }
+                resourceDir?.let { dir ->
+                    add("-resource-dir")
+                    add(dir.absolutePath)
+                }
+                // 关键：C++ 标准库头文件必须在所有其他系统头文件之前
+                // 这样 libc++ 的 <ctype.h> 包装器才能被正确找到
+                if (isCxx) {
+                    sysrootPath?.let { sysroot ->
+                        add("-isystem")
+                        add("$sysroot/usr/include/c++/v1")
+                    }
+                }
+                // clang 内置头文件（stdarg.h 等）
+                resourceIncludeDir?.let { include ->
+                    add("-isystem")
+                    add(include.absolutePath)
+                }
                 if (isCxx) {
                     add("-std=c++17")
                 }
@@ -71,13 +93,13 @@ object CompileCommandsGenerator {
                 add("-D__ANDROID__")
                 sysrootPath?.let { sysroot ->
                     add("-D__ANDROID_API__=$apiLevel")
+                    // C 标准库和架构特定头文件放在最后
                     add("-isystem")
                     add("$sysroot/usr/include")
                     if (tripleBase.isNotEmpty()) {
                         add("-isystem")
                         add("$sysroot/usr/include/$tripleBase")
                     }
-                    add("-I$sysroot/usr/include/c++/v1")
                 }
                 resolvedIncludeDirs.forEach { dir ->
                     add("-I$dir")
@@ -131,6 +153,31 @@ object CompileCommandsGenerator {
     private fun deriveApiLevel(target: String): String {
         val digits = target.takeLastWhile { it.isDigit() }
         return digits.ifEmpty { "24" }
+    }
+
+    private fun findClangResourceDir(sysrootDir: File): File? {
+        val clangRoot = File(sysrootDir, "lib/clang")
+        if (!clangRoot.isDirectory) return null
+        val versionDirs = clangRoot.listFiles { file ->
+            file.isDirectory && file.name.firstOrNull()?.isDigit() == true
+        } ?: return null
+        return versionDirs.maxWithOrNull { left, right ->
+            compareVersionNames(left.name, right.name)
+        }
+    }
+
+    private fun compareVersionNames(a: String, b: String): Int {
+        val aTokens = a.split('.')
+        val bTokens = b.split('.')
+        val maxSize = maxOf(aTokens.size, bTokens.size)
+        for (i in 0 until maxSize) {
+            val ai = aTokens.getOrNull(i)?.toIntOrNull() ?: -1
+            val bi = bTokens.getOrNull(i)?.toIntOrNull() ?: -1
+            if (ai != bi) {
+                return ai.compareTo(bi)
+            }
+        }
+        return 0
     }
 
     private fun escape(value: String): String =

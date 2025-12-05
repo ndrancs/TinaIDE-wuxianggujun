@@ -16,7 +16,6 @@ import com.wuxianggujun.tinaide.ui.fragment.DiagnosticsFragment
 import com.wuxianggujun.tinaide.lsp.model.Diagnostic
 import android.view.MotionEvent
 import android.view.GestureDetector
-import androidx.core.view.GestureDetectorCompat
 import androidx.core.content.ContextCompat
 import com.wuxianggujun.tinaide.R
 
@@ -42,7 +41,7 @@ class BottomPanelManager(
     
     private val binding: BottomSheetPanelV2Binding
     private val bottomSheetBehavior: BottomSheetBehavior<*>
-    private val gestureDetector: GestureDetectorCompat
+    private val gestureDetector: GestureDetector
     
     // Tab Fragments
     private lateinit var buildLogFragment: BuildLogFragment
@@ -74,7 +73,7 @@ class BottomPanelManager(
         }
         
         // 初始化手势检测器
-        gestureDetector = GestureDetectorCompat(container.context, SwipeGestureListener())
+        gestureDetector = GestureDetector(container.context, SwipeGestureListener())
         
         setupSymbolBar()
         setupTabs()
@@ -86,6 +85,7 @@ class BottomPanelManager(
     /**
      * 设置底部面板状态回调
      * 当完全展开时隐藏符号栏，收起时显示符号栏
+     * 同时控制日志视图的刷新状态，避免不可见时浪费性能
      */
     private fun setupBottomSheetCallback() {
         bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
@@ -94,11 +94,20 @@ class BottomPanelManager(
                     BottomSheetBehavior.STATE_EXPANDED -> {
                         // 完全展开时隐藏符号栏
                         binding.symbolInputBar.visibility = android.view.View.GONE
+                        // 面板展开，通知日志视图可以刷新
+                        notifyLogViewsVisibility(true)
                     }
-                    BottomSheetBehavior.STATE_COLLAPSED,
                     BottomSheetBehavior.STATE_HALF_EXPANDED -> {
-                        // 收起或半展开时显示符号栏
+                        // 半展开时显示符号栏
                         binding.symbolInputBar.visibility = android.view.View.VISIBLE
+                        // 面板半展开，通知日志视图可以刷新
+                        notifyLogViewsVisibility(true)
+                    }
+                    BottomSheetBehavior.STATE_COLLAPSED -> {
+                        // 收起时显示符号栏
+                        binding.symbolInputBar.visibility = android.view.View.VISIBLE
+                        // 面板收起，通知日志视图暂停刷新（节省性能）
+                        notifyLogViewsVisibility(false)
                     }
                 }
             }
@@ -114,6 +123,32 @@ class BottomPanelManager(
                 }
             }
         })
+    }
+    
+    /**
+     * 通知日志视图可见性变化
+     * 当面板收起时暂停日志刷新，展开时恢复
+     */
+    private fun notifyLogViewsVisibility(visible: Boolean) {
+        if (visible) {
+            // 面板展开，通知当前可见的 Fragment 刷新
+            when (binding.viewPager.currentItem) {
+                0 -> if (::buildLogFragment.isInitialized && buildLogFragment.isAdded) {
+                    buildLogFragment.notifyVisibilityChanged(true)
+                }
+                1 -> if (::generalLogFragment.isInitialized && generalLogFragment.isAdded) {
+                    generalLogFragment.notifyVisibilityChanged(true)
+                }
+            }
+        } else {
+            // 面板收起，通知所有 Fragment 暂停刷新
+            if (::buildLogFragment.isInitialized && buildLogFragment.isAdded) {
+                buildLogFragment.notifyVisibilityChanged(false)
+            }
+            if (::generalLogFragment.isInitialized && generalLogFragment.isAdded) {
+                generalLogFragment.notifyVisibilityChanged(false)
+            }
+        }
     }
     
     /**

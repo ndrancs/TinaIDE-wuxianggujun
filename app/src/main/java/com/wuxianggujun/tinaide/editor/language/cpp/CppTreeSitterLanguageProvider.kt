@@ -208,7 +208,10 @@ private object CppNativeCompletionDispatcher {
             "Completion request -> file=$filePath line=${position.line} col=${position.column} key=$key prefix='${completionContext.scopePrefix}'"
         )
 
-        completionJobs[key]?.cancel()
+        // 取消所有之前的补全协程，因为用户可能在不同位置快速输入
+        // 只保留最新的补全请求
+        completionJobs.values.forEach { it.cancel() }
+        completionJobs.clear()
         completionJobs[key] = scope.launch {
             try {
                 runCatching {

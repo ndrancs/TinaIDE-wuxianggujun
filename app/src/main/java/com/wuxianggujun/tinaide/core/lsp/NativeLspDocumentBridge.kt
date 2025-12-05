@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.wuxianggujun.tinaide.lsp.NativeLspService
-import com.wuxianggujun.tinaide.lsp.NativeLspMode
 import io.github.rosemoe.sora.event.ContentChangeEvent
 import io.github.rosemoe.sora.event.SubscriptionReceipt
 import io.github.rosemoe.sora.widget.subscribeEvent
@@ -19,7 +18,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancel
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
-import kotlinx.coroutines.withContext
 
 /**
  * 将 CodeEditor 的文本更新同步到 NativeLspService，确保 clangd 拥有最新文档。
@@ -85,13 +83,13 @@ object NativeLspDocumentBridge {
                 NativeLspService.setDefaultClangdBinary(resolved)
             }
         }
-        private val resolvedMode = if (!clangdPath.isNullOrBlank()) {
-            NativeLspMode.REAL
-        } else {
-            NativeLspMode.MOCK
-        }
 
         fun start() {
+            if (clangdPath.isNullOrBlank()) {
+                Log.w(TAG, "clangd binary not found, LSP features disabled for $filePath")
+                return
+            }
+            
             workerScope.launch {
                 if (!ensureNativeClient()) {
                     Log.w(TAG, "Native client unavailable, skip $filePath")
@@ -132,6 +130,8 @@ object NativeLspDocumentBridge {
             if (disposed || !opened) return
             pendingSync?.cancel()
             sendSnapshot()
+            // 给 clangd 一点时间处理 didChange
+            delay(50)
         }
 
         private suspend fun sendSnapshot() {
@@ -158,19 +158,12 @@ object NativeLspDocumentBridge {
 
         private suspend fun ensureNativeClient(): Boolean {
             if (NativeLspService.nativeIsInitialized()) {
-                val activeMode = NativeLspService.getServerMode()
-                if (activeMode == resolvedMode) {
-                    return true
-                }
-                Log.w(TAG, "Native LSP running in $activeMode, restarting for ${resolvedMode.name}")
-                runCatching { NativeLspService.nativeShutdown() }
-                    .onFailure { Log.w(TAG, "Failed to shutdown existing NativeLspService cleanly", it) }
+                return true
             }
-            NativeLspService.setServerMode(resolvedMode)
+            
             val workDir = projectPath ?: "/"
             val requestedClangdPath = clangdPath ?: NativeLspService.getConfiguredClangdBinary()
                 ?: NativeLspService.defaultClangdBinaryPath()
-            Log.i(TAG, "Initializing NativeLspService in ${resolvedMode.name}: $requestedClangdPath")
             Log.i(TAG, "LSP initializing: clangd=$requestedClangdPath, workDir=$workDir")
             val result = NativeLspService.initialize(
                 clangdPath = requestedClangdPath,
@@ -179,10 +172,7 @@ object NativeLspDocumentBridge {
             if (result) {
                 Log.i(TAG, "LSP initialized successfully")
             } else {
-                Log.e(TAG, "LSP initialization failed")
-            }
-            if (!result) {
-                Log.w(TAG, "Failed to initialize NativeLspService for $workDir")
+                Log.e(TAG, "LSP initialization failed - clangd may not be available")
             }
             return result
         }

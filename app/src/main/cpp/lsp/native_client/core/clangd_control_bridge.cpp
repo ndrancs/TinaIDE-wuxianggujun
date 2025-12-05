@@ -155,13 +155,24 @@ void ClangdControlBridge::requestLoop() {
         if (msg.payload.empty()) {
             continue;
         }
+        
+        // 首先尝试解析为 Request（带有 file identifier "LSPP"）
         flatbuffers::Verifier verifier(msg.payload.data(), msg.payload.size());
-        if (!protocol::VerifyRequestBuffer(verifier)) {
-            LOGW("Invalid FlatBuffers request received");
+        if (protocol::VerifyRequestBuffer(verifier)) {
+            const protocol::Request* request = protocol::GetRequest(msg.payload.data());
+            handleRequest(request);
             continue;
         }
-        const protocol::Request* request = protocol::GetRequest(msg.payload.data());
-        handleRequest(request);
+        
+        // 如果不是 Request，尝试解析为 ControlMessage（用于取消请求）
+        // ControlMessage 没有 file identifier，直接尝试解析
+        const protocol::ControlMessage* ctrl_msg = flatbuffers::GetRoot<protocol::ControlMessage>(msg.payload.data());
+        if (ctrl_msg && ctrl_msg->type() == protocol::ControlMessageType::CANCEL) {
+            handleCancelRequest(ctrl_msg->request_id());
+            continue;
+        }
+        
+        LOGW("Unknown message format received");
     }
 }
 
@@ -171,7 +182,13 @@ void ClangdControlBridge::responseLoop() {
         if (!readClangdMessage(json)) {
             continue;
         }
-        LOGD("responseLoop: received JSON chunk (%zu bytes)", json.size());
+        // 打印收到的 JSON（截断以避免日志过长）
+        if (json.size() <= 500) {
+            LOGI("Received from clangd: json=%s", json.c_str());
+        } else {
+            LOGI("Received from clangd: json=%s... (truncated, total %zu bytes)", 
+                 json.substr(0, 500).c_str(), json.size());
+        }
         auto parsed = llvm::json::parse(json);
         if (!parsed) {
             LOGW("Failed to parse clangd JSON message: %s", llvm::toString(parsed.takeError()).c_str());
@@ -294,6 +311,23 @@ bool ClangdControlBridge::parseHeaders(size_t header_end,
     return content_length > 0;
 }
 
+void ClangdControlBridge::handleCancelRequest(uint64_t request_id) {
+    LOGD("Received cancel request for id=%llu", (unsigned long long)request_id);
+    
+    // 只从 pending_requests_ 中移除，不向 clangd 发送 $/cancelRequest
+    // 原因：大量 $/cancelRequest 可能导致 clangd 停止响应
+    // clangd 会继续处理请求，但响应会被丢弃（因为 pending_requests_ 中已经没有对应的条目）
+    {
+        std::lock_guard<std::mutex> lock(pending_mutex_);
+        auto it = pending_requests_.find(request_id);
+        if (it != pending_requests_.end()) {
+            pending_requests_.erase(it);
+            LOGD("Removed pending request %llu from tracking (not sending $/cancelRequest to clangd)", 
+                 (unsigned long long)request_id);
+        }
+    }
+}
+
 void ClangdControlBridge::handleRequest(const protocol::Request* request) {
     if (!request) {
         LOGW("Null request");
@@ -413,7 +447,15 @@ bool ClangdControlBridge::dispatchJson(protocol::Method method,
         LOGE("Failed to write JSON to clangd");
         return false;
     }
-    LOGD("Sent JSON to clangd: request=%llu method=%d", (unsigned long long)request_id, static_cast<int>(method));
+    // 打印发送的 JSON（截断以避免日志过长）
+    if (json.size() <= 500) {
+        LOGI("Sent to clangd: request=%llu method=%d json=%s", 
+             (unsigned long long)request_id, static_cast<int>(method), json.c_str());
+    } else {
+        LOGI("Sent to clangd: request=%llu method=%d json=%s... (truncated, total %zu bytes)", 
+             (unsigned long long)request_id, static_cast<int>(method), 
+             json.substr(0, 500).c_str(), json.size());
+    }
     if (!isNotification(method)) {
         std::lock_guard<std::mutex> lock(pending_mutex_);
         pending_requests_[request_id] = method;

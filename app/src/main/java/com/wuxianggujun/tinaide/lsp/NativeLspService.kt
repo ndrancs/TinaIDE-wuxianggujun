@@ -16,10 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
-enum class NativeLspMode {
-    MOCK,
-    REAL
-}
+
 
 /**
  * Native LSP 服务
@@ -55,9 +52,6 @@ object NativeLspService {
     private const val DEFAULT_CLANGD_PATH = "/data/data/com.wuxianggujun.tinaide/clangd"
 
     @Volatile
-    private var currentMode: NativeLspMode = NativeLspMode.REAL
-
-    @Volatile
     private var currentSocketOverride: String? = null
 
     @Volatile
@@ -91,17 +85,20 @@ object NativeLspService {
     external fun nativeIsInitialized(): Boolean
 
     // ========================================================================
-    // 服务器模式配置
+    // 服务器配置
     // ========================================================================
 
     /**
-     * 调整 Native 端使用的服务模式（Mock/Real clangd），并可选指定 socket。
+     * 设置自定义 socket 路径（可选）
      */
-    fun setServerMode(mode: NativeLspMode, socketPath: String? = null) {
-        applyServerMode(mode, socketPath)
+    fun setSocketPath(socketPath: String?) {
+        currentSocketOverride = socketPath
+        if (socketPath.isNullOrBlank()) {
+            clearEnvSafe("TINAIDE_LSP_SOCKET")
+        } else {
+            setEnvSafe("TINAIDE_LSP_SOCKET", socketPath)
+        }
     }
-
-    fun getServerMode(): NativeLspMode = currentMode
 
     /**
      * 允许在 Kotlin 侧提前告知真实的 libclangd.so 路径，
@@ -227,18 +224,6 @@ object NativeLspService {
     private const val POLL_INTERVAL_MS = 10L
     private const val RESULT_TIMEOUT_MS = 5_000L
 
-    private fun applyServerMode(mode: NativeLspMode, socketPath: String?) {
-        currentMode = mode
-        currentSocketOverride = socketPath
-        val mockFlag = if (mode == NativeLspMode.MOCK) "1" else "0"
-        setEnvSafe("TINAIDE_NATIVE_LSP_USE_MOCK", mockFlag)
-        if (socketPath.isNullOrBlank()) {
-            clearEnvSafe("TINAIDE_LSP_SOCKET")
-        } else {
-            setEnvSafe("TINAIDE_LSP_SOCKET", socketPath)
-        }
-    }
-
     private fun setEnvSafe(key: String, value: String) {
         try {
             Os.setenv(key, value, true)
@@ -278,11 +263,8 @@ object NativeLspService {
      */
     fun initialize(
         clangdPath: String = DEFAULT_CLANGD_PATH,
-        workDir: String = "/",
-        mode: NativeLspMode = currentMode,
-        socketPath: String? = currentSocketOverride
+        workDir: String = "/"
     ): Boolean {
-        applyServerMode(mode, socketPath)
         val effectiveClangdPath = resolveClangdPath(clangdPath)
         val success = nativeInitialize(effectiveClangdPath, workDir)
         val initialized = nativeIsInitialized()

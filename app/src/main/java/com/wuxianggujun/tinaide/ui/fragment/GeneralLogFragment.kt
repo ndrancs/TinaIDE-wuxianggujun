@@ -51,6 +51,18 @@ class GeneralLogFragment : Fragment() {
         bindLogs()
     }
     
+    override fun onResume() {
+        super.onResume()
+        // 当 Fragment 可见时，通知 LogTextView 刷新待处理的日志
+        _binding?.generalLogView?.onBecomeVisible()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // 当 Fragment 不可见时，暂停 UI 更新
+        _binding?.generalLogView?.onBecomeInvisible()
+    }
+    
     private fun setupToolbar() {
         binding.btnClear.setOnClickListener {
             clearLog()
@@ -133,6 +145,18 @@ class GeneralLogFragment : Fragment() {
         binding.lspStatusIndicator.backgroundTintList = 
             android.content.res.ColorStateList.valueOf(color)
         binding.tvLspStatus.text = message
+    }
+    
+    /**
+     * 通知可见性变化（由 BottomPanelManager 调用）
+     * 当底部面板收起时暂停日志刷新，展开时恢复
+     */
+    fun notifyVisibilityChanged(visible: Boolean) {
+        if (visible) {
+            _binding?.generalLogView?.onBecomeVisible()
+        } else {
+            _binding?.generalLogView?.onBecomeInvisible()
+        }
     }
     
     override fun onDestroyView() {

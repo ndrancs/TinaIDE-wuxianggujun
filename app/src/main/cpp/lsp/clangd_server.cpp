@@ -11,11 +11,100 @@
 #include <errno.h>
 #include <cstring>
 #include <dirent.h>
+#include <cctype>
 
 namespace {
 
-std::vector<std::string> buildDefaultClangdArgs() {
-    return {
+std::string trimTrailingSlash(std::string path) {
+    while (!path.empty() && path.back() == '/') {
+        path.pop_back();
+    }
+    return path;
+}
+
+std::string detectSysrootDir(const std::string& libPath) {
+    const std::string marker = "/sysroot/";
+    auto marker_pos = libPath.find(marker);
+    if (marker_pos != std::string::npos) {
+        std::string sysroot = libPath.substr(0, marker_pos + marker.size());
+        return trimTrailingSlash(sysroot);
+    }
+
+    size_t pos = libPath.rfind('/');
+    int levels = 0;
+    while (pos != std::string::npos && levels < 5) {
+        pos = libPath.rfind('/', pos == 0 ? 0 : pos - 1);
+        ++levels;
+    }
+    if (pos != std::string::npos) {
+        return trimTrailingSlash(libPath.substr(0, pos));
+    }
+    return "";
+}
+
+int compareVersionStrings(const std::string& lhs, const std::string& rhs) {
+    size_t i = 0;
+    size_t j = 0;
+    while (i < lhs.size() || j < rhs.size()) {
+        int lv = 0;
+        int rv = 0;
+        while (i < lhs.size() && lhs[i] != '.') {
+            if (std::isdigit(static_cast<unsigned char>(lhs[i]))) {
+                lv = lv * 10 + (lhs[i] - '0');
+            }
+            ++i;
+        }
+        while (j < rhs.size() && rhs[j] != '.') {
+            if (std::isdigit(static_cast<unsigned char>(rhs[j]))) {
+                rv = rv * 10 + (rhs[j] - '0');
+            }
+            ++j;
+        }
+        if (lv != rv) {
+            return lv < rv ? -1 : 1;
+        }
+        if (i < lhs.size() && lhs[i] == '.') {
+            ++i;
+        }
+        if (j < rhs.size() && rhs[j] == '.') {
+            ++j;
+        }
+    }
+    return 0;
+}
+
+std::string findClangResourceDir(const std::string& sysrootDir) {
+    if (sysrootDir.empty()) {
+        return "";
+    }
+    std::string clangRoot = sysrootDir + "/lib/clang";
+    DIR* dir = opendir(clangRoot.c_str());
+    if (!dir) {
+        return "";
+    }
+    std::string bestVersion;
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        std::string name = entry->d_name;
+        if (name.empty() || name == "." || name == "..") {
+            continue;
+        }
+        if (!std::isdigit(static_cast<unsigned char>(name[0]))) {
+            continue;
+        }
+        if (bestVersion.empty() || compareVersionStrings(name, bestVersion) > 0) {
+            bestVersion = name;
+        }
+    }
+    closedir(dir);
+    if (bestVersion.empty()) {
+        return "";
+    }
+    return clangRoot + "/" + bestVersion;
+}
+
+std::vector<std::string> buildDefaultClangdArgs(const std::string& resourceDir) {
+    std::vector<std::string> args = {
         "clangd",
         "--background-index=false",
         "--clang-tidy=false",
@@ -23,6 +112,10 @@ std::vector<std::string> buildDefaultClangdArgs() {
         "--pch-storage=memory",
         "--log=verbose"
     };
+    if (!resourceDir.empty()) {
+        args.push_back("--resource-dir=" + resourceDir);
+    }
+    return args;
 }
 
 } // namespace
@@ -81,7 +174,7 @@ void* ClangdServer::clangdThreadFunc(void* arg) {
     int rc = -1;
     if (server->clangdMain_) {
         if (server->clangdArgs_.empty()) {
-            server->clangdArgs_ = buildDefaultClangdArgs();
+            server->clangdArgs_ = buildDefaultClangdArgs("");
         }
         std::vector<char*> argv;
         argv.reserve(server->clangdArgs_.size());
@@ -255,8 +348,24 @@ std::string ClangdServer::start(const std::string& libPath,
     LOGI("startClangd: found symbols - clangd_main=%p, clangd_run=%p",
          (void*)clangdMain_, (void*)clangdRun_);
 
+    std::string sysrootDir = detectSysrootDir(libPath);
+    if (sysrootDir.empty()) {
+        LOGW("startClangd: failed to detect sysroot from %s", libPath.c_str());
+    } else {
+        LOGI("startClangd: detected sysroot at %s", sysrootDir.c_str());
+    }
+    std::string resourceDir;
+    if (!sysrootDir.empty()) {
+        resourceDir = findClangResourceDir(sysrootDir);
+        if (!resourceDir.empty()) {
+            LOGI("startClangd: using clang resource dir %s", resourceDir.c_str());
+        } else {
+            LOGW("startClangd: clang resource dir missing under %s/lib/clang", sysrootDir.c_str());
+        }
+    }
+
     // 构建最终参数（默认参数 + 额外参数）
-    clangdArgs_ = buildDefaultClangdArgs();
+    clangdArgs_ = buildDefaultClangdArgs(resourceDir);
     clangdArgs_.insert(clangdArgs_.end(), extraArgs.begin(), extraArgs.end());
 
     // 启动 clangd 线程

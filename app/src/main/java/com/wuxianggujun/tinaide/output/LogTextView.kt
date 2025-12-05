@@ -124,6 +124,9 @@ class LogTextView @JvmOverloads constructor(
     // 批量更新相关
     private val pendingEntries = mutableListOf<LogEntry>()
     private var updatePending = false
+    private var isViewVisible = false  // 追踪视图是否可见
+    private var hasPendingRefresh = false  // 是否有待刷新的数据
+    
     private val updateRunnable = Runnable {
         updatePending = false
         processPendingEntries()
@@ -131,10 +134,17 @@ class LogTextView @JvmOverloads constructor(
     
     /**
      * 追加结构化日志（批量优化版本）
+     * 当视图不可见时，只缓存数据，不触发 UI 更新
      */
     fun appendLog(level: LogLevel, timestamp: String, tag: String, message: String) {
         synchronized(pendingEntries) {
             pendingEntries.add(LogEntry(level, timestamp, tag, message))
+        }
+        
+        // 如果视图不可见，只标记有待刷新数据，不触发 UI 更新
+        if (!isViewVisible) {
+            hasPendingRefresh = true
+            return
         }
         
         // 使用节流，避免频繁刷新
@@ -142,6 +152,31 @@ class LogTextView @JvmOverloads constructor(
             updatePending = true
             postDelayed(updateRunnable, 50) // 50ms 批量处理一次
         }
+    }
+    
+    /**
+     * 当视图变为可见时调用，刷新待处理的日志
+     */
+    fun onBecomeVisible() {
+        isViewVisible = true
+        if (hasPendingRefresh) {
+            hasPendingRefresh = false
+            // 立即处理待刷新的数据
+            if (!updatePending) {
+                updatePending = true
+                post(updateRunnable)
+            }
+        }
+    }
+    
+    /**
+     * 当视图变为不可见时调用
+     */
+    fun onBecomeInvisible() {
+        isViewVisible = false
+        // 取消待处理的 UI 更新
+        removeCallbacks(updateRunnable)
+        updatePending = false
     }
     
     private fun processPendingEntries() {

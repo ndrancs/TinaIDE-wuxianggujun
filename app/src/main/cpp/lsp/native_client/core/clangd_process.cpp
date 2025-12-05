@@ -1,6 +1,6 @@
 #include "clangd_process.h"
 #include <android/log.h>
-#include <cstdlib>
+#include <sys/stat.h>
 #include <vector>
 
 #define LOG_TAG "ClangdProcess"
@@ -21,27 +21,12 @@ bool ClangdProcess::start(const std::string& clangd_path,
     stop();
     socket_path_ = config.socket_path;
 
-    use_mock_ = true;
-    if (const char* env = std::getenv("TINAIDE_NATIVE_LSP_USE_MOCK")) {
-        use_mock_ = std::string(env) != "0";
-    }
-
-    if (use_mock_) {
-        if (!startMockServer(config)) {
-            LOGW("Mock server failed to start on %s", socket_path_.c_str());
-            return false;
-        }
-        LOGI("Mock LSP server ready on %s", socket_path_.c_str());
-        running_ = true;
-        return true;
-    }
-
     if (startRealProcess(clangd_path, work_dir, config)) {
         running_ = true;
         return true;
     }
 
-    LOGW("ClangdProcess: real server not available, fallback failed");
+    LOGE("ClangdProcess: failed to start clangd server");
     return false;
 }
 
@@ -54,21 +39,8 @@ void ClangdProcess::stop() {
         clangd_server_->stop();
         clangd_server_.reset();
     }
-    if (mock_server_) {
-        mock_server_->stop();
-        mock_server_.reset();
-    }
     running_ = false;
     socket_path_.clear();
-}
-
-bool ClangdProcess::startMockServer(const ChannelConfig& config) {
-    mock_server_ = std::make_unique<MockLspServer>(config);
-    if (!mock_server_->start()) {
-        mock_server_.reset();
-        return false;
-    }
-    return true;
 }
 
 bool ClangdProcess::startRealProcess(const std::string& clangd_path,
@@ -77,7 +49,27 @@ bool ClangdProcess::startRealProcess(const std::string& clangd_path,
     clangd_server_ = std::make_unique<ClangdServer>();
     std::vector<std::string> extra_args;
     if (!work_dir.empty()) {
-        extra_args.push_back("--compile-commands-dir=" + work_dir);
+        // compile_commands.json 生成在 build/debug 或 build/release 目录
+        // 优先检查 debug 目录，然后是 release，最后是项目根目录
+        std::string compile_commands_dir = work_dir;
+        std::string debug_path = work_dir + "/build/debug/compile_commands.json";
+        std::string release_path = work_dir + "/build/release/compile_commands.json";
+        std::string root_path = work_dir + "/compile_commands.json";
+        
+        struct stat st;
+        if (stat(debug_path.c_str(), &st) == 0) {
+            compile_commands_dir = work_dir + "/build/debug";
+            LOGI("Found compile_commands.json in build/debug");
+        } else if (stat(release_path.c_str(), &st) == 0) {
+            compile_commands_dir = work_dir + "/build/release";
+            LOGI("Found compile_commands.json in build/release");
+        } else if (stat(root_path.c_str(), &st) == 0) {
+            LOGI("Found compile_commands.json in project root");
+        } else {
+            LOGW("compile_commands.json not found, clangd may not provide accurate completions");
+        }
+        
+        extra_args.push_back("--compile-commands-dir=" + compile_commands_dir);
     }
     std::string error = clangd_server_->start(clangd_path, extra_args);
     if (!error.empty()) {

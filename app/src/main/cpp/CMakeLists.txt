@@ -115,11 +115,10 @@ add_library(native_compiler SHARED
     runner/shared_runner.cpp
     # LSP 模块
     lsp/clangd_server.cpp
-    # LSP Native Client 模块（新增）
+    # LSP Native Client 模块
     lsp/native_client/transport/shared_memory_helper.cpp
     lsp/native_client/transport/shared_memory_transport.cpp
     lsp/native_client/transport/control_channel.cpp
-    lsp/native_client/mock/mock_lsp_server.cpp
     lsp/native_client/bridge/json_rpc_converter.cpp
     lsp/native_client/protocol/protocol_handler.cpp
     lsp/native_client/core/clangd_control_bridge.cpp

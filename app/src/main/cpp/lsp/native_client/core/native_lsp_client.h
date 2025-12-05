@@ -24,7 +24,6 @@ namespace lsp {
 
 // 前向声明
 class ClangdProcess;
-class MockLspServer;
 
 /**
  * Native LSP 客户端
@@ -260,6 +259,8 @@ private:
     void removePendingRequest(uint64_t request_id);
     void markRequestCompleted(uint64_t request_id);
     std::optional<PendingRequestInfo> getRequestInfo(uint64_t request_id);
+    void cancelPendingRequestsForMethod(protocol::Method method);
+    void cancelPendingRequestsForFile(protocol::Method method, uint32_t file_id);
     bool handleControlMessage(const Message& msg);
     bool extractPayloadFromMessage(const Message& msg, std::vector<uint8_t>& payload);
     bool sendNotificationPacket(uint64_t request_id, const std::vector<uint8_t>& data);
