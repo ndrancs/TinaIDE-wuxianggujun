@@ -69,7 +69,6 @@ class BottomLogPanel(
         logListener = BottomLogBuffer.LogListener { entry ->
             binding.logView.post {
                 binding.logView.appendLog(entry.level, entry.message)
-                updateStatusFromLog(entry)
             }
         }
         logListener?.let { listener ->
@@ -78,26 +77,6 @@ class BottomLogPanel(
         }
     }
 
-    private fun updateStatusFromLog(entry: BottomLogBuffer.LogEntry) {
-        val raw = entry.message
-        val normalized = raw.lowercase()
-        when {
-            normalized.contains("lsp 初始化成功") ||
-            normalized.contains("lsp 已连接") ||
-            normalized.contains("✅ lsp") -> updateLspStatus(true, "LSP 已连接")
-            normalized.contains("lsp 初始化中") ||
-            normalized.contains("🚀 lsp") -> updateLspStatus(false, "LSP 初始化中...")
-            normalized.contains("lsp 初始化失败") ||
-            normalized.contains("lsp error") ||
-            normalized.contains("lsp 异常") ||
-            normalized.contains("❌ lsp") -> {
-                val detail = raw.substringAfter("] ", raw)
-                updateLspStatus(false, detail)
-            }
-            normalized.contains("lsp 已关闭") ||
-            normalized.contains("🛑 lsp") -> updateLspStatus(false, "LSP 已关闭")
-        }
-    }
     
     private fun setupToolbar() {
         binding.btnCompile.setOnClickListener {

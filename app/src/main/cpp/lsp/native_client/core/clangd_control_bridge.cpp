@@ -1,24 +1,25 @@
 #include "clangd_control_bridge.h"
 
-#include <android/log.h>
 #include <algorithm>
+#include <chrono>
 #include <cctype>
 #include <cstring>
+#include <unistd.h>
 #include <flatbuffers/flatbuffers.h>
 #include <flatbuffers/verifier.h>
 #include <llvm/Support/JSON.h>
+#include <llvm/Support/raw_ostream.h>
 #include "lsp/clangd_server.h"
 
 #define LOG_TAG "ClangdControlBridge"
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#include "utils/logging.h"
 
 namespace tinaide {
 namespace lsp {
 namespace {
 
 constexpr const char* kHeaderDelimiter = "\r\n\r\n";
+constexpr const char* kJsonRpcVersion = "2.0";
 
 std::string buildLspMessage(const std::string& json) {
     std::string header = "Content-Length: " + std::to_string(json.size()) + "\r\n\r\n";
@@ -41,10 +42,40 @@ bool parseRequestId(const llvm::json::Value& value, uint64_t& out_id) {
     return false;
 }
 
+std::string normalizePath(std::string path) {
+    std::replace(path.begin(), path.end(), '\\', '/');
+    while (!path.empty() && path.back() == '/') {
+        path.pop_back();
+    }
+    return path;
+}
+
+std::string buildFileUri(const std::string& path) {
+    if (path.empty()) {
+        return std::string();
+    }
+    std::string normalized = normalizePath(path);
+    if (normalized.empty()) {
+        return std::string();
+    }
+    if (normalized.front() != '/') {
+        normalized.insert(normalized.begin(), '/');
+    }
+    return "file://" + normalized;
+}
+
+std::string jsonToString(llvm::json::Value value) {
+    std::string result;
+    llvm::raw_string_ostream os(result);
+    os << value;
+    os.flush();
+    return result;
+}
+
 } // namespace
 
-ClangdControlBridge::ClangdControlBridge(const ChannelConfig& config, ClangdServer* server)
-    : config_(config), server_(server) {}
+ClangdControlBridge::ClangdControlBridge(const ChannelConfig& config, ClangdServer* server, std::string work_dir)
+    : config_(config), server_(server), work_dir_(std::move(work_dir)), root_uri_(buildFileUri(work_dir_)) {}
 
 ClangdControlBridge::~ClangdControlBridge() {
     stop();
@@ -67,6 +98,12 @@ bool ClangdControlBridge::start() {
     ChannelError err = control_channel_->acceptClient();
     if (err != ChannelError::SUCCESS) {
         LOGE("Failed to accept control channel client: %s", control_channel_->getLastError().c_str());
+        control_channel_->close();
+        control_channel_.reset();
+        return false;
+    }
+
+    if (!performInitializeHandshake()) {
         control_channel_->close();
         control_channel_.reset();
         return false;
@@ -134,6 +171,7 @@ void ClangdControlBridge::responseLoop() {
         if (!readClangdMessage(json)) {
             continue;
         }
+        LOGD("responseLoop: received JSON chunk (%zu bytes)", json.size());
         auto parsed = llvm::json::parse(json);
         if (!parsed) {
             LOGW("Failed to parse clangd JSON message: %s", llvm::toString(parsed.takeError()).c_str());
@@ -149,6 +187,7 @@ void ClangdControlBridge::responseLoop() {
                 LOGW("Response missing valid id field");
                 continue;
             }
+            LOGD("responseLoop: parsed response id=%llu", static_cast<unsigned long long>(request_id));
             protocol::Method method = protocol::Method::UNKNOWN;
             {
                 std::lock_guard<std::mutex> lock(pending_mutex_);
@@ -164,6 +203,8 @@ void ClangdControlBridge::responseLoop() {
             }
             if (!sendResponse(method, request_id, json)) {
                 LOGW("Failed to send response for request %llu", static_cast<unsigned long long>(request_id));
+            } else {
+                LOGD("responseLoop: forwarded response id=%llu method=%d", static_cast<unsigned long long>(request_id), static_cast<int>(method));
             }
         } else if (auto method_name = obj->getString("method")) {
             auto method_str = method_name->str();
@@ -171,6 +212,8 @@ void ClangdControlBridge::responseLoop() {
                 uint64_t diag_id = notification_sequence_.fetch_add(1, std::memory_order_relaxed);
                 if (!sendResponse(protocol::Method::PUBLISH_DIAGNOSTICS, diag_id, json)) {
                     LOGW("Failed to forward diagnostics notification");
+                } else {
+                    LOGD("responseLoop: forwarded diagnostics notification id=%llu", static_cast<unsigned long long>(diag_id));
                 }
             } else {
                 LOGI("clangd notification: %s", method_str.c_str());
@@ -195,6 +238,7 @@ bool ClangdControlBridge::readClangdMessage(std::string& out_json) {
             } else {
                 out_json.assign(clangd_buffer_.data() + body_offset, content_length);
                 clangd_buffer_.erase(0, body_offset + content_length);
+                LOGD("readClangdMessage: message ready payload=%zu bytes", content_length);
                 return true;
             }
         }
@@ -205,6 +249,7 @@ bool ClangdControlBridge::readClangdMessage(std::string& out_json) {
         if (chunk.empty()) {
             continue;
         }
+        LOGD("readClangdMessage: appended %zu bytes from clangd", chunk.size());
         clangd_buffer_.append(chunk.begin(), chunk.end());
     }
     return false;
@@ -355,6 +400,7 @@ void ClangdControlBridge::handleRequest(const protocol::Request* request) {
         LOGE("Failed to build JSON request: %s", error.c_str());
         return;
     }
+    LOGD("Forwarding request id=%llu method=%d to clangd", (unsigned long long)request->request_id(), static_cast<int>(method));
     if (!dispatchJson(method, request->request_id(), json)) {
         LOGE("Failed to dispatch request %llu", static_cast<unsigned long long>(request->request_id()));
     }
@@ -363,18 +409,11 @@ void ClangdControlBridge::handleRequest(const protocol::Request* request) {
 bool ClangdControlBridge::dispatchJson(protocol::Method method,
                                         uint64_t request_id,
                                         const std::string& json) {
-    if (!server_) {
+    if (!sendRawJson(json)) {
+        LOGE("Failed to write JSON to clangd");
         return false;
     }
-    std::string framed = buildLspMessage(json);
-    std::vector<char> data(framed.begin(), framed.end());
-    {
-        std::lock_guard<std::mutex> lock(clangd_write_mutex_);
-        if (server_->write(data) <= 0) {
-            LOGE("Failed to write request to clangd");
-            return false;
-        }
-    }
+    LOGD("Sent JSON to clangd: request=%llu method=%d", (unsigned long long)request_id, static_cast<int>(method));
     if (!isNotification(method)) {
         std::lock_guard<std::mutex> lock(pending_mutex_);
         pending_requests_[request_id] = method;
@@ -400,6 +439,10 @@ bool ClangdControlBridge::sendResponse(protocol::Method method,
         LOGE("Failed to send response through control channel: %s", control_channel_->getLastError().c_str());
         return false;
     }
+    LOGD("Delivered response to client: request=%llu method=%d payload=%zu bytes",
+         (unsigned long long)request_id,
+         static_cast<int>(method),
+         buffer.size());
     return true;
 }
 
@@ -427,6 +470,117 @@ bool ClangdControlBridge::isNotification(protocol::Method method) {
     return method == protocol::Method::DID_OPEN ||
            method == protocol::Method::DID_CHANGE ||
            method == protocol::Method::DID_CLOSE;
+}
+
+bool ClangdControlBridge::sendRawJson(const std::string& json) {
+    if (!server_) {
+        return false;
+    }
+    std::string framed = buildLspMessage(json);
+    std::vector<char> data(framed.begin(), framed.end());
+    std::lock_guard<std::mutex> lock(clangd_write_mutex_);
+    return server_->write(data) > 0;
+}
+
+bool ClangdControlBridge::readBlockingClangdMessage(std::string& out_json, int timeout_ms) {
+    const size_t kReadBlock = 8192;
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+    while (true) {
+        auto header_pos = clangd_buffer_.find(kHeaderDelimiter);
+        if (header_pos != std::string::npos) {
+            size_t body_offset = 0;
+            size_t content_length = 0;
+            if (!parseHeaders(header_pos, body_offset, content_length)) {
+                clangd_buffer_.erase(0, header_pos + strlen(kHeaderDelimiter));
+                continue;
+            }
+            if (clangd_buffer_.size() >= body_offset + content_length) {
+                out_json.assign(clangd_buffer_.data() + body_offset, content_length);
+                clangd_buffer_.erase(0, body_offset + content_length);
+                return true;
+            }
+        }
+        if (!server_) {
+            return false;
+        }
+        if (timeout_ms > 0 && std::chrono::steady_clock::now() >= deadline) {
+            return false;
+        }
+        std::vector<char> chunk = server_->readWithTimeout(static_cast<int>(kReadBlock), 200);
+        if (chunk.empty()) {
+            continue;
+        }
+        clangd_buffer_.append(chunk.begin(), chunk.end());
+    }
+}
+
+bool ClangdControlBridge::performInitializeHandshake() {
+    llvm::json::Object params;
+    params["processId"] = static_cast<int64_t>(getpid());
+    if (!root_uri_.empty()) {
+        params["rootUri"] = root_uri_;
+        llvm::json::Array folders;
+        llvm::json::Object folder;
+        folder["uri"] = root_uri_;
+        std::string workspace_name = work_dir_;
+        auto slash = workspace_name.find_last_of("/\\");
+        if (slash != std::string::npos && slash + 1 < workspace_name.size()) {
+            workspace_name = workspace_name.substr(slash + 1);
+        }
+        if (workspace_name.empty()) {
+            workspace_name = "workspace";
+        }
+        folder["name"] = workspace_name;
+        folders.push_back(std::move(folder));
+        params["workspaceFolders"] = std::move(folders);
+    } else {
+        params["rootUri"] = llvm::json::Value(nullptr);
+        params["workspaceFolders"] = llvm::json::Array();
+    }
+    params["capabilities"] = llvm::json::Object();
+    params["initializationOptions"] = llvm::json::Object();
+
+    llvm::json::Object init_request;
+    init_request["jsonrpc"] = kJsonRpcVersion;
+    init_request["id"] = static_cast<int64_t>(0);
+    init_request["method"] = "initialize";
+    init_request["params"] = std::move(params);
+
+    if (!sendRawJson(jsonToString(llvm::json::Value(std::move(init_request))))) {
+        LOGE("Failed to send initialize request");
+        return false;
+    }
+
+    std::string response_json;
+    if (!readBlockingClangdMessage(response_json, 5000)) {
+        LOGE("Timed out waiting for initialize response");
+        return false;
+    }
+    auto parsed = llvm::json::parse(response_json);
+    if (!parsed) {
+        LOGE("Failed to parse initialize response: %s", llvm::toString(parsed.takeError()).c_str());
+        return false;
+    }
+    const auto* obj = parsed->getAsObject();
+    if (!obj) {
+        LOGE("Initialize response missing object body");
+        return false;
+    }
+    if (const auto* error = obj->getObject("error")) {
+        std::string msg = error->getString("message") ? error->getString("message")->str() : "unknown";
+        LOGE("clangd initialize failed: %s", msg.c_str());
+        return false;
+    }
+
+    llvm::json::Object initialized;
+    initialized["jsonrpc"] = kJsonRpcVersion;
+    initialized["method"] = "initialized";
+    initialized["params"] = llvm::json::Object();
+    if (!sendRawJson(jsonToString(llvm::json::Value(std::move(initialized))))) {
+        LOGE("Failed to send initialized notification");
+        return false;
+    }
+    return true;
 }
 
 } // namespace lsp

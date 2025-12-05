@@ -3,8 +3,7 @@
 #include <android/log.h>
 
 #define LOG_TAG "LspResultCache"
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#include "utils/logging.h"
 
 namespace tinaide {
 namespace lsp {
@@ -291,6 +290,8 @@ std::optional<CacheValue> LspResultCache::get(const CacheKey& key) {
     auto it = cache_map_.find(key);
     if (it == cache_map_.end()) {
         misses_++;
+        LOGD("Cache miss (method=%d, file=%u, line=%u, char=%u, hit_rate=%.2f%%)",
+             (int)key.method, key.file_id, key.line, key.character, getHitRate() * 100.0);
         return std::nullopt;
     }
 

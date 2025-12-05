@@ -4,9 +4,7 @@
 #include <vector>
 
 #define LOG_TAG "ClangdProcess"
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#include "utils/logging.h"
 
 namespace tinaide {
 namespace lsp {
@@ -89,7 +87,7 @@ bool ClangdProcess::startRealProcess(const std::string& clangd_path,
         return false;
     }
 
-    bridge_ = std::make_unique<ClangdControlBridge>(config, clangd_server_.get());
+    bridge_ = std::make_unique<ClangdControlBridge>(config, clangd_server_.get(), work_dir);
     if (!bridge_->start()) {
         LOGE("Failed to start control bridge");
         bridge_.reset();

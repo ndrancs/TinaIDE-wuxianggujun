@@ -24,6 +24,8 @@ import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -190,20 +192,39 @@ private object CppNativeCompletionDispatcher {
             return false
         }
         val prefixLength = computePrefixLength(content, position)
-        val completionResult = runBlocking {
-            NativeLspService.requestCompletionAsync(
-                fileUri = Uri.fromFile(File(filePath)).toString(),
-                line = position.line,
-                character = position.column
-            )
-        } ?: return false
+        val fileUri = Uri.fromFile(File(filePath)).toString()
+        Log.d(TAG, "Completion request -> file=$filePath line=${position.line} col=${position.column}")
+        val completionResult = try {
+            runBlocking(Dispatchers.IO) {
+                NativeLspService.requestCompletionAsync(
+                    fileUri = fileUri,
+                    line = position.line,
+                    character = position.column
+                )
+            }
+        } catch (cancelled: CancellationException) {
+            Log.d(TAG, "Completion cancelled for $filePath:${position.line}:${position.column}")
+            return false
+        } catch (interrupted: InterruptedException) {
+            Log.w(TAG, "Completion interrupted for $filePath", interrupted)
+            Thread.currentThread().interrupt()
+            return false
+        } catch (t: Throwable) {
+            Log.e(TAG, "Completion request failed for $filePath", t)
+            return false
+        } ?: run {
+            Log.d(TAG, "Completion result empty for $filePath:${position.line}:${position.column}")
+            return false
+        }
         publisher.checkCancelled()
         val items = completionResult.items.map {
             it.toCompletionItem(prefixLength)
         }
         if (items.isEmpty()) {
+            Log.d(TAG, "No completion items returned for $filePath:${position.line}:${position.column}")
             return false
         }
+        Log.d(TAG, "Completion result -> file=$filePath line=${position.line} col=${position.column} items=${items.size}")
         publisher.addItems(items)
         publisher.updateList(true)
         return true

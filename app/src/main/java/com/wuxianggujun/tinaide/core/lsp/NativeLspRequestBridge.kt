@@ -133,7 +133,9 @@ object NativeLspRequestBridge {
         jobs[key]?.cancel()
         jobs[key] = scope.launch {
             try {
+                Log.d(TAG, "Launching $methodLabel request key=$key workDir=$workDir")
                 if (!ensureNativeClient(workDir)) {
+                    Log.w(TAG, "Native client unavailable for $methodLabel key=$key")
                     withContext(Dispatchers.Main) { onResult(null) }
                     return@launch
                 }
@@ -150,6 +152,11 @@ object NativeLspRequestBridge {
                     }
                     .getOrNull()
                 withContext(Dispatchers.Main) {
+                    if (result == null) {
+                        Log.d(TAG, "$methodLabel result is null for key=$key")
+                    } else {
+                        Log.d(TAG, "$methodLabel result ready for key=$key")
+                    }
                     onResult(result)
                 }
             } finally {

@@ -8,7 +8,7 @@
 #include "lsp_protocol_generated.h"
 
 #define LOG_TAG "JsonRpcConverter"
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#include "utils/logging.h"
 
 namespace tinaide {
 namespace lsp {
@@ -136,29 +136,27 @@ bool buildHoverResponsePayload(const Value& result,
                                flatbuffers::Offset<void>& out_data,
                                protocol::ResponseData& out_type,
                                std::string& error) {
-    auto result_obj = result.getAsObject();
-    if (!result_obj) {
-        error = "hover result is not an object";
-        return false;
-    }
+    const Object* result_obj = result.getAsObject();
 
     const Value* contents = nullptr;
-    if (auto it = result_obj->get("contents")) {
-        contents = it;
+    uint32_t start_line = 0, start_char = 0, end_line = 0, end_char = 0;
+
+    if (result_obj) {
+        if (auto it = result_obj->get("contents")) {
+            contents = it;
+        } else if (auto value = result_obj->get("value")) {
+            contents = value;
+        }
+        if (auto range_obj = result_obj->getObject("range")) {
+            if (!parseRange(range_obj, start_line, start_char, end_line, end_char)) {
+                LOGW("Hover range parsing failed, fallback to defaults");
+            }
+        }
     } else {
-        contents = result_obj->get("value");
+        contents = &result;
     }
 
     std::string content = valueToString(contents);
-    if (content.empty()) {
-        content = "";
-    }
-
-    uint32_t start_line = 0, start_char = 0, end_line = 0, end_char = 0;
-    auto range_obj = result_obj->getObject("range");
-    if (range_obj) {
-        parseRange(range_obj, start_line, start_char, end_line, end_char);
-    }
 
     protocol::Position start(start_line, start_char);
     protocol::Position end(end_line, end_char);
@@ -192,63 +190,74 @@ bool buildCompletionResponsePayload(const Value& value,
                                     flatbuffers::Offset<void>& out_data,
                                     protocol::ResponseData& out_type,
                                     std::string& error) {
-    const Object* result = value.getAsObject();
-    if (!result) {
-        error = "completion result must be an object";
-        return false;
+    const Object* result_obj = value.getAsObject();
+    const Array* items_array = nullptr;
+    bool is_incomplete = false;
+
+    if (result_obj) {
+        items_array = result_obj->getArray("items");
+        if (!items_array) {
+            error = "completion result missing items array";
+            return false;
+        }
+        if (auto flag = result_obj->get("isIncomplete")) {
+            if (auto boolean = flag->getAsBoolean()) {
+                is_incomplete = *boolean;
+            } else if (auto number = flag->getAsInteger()) {
+                is_incomplete = (*number) != 0;
+            }
+        }
+    } else {
+        items_array = value.getAsArray();
+        if (!items_array) {
+            error = "completion result must be an object or array";
+            return false;
+        }
+        is_incomplete = false;
     }
 
     std::vector<flatbuffers::Offset<protocol::CompletionItem>> items;
-    if (auto array = result->getArray("items")) {
-        items.reserve(array->size());
-        for (const auto& entry : *array) {
-            auto item_obj = entry.getAsObject();
-            if (!item_obj) {
-                continue;
-            }
-
-            std::string label = item_obj->getString("label") ? item_obj->getString("label")->str() : "";
-            std::string detail = item_obj->getString("detail") ? item_obj->getString("detail")->str() : "";
-            std::string insert_text = item_obj->getString("insertText") ? item_obj->getString("insertText")->str() : label;
-            std::string documentation = extractDocumentation(item_obj->get("documentation"));
-
-            int kind = 0;
-            if (auto kind_value = item_obj->get("kind")) {
-                if (auto ints = kind_value->getAsInteger()) {
-                    kind = static_cast<int>(*ints);
-                }
-            }
-
-            bool deprecated = false;
-            if (auto dep = item_obj->get("deprecated")) {
-                deprecated = dep->getAsBoolean().value_or(false);
-            }
-
-            auto label_offset = builder.CreateString(label);
-            auto detail_offset = builder.CreateString(detail);
-            auto insert_offset = builder.CreateString(insert_text);
-            auto documentation_offset = builder.CreateString(documentation);
-
-            auto completion_item = protocol::CreateCompletionItem(
-                builder,
-                label_offset,
-                static_cast<uint8_t>(kind),
-                detail_offset,
-                insert_offset,
-                0,
-                0,
-                documentation_offset,
-                deprecated
-            );
-            items.push_back(completion_item);
+    items.reserve(items_array->size());
+    for (const auto& entry : *items_array) {
+        const Object* item_obj = entry.getAsObject();
+        if (!item_obj) {
+            continue;
         }
-    }
 
-    bool is_incomplete = false;
-    if (auto flag = result->get("isIncomplete")) {
-        if (auto boolean = flag->getAsBoolean()) {
-            is_incomplete = *boolean;
+        std::string label = item_obj->getString("label") ? item_obj->getString("label")->str() : "";
+        std::string detail = item_obj->getString("detail") ? item_obj->getString("detail")->str() : "";
+        std::string insert_text = item_obj->getString("insertText") ? item_obj->getString("insertText")->str() : label;
+        std::string documentation = extractDocumentation(item_obj->get("documentation"));
+
+        int kind = 0;
+        if (auto kind_value = item_obj->get("kind")) {
+            if (auto ints = kind_value->getAsInteger()) {
+                kind = static_cast<int>(*ints);
+            }
         }
+
+        bool deprecated = false;
+        if (auto dep = item_obj->get("deprecated")) {
+            deprecated = dep->getAsBoolean().value_or(false);
+        }
+
+        auto label_offset = builder.CreateString(label);
+        auto detail_offset = builder.CreateString(detail);
+        auto insert_offset = builder.CreateString(insert_text);
+        auto documentation_offset = builder.CreateString(documentation);
+
+        auto completion_item = protocol::CreateCompletionItem(
+            builder,
+            label_offset,
+            static_cast<uint8_t>(kind),
+            detail_offset,
+            insert_offset,
+            0,
+            0,
+            documentation_offset,
+            deprecated
+        );
+        items.push_back(completion_item);
     }
 
     auto items_vec = builder.CreateVector(items);

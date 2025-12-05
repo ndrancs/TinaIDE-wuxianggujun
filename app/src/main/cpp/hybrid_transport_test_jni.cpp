@@ -12,8 +12,7 @@
 #include "lsp/native_client/transport/shared_memory_transport.h"
 
 #define LOG_TAG "HybridTransportTest"
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#include "utils/logging.h"
 
 using namespace tinaide::lsp;
 

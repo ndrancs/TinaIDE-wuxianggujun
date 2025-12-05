@@ -2,7 +2,6 @@
 #include "native_lsp_client.h"
 #include "../transport/shared_memory_helper.h"
 #include "clangd_process.h"
-#include <android/log.h>
 #include <chrono>
 #include <cstdlib>
 #include <unistd.h>
@@ -11,10 +10,7 @@
 #include <cctype>
 
 #define LOG_TAG "NativeLspClient"
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#include "utils/logging.h"
 
 namespace tinaide {
 namespace lsp {
@@ -90,13 +86,41 @@ bool NativeLspClient::initialize(const std::string& clangd_path, const std::stri
         channel_config_.send_timeout_ms = 2000;
 
         clangd_process_ = std::make_unique<ClangdProcess>();
-        if (!clangd_process_->start(clangd_path, work_dir, channel_config_)) {
+        std::atomic<bool> process_started{false};
+        std::atomic<bool> process_finished{false};
+        std::thread process_thread([this, clangd_path, work_dir, &process_started, &process_finished]() {
+            bool started = clangd_process_->start(clangd_path, work_dir, channel_config_);
+            process_started.store(started, std::memory_order_release);
+            process_finished.store(true, std::memory_order_release);
+        });
+
+        control_channel_ = std::make_shared<ControlChannel>(channel_config_);
+        ChannelError connect_err = ChannelError::CONNECTION_FAILED;
+        const int max_attempts = 50;
+        for (int attempt = 0; attempt < max_attempts; ++attempt) {
+            connect_err = control_channel_->connect(channel_config_.send_timeout_ms);
+            if (connect_err == ChannelError::SUCCESS) {
+                break;
+            }
+            if (connect_err == ChannelError::TIMEOUT) {
+                break;
+            }
+            if (process_finished.load(std::memory_order_acquire) &&
+                !process_started.load(std::memory_order_acquire)) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        if (process_thread.joinable()) {
+            process_thread.join();
+        }
+        bool started_ok = process_started.load(std::memory_order_acquire);
+        if (!started_ok) {
             LOGW("ClangdProcess failed to start, will attempt to connect anyway");
             reportHealthEvent(HealthEventType::CLANGD_EXIT, "Failed to start clangd process");
         }
 
-        control_channel_ = std::make_shared<ControlChannel>(channel_config_);
-        ChannelError connect_err = control_channel_->connect(channel_config_.send_timeout_ms);
         if (connect_err != ChannelError::SUCCESS) {
             reportHealthEvent(HealthEventType::CHANNEL_ERROR, control_channel_->getLastError());
             LOGE("Unable to connect control channel (%s)", control_channel_->getLastError().c_str());
@@ -629,6 +653,10 @@ void NativeLspClient::ioThreadFunc() {
             continue;
         }
 
+        LOGD("ioThread: received control message type=%u request=%llu payload=%u bytes",
+             msg.header.type,
+             (unsigned long long)msg.header.request_id,
+             msg.header.payload_size);
         if (!handleControlMessage(msg)) {
             LOGE("Failed to handle control message (type=%u, request=%llu)",
                  msg.header.type,
@@ -665,6 +693,12 @@ void NativeLspClient::workerThreadFunc() {
         }
 
         std::vector<char> payload(entry.data.begin(), entry.data.end());
+        LOGD("Sending request %llu method=%d file=%u line=%u char=%u",
+             (unsigned long long)entry.request_id,
+             static_cast<int>(entry.method),
+             entry.file_id,
+             entry.line,
+             entry.character);
         bool sent = transport_->send(static_cast<uint32_t>(entry.request_id & 0xFFFFFFFFu), payload);
 
         if (sent) {
@@ -711,6 +745,10 @@ bool NativeLspClient::handleControlMessage(const Message& msg) {
 
     const protocol::Response* response = response_opt.value();
     auto method = response->method();
+    LOGD("handleControlMessage: response method=%d request=%llu status=%d",
+         static_cast<int>(method),
+         (unsigned long long)msg.header.request_id,
+         static_cast<int>(response->status()));
 
     if (method == protocol::Method::PUBLISH_DIAGNOSTICS) {
         auto diagnostics = protocol_handler_->parseDiagnosticsResponse(response);
@@ -804,6 +842,12 @@ bool NativeLspClient::handleControlMessage(const Message& msg) {
     }
 
     if (stored) {
+        LOGD("Response stored in cache: method=%d request=%llu file=%u line=%u char=%u",
+             static_cast<int>(info.method),
+             (unsigned long long)msg.header.request_id,
+             info.file_id,
+             info.line,
+             info.character);
         if (request_manager_) {
             request_manager_->markAsCompleted(msg.header.request_id);
         }

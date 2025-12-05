@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancel
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.withContext
 
 /**
  * 将 CodeEditor 的文本更新同步到 NativeLspService，确保 clangd 拥有最新文档。
@@ -33,7 +34,12 @@ object NativeLspDocumentBridge {
     fun bind(context: Context, editor: CodeEditor, filePath: String, projectPath: String?): Handle? {
         NativeLspHealthMonitor.start(context)
         val absolutePath = File(filePath).absolutePath
-        dispose(absolutePath)
+        
+        val existingSession = sessions[absolutePath]
+        if (existingSession != null) {
+            Log.d(TAG, "Reusing existing session for $absolutePath")
+            return Handle(absolutePath)
+        }
 
         val session = Session(
             context = context.applicationContext,

@@ -19,7 +19,7 @@ class ClangdServer;
 
 class ClangdControlBridge {
 public:
-    ClangdControlBridge(const ChannelConfig& config, ClangdServer* server);
+    ClangdControlBridge(const ChannelConfig& config, ClangdServer* server, std::string work_dir);
     ~ClangdControlBridge();
 
     bool start();
@@ -43,9 +43,14 @@ private:
     void removeContext(uint32_t file_id);
 
     static bool isNotification(protocol::Method method);
+    bool performInitializeHandshake();
+    bool sendRawJson(const std::string& json);
+    bool readBlockingClangdMessage(std::string& out_json, int timeout_ms);
 
     ChannelConfig config_;
     ClangdServer* server_;
+    std::string work_dir_;
+    std::string root_uri_;
     std::shared_ptr<ControlChannel> control_channel_;
     std::atomic<bool> running_{false};
     std::thread request_thread_;
