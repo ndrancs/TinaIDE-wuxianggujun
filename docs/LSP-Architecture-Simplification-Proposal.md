@@ -88,6 +88,15 @@ clangd → pipe → JSON → FlatBuffers → Unix Socket → SharedMemory → Ko
 
 ## 详细设计
 
+### 与现有 Kotlin/Java 层的兼容计划
+
+`NativeLspService` 与 `NativeLspRequestBridge` 已经形成了稳定的调用面：类型化数据类、诊断/健康监听器、协程防抖与自动初始化等都运行在 Kotlin 层。为避免大面积重写 UI，本次简化需要遵循以下原则：
+
+1. **API 签名尽量兼容**：`nativeGetHoverResult`、`nativeGetCompletionResult` 等方法短期内保持不变，即使底层改为 JSON，也要通过 JNI 或 Kotlin 层把结果映射回既有模型。
+2. **监听器持续可用**：`DiagnosticsListener` / `HealthListener` / `InitializationListener` 仍由 JNI 回调触发，SimpleLspClient 只负责提供事件数据。
+3. **职责清晰**：Kotlin 继续处理 debounce/协程取消/工作目录推断；C++ 负责文件状态、请求排队和 clangd 进程管理。
+4. **迁移路径明确**：若未来计划让 Kotlin 直接解析 JSON，需要在文档中补充“阶段性开关 + 模型演进”的路线图。
+
 ### 1. SimpleLspClient (C++)
 
 ```cpp
@@ -146,6 +155,18 @@ private:
 };
 ```
 
+#### SimpleLspClient 与现有 NativeLspClient 的职责对照
+
+| 现有功能 (`native_lsp_client.cpp`) | 在简化方案中的落地方式 |
+| --- | --- |
+| 文件 URI → fileId 映射、文档版本追踪 | 继续由 SimpleLspClient 维护，Kotlin 只负责传递 URI/文本/版本号 |
+| 请求状态与结果缓存 (`pending_requests_` + result cache) | 精简为 `pending_requests_` + 简易结果存储，保持 `nativeGet*Result()` 的轮询语义 |
+| per-file/per-method 取消策略 | SimpleLspClient 在 native 侧执行 `$ /cancelRequest`，Kotlin 仍执行协程取消与 debounce |
+| Diagnostics/Health 事件上报 | SimpleLspClient 通过回调通知 JNI，Kotlin 监听器无需改动 |
+| 初始化握手 / clangd 进程监管 | 继续由 C++ 管理，沿用现有 `ClangdServer` 逻辑 |
+
+> **注意**：删除的是桥接层和序列化转换，而非业务状态。若 SimpleLspClient 不维护 request_id → result 的一致性，`NativeLspService.waitForResult()` 将无法工作。
+
 ### 2. JNI 接口（简化）
 
 ```cpp
@@ -188,6 +209,12 @@ Java_com_wuxianggujun_tinaide_lsp_NativeLspService_nativeDidClose(
 }
 ```
 
+#### JNI 与回调策略
+
+- **保持 API 兼容**：短期内继续提供 `nativeGetHoverResult` / `nativeGetCompletionResult` 等返回 Java 对象的方法，避免 Kotlin 层一次性大改。若未来切换为 JSON，需要在文档中提供迁移步骤与数据模型调整计划。
+- **保留监听回调**：`handleNativeDiagnostics`、`handleNativeHealthEvent` 等方法必须继续由 JNI 调用，SimpleLspClient 只替换数据来源。
+- **渐进迁移**：允许 JNI 并行暴露 JSON 版 getter（例如 `nativeGetResultJson`），待 Kotlin 层完成解析后再移除旧接口。
+
 ### 3. Kotlin 层（简化）
 
 ```kotlin
@@ -228,6 +255,8 @@ object NativeLspService {
     }
 }
 ```
+
+> Kotlin 层的 `NativeLspRequestBridge` 仍然负责协程调度、延迟触发、工作目录推断以及 UI 线程回调。SimpleLspClient 只需要保证请求可靠送达、结果可靠返回，与 Kotlin 之间通过 `native*` API 协作即可。
 
 ## 需要删除的文件
 

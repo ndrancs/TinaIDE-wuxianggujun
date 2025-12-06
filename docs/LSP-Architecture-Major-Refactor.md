@@ -1,3 +1,10 @@
+# LSP 架构重构文档
+
+> **更新日期**: 2025-12-06  
+> **状态**: Stage 1-3 已完成，Stage 4 进行中
+
+---
+
 ## 混合架构方案
 
 ### 核心设计理念
@@ -487,4 +494,17 @@ void ClangdLSPServer::sendLargeResponse(const json::Value& response) {
 - `LspConfig.useNativeClient` 恒为 `true`，IDE 内任何触发点都只会初始化 Native 管线。
 - Legacy Java 代码、依赖与 gradle module 已全部移除，不再存在隐藏快捷键或兜底逻辑。
 - 若遇到 clangd transport error，需通过 sysroot/compile_commands 及日志排查，后续会在 "Native-only 稳定性监控" 任务中补齐提示。
-\n### Stage4 Health Monitor Update (2025-12-06)\n- 新增 NativeLspHealthMonitor，统一监听 C++ 健康事件并在 IDE 内即时提示。\n- NativeLspClient 暴露 HealthCallback，channel/transport/clangd 异常都有结构化事件，NativeLspService 将其分发给 UI。
+
+### Stage4 Health Monitor Update (2025-12-06)
+
+- 新增 NativeLspHealthMonitor，统一监听 C++ 健康事件并在 IDE 内即时提示。
+- NativeLspClient 暴露 HealthCallback，channel/transport/clangd 异常都有结构化事件，NativeLspService 将其分发给 UI。
+
+---
+
+## 相关文档
+
+- [LSP 集成指南](LSP-Integration.md)
+- [LSP 调试指南](LSP-Debug-Guide.md)
+- [LSP 架构简化提案](LSP-Architecture-Simplification-Proposal.md)
+- [LSP 补全 Bug 分析](LSP-Completion-Bug-Analysis.md)
