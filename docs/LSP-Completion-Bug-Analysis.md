@@ -41,6 +41,24 @@ Editor → NativeLspRequestBridge → NativeLspService → SimpleLspClient → c
 3. **Restart 之后重新同步文档**：`NativeLspDocumentBridge` 监听 initialization=true 后重发当前 Session 的 `didOpen`，重置 version，clangd 重启即可立即获取最新文本。
 4. **Completion 软超时协同 native**：Kotlin 侧 1.2 s `withTimeout` 仍然释放 channel，同时驱动 native 统计 + restart，形成“发现→上报→自愈”的闭环。
 
+### Stage5 复盘：1200 ms 超时没有真正反馈到 native
+- **最新日志暴露 wiring 断层**：`2025-12-07 21:38:14/16` 中 `NativeLspRequestBridge` 打印 `Completion request hit 1200ms timeout`，但没有任何 `SimpleLspClient` `IO_ERROR` 或重启记录，说明 native 完全没收到超时事件。
+- **根因**：Kotlin 桥接层的 `withTimeoutOrNull` 在 1.2 s 时直接取消协程，导致 `SimpleLspService.waitForResult()` 在检测到 `!ctx.isActive` 时立即返回 `null`，从未走到自身的超时分支，也就不会调用 `nativeNotifyRequestTimeout`。native 端既看不到请求结束，也不会触发自动重启。
+- **修复**：
+  1. 将 completion/hover 的短超时内建到 `SimpleLspService`，直接用 `awaitJsonResult(requestId, 1200/350, …)`，由 `waitForResult()` 负责触发 `nativeNotifyRequestTimeout`。
+  2. `NativeLspRequestBridge` 不再二次 `withTimeout`，只在结果 `null` 时记录 URI+行列，FileRequestChannel 的串行逻辑得以保留（KISS）。
+  3. `SimpleLspClient::recordTimeout` 为 `textDocument/completion` 降到 **2 次**即触发 `IO_ERROR`，避免“第二次就卡死却迟迟不重启”的现象，同时保持其他方法仍遵循原有的 3 次阈值（YAGNI——只优化当前痛点）。
+
+### Stage6（本轮）——输入冷却 + Hover 闸门
+- **21:56 日志暴露新瓶颈**：`log.txt:41-152` 中在连续键入 `s→删除→s` 的过程中，hover id=2/3/5/6/8/10 每 350 ms 被触发又超时，`NativeLspRequestBridge` 即使清掉队列也不断接到新的 hover，completion id=9/11 因为 clangd 仍在处理 hover + 文档同步而再次超时，最终触发自动重启。
+- **根因**：调度层虽然知道“有 completion 在排队”就抑制 hover，但并不知道“刚刚发生文本修改”。因此当用户仍在输入 `std::` 时，hover 仍会被 debounce 触发，实时抢占文件通道。
+- **改进**：
+  1. `NativeLspDocumentBridge` 在 `didOpen`、`didChange` 以及重启后的 `didOpen` 成功后调用新的 `NativeLspRequestBridge.notifyDocumentChange(filePath)`，将“最近一次文本修改时间”同步给请求调度器。
+  2. `NativeLspRequestBridge` 新增 `typingActivity` 和 `HOVER_TYPING_COOLDOWN_MS=600`，只有在“距离上次 completion > 800 ms 且距离上次文本修改 > 600 ms”时才允许 hover 入队；同时所有被抑制的 hover 都会输出原因，方便日志诊断（SRP：输入感知由桥接层统一管理）。
+  3. 维持原有 `HoverRateLimiter`，让“冷却通过 + caret 没动”时依然不会重复触发（DRY）。
+  
+这样一来，第二、三次 completion 过程中 hover 将被彻底阻断，clangd 可以专注处理 `textDocument/completion`，也避免 hover 在 clangd 尚未完成 TU 重建时被连续 cancel。
+
 ### 18:20 最新日志复盘
 - `18:20:48.642` 的 `requestCompletion id=5` 成功返回 100 条候选，证明 clangd 可提供足量结果。
 - `18:20:49.532` `requestHover id=6` 与 `18:20:52.540` `requestHover id=7` 连续 timeout，`SimpleLspService` 在 `18:20:53.747` 报告 `Reader: 50 empty reads, 2 pending requests`，说明 hover 抢占了 file 通道而 completion 被饿死。

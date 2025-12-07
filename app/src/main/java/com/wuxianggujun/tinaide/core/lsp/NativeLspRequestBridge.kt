@@ -13,7 +13,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -28,13 +27,13 @@ object NativeLspRequestBridge {
     private const val TAG = "NativeLspRequestBridge"
     private const val MIN_HOVER_INTERVAL_MS = 120L
     private const val HOVER_COMPLETION_SUPPRESS_MS = 800L
-    private const val HOVER_RPC_TIMEOUT_MS = 350L
-    private const val COMPLETION_RPC_TIMEOUT_MS = 1200L
+    private const val HOVER_TYPING_COOLDOWN_MS = 600L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val requestChannels = ConcurrentHashMap<String, FileRequestChannel>()
     private val hoverLimiter = HoverRateLimiter(MIN_HOVER_INTERVAL_MS)
     private val completionActivity = ConcurrentHashMap<String, AtomicLong>()
+    private val typingActivity = ConcurrentHashMap<String, AtomicLong>()
     private val definitionJobs = ConcurrentHashMap<String, Job>()
     private val referenceJobs = ConcurrentHashMap<String, Job>()
 
@@ -213,6 +212,12 @@ object NativeLspRequestBridge {
         }
     }
 
+    fun notifyDocumentChange(filePath: String) {
+        val fileUri = buildUri(filePath)
+        val now = SystemClock.elapsedRealtime()
+        typingActivity.computeIfAbsent(fileUri) { AtomicLong(now) }.set(now)
+    }
+
     fun requestHover(
         filePath: String,
         line: Int,
@@ -221,12 +226,11 @@ object NativeLspRequestBridge {
         onResult: (HoverResult?) -> Unit
     ) {
         val fileUri = buildUri(filePath)
-        if (shouldSuppressHover(fileUri)) {
-            Log.d(TAG, "Hover suppressed due to pending completion key=$fileUri")
+        val caretSignature = buildCaretSignature(line, column)
+        if (shouldSuppressHover(fileUri, caretSignature)) {
             return
         }
         val identity = buildIdentity(filePath, line, column)
-        val caretSignature = buildCaretSignature(line, column)
         if (!hoverLimiter.shouldAllow(fileUri, caretSignature)) {
             Log.d(TAG, "Hover throttled key=$fileUri caret=$caretSignature")
             return
@@ -237,8 +241,10 @@ object NativeLspRequestBridge {
             identity = identity,
             blockProvider = {
                 if (!ensureNativeClient(workDir)) return@submitToChannel null
-                withTimeoutOrNull(HOVER_RPC_TIMEOUT_MS) {
-                    NativeLspService.requestHoverAsync(fileUri, line, column)
+                NativeLspService.requestHoverAsync(fileUri, line, column).also { result ->
+                    if (result == null) {
+                        Log.d(TAG, "Hover result null (timeout/cancel) uri=$fileUri pos=$line:$column")
+                    }
                 }
             },
             onResult = onResult
@@ -261,11 +267,10 @@ object NativeLspRequestBridge {
             blockProvider = {
                 if (!ensureNativeClient(workDir)) return@submitToChannel null
                 NativeLspDocumentBridge.flushPendingSync(filePath)
-                withTimeoutOrNull(COMPLETION_RPC_TIMEOUT_MS) {
-                    NativeLspService.requestCompletionAsync(fileUri, line, column)
-                } ?: run {
-                    Log.w(TAG, "Completion request hit ${COMPLETION_RPC_TIMEOUT_MS}ms timeout uri=$fileUri pos=$line:$column")
-                    null
+                NativeLspService.requestCompletionAsync(fileUri, line, column).also { result ->
+                    if (result == null) {
+                        Log.w(TAG, "Completion result null (timeout/cancel) uri=$fileUri pos=$line:$column")
+                    }
                 }
             },
             onResult = onResult,
@@ -330,18 +335,34 @@ object NativeLspRequestBridge {
         return "$line:$column:$version"
     }
 
-    private fun shouldSuppressHover(fileUri: String): Boolean {
+    private fun shouldSuppressHover(fileUri: String, caretSignature: String): Boolean {
         val channel = requestChannels[fileUri]
         val hasCompletionInFlight = channel?.hasActiveOrPending(RequestType.Completion) == true
         if (hasCompletionInFlight) {
+            Log.d(TAG, "Hover suppressed due to active completion key=$fileUri caret=$caretSignature")
             return true
         }
         val lastActivity = completionActivity[fileUri]?.get() ?: 0L
         if (lastActivity == 0L) {
+            val now = SystemClock.elapsedRealtime()
+            val lastTyping = typingActivity[fileUri]?.get() ?: 0L
+            if (lastTyping != 0L && now - lastTyping < HOVER_TYPING_COOLDOWN_MS) {
+                Log.d(TAG, "Hover suppressed due to typing cooldown key=$fileUri caret=$caretSignature")
+                return true
+            }
             return false
         }
         val now = SystemClock.elapsedRealtime()
-        return now - lastActivity < HOVER_COMPLETION_SUPPRESS_MS
+        if (now - lastActivity < HOVER_COMPLETION_SUPPRESS_MS) {
+            Log.d(TAG, "Hover suppressed due to recent completion key=$fileUri caret=$caretSignature")
+            return true
+        }
+        val lastTyping = typingActivity[fileUri]?.get() ?: 0L
+        if (lastTyping != 0L && now - lastTyping < HOVER_TYPING_COOLDOWN_MS) {
+            Log.d(TAG, "Hover suppressed due to typing cooldown key=$fileUri caret=$caretSignature")
+            return true
+        }
+        return false
     }
 
     private fun markCompletionActivity(fileUri: String) {

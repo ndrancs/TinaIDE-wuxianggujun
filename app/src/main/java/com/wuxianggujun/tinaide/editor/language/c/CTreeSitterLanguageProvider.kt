@@ -217,12 +217,11 @@ private object CNativeCompletionDispatcher {
         }
         val scopeSignature = if (allowEmptyPrefix) "member-access" else ""
 
-        val deliverResult: (CompletionResult, String, Boolean) -> Boolean = deliver@{ completionResult, marker, clearOnEmpty ->
+        val deliverResult: (CompletionResult, String, Boolean, Boolean) -> Boolean = deliver@{ completionResult, marker, clearOnEmpty, enforceFilter ->
             val normalizedPrefix = filterPrefix.lowercase()
-            val filteredItems = completionResult.items.filter { item ->
-                if (normalizedPrefix.isEmpty()) {
-                    true
-                } else {
+            val filteredItems = when {
+                !enforceFilter || normalizedPrefix.isEmpty() -> completionResult.items
+                else -> completionResult.items.filter { item ->
                     val labelText = item.label.trimStart()
                     val commitText = item.insertText.ifBlank { labelText }.trimStart()
                     labelText.startsWith(normalizedPrefix, ignoreCase = true) ||
@@ -257,7 +256,7 @@ private object CNativeCompletionDispatcher {
             return@deliver true
         }
 
-        val cachedResult = NativeLspResultCache.getCompletion(
+        var contextCache = NativeLspResultCache.getCompletion(
             filePath = filePath,
             line = position.line,
             identifierStart = identifierStart,
@@ -265,12 +264,26 @@ private object CNativeCompletionDispatcher {
             scopeSignature = scopeSignature,
             documentVersion = documentVersion
         )
+        val cachedResult = contextCache
         if (cachedResult != null) {
-            val delivered = deliverResult(cachedResult, " [cache]", false)
+            val delivered = deliverResult(cachedResult, " [cache]", false, true)
             if (delivered) {
                 return true
             }
             Log.d(TAG, "Cache miss after prefix filter for key=$key, requesting fresh completion")
+        }
+
+        fun deliverFallback(marker: String): Boolean {
+            contextCache?.let {
+                if (deliverResult(it, marker, false, false)) {
+                    return true
+                }
+            }
+            val latest = NativeLspResultCache.getLastCompletion(filePath)
+            if (latest != null && deliverResult(latest, "$marker[last]", false, false)) {
+                return true
+            }
+            return false
         }
 
         NativeLspRequestBridge.requestCompletion(
@@ -280,7 +293,11 @@ private object CNativeCompletionDispatcher {
             workDir = workDir
         ) { completionResult ->
             if (completionResult == null) {
-                Log.d(TAG, "Completion result empty for key=$key")
+                Log.w(TAG, "Completion result empty for key=$key, trying fallback")
+                if (!deliverFallback(" [fallback]")) {
+                    Log.w(TAG, "Fallback completion also unavailable for key=$key")
+                    publisher.updateList(false)
+                }
                 return@requestCompletion
             }
             if (completionResult.items.isNotEmpty()) {
@@ -294,7 +311,7 @@ private object CNativeCompletionDispatcher {
                     result = completionResult
                 )
             }
-            deliverResult(completionResult, "", true)
+            deliverResult(completionResult, "", true, true)
         }
         return true
     }

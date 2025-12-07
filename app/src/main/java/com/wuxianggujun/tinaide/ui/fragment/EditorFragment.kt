@@ -32,6 +32,8 @@ import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
 import io.github.rosemoe.sora.widget.subscribeEvent
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import io.github.rosemoe.sora.lang.diagnostic.DiagnosticDetail
@@ -54,11 +56,14 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     private var lastNativeHoverSignature: String? = null
     private var diagnosticsListener: NativeLspService.DiagnosticsListener? = null
     private var currentFileUri: String? = null
+    private var hoverIdleJob: Job? = null
+    private var pendingHoverSignature: String? = null
     
     companion object {
         private const val ARG_FILE_PATH = "file_path"
         private const val ARG_PROJECT_PATH = "project_path"
         private const val TAG = "EditorFragment"
+        private const val HOVER_IDLE_THRESHOLD_MS = 320L
         
         fun newInstance(
             filePath: String,
@@ -383,6 +388,7 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
         nativeLspHandle = null
         hoverSubscription?.unsubscribe()
         hoverSubscription = null
+        cancelPendingHoverTrigger()
         diagnosticsListener?.let { NativeLspService.removeDiagnosticsListener(it) }
         diagnosticsListener = null
         currentFileUri = null
@@ -392,6 +398,7 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
 
     private fun subscribeNativeHover(path: String) {
         hoverSubscription?.unsubscribe()
+        cancelPendingHoverTrigger()
         hoverSubscription = codeEditor.subscribeEvent<SelectionChangeEvent> { _, _ ->
             if (!shouldAttachNativeBridge(path)) {
                 return@subscribeEvent
@@ -400,8 +407,85 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
             if (cursor.isSelected) {
                 return@subscribeEvent
             }
-            requestNativeHover(path, cursor.leftLine, cursor.leftColumn)
+            if (cursor.isSelected) {
+                cancelPendingHoverTrigger()
+                return@subscribeEvent
+            }
+            scheduleHoverTrigger(path, cursor.leftLine, cursor.leftColumn)
         }
+    }
+
+    private fun scheduleHoverTrigger(filePath: String, line: Int, column: Int) {
+        val signature = "$line:$column"
+        pendingHoverSignature = signature
+        hoverIdleJob?.cancel()
+        hoverIdleJob = viewLifecycleOwner.lifecycleScope.launch {
+            delay(HOVER_IDLE_THRESHOLD_MS)
+            if (!isAdded) {
+                return@launch
+            }
+            val cursor = codeEditor.cursor
+            if (cursor.isSelected) {
+                return@launch
+            }
+            if (pendingHoverSignature != signature) {
+                return@launch
+            }
+            if (cursor.leftLine != line || cursor.leftColumn != column) {
+                return@launch
+            }
+            if (!shouldTriggerHover(line, column)) {
+                return@launch
+            }
+            requestNativeHover(filePath, line, column)
+            pendingHoverSignature = null
+        }
+    }
+
+    private fun cancelPendingHoverTrigger() {
+        hoverIdleJob?.cancel()
+        hoverIdleJob = null
+        pendingHoverSignature = null
+    }
+
+    private fun shouldTriggerHover(line: Int, column: Int): Boolean {
+        if (isCompletionPanelVisible()) {
+            android.util.Log.d(TAG, "Hover suppressed because completion panel showing")
+            return false
+        }
+        if (!hasExplicitHoverTrigger(line, column)) {
+            android.util.Log.d(TAG, "Hover suppressed due to missing trigger symbol")
+            return false
+        }
+        return true
+    }
+
+    private fun isCompletionPanelVisible(): Boolean {
+        return runCatching {
+            codeEditor.getComponent(io.github.rosemoe.sora.widget.component.EditorAutoCompletion::class.java).isShowing
+        }.getOrDefault(false)
+    }
+
+    private fun hasExplicitHoverTrigger(line: Int, column: Int): Boolean {
+        val lineText = runCatching { codeEditor.text.getLine(line) }.getOrNull() ?: return false
+        var index = column.coerceAtMost(lineText.length) - 1
+        while (index >= 0 && lineText[index].isWhitespace()) {
+            index--
+        }
+        if (index < 0) {
+            return false
+        }
+        val prev = lineText[index]
+        if (prev == '.' || prev == '(' || prev == ')' ) {
+            return true
+        }
+        if (prev == ':' && index >= 1 && lineText[index - 1] == ':') {
+            return true
+        }
+        if (prev == '>' && index >= 1 && lineText[index - 1] == '-') {
+            return true
+        }
+        return false
     }
 
     private fun requestNativeHover(filePath: String, line: Int, column: Int) {

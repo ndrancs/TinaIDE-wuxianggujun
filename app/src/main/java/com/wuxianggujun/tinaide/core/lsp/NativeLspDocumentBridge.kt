@@ -127,6 +127,7 @@ object NativeLspDocumentBridge {
                     return@launch
                 }
                 lastSnapshot = content
+                NativeLspRequestBridge.notifyDocumentChange(filePath)
                 opened = true
                 registerListeners()
                 Log.i(TAG, "Native LSP synced document: $filePath")
@@ -175,6 +176,7 @@ object NativeLspDocumentBridge {
                 }
                 version = 1
                 lastSnapshot = snapshot
+                NativeLspRequestBridge.notifyDocumentChange(filePath)
             }
         }
 
@@ -193,6 +195,7 @@ object NativeLspDocumentBridge {
                 Log.e(TAG, "Failed to send didChange", changeResult.exceptionOrNull())
             } else {
                 lastSnapshot = snapshot
+                NativeLspRequestBridge.notifyDocumentChange(filePath)
             }
         }
         private suspend fun readEditorText(): String {

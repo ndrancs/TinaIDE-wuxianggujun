@@ -210,6 +210,7 @@ private:
     std::mutex stats_mutex_;
     std::map<std::string, MethodStats> method_stats_;
     static constexpr int kTimeoutThreshold = 3;
+    static constexpr int kCompletionTimeoutThreshold = 2;
 
     // ========================================================================
     // 响应读取线程
@@ -239,6 +240,15 @@ private:
     std::mutex diagnostics_mutex_;
     HealthCallback health_callback_;
     std::mutex health_mutex_;
+    class RequestSender;
+    friend class RequestSender;
+    std::unique_ptr<RequestSender> hover_sender_;
+    std::unique_ptr<RequestSender> completion_sender_;
+    void startSenders();
+    void stopSenders();
+    bool enqueueOrSend(RequestSender* sender, const std::string& json);
+    std::mutex send_mutex_;
+    size_t pendingRequestCount();
 
     void reportHealthEvent(HealthEventType type, const std::string& message);
 
@@ -252,6 +262,7 @@ private:
     
     void recordTimeout(const std::string& method);
     void resetTimeoutStats(const std::string& method);
+    int timeoutThresholdFor(const std::string& method) const;
 };
 
 } // namespace lsp

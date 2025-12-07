@@ -31,6 +31,10 @@ import java.util.concurrent.CopyOnWriteArraySet
 object SimpleLspService {
     private const val TAG = "SimpleLspService"
     private const val DEFAULT_CLANGD_PATH = "/data/data/com.wuxianggujun.tinaide/clangd"
+    private const val COMPLETION_TIMEOUT_MS = 1200L
+    private const val HOVER_TIMEOUT_MS = 350L
+    private const val DEFINITION_TIMEOUT_MS = 5000L
+    private const val REFERENCES_TIMEOUT_MS = 10000L
 
     init {
         try {
@@ -186,19 +190,19 @@ object SimpleLspService {
         val requestId = nativeRequestCompletion(fileUri, line, character, triggerCharacter.takeIf { it.isNotEmpty() })
         if (requestId == 0L) return@withContext null
         Log.d(TAG, "Completion request: id=$requestId")
-        awaitJsonResult(requestId, 5000, ::parseCompletionResult)
+        awaitJsonResult(requestId, COMPLETION_TIMEOUT_MS, ::parseCompletionResult)
     }
 
     suspend fun requestHoverAsync(fileUri: String, line: Int, character: Int): HoverResult? = withContext(Dispatchers.IO) {
         val requestId = nativeRequestHover(fileUri, line, character)
         if (requestId == 0L) return@withContext null
-        awaitJsonResult(requestId, 3000, ::parseHoverResult)
+        awaitJsonResult(requestId, HOVER_TIMEOUT_MS, ::parseHoverResult)
     }
 
     suspend fun requestDefinitionAsync(fileUri: String, line: Int, character: Int): List<Location>? = withContext(Dispatchers.IO) {
         val requestId = nativeRequestDefinition(fileUri, line, character)
         if (requestId == 0L) return@withContext null
-        awaitJsonResult(requestId, 5000, ::parseLocations)
+        awaitJsonResult(requestId, DEFINITION_TIMEOUT_MS, ::parseLocations)
     }
 
     suspend fun requestReferencesAsync(
@@ -206,7 +210,7 @@ object SimpleLspService {
     ): List<Location>? = withContext(Dispatchers.IO) {
         val requestId = nativeRequestReferences(fileUri, line, character, includeDeclaration)
         if (requestId == 0L) return@withContext null
-        awaitJsonResult(requestId, 10000, ::parseLocations)
+        awaitJsonResult(requestId, REFERENCES_TIMEOUT_MS, ::parseLocations)
     }
 
     fun cancelRequest(requestId: Long) {
@@ -225,7 +229,7 @@ object SimpleLspService {
             nativeGetResult(requestId)?.let { return it }
             delay(10)
         }
-        Log.w(TAG, "Request $requestId timed out")
+        Log.w(TAG, "Request $requestId timed out after ${timeoutMs}ms")
         notifyNativeTimeout(requestId)
         return null
     }

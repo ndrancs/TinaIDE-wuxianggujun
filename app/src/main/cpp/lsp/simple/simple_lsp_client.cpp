@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <vector>
 #include <sys/stat.h>
+#include <condition_variable>
+#include <deque>
 
 #define LOG_TAG "SimpleLspClient"
 #include "../../utils/logging.h"
@@ -43,6 +45,92 @@ std::string detectCompileCommandsDir(const std::string& workDir) {
 }
 
 } // namespace
+
+class SimpleLspClient::RequestSender {
+public:
+    RequestSender(SimpleLspClient* client, std::string label)
+        : client_(client), label_(std::move(label)) {}
+
+    void start() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (running_) {
+            return;
+        }
+        queue_.clear();
+        stop_requested_ = false;
+        running_ = true;
+        worker_ = std::thread(&RequestSender::loop, this);
+    }
+
+    void stop() {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (!running_) {
+                queue_.clear();
+                stop_requested_ = false;
+                return;
+            }
+            stop_requested_ = true;
+        }
+        cv_.notify_all();
+        if (worker_.joinable()) {
+            worker_.join();
+        }
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            queue_.clear();
+            running_ = false;
+            stop_requested_ = false;
+        }
+    }
+
+    bool enqueue(std::string json) {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (!running_) {
+                return false;
+            }
+            queue_.push_back(std::move(json));
+        }
+        cv_.notify_one();
+        return true;
+    }
+
+    size_t queue_size() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return queue_.size();
+    }
+
+private:
+    void loop() {
+        while (true) {
+            std::string payload;
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                cv_.wait(lock, [&]() {
+                    return stop_requested_ || !queue_.empty();
+                });
+                if (stop_requested_ && queue_.empty()) {
+                    break;
+                }
+                payload = std::move(queue_.front());
+                queue_.pop_front();
+            }
+            if (!client_->sendJson(payload)) {
+                LOGW("%s sender failed to deliver payload", label_.c_str());
+            }
+        }
+    }
+
+    SimpleLspClient* client_;
+    std::string label_;
+    std::thread worker_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    std::deque<std::string> queue_;
+    bool running_ = false;
+    bool stop_requested_ = false;
+};
 
 // ============================================================================
 // 单例实现
@@ -134,6 +222,7 @@ bool SimpleLspClient::initialize(const std::string& clangd_path, const std::stri
         return false;
     }
 
+    startSenders();
     initialized_.store(true);
     LOGI("SimpleLspClient initialized successfully");
     return true;
@@ -151,6 +240,7 @@ void SimpleLspClient::shutdown() {
     if (reader_thread_.joinable()) {
         reader_thread_.join();
     }
+    stopSenders();
 
     // 2. 停止 clangd
     if (server_) {
@@ -279,7 +369,7 @@ uint64_t SimpleLspClient::requestHover(const std::string& file_uri, uint32_t lin
         pending_requests_[request_id] = pr;
     }
 
-    if (!sendJson(request)) {
+    if (!enqueueOrSend(hover_sender_.get(), request)) {
         std::lock_guard<std::mutex> lock(pending_mutex_);
         pending_requests_.erase(request_id);
         return 0;
@@ -337,7 +427,7 @@ uint64_t SimpleLspClient::requestCompletion(const std::string& file_uri, uint32_
         pending_requests_[request_id] = pr;
     }
 
-    if (!sendJson(request)) {
+    if (!enqueueOrSend(completion_sender_.get(), request)) {
         std::lock_guard<std::mutex> lock(pending_mutex_);
         pending_requests_.erase(request_id);
         return 0;
@@ -671,7 +761,13 @@ void SimpleLspClient::recordTimeout(const std::string& method) {
         stats.consecutive_timeouts++;
         streak = stats.consecutive_timeouts;
     }
-    if (streak >= kTimeoutThreshold) {
+    size_t pending = pendingRequestCount();
+    size_t hoverQueued = hover_sender_ ? hover_sender_->queue_size() : 0;
+    size_t completionQueued = completion_sender_ ? completion_sender_->queue_size() : 0;
+    LOGW("Timeout recorded for %s (streak=%d) pending=%zu hoverQ=%zu completionQ=%zu",
+         method.c_str(), streak, pending, hoverQueued, completionQueued);
+    const int threshold = timeoutThresholdFor(method);
+    if (streak >= threshold) {
         {
             std::lock_guard<std::mutex> lock(stats_mutex_);
             method_stats_[method].consecutive_timeouts = 0;
@@ -692,6 +788,48 @@ void SimpleLspClient::resetTimeoutStats(const std::string& method) {
     }
 }
 
+int SimpleLspClient::timeoutThresholdFor(const std::string& method) const {
+    if (method == "textDocument/completion") {
+        return kCompletionTimeoutThreshold;
+    }
+    return kTimeoutThreshold;
+}
+
+void SimpleLspClient::startSenders() {
+    stopSenders();
+    hover_sender_ = std::make_unique<RequestSender>(this, "hover");
+    completion_sender_ = std::make_unique<RequestSender>(this, "completion");
+    if (hover_sender_) {
+        hover_sender_->start();
+    }
+    if (completion_sender_) {
+        completion_sender_->start();
+    }
+}
+
+void SimpleLspClient::stopSenders() {
+    if (hover_sender_) {
+        hover_sender_->stop();
+        hover_sender_.reset();
+    }
+    if (completion_sender_) {
+        completion_sender_->stop();
+        completion_sender_.reset();
+    }
+}
+
+bool SimpleLspClient::enqueueOrSend(RequestSender* sender, const std::string& json) {
+    if (sender != nullptr && sender->enqueue(json)) {
+        return true;
+    }
+    return sendJson(json);
+}
+
+size_t SimpleLspClient::pendingRequestCount() {
+    std::lock_guard<std::mutex> lock(pending_mutex_);
+    return pending_requests_.size();
+}
+
 // ============================================================================
 // 内部方法：发送 JSON
 // ============================================================================
@@ -710,7 +848,11 @@ bool SimpleLspClient::sendJson(const std::string& json) {
     LOGD("Sending: %s", json.c_str());
 
     std::vector<char> data(msg_str.begin(), msg_str.end());
-    int written = server_->write(data);
+    int written = 0;
+    {
+        std::lock_guard<std::mutex> lock(send_mutex_);
+        written = server_->write(data);
+    }
     
     if (written < 0 || static_cast<size_t>(written) != data.size()) {
         LOGE("Failed to write to clangd pipe");
