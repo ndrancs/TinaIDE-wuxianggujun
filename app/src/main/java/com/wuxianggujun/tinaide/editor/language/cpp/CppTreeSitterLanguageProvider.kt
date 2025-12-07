@@ -18,6 +18,8 @@ import io.github.rosemoe.sora.editor.ts.TsThemeBuilder
 import io.github.rosemoe.sora.lang.completion.CompletionItemKind
 import io.github.rosemoe.sora.lang.completion.CompletionPublisher
 import io.github.rosemoe.sora.lang.completion.SimpleCompletionItem
+import io.github.rosemoe.sora.lang.completion.Comparators
+import io.github.rosemoe.sora.lang.completion.CompletionItem
 import io.github.rosemoe.sora.lang.styling.TextStyle.makeStyle
 import io.github.rosemoe.sora.lang.styling.textStyle
 import io.github.rosemoe.sora.text.CharPosition
@@ -246,12 +248,23 @@ private object CppNativeCompletionDispatcher {
                 return@deliver false
             }
 
-            val preview = items.take(5).joinToString { item -> item.label.toString() }
+            // 使用 sora-editor 内置的过滤和高亮功能
+            val filteredAndScoredItems = Comparators.filterCompletionItems(content, position, items)
+            
+            if (filteredAndScoredItems.isEmpty()) {
+                Log.d(TAG, "Filtered completion empty after scoring for key=$key$marker")
+                if (clearOnEmpty) {
+                    publisher.updateList(false)
+                }
+                return@deliver false
+            }
+
+            val preview = filteredAndScoredItems.take(5).joinToString { item -> item.label.toString() }
             Log.d(
                 TAG,
-                "Completion result$marker -> file=$filePath line=${position.line} col=${position.column} items=${items.size} preview=$preview"
+                "Completion result$marker -> file=$filePath line=${position.line} col=${position.column} items=${filteredAndScoredItems.size} preview=$preview"
             )
-            publisher.addItems(items)
+            publisher.addItems(filteredAndScoredItems)
             publisher.updateList(true)
             return@deliver true
         }
