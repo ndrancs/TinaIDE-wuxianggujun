@@ -26,6 +26,15 @@ add_library(native_compiler SHARED
     lsp/clangd_server.cpp
     lsp/simple/simple_lsp_client.cpp
     lsp/simple/simple_lsp_jni.cpp
+    # Tree-sitter CMake parser
+    treesitter/cmake/parser.c
+    treesitter/cmake/scanner.c
+    treesitter/cmake/cmake_jni.cpp
+)
+
+# Tree-sitter 公共头文件路径（所有语言共享）
+target_include_directories(native_compiler PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/treesitter/include
 )
 
 # 允许共享库中存在由其他共享库在运行时解析的未定义符号
