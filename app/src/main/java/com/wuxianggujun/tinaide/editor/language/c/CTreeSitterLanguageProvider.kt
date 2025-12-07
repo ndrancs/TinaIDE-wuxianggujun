@@ -1,4 +1,4 @@
-package com.wuxianggujun.tinaide.editor.language.cpp
+package com.wuxianggujun.tinaide.editor.language.c
 
 import android.content.Context
 import android.net.Uri
@@ -29,15 +29,16 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 
 /**
- * Provides Tree-sitter powered syntax highlighting for C/C++ sources.
+ * Provides Tree-sitter powered syntax highlighting for C sources.
+ * Uses TSLanguageCpp parser (C++ is a superset of C) with C-specific queries.
  */
-object CppTreeSitterLanguageProvider {
+object CTreeSitterLanguageProvider {
 
-    private const val TAG = "CppTreeSitterLanguage"
-    private const val HIGHLIGHTS = "tree-sitter-queries/cpp/highlights.scm"
-    private const val BLOCKS = "tree-sitter-queries/cpp/blocks.scm"
-    private const val BRACKETS = "tree-sitter-queries/cpp/brackets.scm"
-    private const val LOCALS = "tree-sitter-queries/cpp/locals.scm"
+    private const val TAG = "CTreeSitterLanguage"
+    private const val HIGHLIGHTS = "tree-sitter-queries/c/highlights.scm"
+    private const val BLOCKS = "tree-sitter-queries/c/blocks.scm"
+    private const val BRACKETS = "tree-sitter-queries/c/brackets.scm"
+    private const val LOCALS = "tree-sitter-queries/c/locals.scm"
 
     private val nativeLoaded = AtomicBoolean(false)
     @Volatile
@@ -46,13 +47,13 @@ object CppTreeSitterLanguageProvider {
     fun create(context: Context): TsLanguage {
         ensureNativeLibraries()
         val sources = ensureSources(context.applicationContext)
-        val spec = CppLanguageSpec(
+        val spec = CLanguageSpec(
             highlightScmSource = sources.highlights,
             codeBlocksScmSource = sources.blocks,
             bracketsScmSource = sources.brackets,
             localsScmSource = sources.locals
         )
-        return NativeAwareCppLanguage(spec) { applyCppTheme() }
+        return NativeAwareCLanguage(spec) { applyCTheme() }
     }
 
     private fun ensureNativeLibraries() {
@@ -62,6 +63,7 @@ object CppTreeSitterLanguageProvider {
             } catch (_: UnsatisfiedLinkError) {
                 // Already loaded by another language
             }
+            // Use C++ parser for C (C++ is superset of C)
             System.loadLibrary("tree-sitter-cpp")
         }
     }
@@ -70,9 +72,9 @@ object CppTreeSitterLanguageProvider {
         return cachedSources ?: synchronized(this) {
             cachedSources ?: QuerySources(
                 highlights = readAsset(context, HIGHLIGHTS),
-                blocks = readAsset(context, BLOCKS),
-                brackets = readAsset(context, BRACKETS),
-                locals = readAsset(context, LOCALS)
+                blocks = readAssetOrEmpty(context, BLOCKS),
+                brackets = readAssetOrEmpty(context, BRACKETS),
+                locals = readAssetOrEmpty(context, LOCALS)
             ).also { cachedSources = it }
         }
     }
@@ -85,6 +87,14 @@ object CppTreeSitterLanguageProvider {
         }
     }
 
+    private fun readAssetOrEmpty(context: Context, path: String): String {
+        return try {
+            context.assets.open(path).bufferedReader().use { it.readText() }
+        } catch (_: IOException) {
+            ""
+        }
+    }
+
     private data class QuerySources(
         val highlights: String,
         val blocks: String,
@@ -93,7 +103,7 @@ object CppTreeSitterLanguageProvider {
     )
 }
 
-private class NativeAwareCppLanguage(
+private class NativeAwareCLanguage(
     spec: TsLanguageSpec,
     themeDescription: TsThemeBuilder.() -> Unit
 ) : TsLanguage(spec, tab = true, themeDescription = themeDescription) {
@@ -104,27 +114,27 @@ private class NativeAwareCppLanguage(
         publisher: CompletionPublisher,
         extraArguments: Bundle
     ) {
-        if (!CppNativeCompletionDispatcher.publish(content, position, publisher, extraArguments)) {
+        if (!CNativeCompletionDispatcher.publish(content, position, publisher, extraArguments)) {
             super.requireAutoComplete(content, position, publisher, extraArguments)
         }
     }
 }
 
-private class CppLanguageSpec(
+private class CLanguageSpec(
     highlightScmSource: String,
     codeBlocksScmSource: String,
     bracketsScmSource: String,
     localsScmSource: String
 ) : TsLanguageSpec(
-    TSLanguageCpp.getInstance(),
+    TSLanguageCpp.getInstance(),  // Use C++ parser for C
     highlightScmSource,
     codeBlocksScmSource,
     bracketsScmSource,
     localsScmSource,
-    CppLocalsCaptureSpec
+    CLocalsCaptureSpec
 )
 
-private object CppLocalsCaptureSpec : LocalsCaptureSpec() {
+private object CLocalsCaptureSpec : LocalsCaptureSpec() {
     override fun isDefinitionCapture(captureName: String): Boolean {
         return captureName.startsWith("local.definition")
     }
@@ -142,41 +152,40 @@ private object CppLocalsCaptureSpec : LocalsCaptureSpec() {
     }
 }
 
-private fun TsThemeBuilder.applyCppTheme() {
+private fun TsThemeBuilder.applyCTheme() {
     textStyle(EditorColorScheme.COMMENT, italic = true) applyTo "comment"
     textStyle(EditorColorScheme.KEYWORD, bold = true) applyTo "keyword"
     makeStyle(EditorColorScheme.LITERAL) applyTo arrayOf(
         "string",
+        "string.escape",
         "number",
         "constant",
-        "boolean"
+        "constant.builtin",
+        "constant.macro"
     )
     makeStyle(EditorColorScheme.IDENTIFIER_NAME) applyTo arrayOf(
         "type",
-        "type.builtin",
-        "namespace",
-        "class",
-        "struct"
+        "type.builtin"
     )
     makeStyle(EditorColorScheme.IDENTIFIER_VAR) applyTo arrayOf(
         "variable",
-        "variable.builtin",
-        "field",
-        "property",
-        "constant.macro"
+        "variable.parameter",
+        "property"
     )
     makeStyle(EditorColorScheme.FUNCTION_NAME) applyTo arrayOf(
         "function",
-        "function.method",
-        "constructor",
-        "destructor"
+        "function.macro"
     )
     makeStyle(EditorColorScheme.OPERATOR) applyTo "operator"
+    makeStyle(EditorColorScheme.ATTRIBUTE_NAME) applyTo arrayOf(
+        "keyword.directive",
+        "label"
+    )
 }
 
-private object CppNativeCompletionDispatcher {
+private object CNativeCompletionDispatcher {
 
-    private const val TAG = "CppNativeCompletion"
+    private const val TAG = "CNativeCompletion"
 
     fun publish(
         content: ContentReference,
@@ -197,21 +206,16 @@ private object CppNativeCompletionDispatcher {
         val documentVersion = NativeLspDocumentBridge.currentVersion(filePath) ?: -1
         Log.d(
             TAG,
-            "Completion request -> file=$filePath line=${position.line} col=${position.column} key=$key prefix='${completionContext.scopePrefix}'"
+            "Completion request -> file=$filePath line=${position.line} col=${position.column} key=$key prefix='${completionContext.prefix}'"
         )
 
         val caretIndex = position.column.coerceIn(0, completionContext.lineText.length)
-        val allowEmptyPrefix = completionContext.scopePrefix.isNotEmpty()
-                || hasMemberAccessTrigger(completionContext.lineText, caretIndex)
+        val allowEmptyPrefix = hasMemberAccessTrigger(completionContext.lineText, caretIndex)
         if (completionContext.replacementLength == 0 && !allowEmptyPrefix) {
             Log.d(TAG, "Empty prefix, skip completion for key=$key")
             return false
         }
-        val scopeSignature = when {
-            completionContext.scopePrefix.isNotEmpty() -> "scope:${completionContext.scopePrefix}"
-            allowEmptyPrefix -> "member-access"
-            else -> ""
-        }
+        val scopeSignature = if (allowEmptyPrefix) "member-access" else ""
 
         val deliverResult: (CompletionResult, String, Boolean) -> Boolean = deliver@{ completionResult, marker, clearOnEmpty ->
             val normalizedPrefix = filterPrefix.lowercase()
@@ -233,7 +237,7 @@ private object CppNativeCompletionDispatcher {
                 return@deliver false
             }
             val items = filteredItems.map {
-                it.toCompletionItem(prefixLength, completionContext.scopePrefix)
+                it.toCompletionItem(prefixLength)
             }
 
             try {
@@ -297,7 +301,7 @@ private object CppNativeCompletionDispatcher {
 
     private data class CompletionContext(
         val replacementLength: Int,
-        val scopePrefix: String,
+        val prefix: String,
         val lineText: String,
         val linePrefix: String,
         val filterPrefix: String,
@@ -315,19 +319,19 @@ private object CppNativeCompletionDispatcher {
         while (identifierStart > 0 && isIdentifierChar(lineText[identifierStart - 1])) {
             identifierStart--
         }
-        val scopeStart = findScopeStart(lineText, identifierStart)
-        val scopePrefix = lineText.substring(scopeStart, identifierStart)
+        val prefix = lineText.substring(identifierStart, caret)
         val linePrefix = lineText.substring(0, identifierStart.coerceIn(0, lineText.length))
-        val filterPrefix = lineText.substring(identifierStart, caret).takeIf { it.isNotBlank() } ?: ""
+        val filterPrefix = prefix.takeIf { it.isNotBlank() } ?: ""
         return CompletionContext(
             replacementLength = caret - identifierStart,
-            scopePrefix = scopePrefix,
+            prefix = prefix,
             lineText = lineText,
             linePrefix = linePrefix,
             filterPrefix = filterPrefix,
             identifierStart = identifierStart
         )
     }
+
     private fun hasMemberAccessTrigger(lineText: String, caret: Int): Boolean {
         if (caret <= 0 || lineText.isEmpty()) {
             return false
@@ -336,45 +340,19 @@ private object CppNativeCompletionDispatcher {
         return when (prev) {
             '.' -> true
             '>' -> caret >= 2 && lineText[caret - 2] == '-'
-            ':' -> caret >= 2 && lineText[caret - 2] == ':'
             else -> false
         }
     }
 
     private fun isIdentifierChar(ch: Char): Boolean {
-        return ch == '_' || ch == '$' || ch.isLetterOrDigit()
-    }
-
-    private fun findScopeStart(lineText: String, identifierStart: Int): Int {
-        var scopeCursor = identifierStart
-        while (scopeCursor >= 2) {
-            val firstColon = scopeCursor - 1
-            val secondColon = scopeCursor - 2
-            if (lineText[firstColon] == ':' && lineText[secondColon] == ':') {
-                var prefixCursor = secondColon
-                while (prefixCursor > 0 && isIdentifierChar(lineText[prefixCursor - 1])) {
-                    prefixCursor--
-                }
-                if (prefixCursor == secondColon) {
-                    // 遇到 :: 但左侧没有标识符，停止
-                    break
-                }
-                scopeCursor = prefixCursor
-            } else {
-                break
-            }
-        }
-        return scopeCursor
+        return ch == '_' || ch.isLetterOrDigit()
     }
 
     private fun buildKey(filePath: String, position: CharPosition): String {
         return "$filePath:${position.line}:${position.column}"
     }
 
-    private fun NativeCompletionItem.toCompletionItem(
-        prefixLength: Int,
-        scopePrefix: String
-    ): SimpleCompletionItem {
+    private fun NativeCompletionItem.toCompletionItem(prefixLength: Int): SimpleCompletionItem {
         val commit = insertText.ifBlank { label }
         val description = detail
             .takeIf { it.isNotBlank() }
@@ -384,8 +362,7 @@ private object CppNativeCompletionDispatcher {
         val mappedKind = mapKind(kind)
         return SimpleCompletionItem(safeLabel, description, prefixLength, commit).apply {
             kind(mappedKind)
-            val scopedFilter = scopePrefix + safeLabel.toString()
-            filterText = if (scopePrefix.isNotEmpty()) scopedFilter else safeLabel.toString()
+            filterText = safeLabel.toString()
             sortText = safeLabel.toString()
             if (deprecated) {
                 desc("$description (deprecated)")
@@ -421,5 +398,4 @@ private object CppNativeCompletionDispatcher {
             else -> CompletionItemKind.Identifier
         }
     }
-
 }

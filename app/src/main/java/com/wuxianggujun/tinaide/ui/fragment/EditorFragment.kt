@@ -16,6 +16,8 @@ import com.wuxianggujun.tinaide.core.lsp.NativeLspDocumentBridge
 import com.wuxianggujun.tinaide.core.lsp.NativeLspRequestBridge
 import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
 import com.wuxianggujun.tinaide.editor.EditorDocumentExtras
+import com.wuxianggujun.tinaide.editor.language.c.CTreeSitterLanguageProvider
+import com.wuxianggujun.tinaide.editor.language.cmake.CMakeTreeSitterLanguageProvider
 import com.wuxianggujun.tinaide.editor.language.cpp.CppTreeSitterLanguageProvider
 import com.wuxianggujun.tinaide.extensions.toastInfo
 import com.wuxianggujun.tinaide.extensions.toastWarning
@@ -112,6 +114,13 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     private fun setupLanguage() {
         val path = filePath ?: return
 
+        // CMake 文件单独处理
+        if (isCMakeFile(path)) {
+            applyCMakeSyntaxHighlight()
+            clearDiagnostics()
+            return
+        }
+
         if (!isCppFile(path)) {
             android.util.Log.d(TAG, "Not a C/C++ file: $path")
             clearDiagnostics()
@@ -136,6 +145,27 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
         } else {
             attachNativeBridge(path)
             subscribeDiagnostics(path)
+        }
+    }
+
+    /**
+     * 检查是否是 CMake 文件
+     */
+    private fun isCMakeFile(path: String): Boolean {
+        val fileName = path.substringAfterLast('/').lowercase()
+        return fileName == "cmakelists.txt" || fileName.endsWith(".cmake")
+    }
+
+    /**
+     * 应用 CMake 语法高亮
+     */
+    private fun applyCMakeSyntaxHighlight() {
+        try {
+            val language = CMakeTreeSitterLanguageProvider.create(requireContext())
+            codeEditor.setEditorLanguage(language)
+            android.util.Log.i(TAG, "Applied CMake Tree-sitter language for: $filePath")
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Failed to setup CMake Tree-sitter highlighter", e)
         }
     }
     
@@ -326,12 +356,26 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
 
     private fun applyCppSyntaxHighlight() {
         try {
-            val language = CppTreeSitterLanguageProvider.create(requireContext())
+            val path = filePath ?: return
+            val language = if (isCFile(path)) {
+                CTreeSitterLanguageProvider.create(requireContext())
+            } else {
+                CppTreeSitterLanguageProvider.create(requireContext())
+            }
             codeEditor.setEditorLanguage(language)
-            android.util.Log.i(TAG, "Applied Tree-sitter language for: $filePath")
+            val langName = if (isCFile(path)) "C" else "C++"
+            android.util.Log.i(TAG, "Applied $langName Tree-sitter language for: $filePath")
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Failed to setup Tree-sitter highlighter", e)
         }
+    }
+
+    /**
+     * 检查是否是纯 C 文件（不包括 C++ 文件）
+     */
+    private fun isCFile(path: String): Boolean {
+        val ext = path.substringAfterLast('.', "").lowercase()
+        return ext == "c"
     }
     
     override fun onDestroyView() {
@@ -525,4 +569,3 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
         return ext in setOf("c", "cpp", "cc", "cxx", "m", "mm", "h", "hpp", "hh", "hxx")
     }
 }
-

@@ -10,12 +10,39 @@
 #include <cctype>
 #include <unistd.h>
 #include <vector>
+#include <sys/stat.h>
 
 #define LOG_TAG "SimpleLspClient"
 #include "../../utils/logging.h"
 
 namespace tinaide {
 namespace lsp {
+
+namespace {
+
+bool fileExists(const std::string& path) {
+    struct stat st {};
+    return ::stat(path.c_str(), &st) == 0 && S_ISREG(st.st_mode);
+}
+
+std::string detectCompileCommandsDir(const std::string& workDir) {
+    const char* variants[] = {
+        "debug",
+        "release",
+        "Debug",
+        "Release"
+    };
+    for (const char* variant : variants) {
+        std::string dir = workDir + "/build/" + variant;
+        std::string candidate = dir + "/compile_commands.json";
+        if (fileExists(candidate)) {
+            return dir;
+        }
+    }
+    return "";
+}
+
+} // namespace
 
 // ============================================================================
 // 单例实现
@@ -63,8 +90,17 @@ bool SimpleLspClient::initialize(const std::string& clangd_path, const std::stri
     work_dir_ = work_dir;
 
     // 1. 创建并启动 ClangdServer
+    std::vector<std::string> extraArgs;
+    std::string compileCommandsDir = detectCompileCommandsDir(work_dir_);
+    if (!compileCommandsDir.empty()) {
+        LOGI("Using compile_commands dir: %s", compileCommandsDir.c_str());
+        extraArgs.push_back("--compile-commands-dir=" + compileCommandsDir);
+    } else {
+        LOGW("compile_commands.json not found under %s/build/<variant>", work_dir_.c_str());
+    }
+
     server_ = std::make_unique<ClangdServer>();
-    std::string error = server_->start(clangd_path);
+    std::string error = server_->start(clangd_path, extraArgs);
     if (!error.empty()) {
         LOGE("Failed to start clangd: %s", error.c_str());
         reportHealthEvent(HealthEventType::INIT_FAILURE, error);

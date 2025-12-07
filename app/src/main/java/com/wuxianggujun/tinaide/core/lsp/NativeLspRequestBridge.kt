@@ -26,15 +26,118 @@ object NativeLspRequestBridge {
 
     private const val TAG = "NativeLspRequestBridge"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private class WorkerState<T> {
-        var job: Job? = null
-        var identity: String? = null
-        var requestId: Long = 0
-        val callbacks = mutableListOf<(T?) -> Unit>()
+
+    private class RequestTask<T>(
+        private val label: String,
+        val identity: String,
+        private val block: suspend () -> T?
+    ) {
+        private val callbacks = mutableListOf<(T?) -> Unit>()
+
+        @Synchronized
+        fun addCallback(callback: (T?) -> Unit) {
+            callbacks.add(callback)
+        }
+
+        @Synchronized
+        private fun snapshotCallbacks(): List<(T?) -> Unit> {
+            return callbacks.toList().also { callbacks.clear() }
+        }
+
+        suspend fun run() {
+            val result = try {
+                block()
+            } catch (cancelled: CancellationException) {
+                Log.d(TAG, "$label request cancelled during execution identity=$identity")
+                null
+            } catch (t: Throwable) {
+                Log.e(TAG, "$label request failed identity=$identity", t)
+                null
+            }
+            val callbacks = snapshotCallbacks()
+            withContext(Dispatchers.Main) {
+                callbacks.forEach { callback -> runCatching { callback(result) } }
+            }
+        }
+
+        fun markSkipped() {
+            Log.d(TAG, "$label request skipped identity=$identity")
+        }
     }
 
-    private val hoverWorkers = ConcurrentHashMap<String, WorkerState<HoverResult?>>()
-    private val completionWorkers = ConcurrentHashMap<String, WorkerState<CompletionResult?>>()
+    private class RequestWorker<T>(
+        private val label: String,
+        private val scope: CoroutineScope,
+        private val onIdle: (RequestWorker<T>) -> Unit
+    ) {
+        private var job: Job? = null
+        private var currentTask: RequestTask<T>? = null
+        private var pendingTask: RequestTask<T>? = null
+
+        fun submit(identity: String, block: suspend () -> T?, callback: (T?) -> Unit) {
+            var replacedTask: RequestTask<T>? = null
+            var needsStart = false
+            synchronized(this) {
+                when {
+                    currentTask?.identity == identity -> {
+                        Log.d(TAG, "$label request deduped (running) identity=$identity")
+                        currentTask?.addCallback(callback)
+                        return
+                    }
+                    pendingTask?.identity == identity -> {
+                        Log.d(TAG, "$label request deduped (pending) identity=$identity")
+                        pendingTask?.addCallback(callback)
+                        return
+                    }
+                    else -> {
+                        val newTask = RequestTask(label, identity, block).apply {
+                            addCallback(callback)
+                        }
+                        replacedTask = pendingTask
+                        pendingTask = newTask
+                        if (job == null) {
+                            needsStart = true
+                        }
+                    }
+                }
+            }
+            replacedTask?.markSkipped()
+            if (needsStart) {
+                synchronized(this) {
+                    if (job == null) {
+                        job = scope.launch { runLoop() }
+                    }
+                }
+            }
+        }
+
+        private suspend fun runLoop() {
+            while (true) {
+                val (task, shouldStop) = synchronized(this) {
+                    val next = pendingTask
+                    if (next == null) {
+                        currentTask = null
+                        job = null
+                        null to true
+                    } else {
+                        pendingTask = null
+                        currentTask = next
+                        next to false
+                    }
+                }
+                if (shouldStop) {
+                    onIdle(this)
+                    return
+                }
+                task?.run()
+            }
+        }
+    }
+
+    private val hoverWorkers =
+        ConcurrentHashMap<String, RequestWorker<HoverResult?>>()
+    private val completionWorkers =
+        ConcurrentHashMap<String, RequestWorker<CompletionResult?>>()
     private val definitionJobs = ConcurrentHashMap<String, Job>()
     private val referenceJobs = ConcurrentHashMap<String, Job>()
 
@@ -46,14 +149,14 @@ object NativeLspRequestBridge {
         onResult: (HoverResult?) -> Unit
     ) {
         val fileUri = buildUri(filePath)
-        scheduleWorker(
+        submitRequest(
             workers = hoverWorkers,
             key = fileUri,
             label = "Hover",
             identity = buildIdentity(filePath, line, column),
-            block = {
-            if (!ensureNativeClient(workDir)) return@scheduleWorker null
-            NativeLspService.requestHoverAsync(fileUri, line, column)
+            blockProvider = {
+                if (!ensureNativeClient(workDir)) return@submitRequest null
+                NativeLspService.requestHoverAsync(fileUri, line, column)
             },
             onResult = onResult
         )
@@ -67,15 +170,15 @@ object NativeLspRequestBridge {
         onResult: (CompletionResult?) -> Unit
     ) {
         val fileUri = buildUri(filePath)
-        scheduleWorker(
+        submitRequest(
             workers = completionWorkers,
             key = fileUri,
             label = "Completion",
             identity = buildIdentity(filePath, line, column),
-            block = {
-            if (!ensureNativeClient(workDir)) return@scheduleWorker null
-            NativeLspDocumentBridge.flushPendingSync(filePath)
-            NativeLspService.requestCompletionAsync(fileUri, line, column)
+            blockProvider = {
+                if (!ensureNativeClient(workDir)) return@submitRequest null
+                NativeLspDocumentBridge.flushPendingSync(filePath)
+                NativeLspService.requestCompletionAsync(fileUri, line, column)
             },
             onResult = onResult
         )
@@ -137,78 +240,20 @@ object NativeLspRequestBridge {
         return "$line:$column:$version"
     }
 
-    private fun <T> scheduleWorker(
-        workers: ConcurrentHashMap<String, WorkerState<T>>,
+    private fun <T> submitRequest(
+        workers: ConcurrentHashMap<String, RequestWorker<T>>,
         key: String,
         label: String,
         identity: String,
-        block: suspend () -> T?,
+        blockProvider: suspend () -> T?,
         onResult: (T?) -> Unit
     ) {
-        val state = workers.computeIfAbsent(key) { WorkerState<T>() }
-        val previousJob: Job?
-        val requestId: Long
-        synchronized(state) {
-            if (state.job?.isActive == true && state.identity == identity) {
-                state.callbacks.add(onResult)
-                Log.d(TAG, "$label request deduped for key=$key identity=$identity")
-                return
-            }
-            previousJob = state.job
-            state.identity = identity
-            state.requestId += 1
-            requestId = state.requestId
-            state.callbacks.clear()
-            state.callbacks.add(onResult)
-        }
-        previousJob?.cancel()
-        val job = scope.launch {
-            val result = try {
-                block()
-            } catch (cancelled: CancellationException) {
-                Log.d(TAG, "$label request cancelled for key=$key")
-                throw cancelled
-            } catch (t: Throwable) {
-                Log.e(TAG, "$label request failed for key=$key", t)
-                null
-            }
-            withContext(Dispatchers.Main) {
-                val callbacks = synchronized(state) {
-                    if (state.requestId != requestId) {
-                        state.callbacks.clear()
-                        null
-                    } else {
-                        state.callbacks.toList().also { state.callbacks.clear() }
-                    }
-                }
-                if (callbacks.isNullOrEmpty()) {
-                    Log.d(TAG, "$label result dropped for stale request key=$key id=$requestId")
-                    return@withContext
-                }
-                if (result == null) {
-                    Log.d(TAG, "$label result is null for key=$key")
-                } else {
-                    Log.d(TAG, "$label result ready for key=$key")
-                }
-                callbacks.forEach { callback -> callback(result) }
+        val worker = workers.computeIfAbsent(key) {
+            RequestWorker(label, scope) { finished ->
+                workers.remove(key, finished)
             }
         }
-        synchronized(state) { state.job = job }
-        job.invokeOnCompletion {
-            val shouldRemove = synchronized(state) {
-                if (state.job === job) {
-                    state.job = null
-                    state.identity = null
-                    state.callbacks.clear()
-                    true
-                } else {
-                    false
-                }
-            }
-            if (shouldRemove) {
-                workers.remove(key)
-            }
-        }
+        worker.submit(identity, blockProvider, onResult)
     }
 
     private fun <T> launchRequest(

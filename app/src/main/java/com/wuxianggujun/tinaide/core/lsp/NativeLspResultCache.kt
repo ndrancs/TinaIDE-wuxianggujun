@@ -10,18 +10,22 @@ import java.util.LinkedHashMap
  */
 object NativeLspResultCache {
 
-    private const val COMPLETION_TTL_MS = 60_000L
+    private const val COMPLETION_TTL_MS = 3_000L
     private const val MAX_COMPLETION_ENTRIES = 128
 
     private data class CompletionKey(
         val filePath: String,
         val line: Int,
         val identifierStart: Int,
-        val prefixHash: Int
+        val identifierHash: Int,
+        val scopeHash: Int,
+        val version: Int
     )
 
     private data class CompletionEntry(
-        val prefixSnapshot: String,
+        val identifierSnapshot: String,
+        val scopeSignature: String,
+        val version: Int,
         val timestampMs: Long,
         val result: CompletionResult
     )
@@ -38,12 +42,25 @@ object NativeLspResultCache {
         filePath: String,
         line: Int,
         identifierStart: Int,
-        prefixSnapshot: String
+        identifierSnapshot: String,
+        scopeSignature: String,
+        documentVersion: Int
     ): CompletionResult? {
-        val key = CompletionKey(filePath, line, identifierStart, prefixSnapshot.hashCode())
+        val key = CompletionKey(
+            filePath = filePath,
+            line = line,
+            identifierStart = identifierStart,
+            identifierHash = identifierSnapshot.hashCode(),
+            scopeHash = scopeSignature.hashCode(),
+            version = documentVersion
+        )
         val entry = completionCache[key] ?: return null
         val now = SystemClock.elapsedRealtime()
-        if (entry.prefixSnapshot != prefixSnapshot || now - entry.timestampMs > COMPLETION_TTL_MS) {
+        val expired = now - entry.timestampMs > COMPLETION_TTL_MS
+        val mismatchedContext = entry.identifierSnapshot != identifierSnapshot ||
+            entry.scopeSignature != scopeSignature ||
+            entry.version != documentVersion
+        if (expired || mismatchedContext) {
             completionCache.remove(key)
             return null
         }
@@ -55,11 +72,26 @@ object NativeLspResultCache {
         filePath: String,
         line: Int,
         identifierStart: Int,
-        prefixSnapshot: String,
+        identifierSnapshot: String,
+        scopeSignature: String,
+        documentVersion: Int,
         result: CompletionResult
     ) {
-        val key = CompletionKey(filePath, line, identifierStart, prefixSnapshot.hashCode())
-        completionCache[key] = CompletionEntry(prefixSnapshot, SystemClock.elapsedRealtime(), result)
+        val key = CompletionKey(
+            filePath = filePath,
+            line = line,
+            identifierStart = identifierStart,
+            identifierHash = identifierSnapshot.hashCode(),
+            scopeHash = scopeSignature.hashCode(),
+            version = documentVersion
+        )
+        completionCache[key] = CompletionEntry(
+            identifierSnapshot = identifierSnapshot,
+            scopeSignature = scopeSignature,
+            version = documentVersion,
+            timestampMs = SystemClock.elapsedRealtime(),
+            result = result
+        )
     }
 
     @Synchronized
