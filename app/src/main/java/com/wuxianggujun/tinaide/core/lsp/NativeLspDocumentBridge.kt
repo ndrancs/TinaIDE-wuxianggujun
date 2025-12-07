@@ -154,8 +154,8 @@ object NativeLspDocumentBridge {
             if (disposed || !opened) return
             pendingSync?.cancel()
             sendSnapshot()
-            // 给 clangd 一点时间处理 didChange
-            delay(50)
+            // 给 clangd 更多时间处理 didChange
+            delay(100)
         }
 
         fun resendSnapshotAfterRestart() {

@@ -256,10 +256,15 @@ object NativeLspRequestBridge {
         line: Int,
         column: Int,
         workDir: String?,
-        onResult: (CompletionResult?) -> Unit
+        onResult: (CompletionResult?) -> Unit,
+        timeoutOverrideMs: Long? = null,
+        triggerCharacter: String? = null
     ) {
         val fileUri = buildUri(filePath)
         markCompletionActivity(fileUri)
+        if (timeoutOverrideMs != null) {
+            Log.d(TAG, "Completion timeout override ${timeoutOverrideMs}ms for uri=$fileUri pos=$line:$column triggerChar=$triggerCharacter")
+        }
         submitToChannel(
             fileUri = fileUri,
             type = RequestType.Completion,
@@ -267,7 +272,14 @@ object NativeLspRequestBridge {
             blockProvider = {
                 if (!ensureNativeClient(workDir)) return@submitToChannel null
                 NativeLspDocumentBridge.flushPendingSync(filePath)
-                NativeLspService.requestCompletionAsync(fileUri, line, column).also { result ->
+                NativeLspService.requestCompletionAsync(
+                    fileUri = fileUri,
+                    line = line,
+                    character = column,
+                    triggerKind = if (triggerCharacter != null) 2 else 1, // 2 = TriggerCharacter, 1 = Invoked
+                    triggerCharacter = triggerCharacter ?: "",
+                    timeoutOverrideMs = timeoutOverrideMs
+                ).also { result ->
                     if (result == null) {
                         Log.w(TAG, "Completion result null (timeout/cancel) uri=$fileUri pos=$line:$column")
                     }

@@ -177,6 +177,7 @@ private fun TsThemeBuilder.applyCppTheme() {
 private object CppNativeCompletionDispatcher {
 
     private const val TAG = "CppNativeCompletion"
+    private const val DEEP_COMPLETION_TIMEOUT_MS = 3_000L
 
     fun publish(
         content: ContentReference,
@@ -197,14 +198,15 @@ private object CppNativeCompletionDispatcher {
         val documentVersion = NativeLspDocumentBridge.currentVersion(filePath) ?: -1
         Log.d(
             TAG,
-            "Completion request -> file=$filePath line=${position.line} col=${position.column} key=$key prefix='${completionContext.scopePrefix}'"
+            "Completion request -> file=$filePath line=${position.line} col=${position.column} " +
+            "key=$key scopePrefix='${completionContext.scopePrefix}' filterPrefix='${completionContext.filterPrefix}' " +
+            "hasTrigger=${completionContext.hasTrigger} replacementLen=${completionContext.replacementLength}"
         )
 
-        val caretIndex = position.column.coerceIn(0, completionContext.lineText.length)
-        val allowEmptyPrefix = completionContext.scopePrefix.isNotEmpty()
-                || hasMemberAccessTrigger(completionContext.lineText, caretIndex)
+        // 允许空前缀的情况：有作用域前缀（如 std::）或有触发符（如 . -> ::）
+        val allowEmptyPrefix = completionContext.scopePrefix.isNotEmpty() || completionContext.hasTrigger
         if (completionContext.replacementLength == 0 && !allowEmptyPrefix) {
-            Log.d(TAG, "Empty prefix, skip completion for key=$key")
+            Log.d(TAG, "Empty prefix and no trigger, skip completion for key=$key")
             return false
         }
         val scopeSignature = when {
@@ -212,6 +214,8 @@ private object CppNativeCompletionDispatcher {
             allowEmptyPrefix -> "member-access"
             else -> ""
         }
+        val needsExtendedTimeout = completionContext.scopePrefix.isNotEmpty() || allowEmptyPrefix
+        val timeoutOverrideMs = if (needsExtendedTimeout) DEEP_COMPLETION_TIMEOUT_MS else null
 
         val deliverResult: (CompletionResult, String, Boolean, Boolean) -> Boolean = deliver@{ completionResult, marker, clearOnEmpty, enforceFilter ->
             val normalizedPrefix = filterPrefix.lowercase()
@@ -252,16 +256,21 @@ private object CppNativeCompletionDispatcher {
             return@deliver true
         }
 
+        // 使用 filterPrefix 的第一个字符作为缓存 key 的一部分，避免不同前缀使用相同缓存
+        val cachePrefix = filterPrefix.firstOrNull()?.lowercaseChar()?.toString() ?: ""
+        val cacheSnapshot = identifierPrefixSnapshot + cachePrefix
+        
         var contextCache = NativeLspResultCache.getCompletion(
             filePath = filePath,
             line = position.line,
             identifierStart = identifierStart,
-            identifierSnapshot = identifierPrefixSnapshot,
+            identifierSnapshot = cacheSnapshot,
             scopeSignature = scopeSignature,
             documentVersion = documentVersion
         )
         val cachedResult = contextCache
-        if (cachedResult != null) {
+        if (cachedResult != null && !cachedResult.isIncomplete) {
+            // 只有当结果是完整的时候才使用缓存
             val delivered = deliverResult(cachedResult, " [cache]", false, true)
             if (delivered) {
                 return true
@@ -270,45 +279,44 @@ private object CppNativeCompletionDispatcher {
         }
 
         fun deliverFallback(marker: String): Boolean {
-            contextCache?.let {
-                if (deliverResult(it, marker, false, false)) {
-                    return true
-                }
-            }
-            val latest = NativeLspResultCache.getLastCompletion(filePath)
-            if (latest != null && deliverResult(latest, "$marker[last]", false, false)) {
-                return true
-            }
+            // 不使用 fallback，因为缓存的结果可能是针对不同前缀的
             return false
         }
 
+        // 检测触发字符
+        val triggerChar = detectTriggerCharacter(completionContext.lineText, completionContext.identifierStart)
+        
         NativeLspRequestBridge.requestCompletion(
             filePath = filePath,
             line = position.line,
             column = position.column,
-            workDir = workDir
-        ) { completionResult ->
-            if (completionResult == null) {
-                Log.w(TAG, "Completion result empty for key=$key, trying fallback")
-                if (!deliverFallback(" [fallback]")) {
-                    Log.w(TAG, "Fallback completion also unavailable for key=$key")
-                    publisher.updateList(false)
+            workDir = workDir,
+            onResult = { completionResult ->
+                if (completionResult == null) {
+                    Log.w(TAG, "Completion result empty for key=$key, trying fallback")
+                    if (!deliverFallback(" [fallback]")) {
+                        Log.w(TAG, "Fallback completion also unavailable for key=$key")
+                        publisher.updateList(false)
+                    }
+                    return@requestCompletion
                 }
-                return@requestCompletion
-            }
-            if (completionResult.items.isNotEmpty()) {
-                NativeLspResultCache.putCompletion(
-                    filePath = filePath,
-                    line = position.line,
-                    identifierStart = identifierStart,
-                    identifierSnapshot = identifierPrefixSnapshot,
-                    scopeSignature = scopeSignature,
-                    documentVersion = documentVersion,
-                    result = completionResult
-                )
-            }
-            deliverResult(completionResult, "", true, true)
-        }
+                // 只缓存完整的结果，不完整的结果不缓存（因为可能缺少某些前缀的补全项）
+                if (completionResult.items.isNotEmpty() && !completionResult.isIncomplete) {
+                    NativeLspResultCache.putCompletion(
+                        filePath = filePath,
+                        line = position.line,
+                        identifierStart = identifierStart,
+                        identifierSnapshot = cacheSnapshot,
+                        scopeSignature = scopeSignature,
+                        documentVersion = documentVersion,
+                        result = completionResult
+                    )
+                }
+                deliverResult(completionResult, "", true, true)
+            },
+            timeoutOverrideMs = timeoutOverrideMs,
+            triggerCharacter = triggerChar
+        )
         return true
     }
 
@@ -318,7 +326,8 @@ private object CppNativeCompletionDispatcher {
         val lineText: String,
         val linePrefix: String,
         val filterPrefix: String,
-        val identifierStart: Int
+        val identifierStart: Int,
+        val hasTrigger: Boolean
     )
 
     private fun computeCompletionContext(
@@ -326,12 +335,14 @@ private object CppNativeCompletionDispatcher {
         position: CharPosition
     ): CompletionContext {
         val lineText = runCatching { content.getLine(position.line) }.getOrNull()
-            ?: return CompletionContext(0, "", "", "", "", position.column)
+            ?: return CompletionContext(0, "", "", "", "", position.column, false)
         val caret = position.column.coerceIn(0, lineText.length)
         var identifierStart = caret
         while (identifierStart > 0 && isIdentifierChar(lineText[identifierStart - 1])) {
             identifierStart--
         }
+        // 检查 identifierStart 位置之前是否有触发符（在标识符开始之前检查）
+        val hasTrigger = hasMemberAccessTrigger(lineText, identifierStart)
         val scopeStart = findScopeStart(lineText, identifierStart)
         val scopePrefix = lineText.substring(scopeStart, identifierStart)
         val linePrefix = lineText.substring(0, identifierStart.coerceIn(0, lineText.length))
@@ -342,19 +353,42 @@ private object CppNativeCompletionDispatcher {
             lineText = lineText,
             linePrefix = linePrefix,
             filterPrefix = filterPrefix,
-            identifierStart = identifierStart
+            identifierStart = identifierStart,
+            hasTrigger = hasTrigger
         )
     }
-    private fun hasMemberAccessTrigger(lineText: String, caret: Int): Boolean {
-        if (caret <= 0 || lineText.isEmpty()) {
+    
+    private fun hasMemberAccessTrigger(lineText: String, identifierStart: Int): Boolean {
+        if (identifierStart <= 0 || lineText.isEmpty()) {
             return false
         }
-        val prev = lineText[caret - 1]
+        val prev = lineText[identifierStart - 1]
         return when (prev) {
             '.' -> true
-            '>' -> caret >= 2 && lineText[caret - 2] == '-'
-            ':' -> caret >= 2 && lineText[caret - 2] == ':'
+            '>' -> identifierStart >= 2 && lineText[identifierStart - 2] == '-'
+            ':' -> identifierStart >= 2 && lineText[identifierStart - 2] == ':'
             else -> false
+        }
+    }
+    
+    /**
+     * 检测触发字符，用于告诉 clangd 这是一个触发字符补全请求
+     * clangd 支持的触发字符: . < > : " / *
+     */
+    private fun detectTriggerCharacter(lineText: String, identifierStart: Int): String? {
+        if (identifierStart <= 0 || lineText.isEmpty()) {
+            return null
+        }
+        val prev = lineText[identifierStart - 1]
+        return when (prev) {
+            '.' -> "."
+            '>' -> if (identifierStart >= 2 && lineText[identifierStart - 2] == '-') ">" else null
+            ':' -> if (identifierStart >= 2 && lineText[identifierStart - 2] == ':') ":" else null
+            '<' -> "<"
+            '"' -> "\""
+            '/' -> "/"
+            '*' -> "*"
+            else -> null
         }
     }
 

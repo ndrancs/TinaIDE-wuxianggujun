@@ -209,8 +209,8 @@ private:
     };
     std::mutex stats_mutex_;
     std::map<std::string, MethodStats> method_stats_;
-    static constexpr int kTimeoutThreshold = 3;
-    static constexpr int kCompletionTimeoutThreshold = 2;
+    static constexpr int kTimeoutThreshold = 5;
+    static constexpr int kCompletionTimeoutThreshold = 4;
 
     // ========================================================================
     // 响应读取线程

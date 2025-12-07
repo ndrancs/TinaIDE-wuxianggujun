@@ -186,6 +186,7 @@ private fun TsThemeBuilder.applyCTheme() {
 private object CNativeCompletionDispatcher {
 
     private const val TAG = "CNativeCompletion"
+    private const val MEMBER_COMPLETION_TIMEOUT_MS = 2_500L
 
     fun publish(
         content: ContentReference,
@@ -275,44 +276,45 @@ private object CNativeCompletionDispatcher {
 
         fun deliverFallback(marker: String): Boolean {
             contextCache?.let {
-                if (deliverResult(it, marker, false, false)) {
+                if (deliverResult(it, marker, false, true)) {
                     return true
                 }
             }
-            val latest = NativeLspResultCache.getLastCompletion(filePath)
-            if (latest != null && deliverResult(latest, "$marker[last]", false, false)) {
-                return true
-            }
             return false
         }
+
+        val needsExtendedTimeout = allowEmptyPrefix
+        val timeoutOverrideMs = if (needsExtendedTimeout) MEMBER_COMPLETION_TIMEOUT_MS else null
 
         NativeLspRequestBridge.requestCompletion(
             filePath = filePath,
             line = position.line,
             column = position.column,
-            workDir = workDir
-        ) { completionResult ->
-            if (completionResult == null) {
-                Log.w(TAG, "Completion result empty for key=$key, trying fallback")
-                if (!deliverFallback(" [fallback]")) {
-                    Log.w(TAG, "Fallback completion also unavailable for key=$key")
-                    publisher.updateList(false)
+            workDir = workDir,
+            onResult = { completionResult ->
+                if (completionResult == null) {
+                    Log.w(TAG, "Completion result empty for key=$key, trying fallback")
+                    if (!deliverFallback(" [fallback]")) {
+                        Log.w(TAG, "Fallback completion also unavailable for key=$key")
+                        publisher.updateList(false)
+                    }
+                    return@requestCompletion
                 }
-                return@requestCompletion
-            }
-            if (completionResult.items.isNotEmpty()) {
-                NativeLspResultCache.putCompletion(
-                    filePath = filePath,
-                    line = position.line,
-                    identifierStart = identifierStart,
-                    identifierSnapshot = identifierPrefixSnapshot,
-                    scopeSignature = scopeSignature,
-                    documentVersion = documentVersion,
-                    result = completionResult
-                )
-            }
-            deliverResult(completionResult, "", true, true)
-        }
+                if (completionResult.items.isNotEmpty()) {
+                    NativeLspResultCache.putCompletion(
+                        filePath = filePath,
+                        line = position.line,
+                        identifierStart = identifierStart,
+                        identifierSnapshot = identifierPrefixSnapshot,
+                        scopeSignature = scopeSignature,
+                        documentVersion = documentVersion,
+                        result = completionResult
+                    )
+                }
+                deliverResult(completionResult, "", true, true)
+            },
+            timeoutOverrideMs = timeoutOverrideMs
+        )
         return true
     }
 

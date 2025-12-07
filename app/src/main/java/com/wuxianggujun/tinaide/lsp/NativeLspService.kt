@@ -76,9 +76,17 @@ object NativeLspService {
         line: Int,
         character: Int,
         triggerKind: Int = 1,
-        triggerCharacter: String = ""
+        triggerCharacter: String = "",
+        timeoutOverrideMs: Long? = null
     ): CompletionResult? {
-        return SimpleLspService.requestCompletionAsync(fileUri, line, character, triggerKind, triggerCharacter)
+        return SimpleLspService.requestCompletionAsync(
+            fileUri,
+            line,
+            character,
+            triggerKind,
+            triggerCharacter,
+            timeoutOverrideMs
+        )
     }
     
     suspend fun requestHoverAsync(fileUri: String, line: Int, character: Int): HoverResult? {

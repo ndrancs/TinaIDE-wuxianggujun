@@ -31,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArraySet
 object SimpleLspService {
     private const val TAG = "SimpleLspService"
     private const val DEFAULT_CLANGD_PATH = "/data/data/com.wuxianggujun.tinaide/clangd"
-    private const val COMPLETION_TIMEOUT_MS = 1200L
+    private const val COMPLETION_TIMEOUT_MS = 2500L
     private const val HOVER_TIMEOUT_MS = 350L
     private const val DEFINITION_TIMEOUT_MS = 5000L
     private const val REFERENCES_TIMEOUT_MS = 10000L
@@ -185,12 +185,18 @@ object SimpleLspService {
     // LSP 请求
     suspend fun requestCompletionAsync(
         fileUri: String, line: Int, character: Int,
-        triggerKind: Int = 1, triggerCharacter: String = ""
+        triggerKind: Int = 1, triggerCharacter: String = "",
+        timeoutOverrideMs: Long? = null
     ): CompletionResult? = withContext(Dispatchers.IO) {
         val requestId = nativeRequestCompletion(fileUri, line, character, triggerCharacter.takeIf { it.isNotEmpty() })
         if (requestId == 0L) return@withContext null
-        Log.d(TAG, "Completion request: id=$requestId")
-        awaitJsonResult(requestId, COMPLETION_TIMEOUT_MS, ::parseCompletionResult)
+        val timeout = timeoutOverrideMs?.coerceAtLeast(350L) ?: COMPLETION_TIMEOUT_MS
+        if (timeoutOverrideMs != null) {
+            Log.d(TAG, "Completion request: id=$requestId using extended timeout=${timeout}ms")
+        } else {
+            Log.d(TAG, "Completion request: id=$requestId")
+        }
+        awaitJsonResult(requestId, timeout, ::parseCompletionResult)
     }
 
     suspend fun requestHoverAsync(fileUri: String, line: Int, character: Int): HoverResult? = withContext(Dispatchers.IO) {
@@ -278,9 +284,18 @@ object SimpleLspService {
             restartMutex.withLock {
                 Log.w(TAG, "Restarting clangd due to: $reason")
                 runCatching { nativeShutdown() }.onFailure { Log.e(TAG, "nativeShutdown failed", it) }
-                delay(200)
+                // 等待更长时间确保 clangd 完全关闭
+                delay(1000)
+                Log.i(TAG, "Attempting to reinitialize clangd...")
                 val success = initialize(lastClangdPath, lastWorkDir)
                 Log.i(TAG, "Restart completed, success=$success")
+                if (!success) {
+                    // 如果第一次失败，再等待一段时间重试
+                    delay(2000)
+                    Log.i(TAG, "Retrying clangd initialization...")
+                    val retrySuccess = initialize(lastClangdPath, lastWorkDir)
+                    Log.i(TAG, "Retry completed, success=$retrySuccess")
+                }
             }
         }
     }

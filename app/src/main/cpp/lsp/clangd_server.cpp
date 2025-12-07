@@ -12,6 +12,12 @@
 #include <cstring>
 #include <dirent.h>
 #include <cctype>
+#include <linux/fcntl.h>
+
+// F_SETPIPE_SZ 可能在某些 Android 版本中未定义
+#ifndef F_SETPIPE_SZ
+#define F_SETPIPE_SZ 1031
+#endif
 
 namespace {
 
@@ -106,11 +112,14 @@ std::string findClangResourceDir(const std::string& sysrootDir) {
 std::vector<std::string> buildDefaultClangdArgs(const std::string& resourceDir) {
     std::vector<std::string> args = {
         "clangd",
-        "--background-index=false",
+        "--background-index=false",  // 禁用后台索引，减少资源占用
         "--clang-tidy=false",
-        "--completion-style=detailed",
+        "--completion-style=bundled",  // 使用简化的补全样式
         "--pch-storage=memory",
-        "--log=verbose"
+        "--log=error",  // 只记录错误，减少日志输出
+        "--limit-results=50",  // 限制补全结果数量
+        "--header-insertion=never",  // 不自动插入头文件
+        "-j=2"  // 限制并发任务数
     };
     if (!resourceDir.empty()) {
         args.push_back("--resource-dir=" + resourceDir);
@@ -297,6 +306,18 @@ std::string ClangdServer::start(const std::string& libPath,
         return std::string("Failed to create stdout pipe: ") + strerror(errno);
     }
 
+    // 增加管道缓冲区大小（避免 clangd 在发送大量数据时阻塞）
+    // F_SETPIPE_SZ 需要 Linux 2.6.35+，Android 支持
+    int pipeSize = 1024 * 1024; // 1MB
+    if (fcntl(stdoutPipe_[0], F_SETPIPE_SZ, pipeSize) < 0) {
+        LOGW("Failed to increase stdout pipe size: %s", strerror(errno));
+    } else {
+        LOGI("Increased stdout pipe size to %d bytes", pipeSize);
+    }
+    if (fcntl(stdinPipe_[1], F_SETPIPE_SZ, pipeSize) < 0) {
+        LOGW("Failed to increase stdin pipe size: %s", strerror(errno));
+    }
+
     // 设置非阻塞模式（Java 端使用）
     fcntl(stdinPipe_[1], F_SETFL, O_NONBLOCK);  // 写端
     fcntl(stdoutPipe_[0], F_SETFL, O_NONBLOCK); // 读端
@@ -436,11 +457,19 @@ void ClangdServer::stop() {
 }
 
 bool ClangdServer::isRunning() const {
-    return running_.load();
+    if (!running_.load()) {
+        return false;
+    }
+    // 检查管道是否仍然有效
+    if (stdinPipe_[1] < 0 || stdoutPipe_[0] < 0) {
+        return false;
+    }
+    return true;
 }
 
 int ClangdServer::write(const std::vector<char>& data) {
     if (!running_.load() || stdinPipe_[1] < 0) {
+        LOGE("writeToClangd: not running or pipe closed");
         return -1;
     }
 
@@ -448,9 +477,25 @@ int ClangdServer::write(const std::vector<char>& data) {
         return 0;
     }
 
+    // 使用 poll 检查管道是否可写
+    struct pollfd pfd;
+    pfd.fd = stdinPipe_[1];
+    pfd.events = POLLOUT;
+    pfd.revents = 0;
+    
+    int pollResult = poll(&pfd, 1, 1000); // 等待最多 1 秒
+    if (pollResult <= 0) {
+        LOGE("writeToClangd: pipe not writable (poll=%d, errno=%s)", pollResult, strerror(errno));
+        return -1;
+    }
+    if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+        LOGE("writeToClangd: pipe error (revents=0x%x)", pfd.revents);
+        return -1;
+    }
+
     ssize_t written = ::write(stdinPipe_[1], data.data(), data.size());
     if (written < 0) {
-        LOGW("writeToClangd: write failed: %s", strerror(errno));
+        LOGE("writeToClangd: write failed: %s", strerror(errno));
         return -1;
     }
 
