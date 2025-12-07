@@ -439,12 +439,15 @@ private object CppNativeCompletionDispatcher {
         prefixLength: Int,
         scopePrefix: String
     ): SimpleCompletionItem {
-        val commit = insertText.ifBlank { label }
+        // 去掉 clangd 返回的 label 前导空格，避免 filterCompletionItems 计算匹配索引时崩溃
+        // clangd 返回的 label 格式如 " string"、" cout" 等，带有前导空格
+        val trimmedLabel = label.trimStart()
+        val commit = insertText.ifBlank { trimmedLabel }
         val description = detail
             .takeIf { it.isNotBlank() }
             ?: documentation.takeIf { it.isNotBlank() }
             ?: ""
-        val safeLabel = label.ifBlank { commit }
+        val safeLabel = trimmedLabel.ifBlank { commit }
         val mappedKind = mapKind(kind)
         return SimpleCompletionItem(safeLabel, description, prefixLength, commit).apply {
             kind(mappedKind)
