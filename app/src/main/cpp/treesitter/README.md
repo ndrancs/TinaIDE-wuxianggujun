@@ -11,17 +11,7 @@
 │                              │                                       │
 │                              ▼                                       │
 ├─────────────────────────────────────────────────────────────────────┤
-│              高级 API 层 (安全包装)  ★ NEW                            │
-│  TreeSitter.kt  ──► 入口点，解析器池管理                              │
-│  Parser.kt      ──► 安全的解析器，自动归还池                          │
-│  SyntaxTree.kt  ──► 安全的语法树，生命周期追踪                        │
-│  SyntaxNode.kt  ──► 安全的节点，绑定到树生命周期                      │
-│  Query.kt       ──► 安全的查询，便捷的执行 API                        │
-│  Extensions.kt  ──► Kotlin DSL 扩展函数                              │
-│                              │                                       │
-│                              ▼ 包装                                  │
-├─────────────────────────────────────────────────────────────────────┤
-│              核心绑定层 (JNI 包装)                                    │
+│              Kotlin 绑定层 (JNI 包装)                                 │
 │  TSParser.kt ──► nativeCreate(), nativeParseString()                │
 │  TSTree.kt   ──► nativeRootNode(), nativeEdit()                     │
 │  TSNode.kt   ──► nativeType(), nativeStartByte(), nativeChild()     │
@@ -87,20 +77,7 @@ treesitter/
 
 Kotlin 绑定位于 `external/sora-editor/language-treesitter/src/main/java/`:
 
-### 高级 API (`com.wuxianggujun.tinaide.treesitter.api`) ★ 推荐使用
-
-| 类 | 说明 |
-|---|---|
-| `TreeSitter` | 入口点，提供解析器池和 DSL 风格 API |
-| `Parser` | 安全的解析器包装，自动归还到池中 |
-| `SyntaxTree` | 安全的语法树，追踪关闭状态 |
-| `SyntaxNode` | 安全的节点，绑定到树生命周期 |
-| `Query` | 安全的查询，便捷的执行 API |
-| `QueryMatch` | 查询匹配结果 |
-| `QueryCapture` | 捕获的节点，包含名称 |
-| `Extensions.kt` | Kotlin DSL 扩展函数 |
-
-### 核心类 (`com.wuxianggujun.tinaide.treesitter`) - 底层 API
+### 核心类 (`com.wuxianggujun.tinaide.treesitter`)
 
 | 类 | 说明 |
 |---|---|
@@ -125,64 +102,13 @@ Kotlin 绑定位于 `external/sora-editor/language-treesitter/src/main/java/`:
 
 ## 使用示例
 
-### 方式 1: 高级 API (推荐) ★
-
 ```kotlin
-import com.wuxianggujun.tinaide.treesitter.api.*
-import com.wuxianggujun.tinaide.treesitter.languages.TSLanguageCpp
-
-val code = """
-    int main() {
-        return 0;
-    }
-""".trimIndent()
-
-// DSL 风格 - 自动管理资源
-TreeSitter.parse(TSLanguageCpp.getInstance(), code) { tree ->
-    println("Root: ${tree.root.type}")  // "translation_unit"
-    
-    // 遍历所有节点
-    tree.root.walk { node ->
-        println("  ${node.type} [${node.startPoint}..${node.endPoint}]")
-    }
-    
-    // 查找所有函数定义
-    val functions = tree.root.findByType("function_definition")
-    println("Found ${functions.size} functions")
-}
-
-// 使用查询
-val language = TSLanguageCpp.getInstance()
-Query.createOrThrow(language, "(function_definition) @func").use { query ->
-    TreeSitter.parse(language, code) { tree ->
-        query.execute(tree.root).forEach { match ->
-            match.captures.forEach { capture ->
-                println("Found ${capture.name}: ${capture.node.type}")
-            }
-        }
-    }
-}
-
-// 扩展函数风格
-TSLanguageCpp.getInstance().parse(code) { tree ->
-    tree.query("(identifier) @id") { match ->
-        println("Identifier: ${match.capture("id")?.node?.text(code)}")
-    }
-}
-```
-
-### 方式 2: 底层 API (兼容旧代码)
-
-```kotlin
-import com.wuxianggujun.tinaide.treesitter.*
-import com.wuxianggujun.tinaide.treesitter.languages.TSLanguageCpp
-
 // 1. 获取语言实例
 val language = TSLanguageCpp.getInstance()
 
 // 2. 创建解析器并设置语言
 val parser = TSParser.create()
-parser.language = language
+parser.setLanguage(language)
 
 // 3. 解析代码
 val code = """
@@ -243,21 +169,9 @@ editor.setEditorLanguage(language)
 
 ## 注意事项
 
-1. **内存管理**: 
-   - 高级 API: 使用 DSL 风格自动管理，或使用 `use {}` 块
-   - 底层 API: 所有 `TSNativeObject` 子类需要手动调用 `close()`
-
-2. **线程安全**: 
-   - 高级 API: `TreeSitter` 提供线程安全的解析器池
-   - 底层 API: `TSParser` 不是线程安全的，每个线程应使用独立实例
-
-3. **增量解析**: 
-   - 高级 API: `TreeSitter.parseIncremental(language, source, oldTree) { ... }`
-   - 底层 API: `TSTree.edit()` + `TSParser.parseString(code, oldTree)`
-
-4. **生命周期**: 
-   - `SyntaxNode` 绑定到 `SyntaxTree`，树关闭后节点不可访问
-   - 底层 `TSNode` 没有此保护，可能导致悬空指针
+1. **内存管理**: 所有 `TSNativeObject` 子类都实现了 `AutoCloseable`，使用完毕后需要调用 `close()` 或使用 `use {}` 块
+2. **线程安全**: `TSParser` 不是线程安全的，每个线程应使用独立的解析器实例
+3. **增量解析**: 支持通过 `TSTree.edit()` 和 `TSParser.parseString(code, oldTree)` 进行增量解析
 
 ## 参考链接
 
