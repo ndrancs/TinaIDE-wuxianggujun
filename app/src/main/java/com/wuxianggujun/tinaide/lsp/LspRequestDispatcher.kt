@@ -6,6 +6,7 @@ import android.util.Log
 import com.wuxianggujun.tinaide.lsp.model.CompletionResult
 import com.wuxianggujun.tinaide.lsp.model.HoverResult
 import com.wuxianggujun.tinaide.lsp.model.Location
+import com.wuxianggujun.tinaide.lsp.project.LspProjectManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -124,7 +125,7 @@ object LspRequestDispatcher {
             identity = buildIdentity(filePath, line, column),
             blockProvider = {
                 if (!ensureInitialized(workDir)) return@submitToChannel null
-                LspDocumentSync.flushPendingSync(filePath)
+                LspProjectManager.getEditorForFile(filePath)?.flushPendingSync()
                 LspService.requestCompletion(
                     fileUri = fileUri,
                     line = line,
@@ -197,7 +198,7 @@ object LspRequestDispatcher {
     private fun buildUri(filePath: String): String = Uri.fromFile(File(filePath)).toString()
 
     private fun buildIdentity(filePath: String, line: Int, column: Int): String {
-        val version = LspDocumentSync.currentVersion(filePath) ?: -1
+        val version = LspProjectManager.getEditorForFile(filePath)?.currentVersion() ?: -1
         return "$line:$column:$version"
     }
 

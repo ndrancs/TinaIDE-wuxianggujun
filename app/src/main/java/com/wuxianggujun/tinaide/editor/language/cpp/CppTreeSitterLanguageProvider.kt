@@ -8,7 +8,7 @@ import com.wuxianggujun.tinaide.treesitter.languages.TSLanguageCpp
 import com.wuxianggujun.tinaide.editor.EditorDocumentExtras
 import com.wuxianggujun.tinaide.lsp.LspRequestDispatcher
 import com.wuxianggujun.tinaide.lsp.LspResultCache
-import com.wuxianggujun.tinaide.lsp.LspDocumentSync
+import com.wuxianggujun.tinaide.lsp.project.LspProjectManager
 import com.wuxianggujun.tinaide.lsp.model.CompletionItem as NativeCompletionItem
 import com.wuxianggujun.tinaide.lsp.model.CompletionResult
 import io.github.rosemoe.sora.editor.ts.LocalsCaptureSpec
@@ -197,7 +197,7 @@ private object CppNativeCompletionDispatcher {
         val identifierPrefixSnapshot = completionContext.linePrefix
         val fileUri = Uri.fromFile(File(filePath)).toString()
         val key = buildKey(filePath, position)
-        val documentVersion = LspDocumentSync.currentVersion(filePath) ?: -1
+        val documentVersion = LspProjectManager.getEditorForFile(filePath)?.currentVersion() ?: -1
         Log.d(
             TAG,
             "Completion request -> file=$filePath line=${position.line} col=${position.column} " +
@@ -449,6 +449,10 @@ private object CppNativeCompletionDispatcher {
             ?: ""
         val safeLabel = trimmedLabel.ifBlank { commit }
         val mappedKind = mapKind(kind)
+        
+        // 调试日志
+        Log.d(TAG, "toCompletionItem: label='$label' trimmedLabel='$trimmedLabel' insertText='$insertText' commit='$commit' prefixLength=$prefixLength")
+        
         return SimpleCompletionItem(safeLabel, description, prefixLength, commit).apply {
             kind(mappedKind)
             val scopedFilter = scopePrefix + safeLabel.toString()

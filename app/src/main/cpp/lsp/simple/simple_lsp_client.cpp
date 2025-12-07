@@ -165,7 +165,7 @@ SimpleLspClient::~SimpleLspClient() {
 // 生命周期管理
 // ============================================================================
 
-bool SimpleLspClient::initialize(const std::string& clangd_path, const std::string& work_dir) {
+bool SimpleLspClient::initialize(const std::string& clangd_path, const std::string& work_dir, int completion_limit) {
     if (initialized_.load()) {
         LOGD("SimpleLspClient already initialized");
         return true;
@@ -176,6 +176,8 @@ bool SimpleLspClient::initialize(const std::string& clangd_path, const std::stri
     LOGI("work_dir: %s", work_dir.c_str());
 
     work_dir_ = work_dir;
+    completion_limit_ = completion_limit > 0 ? completion_limit : 50;
+    LOGI("Completion limit: %d items", completion_limit_);
 
     // 1. 创建并启动 ClangdServer
     std::vector<std::string> extraArgs;
@@ -186,6 +188,7 @@ bool SimpleLspClient::initialize(const std::string& clangd_path, const std::stri
     } else {
         LOGW("compile_commands.json not found under %s/build/<variant>", work_dir_.c_str());
     }
+    extraArgs.push_back("--limit-results=" + std::to_string(completion_limit_));
 
     server_ = std::make_unique<ClangdServer>();
     std::string error = server_->start(clangd_path, extraArgs);

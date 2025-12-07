@@ -117,7 +117,6 @@ std::vector<std::string> buildDefaultClangdArgs(const std::string& resourceDir) 
         "--completion-style=bundled",  // 使用简化的补全样式
         "--pch-storage=memory",
         "--log=error",  // 只记录错误，减少日志输出
-        "--limit-results=50",  // 限制补全结果数量
         "--header-insertion=never",  // 不自动插入头文件
         "-j=2"  // 限制并发任务数
     };

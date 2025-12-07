@@ -3,6 +3,10 @@ package com.wuxianggujun.tinaide.lsp
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.wuxianggujun.tinaide.core.ServiceLocator
+import com.wuxianggujun.tinaide.core.config.ConfigKeys
+import com.wuxianggujun.tinaide.core.config.IConfigManager
+import com.wuxianggujun.tinaide.core.get
 import com.wuxianggujun.tinaide.lsp.model.CompletionItem
 import com.wuxianggujun.tinaide.lsp.model.CompletionResult
 import com.wuxianggujun.tinaide.lsp.model.DiagnosticItem
@@ -89,13 +93,14 @@ object LspService {
     @Volatile private var overrideClangdPath: String? = null
     @Volatile private var lastWorkDir: String = "/"
     @Volatile private var lastClangdPath: String = DEFAULT_CLANGD_PATH
+    private val configManager: IConfigManager by lazy { ServiceLocator.get<IConfigManager>() }
 
     // ========================================================================
     // Native 方法
     // ========================================================================
     
     @JvmStatic private external fun nativeOnLoad(): Int
-    @JvmStatic private external fun nativeInitialize(clangdPath: String, workDir: String): Boolean
+    @JvmStatic private external fun nativeInitialize(clangdPath: String, workDir: String, completionLimit: Int): Boolean
     @JvmStatic private external fun nativeShutdown()
     @JvmStatic external fun nativeIsInitialized(): Boolean
     @JvmStatic private external fun nativeRequestHover(fileUri: String, line: Int, character: Int): Long
@@ -166,7 +171,8 @@ object LspService {
         Log.i(TAG, "Initializing: clangdPath=$effectivePath, workDir=$workDir")
         
         val success = try {
-            nativeInitialize(effectivePath, workDir)
+            val completionLimit = resolveCompletionLimit()
+            nativeInitialize(effectivePath, workDir, completionLimit)
         } catch (e: Exception) {
             Log.e(TAG, "Initialize failed", e)
             false
@@ -219,6 +225,12 @@ object LspService {
     
     fun removeInitializationListener(listener: InitializationListener) { 
         initializationListeners.remove(listener) 
+    }
+
+    private fun resolveCompletionLimit(): Int {
+        return runCatching { configManager.get(ConfigKeys.LspCompletionLimit) }
+            .getOrDefault(ConfigKeys.LspCompletionLimit.default)
+            .coerceAtLeast(1)
     }
 
     // ========================================================================

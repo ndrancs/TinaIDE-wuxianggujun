@@ -148,12 +148,14 @@ Java_com_wuxianggujun_tinaide_lsp_LspService_nativeInitialize(
     JNIEnv* env,
     jclass clazz,
     jstring clangdPath,
-    jstring workDir
+    jstring workDir,
+    jint completionLimit
 ) {
     LOGD("LspService.nativeInitialize called");
     
     std::string clangd_path = jstringToString(env, clangdPath);
     std::string work_dir = jstringToString(env, workDir);
+    int limit = completionLimit > 0 ? completionLimit : 50;
     
     auto* client = SimpleLspClient::getInstance();
     
@@ -167,7 +169,7 @@ Java_com_wuxianggujun_tinaide_lsp_LspService_nativeInitialize(
         dispatchDiagnosticsToJava(file_uri, diagnostics);
     });
     
-    bool success = client->initialize(clangd_path, work_dir);
+    bool success = client->initialize(clangd_path, work_dir, limit);
     LOGD("LspService.nativeInitialize: success=%d", success);
     return static_cast<jboolean>(success);
 }

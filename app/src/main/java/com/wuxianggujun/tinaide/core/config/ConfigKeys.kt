@@ -33,6 +33,12 @@ sealed class ConfigKey<T>(val key: String, val default: T) {
         key = "output.mode",
         default = "ACTIVITY"
     )
+
+    // LSP / clangd 配置
+    object LspCompletionLimit : ConfigKey<Int>(
+        key = "lsp.completion.limit",
+        default = 50
+    )
 }
 
 /**
@@ -47,4 +53,5 @@ object ConfigKeys {
     val CurrentProject = ConfigKey.CurrentProject
     val RecentFiles = ConfigKey.RecentFiles
     val OutputMode = ConfigKey.OutputMode
+    val LspCompletionLimit = ConfigKey.LspCompletionLimit
 }

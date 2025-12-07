@@ -10,6 +10,7 @@ import androidx.preference.SwitchPreferenceCompat
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.ServiceLocator
 import com.wuxianggujun.tinaide.core.config.IConfigManager
+import com.wuxianggujun.tinaide.core.config.ConfigKeys
 import com.wuxianggujun.tinaide.core.get
 import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
 import com.wuxianggujun.tinaide.utils.Logger
@@ -24,6 +25,11 @@ import kotlinx.coroutines.withContext
  */
 class CompilerPreferenceFragment : PreferenceFragmentCompat() {
 
+    companion object {
+        private const val MIN_COMPLETION_LIMIT = 10
+        private const val MAX_COMPLETION_LIMIT = 200
+    }
+
     private val configManager: IConfigManager by lazy {
         ServiceLocator.get<IConfigManager>()
     }
@@ -36,6 +42,7 @@ class CompilerPreferenceFragment : PreferenceFragmentCompat() {
         setupTargetArchPreference()
         setupThreadsPreference()
         setupDebugSymbolsPreference()
+        setupCompletionLimitPreference()
         setupReinstallSysrootPreference()
     }
 
@@ -91,6 +98,34 @@ class CompilerPreferenceFragment : PreferenceFragmentCompat() {
                 configManager.set("compiler.debugSymbols", enabled)
                 true
             }
+        }
+    }
+
+    private fun setupCompletionLimitPreference() {
+        findPreference<SeekBarPreference>("lsp_completion_limit")?.apply {
+            val current = configManager.get(ConfigKeys.LspCompletionLimit)
+                .coerceIn(MIN_COMPLETION_LIMIT, MAX_COMPLETION_LIMIT)
+            value = current
+            updateCompletionSummary(this, current)
+            setOnPreferenceChangeListener { preference, newValue ->
+                val limit = (newValue as Int).coerceIn(MIN_COMPLETION_LIMIT, MAX_COMPLETION_LIMIT)
+                configManager.set(ConfigKeys.LspCompletionLimit, limit)
+                updateCompletionSummary(preference as SeekBarPreference, limit)
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.settings_completion_limit_summary),
+                    Toast.LENGTH_SHORT
+                ).show()
+                true
+            }
+        }
+    }
+
+    private fun updateCompletionSummary(preference: Preference, limit: Int) {
+        preference.summary = buildString {
+            append(getString(R.string.settings_completion_limit_summary_with_value, limit))
+            append('\n')
+            append(getString(R.string.settings_completion_limit_summary))
         }
     }
 

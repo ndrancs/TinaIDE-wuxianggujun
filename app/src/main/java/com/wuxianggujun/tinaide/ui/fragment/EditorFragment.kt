@@ -19,9 +19,9 @@ import com.wuxianggujun.tinaide.editor.language.cmake.CMakeTreeSitterLanguagePro
 import com.wuxianggujun.tinaide.editor.language.cpp.CppTreeSitterLanguageProvider
 import com.wuxianggujun.tinaide.extensions.toastInfo
 import com.wuxianggujun.tinaide.extensions.toastWarning
-import com.wuxianggujun.tinaide.lsp.LspDocumentSync
 import com.wuxianggujun.tinaide.lsp.LspRequestDispatcher
 import com.wuxianggujun.tinaide.lsp.LspService
+import com.wuxianggujun.tinaide.lsp.project.LspEditorBinding
 import com.wuxianggujun.tinaide.lsp.model.DiagnosticItem
 import com.wuxianggujun.tinaide.lsp.model.HoverResult
 import com.wuxianggujun.tinaide.lsp.model.Location
@@ -51,7 +51,7 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
 ) {
     private lateinit var codeEditor: CodeEditor
     private var filePath: String? = null
-    private var lspHandle: LspDocumentSync.Handle? = null
+    private var lspBinding: LspEditorBinding? = null
     private var hoverSubscription: SubscriptionReceipt<SelectionChangeEvent>? = null
     private var lastNativeHoverSignature: String? = null
     private var diagnosticsListener: LspService.DiagnosticsListener? = null
@@ -384,8 +384,8 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     }
     
     override fun onDestroyView() {
-        lspHandle?.dispose()
-        lspHandle = null
+        lspBinding?.unbind()
+        lspBinding = null
         hoverSubscription?.unsubscribe()
         hoverSubscription = null
         cancelPendingHoverTrigger()
@@ -517,12 +517,12 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     }
 
     private fun attachNativeBridge(filePath: String) {
-        lspHandle?.dispose()
-        lspHandle = LspDocumentSync.bind(
-            requireContext().applicationContext,
-            codeEditor,
-            filePath,
-            projectPath
+        lspBinding?.unbind()
+        lspBinding = LspEditorBinding.bind(
+            context = requireContext(),
+            editor = codeEditor,
+            filePath = filePath,
+            projectPath = projectPath
         )
         subscribeNativeHover(filePath)
     }

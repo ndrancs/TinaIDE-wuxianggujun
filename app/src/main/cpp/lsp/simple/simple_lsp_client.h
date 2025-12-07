@@ -57,7 +57,7 @@ public:
      * @param work_dir 工作目录
      * @return 是否成功
      */
-    bool initialize(const std::string& clangd_path, const std::string& work_dir);
+    bool initialize(const std::string& clangd_path, const std::string& work_dir, int completion_limit);
 
     /**
      * 关闭客户端
@@ -219,6 +219,7 @@ private:
     std::thread reader_thread_;
     std::atomic<bool> running_{false};
     std::atomic<bool> initialized_{false};
+    int completion_limit_ = 50;
 
     void readerLoop();
 

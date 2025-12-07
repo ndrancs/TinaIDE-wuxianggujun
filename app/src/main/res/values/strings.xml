@@ -57,6 +57,10 @@
   <string name="settings_cat_editor_behavior">编辑行为</string>
   <string name="settings_cat_compiler_options">编译选项</string>
   <string name="settings_cat_compiler_debug_perf">调试与性能</string>
+  <string name="settings_cat_lsp">语言服务器</string>
+  <string name="settings_completion_limit_title">补全候选上限</string>
+  <string name="settings_completion_limit_summary">限制 clangd 每次返回的候选数量。值越大越耗资源，修改后需重新初始化 LSP 生效。</string>
+  <string name="settings_completion_limit_summary_with_value">当前上限：%1$d 项</string>
 
   <!-- Native LSP UI -->
   <string name="native_definition_results">Native 定义列表</string>

@@ -103,4 +103,33 @@ object LspResultCache {
 
     @Synchronized
     fun getLastCompletion(filePath: String): CompletionResult? = lastCompletionByFile[filePath]
+    
+    /**
+     * 清理项目相关的所有缓存
+     */
+    @Synchronized
+    fun invalidateProject(projectPath: String) {
+        val iterator = completionCache.entries.iterator()
+        while (iterator.hasNext()) {
+            if (iterator.next().key.filePath.startsWith(projectPath)) {
+                iterator.remove()
+            }
+        }
+        
+        val fileIterator = lastCompletionByFile.entries.iterator()
+        while (fileIterator.hasNext()) {
+            if (fileIterator.next().key.startsWith(projectPath)) {
+                fileIterator.remove()
+            }
+        }
+    }
+    
+    /**
+     * 清理所有缓存
+     */
+    @Synchronized
+    fun clearAll() {
+        completionCache.clear()
+        lastCompletionByFile.clear()
+    }
 }

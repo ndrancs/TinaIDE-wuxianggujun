@@ -39,6 +39,22 @@
         app:iconSpaceReserved="false" />
 
     <PreferenceCategory
+        android:title="@string/settings_cat_lsp"
+        app:iconSpaceReserved="false">
+
+        <SeekBarPreference
+            android:key="lsp_completion_limit"
+            android:title="@string/settings_completion_limit_title"
+            android:summary="@string/settings_completion_limit_summary"
+            android:defaultValue="50"
+            android:min="10"
+            android:max="200"
+            app:showSeekBarValue="true"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="工具链调试"
         app:iconSpaceReserved="false">
 
