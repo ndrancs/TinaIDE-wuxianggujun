@@ -327,7 +327,7 @@ private object CppNativeCompletionDispatcher {
                 }
                 deliverResult(completionResult, "", true, true)
             },
-            timeoutOverrideMs = timeoutOverrideMs,
+            timeoutMs = timeoutOverrideMs,
             triggerCharacter = triggerChar
         )
         return true
