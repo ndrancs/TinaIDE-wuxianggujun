@@ -52,6 +52,5 @@ include(
     ":language-monarch",
     ":language-java",
     ":language-textmate",
-    ":editor-lsp",
     ":language-treesitter"
 )

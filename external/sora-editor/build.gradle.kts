@@ -35,7 +35,7 @@ plugins {
     alias(libs.plugins.publish) apply false
 }
 
-val highApiProjects = arrayOf("editor-lsp")
+val highApiProjects = arrayOf<String>()
 
 fun Project.configureBaseExtension() {
     extensions.findByType(BaseExtension::class)?.run {

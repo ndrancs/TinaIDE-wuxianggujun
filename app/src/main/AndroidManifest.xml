@@ -58,6 +58,12 @@
             android:exported="false"
             android:label="设置"
             android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".ui.activity.CrashActivity"
+            android:exported="false"
+            android:label="应用崩溃"
+            android:theme="@style/Theme.TinaIDE"
+            android:process=":crash" />
         <!-- Termux components declared in library manifest -->
     </application>
 

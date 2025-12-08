@@ -36,13 +36,14 @@ object Prefs {
     // ========== 编辑器配置 ==========
 
     /**
-     * 编辑器字体大小（sp）。默认 14，范围约束在 [8, 32]。
+     * 编辑器字体大小（sp）。默认 14，范围约束在 [8, 72]。
      * 存储于默认 SharedPreferences 中，键为 "editor_font_size"。
+     * 注意：使用 String 存储以兼容 EditTextPreference。
      */
     val editorFontSize: Float
-        get() = sharedPrefs.getInt("editor_font_size", 14)
-            .toFloat()
-            .coerceIn(8f, 32f)
+        get() = sharedPrefs.getString("editor_font_size", "14")
+            ?.toFloatOrNull()
+            ?.coerceIn(8f, 72f) ?: 14f
 
     /**
      * Tab 宽度（空格数）。默认 4，范围 [2, 8]。
@@ -85,7 +86,7 @@ object Prefs {
     }
 
     fun setEditorFontSize(sizeSp: Float) {
-        sharedPrefs.edit().putInt("editor_font_size", sizeSp.toInt().coerceIn(8, 32)).apply()
+        sharedPrefs.edit().putString("editor_font_size", sizeSp.toInt().coerceIn(8, 72).toString()).apply()
     }
 
     fun setEditorTabSize(tabSize: Int) {
