@@ -2,9 +2,9 @@
     <!-- Base application theme - Fixed Dark Theme -->
     <style name="Base.Theme.TinaIDE" parent="Theme.Material3.Dark.NoActionBar">
         <!-- Primary brand color -->
-        <item name="colorPrimary">@color/dark_primary</item>
+        <item name="colorPrimary">@color/dark_secondary</item>
         <item name="colorPrimaryVariant">@color/dark_primary_variant</item>
-        <item name="colorOnPrimary">@color/dark_on_primary</item>
+        <item name="colorOnPrimary">@color/dark_on_secondary</item>
         
         <!-- Secondary brand color -->
         <item name="colorSecondary">@color/dark_secondary</item>
@@ -15,6 +15,7 @@
         <item name="colorSurface">@color/dark_surface</item>
         <item name="colorOnBackground">@color/dark_on_background</item>
         <item name="colorOnSurface">@color/dark_on_surface</item>
+        <item name="colorOnSurfaceVariant">#B3FFFFFF</item>
         
         <!-- Error color -->
         <item name="colorError">@color/dark_error</item>
@@ -29,6 +30,14 @@
 
         <!-- Toolbar 图标颜色：确保在深色背景上可见 -->
         <item name="colorControlNormal">@color/dark_on_primary</item>
+        
+        <!-- 控制光标、选择手柄等颜色 -->
+        <item name="colorControlActivated">@color/dark_secondary</item>
+        <item name="android:textColorHighlight">#4003DAC6</item>
+        <item name="android:textCursorDrawable">@drawable/cursor_drawable</item>
+        
+        <!-- TextInputLayout 样式 -->
+        <item name="textInputStyle">@style/Widget.App.TextInputLayout</item>
     </style>
 
     <style name="Theme.TinaIDE" parent="Base.Theme.TinaIDE">
@@ -69,11 +78,14 @@
 
     <!-- Material AlertDialog 主题 -->
     <style name="ThemeOverlay.App.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorPrimary">@color/dark_primary</item>
+        <item name="colorPrimary">@color/dark_secondary</item>
         <item name="colorSecondary">@color/dark_secondary</item>
         <item name="colorSurface">@color/dark_surface</item>
         <item name="colorOnSurface">@color/dark_on_surface</item>
         <item name="android:background">@color/dark_surface</item>
+        <item name="colorControlActivated">@color/dark_secondary</item>
+        <item name="android:textColorHighlight">#4003DAC6</item>
+        <item name="android:textCursorDrawable">@drawable/cursor_drawable</item>
         <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.App.Title.Text</item>
         <item name="materialAlertDialogBodyTextStyle">@style/MaterialAlertDialog.App.Body.Text</item>
         <item name="buttonBarPositiveButtonStyle">@style/Widget.App.Button</item>
@@ -92,5 +104,14 @@
 
     <style name="Widget.App.Button" parent="Widget.Material3.Button.TextButton.Dialog">
         <item name="android:textColor">@color/dark_secondary</item>
+    </style>
+
+    <!-- TextInputLayout 样式 -->
+    <style name="Widget.App.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/dark_secondary</item>
+        <item name="boxStrokeWidth">2dp</item>
+        <item name="hintTextColor">@color/dark_secondary</item>
+        <item name="android:textColorHint">#80FFFFFF</item>
+        <item name="errorTextColor">@color/dark_error</item>
     </style>
 </resources>

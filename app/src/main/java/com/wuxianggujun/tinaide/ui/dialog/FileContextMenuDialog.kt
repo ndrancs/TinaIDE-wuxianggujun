@@ -2,11 +2,8 @@ package com.wuxianggujun.tinaide.ui.dialog
 
 import android.app.Dialog
 import android.os.Bundle
-import android.widget.EditText
 import androidx.fragment.app.DialogFragment
 import com.wuxianggujun.tinaide.extensions.*
-import com.wuxianggujun.tinaide.utils.FileUtils
-import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.file.IFileManager
 import java.io.File
@@ -27,13 +24,19 @@ class FileContextMenuDialog(
             arrayOf("重命名", "删除", "复制路径")
         }
         
-        return MaterialDialogBuilder.create(requireContext())
-            .setTitle(file.name)
-            .setItems(items) { _, which ->
-                handleMenuItemClick(which, file.isDirectory)
+        val dialog = ListDialog.newInstance(
+            title = file.name,
+            items = items,
+            onItemClick = { index, _ ->
+                handleMenuItemClick(index, file.isDirectory)
             }
-            .setNegativeButton("取消", null)
-            .create()
+        )
+        
+        // 直接显示 ListDialog
+        dialog.show(parentFragmentManager, "file_context_menu_list")
+        
+        // 返回一个空对话框（不会显示）
+        return super.onCreateDialog(savedInstanceState)
     }
     
     private fun handleMenuItemClick(position: Int, isDirectory: Boolean) {
@@ -59,19 +62,18 @@ class FileContextMenuDialog(
      */
     private fun showNewFileDialog() {
         val ctx = context ?: return
-        val input = EditText(ctx)
-        input.hint = "文件名"
         
-        MaterialDialogBuilder.create(ctx)
-            .setTitle("新建文件")
-            .setView(input)
-            .setPositiveButton("创建") { _, _ ->
-                val fileName = input.text.toString().trim()
-                if (fileName.isEmpty()) {
-                    ctx.toastError("文件名不能为空")
-                    return@setPositiveButton
+        val dialog = InputDialog.newInstance(
+            title = "新建文件",
+            hint = "文件名",
+            validator = { input ->
+                when {
+                    input.isEmpty() -> "文件名不能为空"
+                    !input.matches(Regex("[a-zA-Z0-9_.-]+")) -> "文件名包含非法字符"
+                    else -> null
                 }
-                
+            },
+            onConfirm = { fileName ->
                 try {
                     fileManager.createFile(file, fileName)
                     ctx.toastSuccess("创建成功")
@@ -80,8 +82,8 @@ class FileContextMenuDialog(
                     ctx.handleErrorWithToast(e, "创建失败")
                 }
             }
-            .setNegativeButton("取消", null)
-            .show()
+        )
+        dialog.show(parentFragmentManager, "new_file_dialog")
     }
     
     /**
@@ -89,19 +91,18 @@ class FileContextMenuDialog(
      */
     private fun showNewFolderDialog() {
         val ctx = context ?: return
-        val input = EditText(ctx)
-        input.hint = "文件夹名"
         
-        MaterialDialogBuilder.create(ctx)
-            .setTitle("新建文件夹")
-            .setView(input)
-            .setPositiveButton("创建") { _, _ ->
-                val folderName = input.text.toString().trim()
-                if (folderName.isEmpty()) {
-                    ctx.toastError("文件夹名不能为空")
-                    return@setPositiveButton
+        val dialog = InputDialog.newInstance(
+            title = "新建文件夹",
+            hint = "文件夹名",
+            validator = { input ->
+                when {
+                    input.isEmpty() -> "文件夹名不能为空"
+                    !input.matches(Regex("[a-zA-Z0-9_.-]+")) -> "文件夹名包含非法字符"
+                    else -> null
                 }
-                
+            },
+            onConfirm = { folderName ->
                 try {
                     fileManager.createDirectory(file, folderName)
                     ctx.toastSuccess("文件夹创建成功")
@@ -110,8 +111,8 @@ class FileContextMenuDialog(
                     ctx.handleErrorWithToast(e, "创建失败")
                 }
             }
-            .setNegativeButton("取消", null)
-            .show()
+        )
+        dialog.show(parentFragmentManager, "new_folder_dialog")
     }
     
     /**
@@ -119,24 +120,20 @@ class FileContextMenuDialog(
      */
     private fun showRenameDialog() {
         val ctx = context ?: return
-        val input = EditText(ctx)
-        input.setText(file.name)
-        input.selectAll()
         
-        MaterialDialogBuilder.create(ctx)
-            .setTitle("重命名")
-            .setView(input)
-            .setPositiveButton("确定") { _, _ ->
-                val newName = input.text.toString().trim()
-                if (newName.isEmpty()) {
-                    ctx.toastError("名称不能为空")
-                    return@setPositiveButton
+        val dialog = InputDialog.newInstance(
+            title = "重命名",
+            hint = "新名称",
+            defaultValue = file.name,
+            validator = { input ->
+                when {
+                    input.isEmpty() -> "名称不能为空"
+                    input == file.name -> "名称未改变"
+                    !input.matches(Regex("[a-zA-Z0-9_.-]+")) -> "名称包含非法字符"
+                    else -> null
                 }
-                
-                if (newName == file.name) {
-                    return@setPositiveButton
-                }
-                
+            },
+            onConfirm = { newName ->
                 try {
                     val success = fileManager.renameFile(file, newName)
                     if (success) {
@@ -149,8 +146,8 @@ class FileContextMenuDialog(
                     ctx.handleErrorWithToast(e, "重命名失败")
                 }
             }
-            .setNegativeButton("取消", null)
-            .show()
+        )
+        dialog.show(parentFragmentManager, "rename_dialog")
     }
     
     /**
@@ -164,10 +161,11 @@ class FileContextMenuDialog(
             "确定要删除文件 \"${file.name}\" 吗？"
         }
         
-        MaterialDialogBuilder.create(ctx)
-            .setTitle("确认删除")
-            .setMessage(message)
-            .setPositiveButton("删除") { _, _ ->
+        val dialog = ConfirmDialog.newInstance(
+            title = "确认删除",
+            message = message,
+            positiveText = "删除",
+            onPositive = {
                 try {
                     val success = fileManager.deleteFile(file)
                     if (success) {
@@ -180,8 +178,8 @@ class FileContextMenuDialog(
                     ctx.handleErrorWithToast(e, "删除失败")
                 }
             }
-            .setNegativeButton("取消", null)
-            .show()
+        )
+        dialog.show(parentFragmentManager, "delete_confirm_dialog")
     }
     
     /**

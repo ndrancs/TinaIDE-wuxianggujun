@@ -4,21 +4,20 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="24dp"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
     android:paddingTop="8dp"
     android:paddingBottom="16dp">
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/text_input_layout"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:id="@+id/text_input_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:boxStrokeColor="@color/text_input_box_stroke"
-        app:hintTextColor="@color/dark_secondary"
-        app:counterEnabled="true"
-        app:counterMaxLength="100"
-        app:counterTextColor="@color/dark_on_surface"
-        app:errorEnabled="true">
+        app:boxStrokeColor="@color/text_input_stroke_color"
+        app:hintTextColor="@color/text_input_hint_color"
+        app:errorEnabled="true"
+        app:errorTextColor="?attr/colorError">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edit_text"
@@ -26,8 +25,10 @@
             android:layout_height="wrap_content"
             android:inputType="text"
             android:maxLines="1"
-            android:textColor="@color/dark_on_surface"
-            android:textColorHint="@color/dark_secondary" />
+            android:textColor="#FFFFFF"
+            android:textColorHint="#B3FFFFFF"
+            android:textCursorDrawable="@drawable/cursor_drawable"
+            android:imeOptions="actionDone" />
 
     </com.google.android.material.textfield.TextInputLayout>
 

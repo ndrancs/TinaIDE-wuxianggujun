@@ -24,7 +24,7 @@ import com.wuxianggujun.tinaide.extensions.toastWarning
 import com.wuxianggujun.tinaide.extensions.handleErrorWithToast
 import com.wuxianggujun.tinaide.ui.CompilerViewModel
 import com.wuxianggujun.tinaide.ui.CompileState
-import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
+
 import com.wuxianggujun.tinaide.lsp.model.Diagnostic
 import com.wuxianggujun.tinaide.utils.FileUtils
 import com.wuxianggujun.tinaide.utils.Logger
@@ -250,21 +250,27 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             return
         }
         
-        // 使用 Material Design 输入对话框
-        MaterialDialogBuilder.showInput(
-            context = this,
-            title = "添加文件",
+        // 获取文件树Fragment
+        val fileTreeFragment = supportFragmentManager.findFragmentById(R.id.file_tree_container)
+            as? com.wuxianggujun.tinaide.ui.fragment.FileTreeFragment
+        
+        // 获取当前选中的目录，如果没有选中则使用项目根目录
+        val targetDir = fileTreeFragment?.getSelectedDirectory() ?: File(project.rootPath)
+        
+        // 使用 DialogFragment
+        val dialog = com.wuxianggujun.tinaide.ui.dialog.InputDialog.newInstance(
+            title = "添加文件到 ${targetDir.name}",
             hint = "文件名，例如 main.cpp",
             validator = { input ->
                 when {
                     input.isEmpty() -> "文件名不能为空"
                     !input.matches(Regex("[a-zA-Z0-9_.-]+")) -> "文件名包含非法字符"
+                    File(targetDir, input).exists() -> "文件已存在"
                     else -> null // 验证通过
                 }
             },
             onConfirm = { name ->
-                val root = File(project.rootPath)
-                FileUtils.createFile(root, name)
+                FileUtils.createFile(targetDir, name)
                     .onSuccess { file ->
                         toastSuccess("已创建 ${file.name}")
                         refreshFileTree()
@@ -274,6 +280,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                     }
             }
         )
+        dialog.show(supportFragmentManager, "add_file_dialog")
     }
     override fun onDestroy() {
         if (::bottomPanelManager.isInitialized) {

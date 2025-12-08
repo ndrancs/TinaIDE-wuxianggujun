@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.viewbinding.ViewBinding
 import com.gyf.immersionbar.ktx.immersionBar
 import com.wuxianggujun.tinaide.R
-import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
+
 import com.wuxianggujun.tinaide.utils.Logger
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
@@ -132,12 +132,15 @@ abstract class BaseActivity<VB : ViewBinding>(
      */
     fun showLoading(message: String = "加载中...", cancelable: Boolean = false) {
         hideLoading() // 先隐藏之前的
-        progressDialog = MaterialDialogBuilder.showProgress(
-            context = this,
-            title = "请稍候",
-            message = message,
-            cancelable = cancelable
+        progressDialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(
+            this,
+            R.style.ThemeOverlay_App_MaterialAlertDialog
         )
+            .setTitle("请稍候")
+            .setMessage(message)
+            .setCancelable(cancelable)
+            .create()
+        progressDialog?.show()
     }
     
     /**
@@ -188,10 +191,11 @@ abstract class BaseActivity<VB : ViewBinding>(
      */
     open fun handleDefaultError(error: Throwable) {
         hideLoading()
-        MaterialDialogBuilder.showError(
-            context = this,
+        val dialog = com.wuxianggujun.tinaide.ui.dialog.InfoDialog.newInstance(
+            title = "错误",
             message = error.message ?: "未知错误"
         )
+        dialog.show(supportFragmentManager, "error_dialog")
     }
     
     override fun onDestroy() {

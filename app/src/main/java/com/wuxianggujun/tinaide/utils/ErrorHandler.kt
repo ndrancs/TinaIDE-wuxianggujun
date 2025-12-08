@@ -2,7 +2,6 @@ package com.wuxianggujun.tinaide.utils
 
 import android.content.Context
 import android.util.Log
-import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
 import java.io.IOException
 
 /**
@@ -11,29 +10,6 @@ import java.io.IOException
 object ErrorHandler {
     
     private const val TAG = "ErrorHandler"
-    
-    /**
-     * 处理错误并显示对话框
-     */
-    fun handle(
-        context: Context,
-        error: Throwable,
-        title: String = "错误",
-        onDismiss: (() -> Unit)? = null
-    ) {
-        val message = getErrorMessage(error)
-        
-        // 记录日志
-        Log.e(TAG, "Error: $title - $message", error)
-        
-        // 显示错误对话框
-        MaterialDialogBuilder.showError(
-            context = context,
-            title = title,
-            message = message,
-            onPositive = onDismiss
-        )
-    }
     
     /**
      * 处理错误并显示 Toast
@@ -75,17 +51,6 @@ object ErrorHandler {
             else -> "发生了一个未知错误"
         }
     }
-}
-
-/**
- * Context 扩展函数 - 处理错误
- */
-fun Context.handleError(
-    error: Throwable,
-    title: String = "错误",
-    onDismiss: (() -> Unit)? = null
-) {
-    ErrorHandler.handle(this, error, title, onDismiss)
 }
 
 /**

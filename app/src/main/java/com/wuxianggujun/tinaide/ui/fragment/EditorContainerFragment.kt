@@ -20,7 +20,7 @@ import com.wuxianggujun.tinaide.extensions.*
 import com.wuxianggujun.tinaide.lsp.model.Location
 import com.wuxianggujun.tinaide.ui.adapter.EditorTabAdapter
 import com.wuxianggujun.tinaide.ui.adapter.NativeNavigationResultAdapter
-import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
+
 import com.wuxianggujun.tinaide.utils.Logger
 import java.io.File
 
@@ -149,8 +149,7 @@ class EditorContainerFragment : BaseBindingFragment<FragmentEditorContainerBindi
         val fragment = getCurrentEditorFragment() ?: return
         val editor = fragment.getEditor()
 
-        MaterialDialogBuilder.showInput(
-            context = requireContext(),
+        val dialog = com.wuxianggujun.tinaide.ui.dialog.InputDialog.newInstance(
             title = "跳转到行",
             hint = "行号",
             validator = { value ->
@@ -170,6 +169,7 @@ class EditorContainerFragment : BaseBindingFragment<FragmentEditorContainerBindi
                 editor.setSelection(line, 0)
             }
         )
+        dialog.show(childFragmentManager, "goto_line_dialog")
     }
     
     private fun setupViewPager() {

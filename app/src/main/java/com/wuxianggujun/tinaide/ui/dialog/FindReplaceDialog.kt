@@ -7,7 +7,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import androidx.fragment.app.DialogFragment
-import com.wuxianggujun.tinaide.ui.dialog.MaterialDialogBuilder
+
 import io.github.rosemoe.sora.widget.CodeEditor
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.extensions.*
@@ -45,7 +45,10 @@ class FindReplaceDialog(
         btnReplace.setOnClickListener { replace() }
         btnReplaceAll.setOnClickListener { replaceAll() }
         
-        return MaterialDialogBuilder.create(requireContext())
+        return com.google.android.material.dialog.MaterialAlertDialogBuilder(
+            requireContext(),
+            R.style.ThemeOverlay_App_MaterialAlertDialog
+        )
             .setTitle("查找和替换")
             .setView(view)
             .setNegativeButton("关闭", null)
