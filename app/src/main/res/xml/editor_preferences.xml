@@ -17,14 +17,14 @@
             app:iconSpaceReserved="false" />
 
         <!-- 字体大小 -->
-        <SeekBarPreference
+        <EditTextPreference
             android:key="editor_font_size"
             android:title="字体大小"
-            android:summary="调整编辑器字体大小"
+            android:summary="当前: %s sp (范围: 8-72)"
             android:defaultValue="16"
-            android:min="10"
-            android:max="24"
-            app:showSeekBarValue="true"
+            android:inputType="number"
+            android:dialogTitle="设置字体大小"
+            android:dialogMessage="请输入字体大小 (8-72 sp)"
             app:iconSpaceReserved="false" />
 
         <!-- 显示行号 -->

@@ -31,6 +31,7 @@ import io.github.rosemoe.sora.text.Content
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme
 import io.github.rosemoe.sora.widget.subscribeEvent
+import com.wuxianggujun.tinaide.editor.TinaDarkColorScheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -200,8 +201,13 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
             // 启用光标动画
             isCursorAnimationEnabled = true
             
-            // 设置颜色方案
-            colorScheme = EditorColorScheme.getDefault()
+            // 设置深色主题颜色方案
+            colorScheme = TinaDarkColorScheme()
+            
+            // 调整行号区域宽度 - 增加左右边距使布局更宽松
+            val density = resources.displayMetrics.density
+            setDividerMargin(8f * density, 8f * density)  // 左右各 8dp 边距
+            setLineNumberMarginLeft(6f * density)          // 行号左边距 6dp
         }
     }
     

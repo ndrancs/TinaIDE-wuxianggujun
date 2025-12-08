@@ -4,9 +4,9 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SeekBarPreference
 import androidx.preference.SwitchPreferenceCompat
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.config.Prefs
@@ -44,12 +44,40 @@ class EditorPreferenceFragment : PreferenceFragmentCompat() {
     }
 
     private fun setupFontSizePreference() {
-        findPreference<SeekBarPreference>("editor_font_size")?.apply {
-            value = Prefs.editorFontSize.toInt()
-            setOnPreferenceChangeListener { _, newValue ->
-                val fontSize = (newValue as Int).toFloat()
-                Prefs.setEditorFontSize(fontSize)
-                true
+        findPreference<EditTextPreference>("editor_font_size")?.apply {
+            // 设置当前值
+            text = Prefs.editorFontSize.toInt().toString()
+            summary = "当前: ${Prefs.editorFontSize.toInt()} sp (范围: 8-72)"
+            
+            // 设置输入类型为数字
+            setOnBindEditTextListener { editText ->
+                editText.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+                editText.setSelection(editText.text.length)
+            }
+            
+            setOnPreferenceChangeListener { preference, newValue ->
+                val input = newValue as String
+                val fontSize = input.toIntOrNull()
+                
+                when {
+                    fontSize == null -> {
+                        requireContext().toast("请输入有效的数字")
+                        false
+                    }
+                    fontSize < 8 -> {
+                        requireContext().toast("字体大小不能小于 8 sp")
+                        false
+                    }
+                    fontSize > 72 -> {
+                        requireContext().toast("字体大小不能大于 72 sp")
+                        false
+                    }
+                    else -> {
+                        Prefs.setEditorFontSize(fontSize.toFloat())
+                        preference.summary = "当前: $fontSize sp (范围: 8-72)"
+                        true
+                    }
+                }
             }
         }
     }

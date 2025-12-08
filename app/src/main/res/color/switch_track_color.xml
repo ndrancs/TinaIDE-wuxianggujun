@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 选中且启用状态 - 青绿色 50% 透明度 -->
+    <item android:state_checked="true" android:state_enabled="true" android:color="#8003DAC6" />
+    <!-- 选中但禁用状态 - 更淡的青绿色 -->
+    <item android:state_checked="true" android:state_enabled="false" android:color="#4003DAC6" />
+    <!-- 未选中且启用状态 - 深灰色 -->
+    <item android:state_enabled="true" android:color="#4D4D4D" />
+    <!-- 未选中且禁用状态 - 更深的灰色 -->
+    <item android:color="#3D3D3D" />
+</selector>

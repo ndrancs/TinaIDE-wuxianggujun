@@ -32,7 +32,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="text"
                 android:maxLines="1"
-                android:textColor="@color/dark_on_surface" />
+                android:textColor="@color/dark_on_surface"
+                android:textCursorDrawable="@drawable/cursor_drawable" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -58,7 +59,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="text"
                 android:maxLines="1"
-                android:textColor="@color/dark_on_surface" />
+                android:textColor="@color/dark_on_surface"
+                android:textCursorDrawable="@drawable/cursor_drawable" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -80,7 +82,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="none"
-                android:textColor="@color/dark_on_surface" />
+                android:textColor="@color/dark_on_surface"
+                android:textCursorDrawable="@drawable/cursor_drawable" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -104,7 +107,8 @@
                 android:inputType="textMultiLine"
                 android:minLines="2"
                 android:maxLines="4"
-                android:textColor="@color/dark_on_surface" />
+                android:textColor="@color/dark_on_surface"
+                android:textCursorDrawable="@drawable/cursor_drawable" />
 
         </com.google.android.material.textfield.TextInputLayout>
 

@@ -36,6 +36,11 @@
         <item name="android:textColorHighlight">#4003DAC6</item>
         <item name="android:textCursorDrawable">@drawable/cursor_drawable</item>
         
+        <!-- 文本选择句柄颜色 -->
+        <item name="android:textSelectHandle">@drawable/text_select_handle_middle</item>
+        <item name="android:textSelectHandleLeft">@drawable/text_select_handle_left</item>
+        <item name="android:textSelectHandleRight">@drawable/text_select_handle_right</item>
+        
         <!-- TextInputLayout 样式 -->
         <item name="textInputStyle">@style/Widget.App.TextInputLayout</item>
     </style>
@@ -50,6 +55,11 @@
         <!-- 标题 / 摘要使用深色主题的前景色，去掉旧式全大写 -->
         <item name="preferenceCategoryStyle">@style/Preference.Category.Tina</item>
         <item name="preferenceStyle">@style/Preference.Tina</item>
+        <item name="switchPreferenceCompatStyle">@style/Preference.SwitchPreferenceCompat.Tina</item>
+    </style>
+
+    <!-- SwitchPreferenceCompat 样式 -->
+    <style name="Preference.SwitchPreferenceCompat.Tina" parent="@style/Preference.SwitchPreferenceCompat.Material">
     </style>
 
     <style name="Preference.Category.Tina" parent="@style/Preference.Category.Material">
@@ -86,6 +96,10 @@
         <item name="colorControlActivated">@color/dark_secondary</item>
         <item name="android:textColorHighlight">#4003DAC6</item>
         <item name="android:textCursorDrawable">@drawable/cursor_drawable</item>
+        <!-- 文本选择句柄颜色 -->
+        <item name="android:textSelectHandle">@drawable/text_select_handle_middle</item>
+        <item name="android:textSelectHandleLeft">@drawable/text_select_handle_left</item>
+        <item name="android:textSelectHandleRight">@drawable/text_select_handle_right</item>
         <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.App.Title.Text</item>
         <item name="materialAlertDialogBodyTextStyle">@style/MaterialAlertDialog.App.Body.Text</item>
         <item name="buttonBarPositiveButtonStyle">@style/Widget.App.Button</item>
