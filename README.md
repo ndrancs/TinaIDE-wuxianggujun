@@ -2,34 +2,70 @@
 
 > 在 Android 设备上运行的轻量级 C/C++ IDE
 
-TinaIDE 是一个专为 Android 设备设计的集成开发环境，支持在手机或平板上直接编写、编译和运行 C/C++ 代码。
+[English](README_EN.md)
 
-## ✨ 特性
+TinaIDE 是一个专为 Android 设备设计的集成开发环境，支持在手机或平板上直接编写、编译和运行 C/C++ 代码。内置完整的 Clang/LLVM 工具链和 clangd 语言服务器，提供接近桌面 IDE 的开发体验。
 
-- 🚀 **嵌入式编译器**: 内置 Clang/LLVM 17，无需外部工具
-- 📝 **强大编辑器**: 基于 Sora Editor，支持语法高亮和代码补全
-- ⚡ **快速编译**: 单文件快速编译
-- 🎨 **现代 UI**: Material Design 3 设计语言
-- 🔌 **插件系统**: 可扩展的插件架构
+## 特性
 
-## 🎯 核心功能
+- **嵌入式编译器**: 内置 Clang/LLVM 17，进程内编译，无需外部工具
+- **智能代码补全**: 集成 clangd LSP，提供精准的语义级代码补全
+- **语法高亮**: 基于 Tree-sitter 的高性能增量语法高亮
+- **代码导航**: 跳转定义、查找引用、悬浮文档
+- **实时诊断**: 编辑时实时显示错误和警告
+- **现代编辑器**: 基于 Sora Editor，支持多标签编辑
+- **Material Design 3**: 遵循最新 Material Design 设计语言
+- **进程内运行**: 编译后直接在应用内运行程序
+
+## 核心功能
 
 ### 编译器集成
-- **库模式**: Clang/LLVM 以动态库形式集成，进程内编译
-- **完整工具链**: 嵌入式 Clang/LLVM + Android Sysroot
-- **Sysroot**: 完整的 Android NDK 头文件和库
 
-### 项目支持
-- **单文件项目**: 快速编译单个 C/C++ 文件
-- **项目模板**: 内置单文件模板
+| 功能 | 说明 |
+|------|------|
+| 进程内编译 | Clang/LLVM 以动态库形式集成，无需 fork 外部进程 |
+| LLD 链接器 | 使用 LLVM LLD 进行快速链接 |
+| 共享库输出 | 编译为 .so 文件，支持进程内加载运行 |
+| 完整 Sysroot | Android NDK 头文件和运行时库 |
+
+### LSP 语言服务
+
+| 功能 | 说明 |
+|------|------|
+| 代码补全 | 语义级智能补全，支持成员访问、头文件、宏等 |
+| 跳转定义 | 快速跳转到函数、变量、类型的定义位置 |
+| 查找引用 | 查找符号在项目中的所有使用位置 |
+| 悬浮文档 | 光标悬停显示类型信息和文档 |
+| 实时诊断 | 编辑时实时检测语法和语义错误 |
 
 ### 编辑器功能
-- 语法高亮
-- 代码补全
-- 错误提示
-- 代码导航
 
-## 🚀 快速开始
+| 功能 | 说明 |
+|------|------|
+| 多标签编辑 | 同时打开多个文件，快速切换 |
+| Tree-sitter 高亮 | C/C++/CMake 语法高亮 |
+| 符号输入栏 | 快速输入编程符号（括号、运算符等）|
+| 撤销/重做 | 完整的编辑历史支持 |
+| 自动缩进 | 智能代码缩进 |
+| 行号显示 | 可配置的行号区域 |
+
+### 项目管理
+
+| 功能 | 说明 |
+|------|------|
+| 文件树导航 | 抽屉式项目文件浏览器 |
+| 项目模板 | 内置单文件项目模板 |
+| compile_commands.json | 自动生成，为 LSP 提供编译配置 |
+
+### 底部面板
+
+| 标签 | 功能 |
+|------|------|
+| 构建日志 | 显示编译输出和错误信息 |
+| 日志 | 通用应用日志 |
+| 诊断 | LSP 诊断信息列表，点击可跳转 |
+
+## 快速开始
 
 ### 1. 构建工具链
 
@@ -44,28 +80,30 @@ pwsh ./tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 28
 ### 2. 构建应用
 
 ```bash
-# 构建并安装
+# 构建并安装（Debug 版本）
 ./gradlew installDebug
+
+# 构建 Release 版本（需配置签名）
+./gradlew assembleRelease
 ```
 
 > **多 ABI 构建（arm64 + x86_64）**
 >
-> 如果要打包同时包含 arm64-v8a 与 x86_64 的 native 库，可运行：
+> 如果要打包同时包含 arm64-v8a 与 x86_64 的 native 库：
 > ```bash
 > ./gradlew assembleDebugAllAbi
 > ```
-> 该任务会先编译两个 ABI 的本地库，再生成 Debug APK。
 
 ### 3. 开始使用
 
-1. 启动应用（首次启动会自动解压 sysroot）
-2. 创建新项目（单文件）
-3. 编写代码
-4. 点击编译按钮
+1. 启动应用（首次启动会自动解压 sysroot，约需 1-2 分钟）
+2. 创建新项目或打开现有项目
+3. 编写代码（LSP 自动提供补全和诊断）
+4. 点击运行按钮编译并执行
 
 详细步骤请查看 [快速开始指南](docs/快速开始.md)
 
-## 📚 文档
+## 文档
 
 - [快速开始](docs/快速开始.md) - 从零开始使用 TinaIDE
 - [架构概览](docs/架构概览.md) - 了解项目架构
@@ -75,38 +113,75 @@ pwsh ./tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 28
 ### 技术文档
 
 - [Clang/LLVM 集成路线图](docs/CLANG_INTEGRATION_ROADMAP.md)
-- [架构概览](docs/架构概览.md)
-- [插件系统架构](docs/Plugin-System-Architecture.md)
+- [LSP 集成指南](docs/LSP-Integration.md)
+- [Native 编译运行方案](docs/Native-Compile-Runtime.md)
+- [底部面板使用指南](docs/Bottom-Panel-Guide.md)
 
-## 🏗️ 技术栈
+## 技术栈
 
-- **语言**: Kotlin, C++
-- **UI**: Jetpack Compose, Material Design 3
-- **编辑器**: Sora Editor
-- **编译器**: Clang/LLVM 17
-- **构建系统**: Gradle, Docker
+| 类别 | 技术 |
+|------|------|
+| 语言 | Kotlin, C++ |
+| UI 框架 | Android View + Material Design 3 |
+| 编辑器 | [Sora Editor](https://github.com/Rosemoe/sora-editor) |
+| 语法高亮 | Tree-sitter (C/C++/CMake) |
+| 编译器 | Clang/LLVM 17 |
+| 链接器 | LLD |
+| LSP 服务 | clangd (嵌入式) |
+| 异步处理 | Kotlin Coroutines |
+| 构建系统 | Gradle + CMake |
+| 依赖注入 | 自定义 ServiceLocator |
 
-## 🎨 支持的架构
+## 支持的架构
 
-- `arm64-v8a` (主要支持，真机)
-- `x86_64` (模拟器支持)
+| 架构 | 状态 | 用途 |
+|------|------|------|
+| `arm64-v8a` | ✅ 主要支持 | 真机 |
+| `x86_64` | ✅ 支持 | 模拟器 |
 
-目标 API Level: 28 (Android 9.0+)
+**目标 API Level**: 28+ (Android 9.0+)
+**编译 SDK**: 36 (Android 16)
 
-## 🔧 系统要求
+## 系统要求
 
 ### 开发环境
+
 - Android Studio (最新稳定版)
 - JDK 17+
-- Docker Desktop
+- Docker Desktop（用于构建 LLVM）
 - PowerShell 7+
 
 ### 运行环境
-- Android 9.0+ (API 28+)
-- 推荐 2GB+ RAM
-- 推荐 500MB+ 可用存储
 
-## 🤝 贡献
+- Android 9.0+ (API 28+)
+- 推荐 3GB+ RAM
+- 推荐 800MB+ 可用存储（含 sysroot）
+
+## 项目结构
+
+```
+TinaIDE/
+├── app/
+│   └── src/main/
+│       ├── java/.../tinaide/
+│       │   ├── core/           # 核心服务（编译、配置、LSP配置）
+│       │   ├── editor/         # 编辑器相关（语言支持、主题）
+│       │   ├── lsp/            # LSP 服务和项目管理
+│       │   ├── ui/             # UI 组件（Fragment、Dialog、Adapter）
+│       │   └── utils/          # 工具类
+│       └── cpp/
+│           ├── compiler/       # Clang 编译器 JNI
+│           ├── linker/         # LLD 链接器 JNI
+│           ├── lsp/            # clangd 服务 JNI
+│           └── treesitter/     # Tree-sitter 语法高亮
+├── external/
+│   ├── sora-editor/            # 编辑器子模块
+│   └── llvm-build-libs/        # LLVM 预编译库
+├── treeview/                   # 文件树组件
+└── docs/                       # 项目文档
+```
+
+## 贡献
 
 欢迎贡献代码、报告问题或提出建议！
 
@@ -118,20 +193,26 @@ pwsh ./tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 28
 
 详见 [开发指南](docs/开发指南.md)
 
-## 📄 许可证
+## 许可证
 
-本项目使用 Apache 2.0 with LLVM Exceptions 许可证。
+**版本 1.0.0** 采用 [TinaIDE 开源许可证](LICENSE) 发布。
 
-## 🙏 致谢
+> **注意**：从版本 1.1.0 开始，源代码将不再公开。但预编译的 APK 安装包仍会继续在本仓库发布。
+
+详见 [LICENSE](LICENSE) 文件。
+
+## 致谢
 
 - [LLVM Project](https://llvm.org/) - 编译器基础设施
 - [Sora Editor](https://github.com/Rosemoe/sora-editor) - 代码编辑器
+- [Tree-sitter](https://tree-sitter.github.io/) - 语法高亮解析器
+- [clangd](https://clangd.llvm.org/) - C/C++ 语言服务器
 
-## 📮 联系方式
+## 联系方式
 
 - GitHub Issues: [提交问题](https://github.com/wuxianggujun/TinaIDE/issues)
 - 项目主页: [TinaIDE](https://github.com/wuxianggujun/TinaIDE)
 
 ---
 
-**让移动开发更自由** 🚀
+**让移动开发更自由**

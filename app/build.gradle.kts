@@ -14,6 +14,67 @@ if (keystorePropsFile.exists()) {
     keystoreProps.load(keystorePropsFile.inputStream())
 }
 
+val versionPropsFile = rootProject.file("version.properties")
+
+fun ensureVersionProps(file: File) {
+    if (!file.exists()) {
+        file.writeText(
+            """
+            versionCode=1
+            versionName=1.0.0
+            """.trimIndent()
+        )
+    }
+}
+
+fun bumpPatchVersionString(version: String): String {
+    val (numericPart, suffix) = version.split("-", limit = 2).let { parts ->
+        parts[0] to parts.getOrNull(1)?.let { "-$it" }.orEmpty()
+    }
+    val numbers = numericPart.split(".")
+        .filter { it.isNotBlank() }
+        .map { it.toIntOrNull() ?: 0 }
+        .toMutableList()
+    if (numbers.isEmpty()) {
+        numbers += 0
+    }
+    while (numbers.size < 3) {
+        numbers += 0
+    }
+    numbers[numbers.lastIndex] = numbers.last() + 1
+    return numbers.joinToString(".") + suffix
+}
+
+fun autoIncrementVersion(file: File) {
+    val props = Properties()
+    file.inputStream().use { props.load(it) }
+    val currentCode = props.getProperty("versionCode")?.toIntOrNull() ?: 1
+    val currentName = props.getProperty("versionName") ?: "1.0.0"
+    val nextCode = currentCode + 1
+    val nextName = bumpPatchVersionString(currentName)
+    props["versionCode"] = nextCode.toString()
+    props["versionName"] = nextName
+    file.outputStream().use { props.store(it, "Auto-managed app version") }
+    logger.lifecycle("Auto-incremented app version to $nextName ($nextCode)")
+}
+
+ensureVersionProps(versionPropsFile)
+
+val versionBumpKeywords = listOf("assemble", "bundle", "install", "publish", "build", "autoIncrementVersion")
+val shouldAutoIncrementVersion = gradle.startParameter.taskNames.any { taskName ->
+    versionBumpKeywords.any { keyword -> taskName.contains(keyword, ignoreCase = true) }
+}
+
+if (shouldAutoIncrementVersion) {
+    autoIncrementVersion(versionPropsFile)
+}
+
+val versionProps = Properties().apply {
+    versionPropsFile.inputStream().use { load(it) }
+}
+val appVersionCode = versionProps.getProperty("versionCode")?.toIntOrNull() ?: 1
+val appVersionName = versionProps.getProperty("versionName") ?: "1.0.0"
+
 android {
     namespace = "com.wuxianggujun.tinaide"
     compileSdk = 36
@@ -22,8 +83,8 @@ android {
         applicationId = "com.wuxianggujun.tinaide"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -64,7 +125,10 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // 启用代码压缩和混淆
+            isMinifyEnabled = true
+            // 启用资源压缩（移除未使用的资源）
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -121,20 +185,10 @@ dependencies {
     // AndroidX Preference (Material Design)
     implementation("androidx.preference:preference-ktx:1.2.1")
 
-    // AIDE-Termux components removed
-    // implementation(project(":termux-app"))
-    // implementation(project(":terminal-view"))
-    // implementation(project(":terminal-emulator"))
-    // implementation(project(":termux-shared"))
-
     // SoraEditor components
     implementation(project(":sora-editor:editor"))
     implementation(project(":sora-editor:language-textmate"))
     implementation(project(":sora-editor:language-treesitter"))
-
-    // Tree-sitter runtime + language grammars
-    // Note: AndroidIDE tree-sitter dependency removed - using custom implementation
-    // implementation(libs.tree.sitter.cpp)
 
     implementation(project(":treeview"))
 
@@ -194,4 +248,12 @@ tasks.register("assembleDebugAllAbi") {
     group = "build"
     dependsOn(buildAllAbiNative)
     dependsOn("assembleDebug")
+}
+
+tasks.register("autoIncrementVersion") {
+    group = "versioning"
+    description = "Force the version.properties file to increment without running a full build."
+    doLast {
+        logger.lifecycle("Current version after auto-increment: $appVersionName ($appVersionCode)")
+    }
 }
