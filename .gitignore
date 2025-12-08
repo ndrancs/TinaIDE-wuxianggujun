@@ -20,6 +20,7 @@ local.properties
 .vscode/
 out/
 *.log
+log.txt
 *.jks
 *.keystore
 keystore.properties
@@ -33,6 +34,7 @@ external/sora-editor/debug.jks
 /.kiro/
 /.serena/
 /.claude/
+CLAUDE.md
 # Docker dev workdir (mounted cache and build artifacts) - do not commit
 docker/llvm-build/dev-work/
 docker/llvm-build/build-output/
