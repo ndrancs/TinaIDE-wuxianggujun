@@ -227,6 +227,7 @@ RunResult runIsolated(const std::string& soPath, const std::string& symbolName,
     int elapsed = 0;
     char buffer[1024];
 
+    bool reachedEof = false;
     while (true) {
         // 使用 poll 检查是否有数据可读
         struct pollfd pfd;
@@ -237,18 +238,27 @@ RunResult runIsolated(const std::string& soPath, const std::string& symbolName,
         int pollTimeout = 100; // 100ms 步长
         int pollResult = poll(&pfd, 1, pollTimeout);
 
-        if (pollResult > 0 && (pfd.revents & POLLIN)) {
+        if (pollResult > 0 && (pfd.revents & (POLLIN | POLLHUP | POLLERR))) {
             ssize_t n = read(readFd, buffer, sizeof(buffer));
             if (n > 0) {
                 output.append(buffer, buffer + n);
                 continue;
             }
             if (n == 0) {
+                reachedEof = true;
                 break; // EOF
             }
+            continue;
+        } else if (pollResult < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            // poll 错误视为一次超时步长，继续循环
+            elapsed += pollTimeout;
+        } else {
+            // pollResult == 0 表示真正等待了 pollTimeout
+            elapsed += pollTimeout;
         }
-
-        elapsed += pollTimeout;
 
         // 检查子进程状态
         int status = 0;
@@ -273,6 +283,20 @@ RunResult runIsolated(const std::string& soPath, const std::string& symbolName,
     }
 
     close(readFd);
+
+    // 仍未获取退出码时阻塞等待一次，避免误报
+    if (returnCode < 0) {
+        int status = 0;
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status)) {
+            returnCode = WEXITSTATUS(status);
+        } else if (WIFSIGNALED(status)) {
+            returnCode = 128 + WTERMSIG(status);
+        } else if (reachedEof) {
+            // EOF 但未能解析状态，视为正常退出
+            returnCode = 0;
+        }
+    }
 
     // 构建结果
     result.returnCode = returnCode;
