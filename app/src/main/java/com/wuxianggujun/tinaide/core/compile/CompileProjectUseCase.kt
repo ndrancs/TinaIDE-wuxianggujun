@@ -92,6 +92,8 @@ class CompileProjectUseCase(
             parentFile?.mkdirs()
             if (!exists()) createNewFile()
         }
+        // 每次编译前清空运行输出，避免输出界面残留历史日志
+        outputManager.clearOutput(IOutputManager.OutputChannel.RUN)
 
         fun log(line: String, channel: IOutputManager.OutputChannel = IOutputManager.OutputChannel.BUILD) {
             try {
@@ -135,6 +137,8 @@ class CompileProjectUseCase(
         var syntaxOk = 0
         val failed = mutableListOf<String>()
         val compiledObjs = mutableListOf<String>()
+        var linkErrorMessage: String? = null
+        var runErrorMessage: String? = null
 
         for ((index, src) in sources.withIndex()) {
             coroutineContext.ensureActive()
@@ -179,15 +183,40 @@ class CompileProjectUseCase(
             }
         }
 
+        if (failed.isNotEmpty()) {
+            log("=== 编译失败文件列表 ===")
+            failed.forEach { detail -> log(detail) }
+        }
+
+        val soFile = File(buildRoot, "lib$projectName.so")
         if (compiledObjs.isNotEmpty()) {
             log("=== 链接阶段 ===")
-            val soFile = File(buildRoot, "lib$projectName.so")
-            val linkErr = try {
-                NativeCompiler.linkSoMany(
-                    sysrootDir.absolutePath, compiledObjs.toTypedArray(),
-                    soFile.absolutePath, target, true, emptyArray(), emptyArray()
-                )
-            } catch (t: Throwable) { "link JNI error: ${t.message}" }
+            val linkErr = run {
+                fun invokeLink(): String = try {
+                    NativeCompiler.linkSoMany(
+                        sysrootDir.absolutePath, compiledObjs.toTypedArray(),
+                        soFile.absolutePath, target, true, emptyArray(), emptyArray()
+                    )
+                } catch (t: Throwable) { "link JNI error: ${t.message}" }
+
+                fun shouldRestartLinkServer(err: String): Boolean {
+                    val normalized = err.lowercase()
+                    return normalized.contains("broken pipe") ||
+                        normalized.contains("failed to send link request") ||
+                        normalized.contains("disconnected from link server")
+                }
+
+                val first = invokeLink()
+                if (first.isEmpty() || !shouldRestartLinkServer(first)) {
+                    first
+                } else {
+                    log("é“¾æŽ¥æœåŠ¡å™¨å·²ä¸­æ–­ï¼Œé‡å¯å¹¶å†è¯•...\\n$first")
+                    NativeLoader.stopLinkServer()
+                    NativeLoader.startLinkServerIfNeeded()
+                    val retry = invokeLink()
+                    if (retry.isEmpty()) "" else "$first\\nRetry failed: $retry"
+                }
+            }
 
             if (linkErr.isEmpty()) {
                 log("链接成功: ${soFile.name}")
@@ -201,22 +230,44 @@ class CompileProjectUseCase(
                         logLines(normalizedOutput)
                         outputManager.appendOutput(normalizedOutput, IOutputManager.OutputChannel.RUN)
                     }
-                    log("运行返回码: ${runResult.returnCode}")
+                    if (runResult.returnCode == 0) {
+                        log("运行返回码: 0")
+                    } else {
+                        log("运行失败: 返回码 ${runResult.returnCode}")
+                        runErrorMessage = "运行失败：返回码 ${runResult.returnCode}"
+                    }
                 } catch (t: Throwable) {
-                    log("运行失败: ${t.message}")
+                    val msg = t.message ?: "未知错误"
+                    log("运行失败: $msg")
+                    runErrorMessage = "运行失败：$msg"
                 }
             } else {
                 log("链接失败: $linkErr")
+                linkErrorMessage = linkErr
             }
         }
 
-            val summary = buildString {
-                appendLine("目标: $target")
-                appendLine("生成 .o 成功: $ok, 语法通过: $syntaxOk, 失败: ${failed.size}")
+        val summary = buildString {
+            appendLine("目标: $target")
+            appendLine("生成 .o 成功: $ok, 语法通过: $syntaxOk, 失败: ${failed.size}")
+            if (compiledObjs.isNotEmpty()) {
+                appendLine("产物: ${soFile.absolutePath}")
             }
-            log("=== 编译结束 ===")
-            logLines(summary)
+        }
+        log("=== 编译结束 ===")
+        logLines(summary)
 
-            Result.Success(summary)
+        val compileErrorMessage = when {
+            failed.isNotEmpty() -> "编译失败：${failed.size} 个源文件出错"
+            compiledObjs.isEmpty() -> "没有成功的目标文件，无法继续链接"
+            else -> null
+        }
+
+        return@withContext when {
+            compileErrorMessage != null -> Result.Error(compileErrorMessage, null)
+            linkErrorMessage != null -> Result.Error("链接失败：$linkErrorMessage", null)
+            runErrorMessage != null -> Result.Error(runErrorMessage!!, null)
+            else -> Result.Success(summary)
+        }
     }
 }
