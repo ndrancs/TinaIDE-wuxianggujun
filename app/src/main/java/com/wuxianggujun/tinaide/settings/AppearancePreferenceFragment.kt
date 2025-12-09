@@ -1,6 +1,7 @@
 package com.wuxianggujun.tinaide.settings
 
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
@@ -10,13 +11,13 @@ import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.core.config.Prefs
 import com.wuxianggujun.tinaide.core.get
 import com.wuxianggujun.tinaide.extensions.toast
-import com.wuxianggujun.tinaide.extensions.toastInfo
 import com.wuxianggujun.tinaide.utils.Logger
 
 /**
  * 外观设置 Fragment。
  *
  * 管理应用主题、沉浸式状态栏等 UI 相关配置。
+ * 主题切换使用 AppCompatDelegate.setDefaultNightMode()，会自动触发 Activity 重建，即时生效。
  */
 class AppearancePreferenceFragment : PreferenceFragmentCompat() {
 
@@ -51,9 +52,31 @@ class AppearancePreferenceFragment : PreferenceFragmentCompat() {
                     else -> "DARK"
                 }
                 Prefs.setTheme(mapped)
-                requireContext().toastInfo("主题将在重启应用后生效")
+
+                // 即时应用主题，无需重启
+                applyThemeImmediately(mapped)
                 true
             }
+        }
+    }
+
+    /**
+     * 即时应用主题
+     *
+     * 使用 AppCompatDelegate.setDefaultNightMode() 切换主题，
+     * 系统会自动重建当前 Activity 以应用新主题。
+     */
+    private fun applyThemeImmediately(themeName: String) {
+        val mode = when (themeName) {
+            "LIGHT" -> AppCompatDelegate.MODE_NIGHT_NO
+            "AUTO" -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            else -> AppCompatDelegate.MODE_NIGHT_YES
+        }
+
+        // 只有当模式实际改变时才设置，避免不必要的重建
+        if (AppCompatDelegate.getDefaultNightMode() != mode) {
+            AppCompatDelegate.setDefaultNightMode(mode)
+            // 主题会自动应用，Activity 会自动重建
         }
     }
 

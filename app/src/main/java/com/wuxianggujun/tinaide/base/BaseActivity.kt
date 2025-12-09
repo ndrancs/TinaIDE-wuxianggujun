@@ -77,10 +77,10 @@ abstract class BaseActivity<VB : ViewBinding>(
      */
     protected open fun setupImmersionBar() {
         immersionBar {
-            statusBarColor(R.color.dark_primary)
+            statusBarColor(R.color.statusBarColor)
             // 使用浅色图标（白色）在深色状态栏上显示
             statusBarDarkFont(false)
-            navigationBarColor(R.color.dark_background)
+            navigationBarColor(R.color.navigationBarColor)
             // fitsSystemWindows 在 setupFitsSystemWindows() 中统一处理
             fitsSystemWindows(false)
             // 移除 autoStatusBarDarkModeEnable，避免与 statusBarDarkFont 冲突
