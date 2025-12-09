@@ -93,7 +93,7 @@ ld.lld: error: duplicate symbol: main
 
 详细的技术实现请参考 [LLD 进程隔离架构文档](docs/LLD-Process-Isolation.md)。
 
-> **注**：LLVM 主分支（预计 LLVM 19+）已完全移除 LLD 的全局变量，届时可考虑移除进程隔离。参考：[Removing global state from LLD](https://maskray.me/blog/2024-11-17-removing-global-state-from-lld)
+> **注**：当前版本的进程隔离方案仍存在已知问题，后续优化将在私有仓库进行。
 
 ### LSP 语言服务
 

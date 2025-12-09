@@ -93,7 +93,7 @@ Parent Process (TinaIDE)              Child Process (Linker)
 
 For detailed technical implementation, see [LLD Process Isolation Architecture](docs/LLD-Process-Isolation.md).
 
-> **Note**: LLVM main branch (expected LLVM 19+) has completely removed global variables from LLD. Process isolation can be removed after upgrading. Reference: [Removing global state from LLD](https://maskray.me/blog/2024-11-17-removing-global-state-from-lld)
+> **Note**: The current process isolation solution still has known issues. Further optimization will be continued in the private repository.
 
 ### LSP Language Services
 
