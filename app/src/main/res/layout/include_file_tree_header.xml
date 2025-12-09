@@ -33,22 +33,4 @@
         app:icon="@drawable/ic_baseline_add_24"
         app:iconTint="?attr/colorOnSurface" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_refresh_file_tree"
-        style="@style/Widget.Material3.Button.IconButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:contentDescription="刷新"
-        app:icon="@android:drawable/ic_popup_sync"
-        app:iconTint="?attr/colorOnSurface" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_view_mode"
-        style="@style/Widget.Material3.Button.IconButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:contentDescription="查看"
-        app:icon="@android:drawable/ic_menu_view"
-        app:iconTint="?attr/colorOnSurface" />
-
 </LinearLayout>

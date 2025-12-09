@@ -5,6 +5,14 @@ package com.wuxianggujun.tinaide.output
  */
 interface IOutputManager {
     /**
+     * 输出通道
+     */
+    enum class OutputChannel {
+        BUILD,     // 构建日志
+        RUN        // 程序运行输出
+    }
+
+    /**
      * 输出模式
      */
     enum class OutputMode {
@@ -15,17 +23,17 @@ interface IOutputManager {
     /**
      * 追加输出内容
      */
-    fun appendOutput(text: String)
+    fun appendOutput(text: String, channel: OutputChannel = OutputChannel.RUN)
     
     /**
      * 清空输出
      */
-    fun clearOutput()
+    fun clearOutput(channel: OutputChannel = OutputChannel.RUN)
     
     /**
      * 获取当前输出内容
      */
-    fun getOutput(): String
+    fun getOutput(channel: OutputChannel = OutputChannel.RUN): String
     
     /**
      * 设置输出模式
@@ -56,7 +64,7 @@ interface IOutputManager {
      * 输出监听器
      */
     interface OutputListener {
-        fun onOutputAppended(text: String)
-        fun onOutputCleared()
+        fun onOutputAppended(text: String, channel: OutputChannel)
+        fun onOutputCleared(channel: OutputChannel)
     }
 }

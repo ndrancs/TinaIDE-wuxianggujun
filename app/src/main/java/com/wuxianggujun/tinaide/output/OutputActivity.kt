@@ -45,6 +45,7 @@ class OutputActivity : BaseActivity<ActivityOutputBinding>(ActivityOutputBinding
     private fun setupEditor() {
         // 配置编辑器
         outputEditor.apply {
+            val density = resources.displayMetrics.density
             // 使用空语言（纯文本）
             setEditorLanguage(EmptyLanguage())
             
@@ -53,6 +54,8 @@ class OutputActivity : BaseActivity<ActivityOutputBinding>(ActivityOutputBinding
             
             // 显示行号
             isLineNumberEnabled = true
+            setDividerMargin(8f * density, 8f * density)
+            setLineNumberMarginLeft(6f * density)
             
             // 设置颜色方案（深色主题）
             colorScheme = outputEditor.colorScheme.apply {
@@ -82,7 +85,7 @@ class OutputActivity : BaseActivity<ActivityOutputBinding>(ActivityOutputBinding
                 true
             }
             R.id.action_clear_output -> {
-                outputManager.clearOutput()
+                outputManager.clearOutput(IOutputManager.OutputChannel.RUN)
                 true
             }
             R.id.action_toggle_editable -> {
@@ -94,7 +97,8 @@ class OutputActivity : BaseActivity<ActivityOutputBinding>(ActivityOutputBinding
         }
     }
     
-    override fun onOutputAppended(text: String) {
+    override fun onOutputAppended(text: String, channel: IOutputManager.OutputChannel) {
+        if (channel != IOutputManager.OutputChannel.RUN) return
         runOnUiThread {
             // 使用 insert 方法追加到末尾
             val content = outputEditor.text
@@ -111,7 +115,8 @@ class OutputActivity : BaseActivity<ActivityOutputBinding>(ActivityOutputBinding
         }
     }
     
-    override fun onOutputCleared() {
+    override fun onOutputCleared(channel: IOutputManager.OutputChannel) {
+        if (channel != IOutputManager.OutputChannel.RUN) return
         runOnUiThread {
             outputEditor.setText("")
         }

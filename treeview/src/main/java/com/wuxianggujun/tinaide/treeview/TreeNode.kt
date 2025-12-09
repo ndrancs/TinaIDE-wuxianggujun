@@ -30,6 +30,13 @@ class TreeNode<D>(
     var isSelected: Boolean = false
     var itemClickEnable: Boolean = true
 
+    /**
+     * 标记子节点是否已加载（用于懒加载）
+     * true = 已加载真实子节点
+     * false = 未加载，可能有占位符子节点
+     */
+    var isChildrenLoaded: Boolean = true
+
     companion object {
         fun <D> root(): TreeNode<D> {
             return TreeNode(null, 0)
@@ -123,6 +130,13 @@ class TreeNode<D>(
 
     fun hasChild(): Boolean {
         return childNodes.size > 0
+    }
+
+    /**
+     * 清空子节点列表
+     */
+    fun clearChildren() {
+        childNodes.clear()
     }
 
     fun getId(): String {

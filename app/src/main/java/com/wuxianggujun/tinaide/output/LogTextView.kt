@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.util.AttributeSet
@@ -64,6 +65,21 @@ class LogTextView @JvmOverloads constructor(
     private val selectionPaint = Paint().apply {
         color = 0x60448AFF  // 蓝色半透明
     }
+
+    // 选择句柄相关
+    private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF448AFF.toInt()  // 蓝色句柄
+        style = Paint.Style.FILL
+    }
+    private val handlePath = Path()
+    private var handleRadius = 20f  // 句柄圆形部分半径
+    private var handleStemWidth = 4f  // 句柄柄部宽度
+    private var handleStemHeight = 16f  // 句柄柄部高度
+
+    // 句柄拖动状态
+    private enum class DraggingHandle { NONE, LEFT, RIGHT }
+    private var draggingHandle = DraggingHandle.NONE
+    private var handleTouchSlop = 48f  // 句柄触摸检测范围
     
     // 尺寸参数
     private var badgeSize = 24f
@@ -330,6 +346,7 @@ class LogTextView @JvmOverloads constructor(
         selectionAnchorCol = -1
         isSelecting = false
         isDraggingSelection = false
+        draggingHandle = DraggingHandle.NONE
         actionMode?.finish()
         actionMode = null
     }
@@ -502,7 +519,86 @@ class LogTextView @JvmOverloads constructor(
         }
         
         canvas.restore()
+
+        // 绘制选择句柄（在 canvas.restore() 之后，使用屏幕坐标）
+        // 句柄在有选择时显示，拖动句柄时也显示
+        if (hasSelection()) {
+            drawSelectionHandles(canvas)
+        }
+
         drawScrollbars(canvas)
+    }
+
+    /**
+     * 绘制选择句柄（左句柄和右句柄）
+     */
+    private fun drawSelectionHandles(canvas: Canvas) {
+        val (startLine, startCol, endLine, endCol) = normalizeSelection()
+        val lineHeight = messagePaint.fontMetrics.let { it.descent - it.ascent } + lineSpacing
+
+        // 绘制左句柄（选择起始位置）
+        val leftLine = lineInfoCache.getOrNull(startLine)
+        if (leftLine != null) {
+            val text = leftLine.fullText
+            val col = startCol.coerceIn(0, text.length)
+            val handleX = horizontalPadding + timePaint.measureText(text.substring(0, col)) - scrollX
+            val handleY = leftLine.y + lineHeight - scrollY
+
+            // 只在屏幕可见区域内绘制
+            if (handleX >= -handleRadius && handleX <= width + handleRadius &&
+                handleY >= -handleRadius * 2 && handleY <= height + handleRadius * 2) {
+                drawLeftHandle(canvas, handleX, handleY)
+            }
+        }
+
+        // 绘制右句柄（选择结束位置）
+        val rightLine = lineInfoCache.getOrNull(endLine)
+        if (rightLine != null) {
+            val text = rightLine.fullText
+            val col = endCol.coerceIn(0, text.length)
+            val handleX = horizontalPadding + timePaint.measureText(text.substring(0, col)) - scrollX
+            val handleY = rightLine.y + lineHeight - scrollY
+
+            // 只在屏幕可见区域内绘制
+            if (handleX >= -handleRadius && handleX <= width + handleRadius &&
+                handleY >= -handleRadius * 2 && handleY <= height + handleRadius * 2) {
+                drawRightHandle(canvas, handleX, handleY)
+            }
+        }
+    }
+
+    /**
+     * 绘制左句柄（水滴形，指向左上）
+     */
+    private fun drawLeftHandle(canvas: Canvas, x: Float, y: Float) {
+        handlePath.reset()
+        // 柄部（从文字底部延伸）
+        handlePath.moveTo(x - handleStemWidth / 2, y)
+        handlePath.lineTo(x + handleStemWidth / 2, y)
+        handlePath.lineTo(x + handleStemWidth / 2, y + handleStemHeight)
+        handlePath.lineTo(x - handleStemWidth / 2, y + handleStemHeight)
+        handlePath.close()
+        canvas.drawPath(handlePath, handlePaint)
+
+        // 圆形部分
+        canvas.drawCircle(x, y + handleStemHeight + handleRadius, handleRadius, handlePaint)
+    }
+
+    /**
+     * 绘制右句柄（水滴形，指向右上）
+     */
+    private fun drawRightHandle(canvas: Canvas, x: Float, y: Float) {
+        handlePath.reset()
+        // 柄部（从文字底部延伸）
+        handlePath.moveTo(x - handleStemWidth / 2, y)
+        handlePath.lineTo(x + handleStemWidth / 2, y)
+        handlePath.lineTo(x + handleStemWidth / 2, y + handleStemHeight)
+        handlePath.lineTo(x - handleStemWidth / 2, y + handleStemHeight)
+        handlePath.close()
+        canvas.drawPath(handlePath, handlePaint)
+
+        // 圆形部分
+        canvas.drawCircle(x, y + handleStemHeight + handleRadius, handleRadius, handlePaint)
     }
 
     private fun isLineInSelection(lineIndex: Int): Boolean {
@@ -550,29 +646,121 @@ class LogTextView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        // 如果正在选择，处理拖动
-        if (isDraggingSelection && event.action == MotionEvent.ACTION_MOVE) {
-            val pos = getLineAndColumnAt(event.x, event.y)
-            if (pos != null) {
-                selectionEndLine = pos.first
-                selectionEndCol = pos.second
-                invalidate()
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                // 检查是否点击了句柄
+                if (hasSelection()) {
+                    val hitHandle = checkHandleHit(event.x, event.y)
+                    if (hitHandle != DraggingHandle.NONE) {
+                        draggingHandle = hitHandle
+                        // 取消 ActionMode 以便专注于拖动
+                        actionMode?.finish()
+                        return true
+                    }
+                }
             }
-            return true
-        }
-        
-        if (isDraggingSelection && (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL)) {
-            isDraggingSelection = false
-            if (hasSelection() && getSelectedText().isNotEmpty()) {
-                startActionMode()
+
+            MotionEvent.ACTION_MOVE -> {
+                // 如果正在拖动句柄
+                if (draggingHandle != DraggingHandle.NONE) {
+                    val pos = getLineAndColumnAt(event.x, event.y)
+                    if (pos != null) {
+                        when (draggingHandle) {
+                            DraggingHandle.LEFT -> {
+                                selectionStartLine = pos.first
+                                selectionStartCol = pos.second
+                            }
+                            DraggingHandle.RIGHT -> {
+                                selectionEndLine = pos.first
+                                selectionEndCol = pos.second
+                            }
+                            DraggingHandle.NONE -> {}
+                        }
+                        invalidate()
+                    }
+                    return true
+                }
+
+                // 如果正在选择（长按后拖动）
+                if (isDraggingSelection) {
+                    val pos = getLineAndColumnAt(event.x, event.y)
+                    if (pos != null) {
+                        selectionEndLine = pos.first
+                        selectionEndCol = pos.second
+                        invalidate()
+                    }
+                    return true
+                }
             }
-            return true
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                // 结束句柄拖动
+                if (draggingHandle != DraggingHandle.NONE) {
+                    draggingHandle = DraggingHandle.NONE
+                    if (hasSelection() && getSelectedText().isNotEmpty()) {
+                        startActionMode()
+                    }
+                    invalidate()
+                    return true
+                }
+
+                // 结束选择拖动
+                if (isDraggingSelection) {
+                    isDraggingSelection = false
+                    if (hasSelection() && getSelectedText().isNotEmpty()) {
+                        startActionMode()
+                    }
+                    return true
+                }
+            }
         }
-        
+
         scaleDetector.onTouchEvent(event)
         gestureDetector.onTouchEvent(event)
-        
+
         return true
+    }
+
+    /**
+     * 检查触摸点是否命中句柄
+     */
+    private fun checkHandleHit(x: Float, y: Float): DraggingHandle {
+        if (!hasSelection()) return DraggingHandle.NONE
+
+        val (startLine, startCol, endLine, endCol) = normalizeSelection()
+        val lineHeight = messagePaint.fontMetrics.let { it.descent - it.ascent } + lineSpacing
+
+        // 计算左句柄位置
+        val leftLine = lineInfoCache.getOrNull(startLine)
+        if (leftLine != null) {
+            val text = leftLine.fullText
+            val col = startCol.coerceIn(0, text.length)
+            val handleX = horizontalPadding + timePaint.measureText(text.substring(0, col)) - scrollX
+            val handleY = leftLine.y + lineHeight - scrollY + handleStemHeight + handleRadius
+
+            // 检查是否在左句柄范围内
+            val distanceLeft = kotlin.math.sqrt((x - handleX) * (x - handleX) + (y - handleY) * (y - handleY))
+            if (distanceLeft <= handleTouchSlop) {
+                return DraggingHandle.LEFT
+            }
+        }
+
+        // 计算右句柄位置
+        val rightLine = lineInfoCache.getOrNull(endLine)
+        if (rightLine != null) {
+            val text = rightLine.fullText
+            val col = endCol.coerceIn(0, text.length)
+            val handleX = horizontalPadding + timePaint.measureText(text.substring(0, col)) - scrollX
+            val handleY = rightLine.y + lineHeight - scrollY + handleStemHeight + handleRadius
+
+            // 检查是否在右句柄范围内
+            val distanceRight = kotlin.math.sqrt((x - handleX) * (x - handleX) + (y - handleY) * (y - handleY))
+            if (distanceRight <= handleTouchSlop) {
+                return DraggingHandle.RIGHT
+            }
+        }
+
+        return DraggingHandle.NONE
     }
 
     private fun getLineAndColumnAt(x: Float, y: Float): Pair<Int, Int>? {

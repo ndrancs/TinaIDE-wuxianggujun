@@ -106,6 +106,12 @@ object LogcatMonitor {
             val match = regex.find(line) ?: return
             
             val (timestamp, levelChar, tag, message) = match.destructured
+            val normalizedTag = tag.trim()
+
+            // 过滤 Tina 编译日志，避免重复显示在“构建日志”和“日志”面板
+            if (normalizedTag == "Compile") {
+                return
+            }
             
             // 转换日志级别
             val logLevel = when (levelChar) {
@@ -119,7 +125,7 @@ object LogcatMonitor {
             }
             
             // 转发结构化日志到 BottomLogBuffer
-            BottomLogBuffer.append(logLevel, timestamp.trim(), tag.trim(), message)
+            BottomLogBuffer.append(logLevel, timestamp.trim(), normalizedTag, message)
             
         } catch (e: Exception) {
             // 解析失败时静默忽略（避免日志循环）

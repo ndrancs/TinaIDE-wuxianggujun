@@ -106,6 +106,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExe(
     options.sysroot = sysroot;
     options.target = target;
     options.isCxx = isCxx;
+    options.timeoutMs = 60000; // Allow up to 60s to accommodate slower devices
 
     // 执行链接
     auto result = linker::linkExecutable(objPath, outExe, options);
@@ -134,6 +135,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkExeMany(
     options.isCxx = isCxx;
     options.libDirs = utils::jstringArrayToVector(env, jLibDirs);
     options.libs = utils::jstringArrayToVector(env, jLibs);
+    options.timeoutMs = 60000;
 
     // 执行链接
     auto result = linker::linkExecutableMany(objPaths, outExe, options);
@@ -159,6 +161,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkSo(
     options.sysroot = sysroot;
     options.target = target;
     options.isCxx = isCxx;
+    options.timeoutMs = 60000;
 
     // 执行链接
     auto result = linker::linkSharedLibrary(objPath, outSo, options);
@@ -187,6 +190,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_linkSoMany(
     options.isCxx = isCxx;
     options.libDirs = utils::jstringArrayToVector(env, jLibDirs);
     options.libs = utils::jstringArrayToVector(env, jLibs);
+    options.timeoutMs = 60000;
 
     // 执行链接
     auto result = linker::linkSharedLibraryMany(objPaths, outSo, options);
@@ -209,7 +213,7 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runShared(
     return runner::runInProcess(soPath, symbolName);
 }
 
-extern "C" JNIEXPORT jstring JNICALL
+extern "C" JNIEXPORT jobject JNICALL
 Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated(
         JNIEnv* env, jclass /*clazz*/,
         jstring jSoPath, jstring jSym, jint jTimeoutMs) {
@@ -220,7 +224,19 @@ Java_com_wuxianggujun_tinaide_core_nativebridge_NativeCompiler_runSharedIsolated
 
     auto result = runner::runIsolated(soPath, symbolName, timeoutMs);
 
-    return utils::utf8ToJstring(env, result.output);
+    jclass resultClass = env->FindClass("com/wuxianggujun/tinaide/core/nativebridge/RunExecutionResult");
+    if (!resultClass) {
+        return nullptr;
+    }
+    jmethodID ctor = env->GetMethodID(resultClass, "<init>", "(ILjava/lang/String;)V");
+    if (!ctor) {
+        return nullptr;
+    }
+
+    jstring output = utils::utf8ToJstring(env, result.output);
+    jobject runResult = env->NewObject(resultClass, ctor, static_cast<jint>(result.returnCode), output);
+    env->DeleteLocalRef(output);
+    return runResult;
 }
 
 // ============================================================================

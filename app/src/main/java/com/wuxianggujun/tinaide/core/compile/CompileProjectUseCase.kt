@@ -66,8 +66,6 @@ class CompileProjectUseCase(
         NativeLoader.loadIfNeeded()
         val sysrootDir = SysrootInstaller.ensureInstalled(appContext)
 
-        outputManager.appendOutput("=== 单文件编译模式 ===\n")
-
         val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
         val target = when {
             abi.contains("arm64", ignoreCase = true) -> "aarch64-linux-android28"
@@ -83,20 +81,35 @@ class CompileProjectUseCase(
             return@withContext Result.Error("未找到 C/C++ 源文件", null)
         }
 
-        val buildRoot = File(appContext.filesDir, "build/$projectName").apply { mkdirs() }
+        // 构建产物放在项目目录下的 build/debug 子目录
+        // 目录结构: build/debug/obj/*.o, build/debug/lib*.so, build/debug/build.log
+        // TODO: 未来支持 release 构建时添加优化选项并输出到 build/release
+        val buildRoot = File(projectRoot, "build/debug").apply { mkdirs() }
         val buildDir = File(buildRoot, "obj").apply { mkdirs() }
         val logFile = File(buildRoot, "build.log").apply {
             parentFile?.mkdirs()
             if (!exists()) createNewFile()
         }
 
-        fun log(line: String) {
+        fun log(line: String, channel: IOutputManager.OutputChannel = IOutputManager.OutputChannel.BUILD) {
             try {
                 android.util.Log.i("Compile", line)
                 logFile.appendText(line + "\n")
-                outputManager.appendOutput(line + "\n")
+                outputManager.appendOutput(line + "\n", channel)
             } catch (_: Throwable) {}
         }
+
+        fun logLines(text: String, channel: IOutputManager.OutputChannel = IOutputManager.OutputChannel.BUILD) {
+            if (text.isEmpty()) {
+                log("", channel)
+                return
+            }
+            text.lineSequence().forEach { line ->
+                log(line, channel)
+            }
+        }
+
+        log("=== 单文件编译模式 ===")
 
         log("=== 编译开始 ===")
         log("目标: $target")
@@ -178,8 +191,15 @@ class CompileProjectUseCase(
                 log("链接成功: ${soFile.name}")
                 try {
                     log("=== 运行阶段 ===")
-                    val out = NativeCompiler.runSharedIsolated(soFile.absolutePath, entrySymbol, 15000)
-                    log(out)
+                    val runResult = NativeCompiler.runSharedIsolated(soFile.absolutePath, entrySymbol, 15000)
+                    val normalizedOutput = runResult.output
+                        .replace("\r\n", "\n")
+                        .replace("\r", "\n")
+                    if (normalizedOutput.isNotBlank()) {
+                        logLines(normalizedOutput)
+                        outputManager.appendOutput(normalizedOutput, IOutputManager.OutputChannel.RUN)
+                    }
+                    log("运行返回码: ${runResult.returnCode}")
                 } catch (t: Throwable) {
                     log("运行失败: ${t.message}")
                 }
@@ -188,13 +208,13 @@ class CompileProjectUseCase(
             }
         }
 
-        val summary = buildString {
-            appendLine("目标: $target")
-            appendLine("生成 .o 成功: $ok, 语法通过: $syntaxOk, 失败: ${failed.size}")
-        }
-        log("=== 编译结束 ===")
-        log(summary)
+            val summary = buildString {
+                appendLine("目标: $target")
+                appendLine("生成 .o 成功: $ok, 语法通过: $syntaxOk, 失败: ${failed.size}")
+            }
+            log("=== 编译结束 ===")
+            logLines(summary)
 
-        Result.Success(summary)
+            Result.Success(summary)
     }
 }

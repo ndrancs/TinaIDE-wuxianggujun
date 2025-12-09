@@ -24,6 +24,7 @@
   <string name="btn_cancel">取消</string>
   <string name="btn_browse">浏览…</string>
   <string name="error_project_name_empty">项目名称不能为空</string>
+  <string name="error_project_name_invalid_chars">项目名称只能包含英文字母、数字、下划线和连字符</string>
   <string name="error_project_path_empty">项目路径不能为空</string>
   <string name="error_project_exists">项目已存在</string>
   <string name="error_create_project_dir">创建项目目录失败</string>
@@ -35,6 +36,8 @@
   <string name="project_manager_alpha_notice_title">Alpha 版本公告</string>
   <string name="project_manager_alpha_notice">TinaIDE 仍处于 Alpha 阶段，可能存在崩溃、Bug 和未完成的功能；欢迎在 Issue 区反馈问题和建议。</string>
   <string name="project_manager_projects">项目</string>
+  <string name="project_manager_empty_title">还没有项目</string>
+  <string name="project_manager_empty_subtitle">点击右下角 + 按钮即可快速创建你的第一个项目</string>
 
   <!-- Settings root titles & descriptions（对齐 CodeAssist 风格） -->
   <string name="settings_title_editor">编辑器</string>

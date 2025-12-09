@@ -14,7 +14,13 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 class OutputManager(private val context: Context) : IOutputManager {
     
-    private val outputFile: File by lazy { File(context.cacheDir, "compile_output.log") }
+    private fun getOutputFile(channel: IOutputManager.OutputChannel): File {
+        val fileName = when (channel) {
+            IOutputManager.OutputChannel.RUN -> "run_output.log"
+            IOutputManager.OutputChannel.BUILD -> "build_output.log"
+        }
+        return File(context.cacheDir, fileName)
+    }
     private val maxOutputSizeBytes: Long = 1024L * 1024L // 1MB
     private val listeners = CopyOnWriteArrayList<IOutputManager.OutputListener>()
     private var outputMode = IOutputManager.OutputMode.ACTIVITY
@@ -30,7 +36,8 @@ class OutputManager(private val context: Context) : IOutputManager {
         }
     }
     
-    override fun appendOutput(text: String) {
+    override fun appendOutput(text: String, channel: IOutputManager.OutputChannel) {
+        val outputFile = getOutputFile(channel)
         try {
             if (!outputFile.exists()) {
                 outputFile.parentFile?.mkdirs()
@@ -39,15 +46,16 @@ class OutputManager(private val context: Context) : IOutputManager {
             outputFile.appendText(text)
             // 控制输出文件大小，超过上限时截断为后 50%
             if (outputFile.length() > maxOutputSizeBytes) {
-                trimOutputFile()
+                trimOutputFile(outputFile)
             }
         } catch (_: Throwable) {
             // 忽略文件写入错误，仍然通知监听器
         }
-        listeners.forEach { it.onOutputAppended(text) }
+        listeners.forEach { it.onOutputAppended(text, channel) }
     }
     
-    override fun clearOutput() {
+    override fun clearOutput(channel: IOutputManager.OutputChannel) {
+        val outputFile = getOutputFile(channel)
         try {
             if (outputFile.exists()) {
                 outputFile.writeText("")
@@ -55,10 +63,11 @@ class OutputManager(private val context: Context) : IOutputManager {
         } catch (_: Throwable) {
             // 忽略清理错误
         }
-        listeners.forEach { it.onOutputCleared() }
+        listeners.forEach { it.onOutputCleared(channel) }
     }
     
-    override fun getOutput(): String {
+    override fun getOutput(channel: IOutputManager.OutputChannel): String {
+        val outputFile = getOutputFile(channel)
         return try {
             if (!outputFile.exists()) "" else outputFile.readText()
         } catch (_: Throwable) {
@@ -69,7 +78,7 @@ class OutputManager(private val context: Context) : IOutputManager {
     /**
      * 截断输出文件，只保留后 50% 内容
      */
-    private fun trimOutputFile() {
+    private fun trimOutputFile(outputFile: File) {
         try {
             if (!outputFile.exists()) return
             val lines = outputFile.readLines()

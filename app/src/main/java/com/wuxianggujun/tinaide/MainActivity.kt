@@ -7,8 +7,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import com.google.android.material.button.MaterialButton
-import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -45,6 +43,7 @@ import com.wuxianggujun.tinaide.ui.IUIManager
 import com.wuxianggujun.tinaide.ui.UIManager
 import com.wuxianggujun.tinaide.output.IOutputManager
 import com.wuxianggujun.tinaide.output.OutputManager
+import com.wuxianggujun.tinaide.output.LogLevel
 import com.wuxianggujun.tinaide.core.lsp.CompileCommandsGenerator
 import com.wuxianggujun.tinaide.core.lsp.CompileCommandsGenerator.BuildVariant
 import com.wuxianggujun.tinaide.core.lsp.CppProjectScanner
@@ -69,6 +68,44 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private lateinit var outputManager: IOutputManager
     private lateinit var compilerViewModel: CompilerViewModel
     private lateinit var bottomPanelManager: com.wuxianggujun.tinaide.ui.BottomPanelManager
+
+    // 输出监听器：将编译日志转发到构建日志面板
+    private val buildLogListener = object : IOutputManager.OutputListener {
+        override fun onOutputAppended(text: String, channel: IOutputManager.OutputChannel) {
+            if (channel != IOutputManager.OutputChannel.BUILD) return
+            if (::bottomPanelManager.isInitialized) {
+                // 根据日志内容检测日志级别
+                val level = detectLogLevel(text)
+                runOnUiThread {
+                    bottomPanelManager.appendBuildLog(level, text)
+                }
+            }
+        }
+
+        override fun onOutputCleared(channel: IOutputManager.OutputChannel) {
+            if (channel != IOutputManager.OutputChannel.BUILD) return
+            if (::bottomPanelManager.isInitialized) {
+                runOnUiThread {
+                    bottomPanelManager.clearBuildLog()
+                }
+            }
+        }
+
+        /**
+         * 根据日志内容检测日志级别
+         */
+        private fun detectLogLevel(text: String): LogLevel {
+            val upperText = text.uppercase()
+            return when {
+                upperText.contains("ERROR") || upperText.contains("失败") ||
+                    upperText.contains("FAIL") -> LogLevel.ERROR
+                upperText.contains("WARN") || upperText.contains("警告") -> LogLevel.WARN
+                upperText.contains("SUCCESS") || upperText.contains("成功") -> LogLevel.SUCCESS
+                upperText.contains("===") -> LogLevel.INFO  // 分隔线用 INFO 级别
+                else -> LogLevel.DEBUG
+            }
+        }
+    }
 
     private var navHeaderBinding: IncludeFileTreeHeaderBinding? = null
 
@@ -175,6 +212,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         } else {
             outputManager = ServiceLocator.get<IOutputManager>()
         }
+
+        // 注册输出监听器，将编译日志转发到构建日志面板
+        outputManager.addOutputListener(buildLogListener)
     }
 
     private fun refreshFileTree() {
@@ -217,12 +257,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         val header = navHeaderBinding ?: return
         header.btnAddFile.setOnClickListener {
             showAddFileDialog()
-        }
-        header.btnRefreshFileTree.setOnClickListener {
-            refreshFileTree()
-        }
-        header.btnViewMode.setOnClickListener {
-            toastInfo("查看功能开发中")
         }
         updateProjectHeaderName()
     }
@@ -283,6 +317,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         dialog.show(supportFragmentManager, "add_file_dialog")
     }
     override fun onDestroy() {
+        // 移除输出监听器
+        if (::outputManager.isInitialized) {
+            outputManager.removeOutputListener(buildLogListener)
+        }
         if (::bottomPanelManager.isInitialized) {
             bottomPanelManager.destroy()
         }

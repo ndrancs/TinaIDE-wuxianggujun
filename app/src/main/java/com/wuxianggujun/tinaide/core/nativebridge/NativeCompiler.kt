@@ -71,12 +71,12 @@ object NativeCompiler {
         symbol: String
     ): Int
 
-    // Run shared library in an isolated child process; returns combined output with RC prefix
+    // Run shared library in an isolated child process; returns structured execution result
     external fun runSharedIsolated(
         soPath: String,
         symbol: String,
         timeoutMs: Int
-    ): String
+    ): RunExecutionResult
 
     // ============================================================================
     // Clangd LSP Server Support

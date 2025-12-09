@@ -11,7 +11,6 @@ import com.wuxianggujun.tinaide.databinding.FragmentEditorBinding
 import com.wuxianggujun.tinaide.core.lsp.CompileCommandsGenerator
 import com.wuxianggujun.tinaide.core.lsp.CompileCommandsGenerator.BuildVariant
 import com.wuxianggujun.tinaide.core.lsp.CppProjectScanner
-import com.wuxianggujun.tinaide.core.lsp.LspConfig
 import com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller
 import com.wuxianggujun.tinaide.editor.EditorDocumentExtras
 import com.wuxianggujun.tinaide.editor.language.c.CTreeSitterLanguageProvider
@@ -362,7 +361,7 @@ class EditorFragment : BaseBindingFragment<FragmentEditorBinding>(
     }
 
     private fun shouldAttachNativeBridge(path: String): Boolean {
-        return LspConfig.useNativeClient && isCppFile(path)
+        return isCppFile(path)
     }
 
     private fun applyCppSyntaxHighlight() {

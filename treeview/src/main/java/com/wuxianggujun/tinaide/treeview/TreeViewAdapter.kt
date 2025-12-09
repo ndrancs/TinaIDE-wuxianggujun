@@ -167,6 +167,11 @@ internal class TreeViewAdapter<D>(
         treeNode.isExpanded = !treeNode.isExpanded
 
         if (treeNode.isExpanded) {
+            // 懒加载：在展开前检查是否需要加载子节点
+            if (!treeNode.isChildrenLoaded) {
+                baseNodeViewFactory.onLoadChildren(treeNode)
+            }
+
             expandNode(treeNode)
 
             // expand folders recursively

@@ -17,6 +17,20 @@ TinaIDE is an integrated development environment designed specifically for Andro
 - **Material Design 3**: Following the latest Material Design guidelines
 - **In-process Execution**: Run compiled programs directly within the app
 
+## UI Preview
+
+![Code editor view](./image/img.png)
+**Code editor**: Editing `main.cpp` with the “Hello, 1111!” sample output.
+
+![Settings hub](./image/img_1.png)
+**Settings hub**: Configure editor behavior, compiler optimizations, project defaults, and appearance.
+
+![Project home and announcement](./image/img_2.png)
+**Project home**: Landing page with Alpha notice, existing projects, and a shortcut to create new ones.
+
+![Intelligent completion popup](./image/img_3.png)
+**Intelligent completion**: clangd surfaces context-aware keywords, types, and functions.
+
 ## Core Features
 
 ### Compiler Integration

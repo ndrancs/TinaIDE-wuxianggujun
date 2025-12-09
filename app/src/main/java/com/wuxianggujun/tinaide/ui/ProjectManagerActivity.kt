@@ -23,6 +23,7 @@ import com.wuxianggujun.tinaide.extensions.*
 import com.wuxianggujun.tinaide.utils.Logger
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.ServiceLocator
+import com.wuxianggujun.tinaide.core.config.ConfigKeys
 import com.wuxianggujun.tinaide.core.config.ConfigManager
 import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.core.get
@@ -32,6 +33,7 @@ import com.wuxianggujun.tinaide.file.FileManager
 import com.wuxianggujun.tinaide.file.IFileManager
 import com.wuxianggujun.tinaide.ui.adapter.ProjectListAdapter
 import com.wuxianggujun.tinaide.ui.dialog.ProjectDialog
+import com.wuxianggujun.tinaide.project.ProjectPaths
 import java.io.File
 import android.provider.DocumentsContract
 
@@ -71,7 +73,6 @@ class ProjectManagerActivity : BaseActivity<ProjectManagerFragmentBinding>(Proje
         binding.createProjectFab.setOnClickListener {
             showProjectDialog(ProjectDialog.Mode.NEW_PROJECT)
         }
-
         // 请求权限后加载项目列表
         requestStoragePermissionsIfNeeded {
             reloadProjects()
@@ -116,9 +117,8 @@ class ProjectManagerActivity : BaseActivity<ProjectManagerFragmentBinding>(Proje
 
     private fun getProjectsRootDir(): File {
         val cfg = ServiceLocator.get<IConfigManager>()
-        val saved = cfg.get(KEY_PROJECTS_ROOT, "")
-        if (saved.isNotBlank()) return File(saved)
-        return File(Environment.getExternalStorageDirectory(), "TinaIDE/Projects")
+        val saved = cfg.get(ConfigKeys.ProjectRootDir)
+        return if (saved.isNotBlank()) File(saved) else ProjectPaths.defaultInternalProjectsDir(this)
     }
 
     private fun reloadProjects() {
@@ -191,6 +191,11 @@ class ProjectManagerActivity : BaseActivity<ProjectManagerFragmentBinding>(Proje
     }
 
     private fun requestStoragePermissionsIfNeeded(onAfterGranted: () -> Unit) {
+        val rootDir = getProjectsRootDir()
+        if (rootDir.absolutePath.startsWith(filesDir.absolutePath)) {
+            onAfterGranted()
+            return
+        }
         when {
             // Android 11+：未完全适配分区存储，使用 MANAGE_EXTERNAL_STORAGE
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
@@ -245,12 +250,6 @@ class ProjectManagerActivity : BaseActivity<ProjectManagerFragmentBinding>(Proje
         }
     }
 
-
-
-    companion object {
-        private const val KEY_PROJECTS_ROOT = "project.root_dir"
-    }
-
     private val chooseRootDirLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val data = result.data ?: return@registerForActivityResult
@@ -262,7 +261,7 @@ class ProjectManagerActivity : BaseActivity<ProjectManagerFragmentBinding>(Proje
                 )
                 val path = resolveTreeUriToPath(treeUri)
                 if (path != null) {
-                    ServiceLocator.get<IConfigManager>().set(KEY_PROJECTS_ROOT, path)
+                    ServiceLocator.get<IConfigManager>().set(ConfigKeys.ProjectRootDir, path)
                     reloadProjects()
                 } else {
                     toastError("无法解析选择的目录，请选择内部存储目录")
@@ -301,6 +300,3 @@ class ProjectManagerActivity : BaseActivity<ProjectManagerFragmentBinding>(Proje
         }
     }
 }
-
-
-

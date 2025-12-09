@@ -47,4 +47,15 @@ abstract class BaseNodeViewFactory<D> {
      * @return node layout id
      */
     abstract fun getNodeLayoutId(level: Int): Int
+
+    /**
+     * 懒加载回调：在节点展开前调用，用于加载子节点
+     * 子类可以重写此方法实现懒加载逻辑
+     *
+     * @param treeNode 要展开的节点
+     * @return true 表示需要刷新视图，false 表示不需要
+     */
+    open fun onLoadChildren(treeNode: TreeNode<D>): Boolean {
+        return false
+    }
 }

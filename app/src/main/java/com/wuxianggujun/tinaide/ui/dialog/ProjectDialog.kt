@@ -4,6 +4,10 @@ import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
 import android.os.Environment
+import android.text.Editable
+import android.text.InputFilter
+import android.text.Spanned
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.ArrayAdapter
@@ -23,6 +27,7 @@ import com.wuxianggujun.tinaide.core.get
 import com.wuxianggujun.tinaide.extensions.*
 import com.wuxianggujun.tinaide.file.IFileManager
 import com.wuxianggujun.tinaide.project.ProjectTemplateInstaller
+import com.wuxianggujun.tinaide.project.ProjectPaths
 import java.io.File
 
 /**
@@ -32,6 +37,10 @@ class ProjectDialog(
     private val mode: Mode,
     private val onProjectSelected: (File) -> Unit
 ) : DialogFragment() {
+
+    companion object {
+        private const val INTERNAL_PATH_ALIAS = "projects"
+    }
 
     enum class Mode {
         NEW_PROJECT,
@@ -46,11 +55,17 @@ class ProjectDialog(
     private var tilProjectPath: TextInputLayout? = null
     private var etProjectPath: TextInputEditText? = null
 
+    // 基础路径（不包含项目名称）
+    private var baseProjectPath: String = ""
+    // 当前输入的项目名称
+    private var currentProjectName: String = ""
+
     private val chooseDirLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         uri ?: return@registerForActivityResult
         val path = resolveTreeUriToPath(uri)
         if (path != null) {
-            etProjectPath?.setText(path)
+            baseProjectPath = path
+            updateProjectPathDisplay()
             tilProjectPath?.error = null
             // 记住所选目录
             try {
@@ -87,11 +102,47 @@ class ProjectDialog(
 
         // 设置默认路径
         val cfg = ServiceLocator.get<IConfigManager>()
-        val savedPath = cfg.get("project.root_dir", "")
-        val defaultPath = if (savedPath.isNotBlank()) savedPath else {
-            File(Environment.getExternalStorageDirectory(), "TinaIDE/Projects").absolutePath
+        val savedPath = cfg.get(ConfigKeys.ProjectRootDir)
+        baseProjectPath = if (savedPath.isNotBlank()) {
+            savedPath
+        } else {
+            ProjectPaths.defaultInternalProjectsPath(requireContext())
         }
-        etProjectPath?.setText(defaultPath)
+        val defaultDir = File(baseProjectPath)
+        if (!defaultDir.exists()) {
+            defaultDir.mkdirs()
+        }
+        updateProjectPathDisplay()
+
+        // 设置项目名称输入过滤器（只允许英文字母、数字、下划线、连字符）
+        val projectNameFilter = InputFilter { source, start, end, _, _, _ ->
+            for (i in start until end) {
+                val c = source[i]
+                if (!c.isLetterOrDigit() && c != '_' && c != '-') {
+                    // 显示错误提示
+                    tilProjectName.error = getString(R.string.error_project_name_invalid_chars)
+                    return@InputFilter ""
+                }
+                // 不允许非ASCII字符（中文等）
+                if (c.code > 127) {
+                    tilProjectName.error = getString(R.string.error_project_name_invalid_chars)
+                    return@InputFilter ""
+                }
+            }
+            tilProjectName.error = null
+            null // 接受输入
+        }
+        etProjectName.filters = arrayOf(projectNameFilter)
+
+        // 监听项目名称输入，自动更新路径
+        etProjectName.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                currentProjectName = s?.toString()?.trim() ?: ""
+                updateProjectPathDisplay()
+            }
+        })
 
         // 设置项目类型下拉菜单
         val projectTypes = resources.getStringArray(R.array.project_types)
@@ -117,8 +168,8 @@ class ProjectDialog(
             val positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
             positiveButton.setOnClickListener {
                 val projectName = etProjectName.text?.toString()?.trim() ?: ""
-                val projectPath = etProjectPath?.text?.toString()?.trim() ?: ""
-                val selectedTypeIndex = projectTypes.indexOf(dropdownProjectType.text.toString())
+                // 直接使用 baseProjectPath 和 projectName 组合完整路径
+                val fullProjectPath = File(baseProjectPath, projectName).absolutePath
 
                 // 验证输入
                 var hasError = false
@@ -130,7 +181,7 @@ class ProjectDialog(
                     tilProjectName.error = null
                 }
 
-                if (projectPath.isEmpty()) {
+                if (baseProjectPath.isEmpty()) {
                     tilProjectPath?.error = getString(R.string.error_project_path_empty)
                     hasError = true
                 } else {
@@ -138,7 +189,7 @@ class ProjectDialog(
                 }
 
                 if (!hasError) {
-                    createNewProject(projectName, projectPath)
+                    createNewProject(projectName, fullProjectPath)
                     dialog.dismiss()
                 }
             }
@@ -154,9 +205,9 @@ class ProjectDialog(
         val context = requireContext()
 
         val cfg = ServiceLocator.get<IConfigManager>()
-        val savedPath = cfg.get("project.root_dir", "")
+        val savedPath = cfg.get(ConfigKeys.ProjectRootDir)
         val projectsDir = if (savedPath.isNotBlank()) File(savedPath) else {
-            File(Environment.getExternalStorageDirectory(), "TinaIDE/Projects")
+            ProjectPaths.defaultInternalProjectsDir(requireContext())
         }
 
         val existingProjects = if (projectsDir.exists() && projectsDir.isDirectory) {
@@ -200,12 +251,37 @@ class ProjectDialog(
         }
     }
 
+    private fun formatProjectPathForDisplay(path: String): String {
+        val internalPath = ProjectPaths.defaultInternalProjectsPath(requireContext())
+        return if (File(path).absolutePath == internalPath) {
+            INTERNAL_PATH_ALIAS
+        } else {
+            path
+        }
+    }
+
+    /**
+     * 更新项目路径显示
+     * 路径格式: 基础路径/项目名称（类似 CLion）
+     */
+    private fun updateProjectPathDisplay() {
+        val displayBase = formatProjectPathForDisplay(baseProjectPath)
+        val displayPath = if (currentProjectName.isNotEmpty()) {
+            "$displayBase/$currentProjectName"
+        } else {
+            displayBase
+        }
+        etProjectPath?.setText(displayPath)
+    }
+
     /**
      * 创建新项目
+     * 注意：路径已经包含项目名称（baseProjectPath/projectName）
      */
     private fun createNewProject(projectName: String, projectPath: String) {
         try {
-            val projectDir = File(projectPath, projectName)
+            // projectPath 已经是完整路径（包含项目名称）
+            val projectDir = File(projectPath)
 
             if (projectDir.exists()) {
                 requireContext().toastError(getString(R.string.error_project_exists))
@@ -249,5 +325,7 @@ class ProjectDialog(
         super.onDestroyView()
         tilProjectPath = null
         etProjectPath = null
+        baseProjectPath = ""
+        currentProjectName = ""
     }
 }

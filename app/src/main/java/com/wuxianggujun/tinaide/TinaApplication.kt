@@ -16,6 +16,7 @@ import com.wuxianggujun.tinaide.file.FileManager
 import com.wuxianggujun.tinaide.file.IFileManager
 import com.wuxianggujun.tinaide.utils.LogcatMonitor
 import com.wuxianggujun.tinaide.ui.BottomLogBuffer
+import com.wuxianggujun.tinaide.project.ProjectPaths
 
 class TinaApplication : Application() {
 
@@ -57,8 +58,21 @@ class TinaApplication : Application() {
         if (!ServiceLocator.isRegistered(IConfigManager::class.java)) {
             ServiceLocator.register<IConfigManager>(ConfigManager(applicationContext))
         }
+        val configManager = ServiceLocator.get(IConfigManager::class.java)
+        ensureDefaultProjectRootDir(configManager)
         if (!ServiceLocator.isRegistered(IFileManager::class.java)) {
             ServiceLocator.registerSingleton<IFileManager> { FileManager(applicationContext) }
+        }
+    }
+
+    private fun ensureDefaultProjectRootDir(configManager: IConfigManager) {
+        val current = configManager.get(ConfigKeys.ProjectRootDir)
+        if (current.isBlank() || current == ProjectPaths.LEGACY_EXTERNAL_DEFAULT) {
+            val defaultDir = ProjectPaths.defaultInternalProjectsDir(this)
+            if (!defaultDir.exists()) {
+                defaultDir.mkdirs()
+            }
+            configManager.set(ConfigKeys.ProjectRootDir, defaultDir.absolutePath)
         }
     }
     

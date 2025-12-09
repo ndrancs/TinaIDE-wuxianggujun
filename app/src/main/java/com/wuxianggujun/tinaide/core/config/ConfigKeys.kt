@@ -15,7 +15,7 @@ sealed class ConfigKey<T>(val key: String, val default: T) {
     // 项目相关
     object ProjectRootDir : ConfigKey<String>(
         key = "project.root_dir",
-        default = "/storage/emulated/0/TinaIDE/Projects"
+        default = ""
     )
 
     object CurrentProject : ConfigKey<String>(

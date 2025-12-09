@@ -158,7 +158,6 @@ RunResult runIsolated(const std::string& soPath, const std::string& symbolName,
             fprintf(stderr, "dlopen failed: %s\n", error ? error : "unknown");
             _exit(127);
         }
-        fprintf(stderr, "[tina] dlopen ok\n");
 
         // 检查符号名称
         if (symbolName.empty()) {
@@ -181,7 +180,7 @@ RunResult runIsolated(const std::string& soPath, const std::string& symbolName,
                 dlerror(); // 清除错误
                 symbol = dlsym(handle, mangledNames[i]);
                 if (symbol) {
-                    fprintf(stderr, "[tina] found main as: %s\n", mangledNames[i]);
+                    LOGI("runIsolated: resolved main as %s", mangledNames[i]);
                     break;
                 }
             }
@@ -193,15 +192,14 @@ RunResult runIsolated(const std::string& soPath, const std::string& symbolName,
             dlclose(handle);
             _exit(126);
         }
-        fprintf(stderr, "[tina] dlsym ok: %s\n", symbolName.c_str());
 
         // 执行入口函数
         using EntryNoArg = int (*)();
         int rc = -1;
         try {
-            fprintf(stderr, "[tina] calling entry\n");
+            LOGI("runIsolated: invoking entry");
             rc = reinterpret_cast<EntryNoArg>(symbol)();
-            fprintf(stderr, "[tina] entry returned rc=%d\n", rc);
+            LOGI("runIsolated: entry returned rc=%d", rc);
         } catch (const std::bad_cast& e) {
             fprintf(stderr, "unhandled std::bad_cast: %s\n", e.what());
             rc = 101;
@@ -278,10 +276,7 @@ RunResult runIsolated(const std::string& soPath, const std::string& symbolName,
 
     // 构建结果
     result.returnCode = returnCode;
-    result.output = "RC=" + std::to_string(returnCode) + "\n";
-    if (!output.empty()) {
-        result.output += output;
-    }
+    result.output = output;
     result.success = (returnCode == 0);
 
     return result;
