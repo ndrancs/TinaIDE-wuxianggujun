@@ -52,6 +52,7 @@
             android:name=".output.OutputActivity"
             android:exported="false"
             android:label="编译输出"
+            android:launchMode="singleTop"
             android:parentActivityName=".MainActivity" />
         <activity
             android:name=".settings.SettingsActivity"

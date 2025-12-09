@@ -53,7 +53,7 @@ class DiagnosticsAdapter(
                 1 -> { // Error
                     binding.ivSeverityIcon.setImageResource(R.drawable.ic_clear)
                     binding.ivSeverityIcon.setColorFilter(
-                        ContextCompat.getColor(context, R.color.lsp_status_disconnected)
+                        ContextCompat.getColor(context, R.color.lspStatusDisconnected)
                     )
                 }
                 2 -> { // Warning
