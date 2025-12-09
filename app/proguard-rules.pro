@@ -27,9 +27,43 @@
     native <methods>;
 }
 
-# 保留 NativeCompiler 类（JNI 调用）
--keep class com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler { *; }
--keep class com.wuxianggujun.tinaide.core.nativebridge.NativeLoader { *; }
+# 保留 NativeCompiler 类及其所有 native 方法（JNI 调用）
+-keep class com.wuxianggujun.tinaide.core.nativebridge.NativeCompiler {
+    # 编译相关
+    public static native java.lang.String getClangVersion();
+    public static native java.lang.String syntaxCheck(java.lang.String, java.lang.String, java.lang.String, boolean);
+    public static native java.lang.String emitObj(java.lang.String, java.lang.String, java.lang.String, java.lang.String, boolean, java.lang.String[], java.lang.String[]);
+    # 链接相关
+    public static native java.lang.String linkExe(java.lang.String, java.lang.String, java.lang.String, java.lang.String, boolean);
+    public static native java.lang.String linkExeMany(java.lang.String, java.lang.String[], java.lang.String, java.lang.String, boolean, java.lang.String[], java.lang.String[]);
+    public static native java.lang.String linkSo(java.lang.String, java.lang.String, java.lang.String, java.lang.String, boolean);
+    public static native java.lang.String linkSoMany(java.lang.String, java.lang.String[], java.lang.String, java.lang.String, boolean, java.lang.String[], java.lang.String[]);
+    # 运行相关
+    public static native int runShared(java.lang.String, java.lang.String);
+    public static native com.wuxianggujun.tinaide.core.nativebridge.RunExecutionResult runSharedIsolated(java.lang.String, java.lang.String, int);
+    # Clangd LSP 相关
+    public static native java.lang.String startClangd(java.lang.String, java.lang.String[]);
+    public static native void stopClangd();
+    public static native boolean isClangdRunning();
+    public static native int writeToClangd(byte[]);
+    public static native byte[] readFromClangd(int);
+    public static native byte[] readFromClangdWithTimeout(int, int);
+    # 通配保留
+    native <methods>;
+    *;
+}
+
+# NativeLoader - 链接服务器相关 JNI 方法
+-keep class com.wuxianggujun.tinaide.core.nativebridge.NativeLoader {
+    public static native int forkLinkServer(java.lang.String, java.lang.String);
+    public static native boolean isLinkServerRunning();
+    public static native void killLinkServer();
+    public static native int getLinkServerPid();
+    native <methods>;
+    *;
+}
+
+# 其他 nativebridge 工具类
 -keep class com.wuxianggujun.tinaide.core.nativebridge.AbiResolver { *; }
 -keep class com.wuxianggujun.tinaide.core.nativebridge.SysrootInstaller { *; }
 -keep class com.wuxianggujun.tinaide.core.nativebridge.SysrootLibraryLoader { *; }
@@ -40,12 +74,28 @@
     *;
 }
 
-# LSP 服务 - Native 回调方法（从 C++ JNI 调用）
-# 这些方法不是 native 方法，而是被 native 代码回调的普通方法
+# LSP 服务 - Native 方法和回调方法（从 C++ JNI 调用）
 -keep class com.wuxianggujun.tinaide.lsp.LspService {
+    # 被 native 代码回调的普通方法
     public static void handleNativeHealthEvent(java.lang.String, java.lang.String);
     public static void handleNativeDiagnostics(java.lang.String, java.util.List);
+    # 所有 native 方法
     native <methods>;
+    # 所有 @JvmStatic 标记的方法（包括 private native）
+    private static native int nativeOnLoad();
+    private static native boolean nativeInitialize(java.lang.String, java.lang.String, int);
+    private static native void nativeShutdown();
+    public static native boolean nativeIsInitialized();
+    private static native long nativeRequestHover(java.lang.String, int, int);
+    private static native long nativeRequestCompletion(java.lang.String, int, int, java.lang.String);
+    private static native long nativeRequestDefinition(java.lang.String, int, int);
+    private static native long nativeRequestReferences(java.lang.String, int, int, boolean);
+    private static native java.lang.String nativeGetResult(long);
+    private static native void nativeDidOpen(java.lang.String, java.lang.String, java.lang.String);
+    private static native void nativeDidChange(java.lang.String, java.lang.String, int);
+    private static native void nativeDidClose(java.lang.String);
+    private static native void nativeCancelRequestInternal(long);
+    private static native void nativeNotifyRequestTimeout(long);
 }
 
 # ============================================================================
@@ -146,13 +196,69 @@
 -keep class io.github.rosemoe.sora.langs.treesitter.** { *; }
 
 # Tree-sitter JNI 绑定类 - 必须保留（native 代码通过字段名访问）
-# TSNode 的 context、id、treePointer 字段被 JNI 直接访问
+# 注意：treesitter 包及其子包（包括 languages）都包含 native 方法
 -keep class com.wuxianggujun.tinaide.treesitter.** { *; }
+-keep class com.wuxianggujun.tinaide.treesitter.languages.** { *; }
+
+# TSNode - JNI 直接访问私有字段（context、id、treePointer）
 -keepclassmembers class com.wuxianggujun.tinaide.treesitter.TSNode {
     private int[] context;
     private long id;
     private long treePointer;
 }
+
+# TSParser - JNI 访问 pointer 字段和 native 方法
+-keepclassmembers class com.wuxianggujun.tinaide.treesitter.TSParser {
+    private long pointer;
+    native <methods>;
+}
+
+# TSTree - JNI 访问 pointer 字段和 native 方法
+-keepclassmembers class com.wuxianggujun.tinaide.treesitter.TSTree {
+    private long pointer;
+    native <methods>;
+}
+
+# TSQuery - JNI 访问 pointer 字段和 native 方法
+-keepclassmembers class com.wuxianggujun.tinaide.treesitter.TSQuery {
+    private long pointer;
+    native <methods>;
+}
+
+# TSQueryCursor - JNI 访问 pointer 字段和 native 方法
+-keepclassmembers class com.wuxianggujun.tinaide.treesitter.TSQueryCursor {
+    private long pointer;
+    native <methods>;
+}
+
+# TSLanguage - JNI 访问 pointer 字段
+-keepclassmembers class com.wuxianggujun.tinaide.treesitter.TSLanguage {
+    private long pointer;
+    native <methods>;
+}
+
+# TSLanguageCpp / TSLanguageCMake - native 方法获取语言指针
+-keep class com.wuxianggujun.tinaide.treesitter.languages.TSLanguageCpp {
+    public static *** getInstance();
+    private static native long nativeLanguage();
+}
+-keep class com.wuxianggujun.tinaide.treesitter.languages.TSLanguageCMake {
+    public static *** getInstance();
+    private static native long nativeLanguage();
+}
+
+# TSNativeObject - 基类，防止被内联优化
+-keep class com.wuxianggujun.tinaide.treesitter.TSNativeObject { *; }
+
+# Tree-sitter 数据类 - 可能被 JNI 构造或访问
+-keep class com.wuxianggujun.tinaide.treesitter.TSPoint { *; }
+-keep class com.wuxianggujun.tinaide.treesitter.TSInputEdit { *; }
+-keep class com.wuxianggujun.tinaide.treesitter.TSQueryCapture { *; }
+-keep class com.wuxianggujun.tinaide.treesitter.TSQueryMatch { *; }
+-keep class com.wuxianggujun.tinaide.treesitter.TSQueryError { *; }
+-keep class com.wuxianggujun.tinaide.treesitter.TSQueryPredicateStep { *; }
+-keep class com.wuxianggujun.tinaide.treesitter.TSQueryPredicateStep$Type { *; }
+-keep class com.wuxianggujun.tinaide.treesitter.UTF16String { *; }
 
 # ============================================================================
 # TreeView 组件
