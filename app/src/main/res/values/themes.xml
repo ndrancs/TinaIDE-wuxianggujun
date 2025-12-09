@@ -224,4 +224,14 @@
         <item name="android:textSelectHandleLeft">@drawable/text_select_handle_left</item>
         <item name="android:textSelectHandleRight">@drawable/text_select_handle_right</item>
     </style>
+
+    <!-- ========== TabLayout 样式 ========== -->
+
+    <!-- 自定义 TabLayout 样式，确保背景跟随主题 -->
+    <style name="Widget.App.TabLayout" parent="Widget.Material3.TabLayout">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="tabBackground">@android:color/transparent</item>
+        <item name="backgroundTint">@null</item>
+        <item name="tabRippleColor">@null</item>
+    </style>
 </resources>

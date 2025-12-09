@@ -36,11 +36,10 @@
             <!-- Tab 布局 -->
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tab_layout"
+                style="@style/Widget.App.TabLayout"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:background="@android:color/transparent"
-                app:tabBackground="@android:color/transparent"
                 app:tabMode="fixed"
                 app:tabGravity="fill"
                 app:tabTextColor="?colorOnSurfaceVariant"
