@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="@color/text_input_stroke_focused" android:state_focused="true" />
-    <item android:color="@color/dark_error" android:state_enabled="false" />
-    <item android:color="@color/text_input_stroke_default" />
+    <item android:color="@color/textInputStrokeFocused" android:state_focused="true" />
+    <item android:color="@color/md_theme_error" android:state_enabled="false" />
+    <item android:color="@color/textInputStrokeDefault" />
 </selector>

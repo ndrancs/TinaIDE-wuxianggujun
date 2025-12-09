@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
+<selector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <!-- 错误状态 -->
-    <item android:color="@color/dark_error" app:state_error="true" xmlns:app="http://schemas.android.com/apk/res-auto"/>
-    
-    <!-- 聚焦状态 - 使用青色 -->
-    <item android:color="@color/dark_secondary" android:state_focused="true"/>
-    
-    <!-- 激活状态（有内容时）- 使用青色 -->
-    <item android:color="@color/dark_secondary" android:state_activated="true"/>
-    
-    <!-- 默认状态 - 使用白色的 70% 透明度 -->
-    <item android:color="#B3FFFFFF"/>
+    <item android:color="@color/md_theme_error" app:state_error="true"/>
+
+    <!-- 聚焦状态 - 使用主色 -->
+    <item android:color="@color/md_theme_primary" android:state_focused="true"/>
+
+    <!-- 激活状态（有内容时）- 使用主色 -->
+    <item android:color="@color/md_theme_primary" android:state_activated="true"/>
+
+    <!-- 默认状态 - 使用 onSurfaceVariant -->
+    <item android:color="@color/md_theme_onSurfaceVariant"/>
 </selector>

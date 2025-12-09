@@ -1,33 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+        浅色模式颜色定义（默认）
+        使用语义化命名，与 values-night/colors.xml 保持相同的 key
+        系统会根据当前模式自动选择对应的颜色
+    -->
+
+    <!-- 基础颜色 -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    
-    <!-- Dark Theme Colors -->
-    <color name="dark_primary">#1E1E1E</color>
-    <color name="dark_primary_variant">#121212</color>
-    <color name="dark_secondary">#03DAC6</color>
-    <color name="dark_background">#121212</color>
-    <color name="dark_surface">#1E1E1E</color>
-    <color name="dark_error">#CF6679</color>
-    <color name="dark_on_primary">#FFFFFF</color>
-    <color name="dark_on_secondary">#000000</color>
-    <color name="dark_on_background">#FFFFFF</color>
-    <color name="dark_on_surface">#FFFFFF</color>
-    <color name="dark_on_error">#000000</color>
-    
-    <!-- TextInputLayout colors -->
-    <color name="text_input_stroke_default">#666666</color>
-    <color name="text_input_stroke_focused">#03DAC6</color>
-    
-    <!-- Dropdown colors -->
-    <color name="dropdown_background">#2D2D2D</color>
-    
-    <!-- LSP Status colors -->
-    <color name="lsp_status_connected">#4CAF50</color>
-    <color name="lsp_status_disconnected">#F44336</color>
-    <color name="lsp_status_initializing">#FFC107</color>
 
-    <!-- Button colors -->
-    <color name="button_tonal_background">#2D3D3B</color>
+    <!-- ========== Material Design 3 语义化颜色（浅色模式） ========== -->
+
+    <!-- Primary 主色调 - 青色系 -->
+    <color name="md_theme_primary">#006B61</color>
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_primaryContainer">#6FF7E2</color>
+    <color name="md_theme_onPrimaryContainer">#00201C</color>
+
+    <!-- Secondary 次要色调 -->
+    <color name="md_theme_secondary">#4A635E</color>
+    <color name="md_theme_onSecondary">#FFFFFF</color>
+    <color name="md_theme_secondaryContainer">#CCE8E2</color>
+    <color name="md_theme_onSecondaryContainer">#06201C</color>
+
+    <!-- Tertiary 第三色调 -->
+    <color name="md_theme_tertiary">#446274</color>
+    <color name="md_theme_onTertiary">#FFFFFF</color>
+    <color name="md_theme_tertiaryContainer">#C6E7FB</color>
+    <color name="md_theme_onTertiaryContainer">#001E2B</color>
+
+    <!-- Error 错误色 -->
+    <color name="md_theme_error">#BA1A1A</color>
+    <color name="md_theme_onError">#FFFFFF</color>
+    <color name="md_theme_errorContainer">#FFDAD6</color>
+    <color name="md_theme_onErrorContainer">#410002</color>
+
+    <!-- Background 背景色 -->
+    <color name="md_theme_background">#FAFDFB</color>
+    <color name="md_theme_onBackground">#191C1B</color>
+
+    <!-- Surface 表面色 -->
+    <color name="md_theme_surface">#FAFDFB</color>
+    <color name="md_theme_onSurface">#191C1B</color>
+    <color name="md_theme_surfaceVariant">#DBE5E1</color>
+    <color name="md_theme_onSurfaceVariant">#3F4946</color>
+
+    <!-- Outline 轮廓线 -->
+    <color name="md_theme_outline">#6F7976</color>
+    <color name="md_theme_outlineVariant">#BFC9C5</color>
+
+    <!-- 其他 -->
+    <color name="md_theme_scrim">#000000</color>
+    <color name="md_theme_inverseSurface">#2E3130</color>
+    <color name="md_theme_inverseOnSurface">#EFF1EF</color>
+    <color name="md_theme_inversePrimary">#03DAC6</color>
+    <color name="md_theme_surfaceDim">#DAD9D7</color>
+    <color name="md_theme_surfaceBright">#FAFDFB</color>
+    <color name="md_theme_surfaceContainerLowest">#FFFFFF</color>
+    <color name="md_theme_surfaceContainerLow">#F4F6F4</color>
+    <color name="md_theme_surfaceContainer">#EEEFED</color>
+    <color name="md_theme_surfaceContainerHigh">#E8EAE8</color>
+    <color name="md_theme_surfaceContainerHighest">#E2E4E2</color>
+
+    <!-- ========== 应用特定颜色（浅色模式） ========== -->
+
+    <!-- 状态栏和导航栏 -->
+    <color name="statusBarColor">#FAFDFB</color>
+    <color name="navigationBarColor">#FAFDFB</color>
+
+    <!-- TextInputLayout 颜色 -->
+    <color name="textInputStrokeDefault">#6F7976</color>
+    <color name="textInputStrokeFocused">#006B61</color>
+
+    <!-- Dropdown 颜色 -->
+    <color name="dropdownBackground">#FFFFFF</color>
+
+    <!-- LSP 状态颜色 -->
+    <color name="lspStatusConnected">#2E7D32</color>
+    <color name="lspStatusDisconnected">#C62828</color>
+    <color name="lspStatusInitializing">#F9A825</color>
+
+    <!-- 按钮颜色 -->
+    <color name="buttonTonalBackground">#CCE8E2</color>
+
+    <!-- 文本颜色 -->
+    <color name="textPrimary">#191C1B</color>
+    <color name="textSecondary">#3F4946</color>
+    <color name="textHint">#6F7976</color>
+
+    <!-- 图标颜色 -->
+    <color name="iconPrimary">#191C1B</color>
+    <color name="iconSecondary">#3F4946</color>
+
+    <!-- 分隔线颜色 -->
+    <color name="divider">#DBE5E1</color>
+
+    <!-- 高亮选择颜色 -->
+    <color name="textHighlight">#40006B61</color>
 </resources>
