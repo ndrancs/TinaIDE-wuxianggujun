@@ -378,6 +378,37 @@ if [ -n "$LIBCXX_SHARED_SRC" ]; then
 else
   echo "[w] libc++_shared.so not found in NDK (checked sysroot and sources paths)" >&2
 fi
+
+# Copy libunwind.a for C++ exception handling support
+# libunwind provides _Unwind_Resume and other unwinding symbols required by libc++ exceptions
+# NDK r26+ stores libunwind.a under lib/clang/<ver>/lib/linux/<arch>/
+UNWIND_ARCH=""
+case "${ABI}" in
+  arm64-v8a) UNWIND_ARCH="aarch64";;
+  x86_64)    UNWIND_ARCH="x86_64";;
+esac
+LIBUNWIND_SRC="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/17/lib/linux/${UNWIND_ARCH}/libunwind.a"
+if [ ! -f "${LIBUNWIND_SRC}" ]; then
+  # Fallback: try to find it dynamically
+  LIBUNWIND_SRC=$(find "${ANDROID_NDK_HOME}" -path "*/lib/linux/${UNWIND_ARCH}/libunwind.a" 2>/dev/null | head -n1)
+fi
+if [ -f "${LIBUNWIND_SRC}" ]; then
+  cp -af "${LIBUNWIND_SRC}" "/hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/${API_LEVEL}/" || true
+  echo "[i] Copied libunwind.a from ${LIBUNWIND_SRC}"
+else
+  echo "[w] libunwind.a not found for ${UNWIND_ARCH}" >&2
+fi
+
+# Copy libc++abi.a for C++ ABI support (may be needed for some exception handling)
+LIBCXXABI_SRC="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/17/lib/linux/${UNWIND_ARCH}/libc++abi.a"
+if [ ! -f "${LIBCXXABI_SRC}" ]; then
+  LIBCXXABI_SRC=$(find "${ANDROID_NDK_HOME}" -path "*/lib/linux/${UNWIND_ARCH}/libc++abi.a" 2>/dev/null | head -n1)
+fi
+if [ -f "${LIBCXXABI_SRC}" ]; then
+  cp -af "${LIBCXXABI_SRC}" "/hostout/${ABI}/sysroot/usr/lib/${TRIPLE}/${API_LEVEL}/" || true
+  echo "[i] Copied libc++abi.a from ${LIBCXXABI_SRC}"
+fi
+
 cp -af ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/. /hostout/${ABI}/sysroot/usr/include/ || true
 # Ensure libc++ headers are present under sysroot/usr/include/c++/v1 (NDK layout varies by version)
 mkdir -p /hostout/${ABI}/sysroot/usr/include/c++/v1 || true

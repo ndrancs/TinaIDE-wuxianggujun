@@ -169,8 +169,10 @@ std::vector<std::string> buildSharedLibraryArgs(
     args.push_back(outputPath);
 
     // C++ 运行时
+    // 注意：libc++ 的异常处理依赖 libunwind，必须同时链接
     if (options->is_cxx) {
         args.push_back("-lc++");
+        args.push_back("-lunwind");
     }
 
     // 系统库
@@ -254,8 +256,10 @@ std::vector<std::string> buildExecutableArgs(
     args.push_back(outputPath);
 
     // C++ 运行时
+    // 注意：libc++ 的异常处理依赖 libunwind，必须同时链接
     if (options->is_cxx) {
         args.push_back("-lc++");
+        args.push_back("-lunwind");
     }
 
     // 系统库

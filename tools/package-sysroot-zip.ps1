@@ -20,22 +20,27 @@ $effectiveZipName = if ([string]::IsNullOrWhiteSpace($ZipName)) { "sysroot-$Abi.
 $zipPath = Join-Path $AppAssetsDir $effectiveZipName
 if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
 
-Add-Type -AssemblyName System.IO.Compression.FileSystem
+# 确保加载压缩程序集
+Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+Add-Type -AssemblyName System.IO.Compression -ErrorAction SilentlyContinue
 
 function Add-FileToZip([System.IO.Compression.ZipArchive]$zip, [string]$filePath, [string]$entryName) {
   # Create entry with Optimal compression, skip zero-length directories handled by directory creation
   $null = [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $filePath, $entryName, [System.IO.Compression.CompressionLevel]::Optimal)
 }
 
+# 需要保留的静态库（C++ 运行时依赖）
+$requiredStaticLibs = @('libunwind.a', 'libc++abi.a')
+
 $fs = [System.IO.File]::Open($zipPath, [System.IO.FileMode]::CreateNew)
 try {
-  $zip = New-Object System.IO.Compression.ZipArchive($fs, [System.IO.Compression.ZipArchiveMode]::Create, $false)
+  $zip = New-Object System.IO.Compression.ZipArchive($fs, 'Create', $false)
   $root = (Resolve-Path $srcSysroot).Path
   $rootLen = $root.Length
   Get-ChildItem -LiteralPath $root -Recurse -File | ForEach-Object {
     $rel = $_.FullName.Substring($rootLen).TrimStart([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
-    # Exclude all static archives (*.a)
-    if ($_.Extension -ieq '.a') { return }
+    # Exclude most static archives (*.a) but keep required C++ runtime libs
+    if ($_.Extension -ieq '.a' -and $requiredStaticLibs -notcontains $_.Name) { return }
     # Normalize to forward slashes for zip entries
     $relZip = $rel -replace '\\','/'
     Add-FileToZip -zip $zip -filePath $_.FullName -entryName $relZip

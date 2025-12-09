@@ -142,15 +142,20 @@ if (Test-Path $dstLibDir) {
       $zipName = if ($isMultiAbi) { "sysroot-$currentAbi.zip" } else { 'sysroot.zip' }
       $zipPath = Join-Path $assetsRoot $zipName
       if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
-      try { Add-Type -AssemblyName System.IO.Compression.FileSystem } catch { }
+      # 确保加载压缩程序集
+      Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+      Add-Type -AssemblyName System.IO.Compression -ErrorAction SilentlyContinue
       $fs = [System.IO.File]::Open($zipPath, [System.IO.FileMode]::CreateNew)
       try {
-        $zip = New-Object System.IO.Compression.ZipArchive($fs, [System.IO.Compression.ZipArchiveMode]::Create, $false)
+        $zip = New-Object System.IO.Compression.ZipArchive($fs, 'Create', $false)
         $root = (Resolve-Path $srcSysroot).Path
         $rootLen = $root.Length
         $prunedBinFiles = @('cmake','ninja','llvm-symbolizer-host','llvm-objdump-host','llvm-dwarfdump-host','libc++_shared.so')
+        # 需要保留的静态库（C++ 运行时依赖）
+        $requiredStaticLibs = @('libunwind.a', 'libc++abi.a')
         Get-ChildItem -LiteralPath $root -Recurse -File | ForEach-Object {
-          if ($_.Extension -ieq '.a') { return }
+          # 排除大部分静态库，但保留 C++ 运行时必需的
+          if ($_.Extension -ieq '.a' -and $requiredStaticLibs -notcontains $_.Name) { return }
           $rel = $_.FullName.Substring($rootLen).TrimStart([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
           $relZip = $rel -replace '\\','/'
           if ($relZip -match '^usr/bin/(.+)$') {
