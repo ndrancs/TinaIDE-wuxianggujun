@@ -59,3 +59,7 @@ app/src/main/assets/*.zip
 external/llvm-build-libs/
 !external/llvm-build-libs/README.md
 
+# Internal documentation (do not commit to public repo)
+docs/link-server-mode.md
+docs/LLD-Process-Isolation.md
+
