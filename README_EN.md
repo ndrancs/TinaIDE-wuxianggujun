@@ -6,24 +6,6 @@
 
 ---
 
-## ⚠️ Important Notice
-
-**This is the final open-source release of TinaIDE.**
-
-This repository contains the complete implementation of the foundational build and compilation features, intended to serve as a reference implementation for Android C/C++ mobile development. Future feature updates will be developed in a private repository, and this repository will no longer receive code updates.
-
-**Open-source components include:**
-- Complete Clang/LLVM 17 compiler integration
-- LLD linker (with process isolation solution)
-- clangd LSP language service integration
-- Tree-sitter syntax highlighting
-- Code editor based on Sora Editor
-- Android NDK sysroot integration
-
-Thank you for your support!
-
----
-
 TinaIDE is an integrated development environment designed specifically for Android devices, allowing you to write, compile, and run C/C++ code directly on your phone or tablet. With a built-in complete Clang/LLVM toolchain and clangd language server, it provides a development experience close to desktop IDEs.
 
 ## Features
@@ -40,7 +22,7 @@ TinaIDE is an integrated development environment designed specifically for Andro
 ## UI Preview
 
 ![Code editor view](./image/img.png)
-**Code editor**: Editing `main.cpp` with the “Hello, 1111!” sample output.
+**Code editor**: Editing `main.cpp` with the "Hello, 1111!" sample output.
 
 ![Settings hub](./image/img_1.png)
 **Settings hub**: Configure editor behavior, compiler optimizations, project defaults, and appearance.
@@ -61,39 +43,6 @@ TinaIDE is an integrated development environment designed specifically for Andro
 | LLD Linker | Fast linking using LLVM LLD (with process isolation) |
 | Shared Library Output | Compile to .so files, support in-process loading and execution |
 | Complete Sysroot | Android NDK headers and runtime libraries |
-
-#### LLD Process Isolation Solution
-
-LLVM 17's LLD linker has a global state issue: when calling `lld::elf::link()` multiple times as a library, the internal global symbol table doesn't reset automatically, causing "duplicate symbol" errors on second and subsequent links.
-
-**Example symptoms:**
-```
-ld.lld: error: duplicate symbol: main
->>> defined at main.cpp
->>>            .../main.cpp.o:(main)
->>> defined at main.cpp
->>>            .../main.cpp.o:(.text+0x0)
-```
-
-**Solution:** Use process isolation strategy - each linking operation executes in an independent child process (`fork()`), ensuring completely clean global state.
-
-```
-Parent Process (TinaIDE)              Child Process (Linker)
-      │                                      │
-      ├─ Build link arguments                │
-      ├─ Create pipe                         │
-      ├─ fork() ─────────────────────────────┤
-      │                                      ├─ Redirect output to pipe
-      ├─ Wait for child                      ├─ Call lld::elf::link()
-      │                                      ├─ Output diagnostics
-      ├─ Collect output ◄────────────────────┤
-      ├─ Parse result                        └─ _exit(0/1)
-      └─ Return LinkResult
-```
-
-For detailed technical implementation, see [LLD Process Isolation Architecture](docs/LLD-Process-Isolation.md).
-
-> **Note**: The current process isolation solution still has known issues. Further optimization will be continued in the private repository.
 
 ### LSP Language Services
 
@@ -154,13 +103,6 @@ pwsh ./tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 28
 ./gradlew assembleRelease
 ```
 
-> **Multi-ABI Build (arm64 + x86_64)**
->
-> To package native libraries for both arm64-v8a and x86_64:
-> ```bash
-> ./gradlew assembleDebugAllAbi
-> ```
-
 ### 3. Getting Started
 
 1. Launch the app (first launch will auto-extract sysroot, takes about 1-2 minutes)
@@ -176,6 +118,7 @@ For detailed steps, see [Quick Start Guide](docs/快速开始.md)
 - [Architecture Overview](docs/架构概览.md) - Understand project architecture
 - [Development Guide](docs/开发指南.md) - Contribute to the project
 - [Documentation Center](docs/README.md) - Complete documentation index
+- [Changelog](CHANGELOG.md) - Version update history
 
 ### Technical Documentation
 
@@ -248,37 +191,12 @@ TinaIDE/
 └── docs/                       # Project documentation
 ```
 
-## Contributing
-
-Contributions, bug reports, and suggestions are welcome!
-
-1. Fork this repository
-2. Create a feature branch (`git checkout -b feat/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feat/amazing-feature`)
-5. Create a Pull Request
-
-See [Development Guide](docs/开发指南.md) for details.
-
-## License
-
-This repository is the **final open-source release of TinaIDE**, released under the [TinaIDE Open Source License](LICENSE).
-
-The open-source portion includes complete foundational build and compilation features for learning and reference purposes. Future updates will be developed in a private repository, and this repository will no longer receive code updates.
-
-See [LICENSE](LICENSE) for full license terms.
-
 ## Acknowledgments
 
 - [LLVM Project](https://llvm.org/) - Compiler infrastructure
 - [Sora Editor](https://github.com/Rosemoe/sora-editor) - Code editor
 - [Tree-sitter](https://tree-sitter.github.io/) - Syntax highlighting parser
 - [clangd](https://clangd.llvm.org/) - C/C++ language server
-
-## Contact
-
-- GitHub Issues: [Submit an issue](https://github.com/wuxianggujun/TinaIDE/issues)
-- Project Homepage: [TinaIDE](https://github.com/wuxianggujun/TinaIDE)
 
 ---
 

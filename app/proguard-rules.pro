@@ -178,6 +178,13 @@
 -keep class com.wuxianggujun.tinaide.lsp.model.** { *; }
 -keep class com.wuxianggujun.tinaide.core.config.** { *; }
 
+# DiagnosticItem - JNI 通过 FindClass 和构造函数创建实例
+# 必须保留类名、构造函数和所有字段
+-keep class com.wuxianggujun.tinaide.lsp.model.DiagnosticItem {
+    <init>(int, int, int, int, int, java.lang.String, java.lang.String, java.lang.String);
+    *;
+}
+
 # ============================================================================
 # Sora Editor - 代码编辑器
 # ============================================================================

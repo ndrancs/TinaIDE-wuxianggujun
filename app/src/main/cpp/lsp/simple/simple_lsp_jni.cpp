@@ -17,6 +17,10 @@ JavaVM* g_java_vm = nullptr;
 jclass g_serviceClass = nullptr;
 jmethodID g_handleDiagnosticsMethod = nullptr;
 jmethodID g_handleHealthMethod = nullptr;
+
+// DiagnosticItem 类引用
+jclass g_diagnosticItemClass = nullptr;
+jmethodID g_diagnosticItemCtor = nullptr;
 } // namespace
 
 // ============================================================================
@@ -77,6 +81,7 @@ void dispatchHealthEventToJava(SimpleLspClient::HealthEventType type, const std:
 void dispatchDiagnosticsToJava(const std::string& file_uri, 
                                const std::vector<SimpleLspClient::DiagnosticItem>& diagnostics) {
     if (!g_java_vm || !g_serviceClass || !g_handleDiagnosticsMethod) {
+        LOGW("dispatchDiagnosticsToJava: JNI not initialized");
         return;
     }
     
@@ -84,17 +89,63 @@ void dispatchDiagnosticsToJava(const std::string& file_uri,
     bool need_detach = false;
     if (g_java_vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
         if (g_java_vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
+            LOGE("dispatchDiagnosticsToJava: Failed to attach thread");
             return;
         }
         need_detach = true;
     }
     
     jstring uri_str = stringToJstring(env, file_uri);
-    // TODO: 创建诊断数组
-    // 暂时传递空数组，后续完善
+    
+    // 创建 ArrayList
     jclass arrayListClass = env->FindClass("java/util/ArrayList");
-    jmethodID arrayListCtor = env->GetMethodID(arrayListClass, "<init>", "()V");
-    jobject diagnosticsList = env->NewObject(arrayListClass, arrayListCtor);
+    jmethodID arrayListCtor = env->GetMethodID(arrayListClass, "<init>", "(I)V");
+    jmethodID arrayListAdd = env->GetMethodID(arrayListClass, "add", "(Ljava/lang/Object;)Z");
+    jobject diagnosticsList = env->NewObject(arrayListClass, arrayListCtor, 
+                                              static_cast<jint>(diagnostics.size()));
+    
+    // 转换每个 C++ DiagnosticItem 到 Java 对象
+    if (g_diagnosticItemClass && g_diagnosticItemCtor) {
+        for (const auto& item : diagnostics) {
+            jstring message = stringToJstring(env, item.message);
+            jstring source = item.source.empty() ? nullptr : stringToJstring(env, item.source);
+            jstring code = item.code.empty() ? nullptr : stringToJstring(env, item.code);
+            
+            jobject javaItem = env->NewObject(
+                g_diagnosticItemClass,
+                g_diagnosticItemCtor,
+                static_cast<jint>(item.start_line),
+                static_cast<jint>(item.start_character),
+                static_cast<jint>(item.end_line),
+                static_cast<jint>(item.end_character),
+                static_cast<jint>(item.severity),
+                message,
+                source,
+                code
+            );
+            
+            if (javaItem) {
+                env->CallBooleanMethod(diagnosticsList, arrayListAdd, javaItem);
+                env->DeleteLocalRef(javaItem);
+            }
+            
+            env->DeleteLocalRef(message);
+            if (source) env->DeleteLocalRef(source);
+            if (code) env->DeleteLocalRef(code);
+            
+            // 检查 JNI 异常
+            if (env->ExceptionCheck()) {
+                LOGE("JNI exception while creating DiagnosticItem");
+                env->ExceptionClear();
+                break;
+            }
+        }
+    } else {
+        LOGW("DiagnosticItem class not initialized, sending empty list");
+    }
+    
+    LOGD("dispatchDiagnosticsToJava: sending %zu diagnostics for %s", 
+         diagnostics.size(), file_uri.c_str());
     
     env->CallStaticVoidMethod(g_serviceClass, g_handleDiagnosticsMethod, uri_str, diagnosticsList);
     
@@ -135,6 +186,30 @@ Java_com_wuxianggujun_tinaide_lsp_LspService_nativeOnLoad(JNIEnv* env, jclass cl
         "handleNativeDiagnostics",
         "(Ljava/lang/String;Ljava/util/List;)V"
     );
+    
+    // 初始化 DiagnosticItem 类引用
+    jclass diagnosticItemLocalClass = env->FindClass(
+        "com/wuxianggujun/tinaide/lsp/model/DiagnosticItem"
+    );
+    if (diagnosticItemLocalClass) {
+        g_diagnosticItemClass = reinterpret_cast<jclass>(
+            env->NewGlobalRef(diagnosticItemLocalClass)
+        );
+        env->DeleteLocalRef(diagnosticItemLocalClass);
+        
+        // 获取构造函数: DiagnosticItem(Int, Int, Int, Int, Int, String, String?, String?)
+        g_diagnosticItemCtor = env->GetMethodID(
+            g_diagnosticItemClass,
+            "<init>",
+            "(IIIIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
+        );
+        
+        if (!g_diagnosticItemCtor) {
+            LOGE("Failed to find DiagnosticItem constructor");
+        }
+    } else {
+        LOGE("Failed to find DiagnosticItem class");
+    }
     
     return JNI_VERSION_1_6;
 }

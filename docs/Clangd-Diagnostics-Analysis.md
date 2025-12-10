@@ -1,7 +1,7 @@
 # Clangd 诊断功能分析报告
 
-> 分析日期：2024-12-09
-> 分析者：Claude Code
+> 分析日期：2025-12-10
+> 分析者：Claude Code（已由 Kiro 校验更新）
 
 ## 概述
 
@@ -37,7 +37,7 @@
 
 当前状态：
 - RecyclerView 显示诊断列表、统计信息和清空按钮已完成。
-- 点击诊断项仅透传 `onDiagnosticClick` 回调，默认实现（`MainActivity.kt:238-244`）仅弹出 toast，尚未跳转到真实代码位置。
+- 点击诊断项仅透传 `onDiagnosticClick` 回调，默认实现（`MainActivity.kt:241-244`）仅弹出 toast，尚未跳转到真实代码位置。
 
 ```kotlin
 fun setDiagnostics(diagnostics: List<Diagnostic>) {
@@ -54,8 +54,9 @@ fun setDiagnostics(diagnostics: List<Diagnostic>) {
 #### BottomPanelManager.kt
 位置：`app/src/main/java/com/wuxianggujun/tinaide/ui/BottomPanelManager.kt`
 
-- `setDiagnostics/addDiagnostic/clearDiagnostics` 方法仅暴露接口，类内部没有订阅 `LspService` 诊断事件。
-- `rg` 搜索显示这些方法在当前工程中除了定义处没有任何调用，意味着 DiagnosticsFragment Tab 永远收不到数据。
+- `setDiagnostics/addDiagnostic/clearDiagnostics` 方法已实现（第 310-335 行），可正确转发数据到 `DiagnosticsFragment`。
+- **问题**：`BottomPanelManager` 没有主动订阅 `LspService` 的诊断事件（`DiagnosticsListener`），因此即使上游数据打通，UI 层也收不到通知。
+- 需要在初始化时添加 `LspService.addDiagnosticsListener` 并在回调中调用 `setDiagnostics`。
 
 ### 2. 数据模型 ✅ 已完成
 
@@ -84,6 +85,7 @@ data class Diagnostic(
 )
 ```
 
+
 ### 3. Service 层 ⚠️ 部分实现
 
 #### LspService.kt
@@ -92,7 +94,7 @@ data class Diagnostic(
 **问题：回调函数始终传递空列表**
 
 ```kotlin
-// 第 141-145 行
+// 约第 139-143 行
 @JvmStatic
 fun handleNativeDiagnostics(fileUri: String, diagnostics: List<*>) {
     mainHandler.post {
@@ -109,8 +111,9 @@ fun interface DiagnosticsListener {
 ```
 
 - 目前没有任何逻辑将 `List<*>` 安全转换成 `List<DiagnosticItem>`，更没有将结果写入 `DiagnosticsContainer` 或转换为 UI 层所需的 `Diagnostic`。
-- `EditorFragment.kt:632-644` 的 TODO 表明 `LspService` 尚未提供“获取最新诊断”的接口，新的监听者无法立即获得缓存数据。
+- `LspService` 尚未提供"获取最新诊断"的接口，新的监听者无法立即获得缓存数据。
 - 即使 native 层补齐，这里的空列表会让上层始终得不到诊断。
+- **注意**：Kotlin 层存在两个诊断模型：`DiagnosticItem`（Service 层）和 `Diagnostic`（UI 层），需要在分发时做转换。
 
 #### DiagnosticsContainer
 位置：`app/src/main/java/com/wuxianggujun/tinaide/lsp/project/LspProject.kt`
@@ -167,7 +170,7 @@ client->setDiagnosticsCallback([](const std::string& file_uri,
 **问题：收到诊断通知但未解析内容**
 
 ```cpp
-// 第 1064-1091 行
+// 约第 1063-1091 行
 if (method == "textDocument/publishDiagnostics") {
     // 处理诊断通知
     // TODO: 解析诊断信息并调用回调
@@ -199,6 +202,7 @@ clangd 能力已正确声明：
 // 第 288 行
 params << R"("publishDiagnostics":{"relatedInformation":true})";
 ```
+
 
 ## 数据流分析
 
@@ -318,9 +322,9 @@ severity 值：
 **文件**：`BottomPanelManager.kt`、`DiagnosticsFragment.kt`、`MainActivity.kt`
 
 需修改：
-- [ ] BottomPanelManager 主动订阅 `LspService` 或 `DiagnosticsContainer`，调用 `setDiagnostics/addDiagnostic`
+- [ ] BottomPanelManager 主动订阅 `LspService` 的 `DiagnosticsListener`，在回调中调用 `setDiagnostics`
 - [ ] 实现诊断项跳转逻辑（例如调用当前编辑器定位 API），替换默认 toast
-- [ ] EditorFragment 中的 TODO（latestDiagnostics）在上层能力完善后同步打通，保证新打开的文件能立即显示已有诊断
+- [ ] 确保新打开的文件能立即显示已有诊断
 
 ## 相关文件索引
 
@@ -333,6 +337,7 @@ severity 值：
 | `DiagnosticsModels.kt` | 数据模型 | 无需修改 |
 | `DiagnosticsFragment.kt` | UI 显示 | 无需修改 |
 | `LspProject.kt` | 诊断容器 | 无需修改 |
+| `BottomPanelManager.kt` | 底部面板管理 | 需添加诊断监听 |
 
 ## 参考资源
 

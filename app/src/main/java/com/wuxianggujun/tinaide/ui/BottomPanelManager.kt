@@ -14,6 +14,7 @@ import com.wuxianggujun.tinaide.ui.fragment.BuildLogFragment
 import com.wuxianggujun.tinaide.ui.fragment.GeneralLogFragment
 import com.wuxianggujun.tinaide.ui.fragment.DiagnosticsFragment
 import com.wuxianggujun.tinaide.lsp.model.Diagnostic
+import com.wuxianggujun.tinaide.lsp.model.toDiagnostic
 import android.view.MotionEvent
 import android.view.GestureDetector
 import androidx.core.content.ContextCompat
@@ -48,6 +49,7 @@ class BottomPanelManager(
     // LSP 监听器
     private var initListener: LspService.InitializationListener? = null
     private var healthListener: LspService.HealthListener? = null
+    private var diagnosticsListener: LspService.DiagnosticsListener? = null
     
     init {
         // 加载布局
@@ -73,7 +75,28 @@ class BottomPanelManager(
         setupTabs()
         setupGestureDetector()
         setupLspStatus()
+        setupDiagnosticsListener()
         setupBottomSheetCallback()
+    }
+    
+    /**
+     * 设置诊断监听器
+     * 订阅 LspService 的诊断事件，将诊断数据转发到 DiagnosticsFragment
+     */
+    private fun setupDiagnosticsListener() {
+        diagnosticsListener = LspService.DiagnosticsListener { fileUri, items ->
+            // 将 DiagnosticItem 转换为 Diagnostic
+            val diagnostics = items.map { it.toDiagnostic(fileUri) }
+            
+            // 合并所有文件的诊断（获取缓存中的所有诊断）
+            val allDiagnostics = mutableListOf<Diagnostic>()
+            LspService.getAllCachedDiagnostics().forEach { (uri, cachedItems) ->
+                allDiagnostics.addAll(cachedItems.map { it.toDiagnostic(uri) })
+            }
+            
+            setDiagnostics(allDiagnostics)
+        }
+        diagnosticsListener?.let { LspService.addDiagnosticsListener(it) }
     }
     
     /**
@@ -417,6 +440,7 @@ class BottomPanelManager(
     fun destroy() {
         initListener?.let { LspService.removeInitializationListener(it) }
         healthListener?.let { LspService.removeHealthListener(it) }
+        diagnosticsListener?.let { LspService.removeDiagnosticsListener(it) }
     }
     
     private fun Int.dpToPx(): Int {

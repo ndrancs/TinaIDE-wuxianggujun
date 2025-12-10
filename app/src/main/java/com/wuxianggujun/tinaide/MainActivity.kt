@@ -239,8 +239,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             activity = this,
             container = binding.bottomPanelContainer,
             onDiagnosticClick = { diagnostic ->
-                // TODO: 跳转到诊断对应的代码位置
-                toastInfo("诊断: ${diagnostic.message} (${diagnostic.uri}:${diagnostic.range.start.line + 1})")
+                // 跳转到诊断对应的代码位置
+                navigateToDiagnostic(diagnostic)
             },
             onSymbolClick = { symbol ->
                 // 插入符号到当前编辑器光标位置
@@ -256,6 +256,40 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         val editorContainerFragment = supportFragmentManager
             .findFragmentById(R.id.editor_container) as? com.wuxianggujun.tinaide.ui.fragment.EditorContainerFragment
         editorContainerFragment?.insertTextAtCursor(symbol)
+    }
+    
+    /**
+     * 导航到诊断位置
+     */
+    private fun navigateToDiagnostic(diagnostic: com.wuxianggujun.tinaide.lsp.model.Diagnostic) {
+        val editorContainerFragment = supportFragmentManager
+            .findFragmentById(R.id.editor_container) as? com.wuxianggujun.tinaide.ui.fragment.EditorContainerFragment
+        
+        if (editorContainerFragment == null) {
+            toastInfo("编辑器未就绪")
+            return
+        }
+        
+        // 从 URI 中提取文件路径
+        val filePath = if (diagnostic.uri.startsWith("file://")) {
+            diagnostic.uri.substring(7)
+        } else {
+            diagnostic.uri
+        }
+        
+        // 创建 Location 对象并导航
+        val location = com.wuxianggujun.tinaide.lsp.model.Location(
+            filePath = filePath,
+            startLine = diagnostic.range.start.line,
+            startCharacter = diagnostic.range.start.character,
+            endLine = diagnostic.range.end.line,
+            endCharacter = diagnostic.range.end.character
+        )
+        
+        editorContainerFragment.openLocation(location)
+        
+        // 收起底部面板以便查看代码
+        bottomPanelManager?.collapse()
     }
 
     private fun setupFileTreeHeader() {

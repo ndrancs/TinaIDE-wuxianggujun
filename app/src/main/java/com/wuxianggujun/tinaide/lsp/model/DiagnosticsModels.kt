@@ -54,3 +54,10 @@ data class Diagnostic(
         }
     }
 }
+
+/**
+ * 扩展函数：将 DiagnosticItem 转换为 Diagnostic
+ */
+fun DiagnosticItem.toDiagnostic(uri: String): Diagnostic {
+    return Diagnostic.fromDiagnosticItem(this, uri)
+}

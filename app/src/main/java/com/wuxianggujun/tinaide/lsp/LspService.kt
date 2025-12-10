@@ -94,6 +94,9 @@ object LspService {
     @Volatile private var lastWorkDir: String = "/"
     @Volatile private var lastClangdPath: String = DEFAULT_CLANGD_PATH
     private val configManager: IConfigManager by lazy { ServiceLocator.get<IConfigManager>() }
+    
+    // 诊断缓存
+    private val diagnosticsCache = java.util.concurrent.ConcurrentHashMap<String, List<DiagnosticItem>>()
 
     // ========================================================================
     // Native 方法
@@ -139,8 +142,52 @@ object LspService {
 
     @JvmStatic
     fun handleNativeDiagnostics(fileUri: String, diagnostics: List<*>) {
+        // 将 List<*> 转换为 List<DiagnosticItem>
+        val items = diagnostics.filterIsInstance<DiagnosticItem>()
+        Log.d(TAG, "Received ${items.size} diagnostics for $fileUri")
+        
+        // 更新缓存
+        diagnosticsCache[fileUri] = items
+        
+        // 分发给所有监听器
         mainHandler.post {
-            diagnosticsListeners.forEach { it.onDiagnostics(fileUri, emptyList()) }
+            diagnosticsListeners.forEach { listener ->
+                try {
+                    listener.onDiagnostics(fileUri, items)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error dispatching diagnostics to listener", e)
+                }
+            }
+        }
+    }
+    
+    /**
+     * 获取指定文件的缓存诊断
+     */
+    fun getCachedDiagnostics(fileUri: String): List<DiagnosticItem> {
+        return diagnosticsCache[fileUri] ?: emptyList()
+    }
+    
+    /**
+     * 获取所有缓存的诊断
+     */
+    fun getAllCachedDiagnostics(): Map<String, List<DiagnosticItem>> {
+        return diagnosticsCache.toMap()
+    }
+    
+    /**
+     * 清除指定文件的诊断缓存
+     */
+    fun clearDiagnosticsCache(fileUri: String) {
+        diagnosticsCache.remove(fileUri)
+        mainHandler.post {
+            diagnosticsListeners.forEach { listener ->
+                try {
+                    listener.onDiagnostics(fileUri, emptyList())
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error clearing diagnostics for listener", e)
+                }
+            }
         }
     }
 
@@ -202,7 +249,17 @@ object LspService {
     // ========================================================================
     
     fun addDiagnosticsListener(listener: DiagnosticsListener) { 
-        diagnosticsListeners.add(listener) 
+        diagnosticsListeners.add(listener)
+        // 立即发送缓存的诊断数据给新监听器
+        mainHandler.post {
+            diagnosticsCache.forEach { (fileUri, items) ->
+                try {
+                    listener.onDiagnostics(fileUri, items)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error sending cached diagnostics to new listener", e)
+                }
+            }
+        }
     }
     
     fun removeDiagnosticsListener(listener: DiagnosticsListener) { 
@@ -260,7 +317,9 @@ object LspService {
     fun didCloseDocument(fileUri: String) {
         serviceScope.launch {
             try { 
-                nativeDidClose(fileUri) 
+                nativeDidClose(fileUri)
+                // 清除该文件的诊断缓存
+                clearDiagnosticsCache(fileUri)
             } catch (e: Exception) { 
                 Log.e(TAG, "didClose failed", e) 
             }

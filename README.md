@@ -6,24 +6,6 @@
 
 ---
 
-## ⚠️ 重要公告
-
-**这是 TinaIDE 的最终开源版本。**
-
-本仓库包含了完整的基础构建和编译功能实现，旨在为社区提供一个可用的 Android C/C++ 移动开发参考实现。后续的功能更新将迁移至私有仓库进行开发，本仓库将不再接收代码更新。
-
-**开源内容包括：**
-- 完整的 Clang/LLVM 17 编译器集成
-- LLD 链接器（含进程隔离解决方案）
-- clangd LSP 语言服务集成
-- Tree-sitter 语法高亮
-- 基于 Sora Editor 的代码编辑器
-- Android NDK sysroot 集成
-
-感谢社区的关注与支持！
-
----
-
 TinaIDE 是一个专为 Android 设备设计的集成开发环境，支持在手机或平板上直接编写、编译和运行 C/C++ 代码。内置完整的 Clang/LLVM 工具链和 clangd 语言服务器，提供接近桌面 IDE 的开发体验。
 
 ## 特性
@@ -40,10 +22,10 @@ TinaIDE 是一个专为 Android 设备设计的集成开发环境，支持在手
 ## 界面预览
 
 ![代码编辑器界面](./image/img.png)
-**代码编辑器**：主编辑器正在编写 `main.cpp`，示例输出 “Hello, 1111!”。
+**代码编辑器**：主编辑器正在编写 `main.cpp`，示例输出 "Hello, 1111!"。
 
 ![设置中心](./image/img_1.png)
-**设置中心**：在“设置”页配置编辑器、编译器、项目与外观等行为。
+**设置中心**：在"设置"页配置编辑器、编译器、项目与外观等行为。
 
 ![项目主页与公告](./image/img_2.png)
 **项目主页**：启动页展示 Alpha 公告及项目列表，右下角按钮可创建新项目。
@@ -61,39 +43,6 @@ TinaIDE 是一个专为 Android 设备设计的集成开发环境，支持在手
 | LLD 链接器 | 使用 LLVM LLD 进行快速链接（进程隔离模式） |
 | 共享库输出 | 编译为 .so 文件，支持进程内加载运行 |
 | 完整 Sysroot | Android NDK 头文件和运行时库 |
-
-#### LLD 进程隔离解决方案
-
-LLVM 17 的 LLD 链接器存在全局状态问题：当作为库多次调用 `lld::elf::link()` 时，内部的全局符号表不会自动重置，导致第二次及后续链接时出现 "duplicate symbol" 错误。
-
-**症状示例：**
-```
-ld.lld: error: duplicate symbol: main
->>> defined at main.cpp
->>>            .../main.cpp.o:(main)
->>> defined at main.cpp
->>>            .../main.cpp.o:(.text+0x0)
-```
-
-**解决方案：** 采用进程隔离策略，每次链接操作都在独立的子进程（`fork()`）中执行，确保全局状态完全干净。
-
-```
-父进程 (TinaIDE)                    子进程 (链接器)
-      │                                   │
-      ├─ 构建链接参数                      │
-      ├─ 创建管道                          │
-      ├─ fork() ──────────────────────────┤
-      │                                   ├─ 重定向输出到管道
-      ├─ 等待子进程                        ├─ 调用 lld::elf::link()
-      │                                   ├─ 输出诊断信息
-      ├─ 收集输出 ◄────────────────────────┤
-      ├─ 解析结果                          └─ _exit(0/1)
-      └─ 返回 LinkResult
-```
-
-详细的技术实现请参考 [LLD 进程隔离架构文档](docs/LLD-Process-Isolation.md)。
-
-> **注**：当前版本的进程隔离方案仍存在已知问题，后续优化将在私有仓库进行。
 
 ### LSP 语言服务
 
@@ -154,13 +103,6 @@ pwsh ./tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 28
 ./gradlew assembleRelease
 ```
 
-> **多 ABI 构建（arm64 + x86_64）**
->
-> 如果要打包同时包含 arm64-v8a 与 x86_64 的 native 库：
-> ```bash
-> ./gradlew assembleDebugAllAbi
-> ```
-
 ### 3. 开始使用
 
 1. 启动应用（首次启动会自动解压 sysroot，约需 1-2 分钟）
@@ -176,6 +118,7 @@ pwsh ./tools/sync-llvm-build.ps1 -Abi arm64-v8a -ApiLevel 28
 - [架构概览](docs/架构概览.md) - 了解项目架构
 - [开发指南](docs/开发指南.md) - 参与项目开发
 - [文档中心](docs/README.md) - 完整文档索引
+- [更新日志](CHANGELOG.md) - 版本更新历史
 
 ### 技术文档
 
@@ -248,37 +191,12 @@ TinaIDE/
 └── docs/                       # 项目文档
 ```
 
-## 贡献
-
-欢迎贡献代码、报告问题或提出建议！
-
-1. Fork 本项目
-2. 创建特性分支 (`git checkout -b feat/amazing-feature`)
-3. 提交更改 (`git commit -m 'feat: add amazing feature'`)
-4. 推送到分支 (`git push origin feat/amazing-feature`)
-5. 创建 Pull Request
-
-详见 [开发指南](docs/开发指南.md)
-
-## 许可证
-
-本仓库为 **TinaIDE 最终开源版本**，采用 [TinaIDE 开源许可证](LICENSE) 发布。
-
-开源部分包含完整的基础构建编译功能，供学习和参考使用。后续功能更新将在私有仓库进行，本仓库不再接收代码更新。
-
-详见 [LICENSE](LICENSE) 文件。
-
 ## 致谢
 
 - [LLVM Project](https://llvm.org/) - 编译器基础设施
 - [Sora Editor](https://github.com/Rosemoe/sora-editor) - 代码编辑器
 - [Tree-sitter](https://tree-sitter.github.io/) - 语法高亮解析器
 - [clangd](https://clangd.llvm.org/) - C/C++ 语言服务器
-
-## 联系方式
-
-- GitHub Issues: [提交问题](https://github.com/wuxianggujun/TinaIDE/issues)
-- 项目主页: [TinaIDE](https://github.com/wuxianggujun/TinaIDE)
 
 ---
 

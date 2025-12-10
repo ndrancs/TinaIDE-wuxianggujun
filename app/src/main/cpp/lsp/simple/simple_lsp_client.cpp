@@ -44,6 +44,216 @@ std::string detectCompileCommandsDir(const std::string& workDir) {
     return "";
 }
 
+// ============================================================================
+// JSON 解析辅助函数 - 用于解析 publishDiagnostics
+// ============================================================================
+
+// 跳过 JSON 中的空白字符
+size_t skipWhitespace(const std::string& json, size_t pos) {
+    while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t' || 
+           json[pos] == '\n' || json[pos] == '\r')) {
+        ++pos;
+    }
+    return pos;
+}
+
+// 解析 JSON 字符串值（处理转义字符）
+std::string parseJsonString(const std::string& json, size_t& pos) {
+    if (pos >= json.size() || json[pos] != '"') {
+        return "";
+    }
+    ++pos; // 跳过开始引号
+    
+    std::string result;
+    while (pos < json.size() && json[pos] != '"') {
+        if (json[pos] == '\\' && pos + 1 < json.size()) {
+            ++pos;
+            switch (json[pos]) {
+                case '"': result += '"'; break;
+                case '\\': result += '\\'; break;
+                case 'n': result += '\n'; break;
+                case 'r': result += '\r'; break;
+                case 't': result += '\t'; break;
+                default: result += json[pos]; break;
+            }
+        } else {
+            result += json[pos];
+        }
+        ++pos;
+    }
+    if (pos < json.size()) ++pos; // 跳过结束引号
+    return result;
+}
+
+// 解析 JSON 整数值
+int parseJsonInt(const std::string& json, size_t& pos) {
+    pos = skipWhitespace(json, pos);
+    int result = 0;
+    bool negative = false;
+    if (pos < json.size() && json[pos] == '-') {
+        negative = true;
+        ++pos;
+    }
+    while (pos < json.size() && std::isdigit(json[pos])) {
+        result = result * 10 + (json[pos] - '0');
+        ++pos;
+    }
+    return negative ? -result : result;
+}
+
+// 查找 JSON 对象中的键
+size_t findJsonKey(const std::string& json, size_t start, const std::string& key) {
+    std::string searchKey = "\"" + key + "\"";
+    size_t pos = json.find(searchKey, start);
+    if (pos != std::string::npos) {
+        pos = json.find(':', pos + searchKey.size());
+        if (pos != std::string::npos) {
+            return skipWhitespace(json, pos + 1);
+        }
+    }
+    return std::string::npos;
+}
+
+// 查找匹配的闭合括号
+size_t findMatchingBracket(const std::string& json, size_t start, char open, char close) {
+    if (start >= json.size() || json[start] != open) {
+        return std::string::npos;
+    }
+    int depth = 1;
+    size_t pos = start + 1;
+    bool inString = false;
+    while (pos < json.size() && depth > 0) {
+        if (json[pos] == '"' && (pos == 0 || json[pos - 1] != '\\')) {
+            inString = !inString;
+        } else if (!inString) {
+            if (json[pos] == open) ++depth;
+            else if (json[pos] == close) --depth;
+        }
+        ++pos;
+    }
+    return depth == 0 ? pos : std::string::npos;
+}
+
+// 解析单个诊断项
+SimpleLspClient::DiagnosticItem parseSingleDiagnostic(const std::string& json, size_t start, size_t end) {
+    SimpleLspClient::DiagnosticItem item{};
+    
+    // 解析 range
+    size_t rangePos = findJsonKey(json, start, "range");
+    if (rangePos != std::string::npos && rangePos < end) {
+        // 解析 start
+        size_t startPos = findJsonKey(json, rangePos, "start");
+        if (startPos != std::string::npos && startPos < end) {
+            size_t linePos = findJsonKey(json, startPos, "line");
+            if (linePos != std::string::npos && linePos < end) {
+                item.start_line = static_cast<uint32_t>(parseJsonInt(json, linePos));
+            }
+            size_t charPos = findJsonKey(json, startPos, "character");
+            if (charPos != std::string::npos && charPos < end) {
+                item.start_character = static_cast<uint32_t>(parseJsonInt(json, charPos));
+            }
+        }
+        // 解析 end
+        size_t endPos = findJsonKey(json, rangePos, "end");
+        if (endPos != std::string::npos && endPos < end) {
+            size_t linePos = findJsonKey(json, endPos, "line");
+            if (linePos != std::string::npos && linePos < end) {
+                item.end_line = static_cast<uint32_t>(parseJsonInt(json, linePos));
+            }
+            size_t charPos = findJsonKey(json, endPos, "character");
+            if (charPos != std::string::npos && charPos < end) {
+                item.end_character = static_cast<uint32_t>(parseJsonInt(json, charPos));
+            }
+        }
+    }
+    
+    // 解析 severity
+    size_t severityPos = findJsonKey(json, start, "severity");
+    if (severityPos != std::string::npos && severityPos < end) {
+        item.severity = parseJsonInt(json, severityPos);
+        // 确保 severity 在有效范围内
+        if (item.severity < 1 || item.severity > 4) {
+            item.severity = 4; // 默认为 Hint
+        }
+    } else {
+        item.severity = 4; // 默认为 Hint
+    }
+    
+    // 解析 message
+    size_t messagePos = findJsonKey(json, start, "message");
+    if (messagePos != std::string::npos && messagePos < end) {
+        item.message = parseJsonString(json, messagePos);
+    }
+    
+    // 解析 source (可选)
+    size_t sourcePos = findJsonKey(json, start, "source");
+    if (sourcePos != std::string::npos && sourcePos < end) {
+        item.source = parseJsonString(json, sourcePos);
+    }
+    
+    // 解析 code (可选，可能是字符串或数字)
+    size_t codePos = findJsonKey(json, start, "code");
+    if (codePos != std::string::npos && codePos < end) {
+        if (json[codePos] == '"') {
+            item.code = parseJsonString(json, codePos);
+        } else if (std::isdigit(json[codePos]) || json[codePos] == '-') {
+            item.code = std::to_string(parseJsonInt(json, codePos));
+        }
+    }
+    
+    return item;
+}
+
+// 解析 diagnostics 数组
+std::vector<SimpleLspClient::DiagnosticItem> parseDiagnosticsArray(const std::string& json) {
+    std::vector<SimpleLspClient::DiagnosticItem> result;
+    
+    // 查找 "diagnostics" 数组
+    size_t diagPos = findJsonKey(json, 0, "diagnostics");
+    if (diagPos == std::string::npos) {
+        LOGW("parseDiagnosticsArray: 'diagnostics' key not found");
+        return result;
+    }
+    
+    // 跳过空白，找到数组开始
+    diagPos = skipWhitespace(json, diagPos);
+    if (diagPos >= json.size() || json[diagPos] != '[') {
+        LOGW("parseDiagnosticsArray: diagnostics is not an array");
+        return result;
+    }
+    
+    size_t arrayEnd = findMatchingBracket(json, diagPos, '[', ']');
+    if (arrayEnd == std::string::npos) {
+        LOGW("parseDiagnosticsArray: malformed diagnostics array");
+        return result;
+    }
+    
+    // 遍历数组中的每个对象
+    size_t pos = diagPos + 1;
+    while (pos < arrayEnd) {
+        pos = skipWhitespace(json, pos);
+        if (pos >= arrayEnd || json[pos] == ']') break;
+        
+        if (json[pos] == '{') {
+            size_t objEnd = findMatchingBracket(json, pos, '{', '}');
+            if (objEnd != std::string::npos && objEnd <= arrayEnd) {
+                SimpleLspClient::DiagnosticItem item = parseSingleDiagnostic(json, pos, objEnd);
+                result.push_back(item);
+                pos = objEnd;
+            } else {
+                break;
+            }
+        } else if (json[pos] == ',') {
+            ++pos;
+        } else {
+            ++pos;
+        }
+    }
+    
+    LOGD("parseDiagnosticsArray: parsed %zu diagnostics", result.size());
+    return result;
+}
+
 } // namespace
 
 class SimpleLspClient::RequestSender {
@@ -1063,7 +1273,6 @@ handle_notification:
                     
                     if (method == "textDocument/publishDiagnostics") {
                         // 处理诊断通知
-                        // TODO: 解析诊断信息并调用回调
                         LOGD("Received diagnostics notification");
                         
                         DiagnosticsCallback callback_copy;
@@ -1073,19 +1282,18 @@ handle_notification:
                         }
                         
                         if (callback_copy) {
-                            // 简单解析 URI
-                            size_t uri_pos = json.find("\"uri\"");
+                            // 解析 URI
+                            size_t uri_pos = findJsonKey(json, 0, "uri");
                             if (uri_pos != std::string::npos) {
-                                size_t uri_colon = json.find(':', uri_pos);
-                                size_t uri_quote_start = json.find('"', uri_colon);
-                                size_t uri_quote_end = json.find('"', uri_quote_start + 1);
-                                if (uri_quote_start != std::string::npos && uri_quote_end != std::string::npos) {
-                                    std::string file_uri = json.substr(uri_quote_start + 1, 
-                                                                       uri_quote_end - uri_quote_start - 1);
-                                    // TODO: 完整解析诊断项
-                                    std::vector<DiagnosticItem> diagnostics;
-                                    callback_copy(file_uri, diagnostics);
-                                }
+                                std::string file_uri = parseJsonString(json, uri_pos);
+                                
+                                // 解析诊断数组
+                                std::vector<DiagnosticItem> diagnostics = parseDiagnosticsArray(json);
+                                
+                                LOGI("Dispatching %zu diagnostics for %s", 
+                                     diagnostics.size(), file_uri.c_str());
+                                
+                                callback_copy(file_uri, diagnostics);
                             }
                         }
                     }
