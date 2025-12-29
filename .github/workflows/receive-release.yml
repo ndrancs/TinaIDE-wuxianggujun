@@ -1,0 +1,142 @@
+# 此文件需要放到开源仓库 TinaIDE 的 .github/workflows/receive-release.yml
+# 请复制此内容到开源仓库
+
+name: Receive and Publish Release
+
+on:
+  repository_dispatch:
+    types: [pro-release]
+  
+  # 允许手动触发（用于测试）
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (如 v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  publish-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Display release info
+        run: |
+          echo "## Release Info" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            echo "- **Event**: repository_dispatch (from tinaide-pro)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version**: ${{ github.event.client_payload.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version Name**: ${{ github.event.client_payload.version_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Run ID**: ${{ github.event.client_payload.run_id }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Source Repo**: ${{ github.event.client_payload.pro_repo }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Commit SHA**: ${{ github.event.client_payload.sha }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Event**: workflow_dispatch (manual)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version**: ${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      # 从 tinaide-pro 的 artifacts 下载 APK
+      - name: Download artifact from pro repo
+        if: github.event_name == 'repository_dispatch'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{ secrets.PRO_REPO_TOKEN }}
+          repo: ${{ github.event.client_payload.pro_repo }}
+          run_id: ${{ github.event.client_payload.run_id }}
+          name: release-apk
+          path: ./release
+      
+      - name: List downloaded files
+        run: |
+          echo "Downloaded files:"
+          ls -la ./release/ || echo "No release directory"
+      
+      # 设置版本变量
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            echo "tag=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+            echo "name=${{ github.event.client_payload.version_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "name=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+      
+      # 生成 Release Notes
+      - name: Generate Release Notes
+        run: |
+          cat << 'EOF' > release_notes.md
+          ## TinaIDE ${{ steps.version.outputs.tag }}
+          
+          ### 📥 下载
+          
+          | 文件 | 说明 |
+          |------|------|
+          | `TinaIDE-*.apk` | Android APK 安装包 |
+          
+          ### 📱 系统要求
+          
+          - Android 9.0 (API 28) 或更高版本
+          - 支持架构: arm64-v8a, x86_64
+          
+          ### 🔧 安装说明
+          
+          1. 下载 APK 文件
+          2. 在 Android 设备上启用"允许安装未知来源应用"
+          3. 打开 APK 文件进行安装
+          
+          ### 📝 更新内容
+          
+          请查看 [CHANGELOG.md](./CHANGELOG.md) 了解详细更新内容。
+          
+          ---
+          
+          > 🤖 此版本由 CI/CD 自动构建发布
+          > 
+          > 构建时间: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          EOF
+      
+      # 检查 tag 是否已存在
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      # 创建 tag（如果不存在）
+      - name: Create tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+      
+      # 创建 GitHub Release
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: TinaIDE ${{ steps.version.outputs.tag }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.tag, 'alpha') || contains(steps.version.outputs.tag, 'beta') || contains(steps.version.outputs.tag, 'rc') || contains(steps.version.outputs.tag, 'dev') }}
+          files: |
+            ./release/*.apk
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Release Summary
+        run: |
+          echo "## ✅ Release Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release URL**: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
