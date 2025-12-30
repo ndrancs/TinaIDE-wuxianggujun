@@ -15,6 +15,10 @@ on:
         required: true
         type: string
 
+# 添加权限配置 - 这是修复 403 错误的关键！
+permissions:
+  contents: write
+
 jobs:
   publish-release:
     runs-on: ubuntu-latest
@@ -22,6 +26,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # 使用 PAT token 进行 checkout，确保有推送权限
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
       
       - name: Display release info
         run: |
@@ -110,9 +118,11 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
       
-      # 创建 tag（如果不存在）
+      # 创建 tag（如果不存在）- 使用 GITHUB_TOKEN 或 RELEASE_TOKEN
       - name: Create tag
         if: steps.check_tag.outputs.exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -132,7 +142,7 @@ jobs:
             ./release/*.apk
           fail_on_unmatched_files: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
       
       - name: Release Summary
         run: |
