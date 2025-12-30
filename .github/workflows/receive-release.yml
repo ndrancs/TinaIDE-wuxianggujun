@@ -74,10 +74,22 @@ jobs:
             echo "name=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           fi
       
-      # 生成 Release Notes（修复构建时间显示问题）
+      # 解码并生成 Release Notes（包含从私有仓库传递的更新日志）
       - name: Generate Release Notes
         run: |
           BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          # 解码 changelog 内容（从私有仓库传递的 base64 编码内容）
+          CHANGELOG_CONTENT=""
+          if [ "${{ github.event_name }}" == "repository_dispatch" ] && [ -n "${{ github.event.client_payload.changelog_base64 }}" ]; then
+            CHANGELOG_CONTENT=$(echo "${{ github.event.client_payload.changelog_base64 }}" | base64 -d)
+          fi
+          
+          # 如果没有 changelog 内容，使用默认文本
+          if [ -z "$CHANGELOG_CONTENT" ]; then
+            CHANGELOG_CONTENT="暂无更新说明"
+          fi
+          
           cat > release_notes.md << EOF
           ## TinaIDE ${{ steps.version.outputs.tag }}
           
@@ -98,12 +110,24 @@ jobs:
           2. 在 Android 设备上启用"允许安装未知来源应用"
           3. 打开 APK 文件进行安装
           
+          ### 📝 更新内容
+          
+          EOF
+          
+          # 追加 changelog 内容
+          echo "$CHANGELOG_CONTENT" >> release_notes.md
+          
+          cat >> release_notes.md << EOF
+          
           ---
           
           > 🤖 此版本由 CI/CD 自动构建发布
-          > 
+          >
           > 构建时间: ${BUILD_TIME}
           EOF
+          
+          echo "Generated release notes:"
+          cat release_notes.md
       
       # 检查 tag 是否已存在
       - name: Check if tag exists
