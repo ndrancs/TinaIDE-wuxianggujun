@@ -1,5 +1,5 @@
-# 此文件需要放到开源仓库 TinaIDE 的 .github/workflows/receive-release.yml
-# 请复制此内容到开源仓库
+# This file should be placed in the open source repository TinaIDE at .github/workflows/receive-release.yml
+# Please copy this content to the open source repository
 
 name: Receive and Publish Release
 
@@ -7,15 +7,15 @@ on:
   repository_dispatch:
     types: [pro-release]
   
-  # 允许手动触发（用于测试）
+  # Allow manual trigger (for testing)
   workflow_dispatch:
     inputs:
       version:
-        description: '版本号 (如 v1.0.0)'
+        description: 'Version number (e.g., v1.0.0)'
         required: true
         type: string
 
-# 添加权限配置
+# Add permissions configuration
 permissions:
   contents: write
 
@@ -27,7 +27,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # 使用 PAT token 进行 checkout，确保有推送权限
+          # Use PAT token for checkout to ensure push permissions
           token: ${{ secrets.RELEASE_TOKEN }}
           fetch-depth: 0
       
@@ -46,7 +46,7 @@ jobs:
             echo "- **Version**: ${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
           fi
       
-      # 从 tinaide-pro 的 artifacts 下载 APK
+      # Download APK from tinaide-pro artifacts
       - name: Download artifact from pro repo
         if: github.event_name == 'repository_dispatch'
         uses: dawidd6/action-download-artifact@v6
@@ -62,7 +62,7 @@ jobs:
           echo "Downloaded files:"
           ls -la ./release/ || echo "No release directory"
       
-      # 设置版本变量
+      # Set version variables
       - name: Set version
         id: version
         run: |
@@ -74,62 +74,62 @@ jobs:
             echo "name=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           fi
       
-      # 解码并生成 Release Notes（包含从私有仓库传递的更新日志）
+      # Decode and generate Release Notes (including changelog from private repo)
       - name: Generate Release Notes
         run: |
           BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
           
-          # 解码 changelog 内容（从私有仓库传递的 base64 编码内容）
+          # Decode changelog content (base64 encoded content from private repo)
           CHANGELOG_CONTENT=""
           if [ "${{ github.event_name }}" == "repository_dispatch" ] && [ -n "${{ github.event.client_payload.changelog_base64 }}" ]; then
             CHANGELOG_CONTENT=$(echo "${{ github.event.client_payload.changelog_base64 }}" | base64 -d)
           fi
           
-          # 如果没有 changelog 内容，使用默认文本
+          # If no changelog content, use default text
           if [ -z "$CHANGELOG_CONTENT" ]; then
-            CHANGELOG_CONTENT="暂无更新说明"
+            CHANGELOG_CONTENT="No release notes available"
           fi
           
           cat > release_notes.md << EOF
           ## TinaIDE ${{ steps.version.outputs.tag }}
           
-          ### 📥 下载
+          ### 📥 Download
           
-          | 文件 | 说明 |
-          |------|------|
-          | \`TinaIDE-*.apk\` | Android APK 安装包 |
+          | File | Description |
+          |------|-------------|
+          | \`TinaIDE-*.apk\` | Android APK installer |
           
-          ### 📱 系统要求
+          ### 📱 System Requirements
           
-          - Android 9.0 (API 28) 或更高版本
-          - 支持架构: arm64-v8a, x86_64
+          - Android 9.0 (API 28) or higher
+          - Supported architectures: arm64-v8a, x86_64
           
-          ### 🔧 安装说明
+          ### 🔧 Installation Guide
           
-          1. 下载 APK 文件
-          2. 在 Android 设备上启用"允许安装未知来源应用"
-          3. 打开 APK 文件进行安装
+          1. Download the APK file
+          2. Enable "Install from unknown sources" on your Android device
+          3. Open the APK file to install
           
-          ### 📝 更新内容
+          ### 📝 What's New
           
           EOF
           
-          # 追加 changelog 内容
+          # Append changelog content
           echo "$CHANGELOG_CONTENT" >> release_notes.md
           
           cat >> release_notes.md << EOF
           
           ---
           
-          > 🤖 此版本由 CI/CD 自动构建发布
+          > 🤖 This release was automatically built and published by CI/CD
           >
-          > 构建时间: ${BUILD_TIME}
+          > Build time: ${BUILD_TIME}
           EOF
           
           echo "Generated release notes:"
           cat release_notes.md
       
-      # 检查 tag 是否已存在
+      # Check if tag already exists
       - name: Check if tag exists
         id: check_tag
         run: |
@@ -139,7 +139,7 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
       
-      # 创建 tag（如果不存在）
+      # Create tag (if not exists)
       - name: Create tag
         if: steps.check_tag.outputs.exists == 'false'
         run: |
@@ -148,9 +148,9 @@ jobs:
           git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
       
-      # 创建 GitHub Release
-      # 注意：Source code (zip/tar.gz) 是 GitHub 自动生成的，无法禁用
-      # 但我们可以通过 make_latest 确保 APK 是最显眼的
+      # Create GitHub Release
+      # Note: Source code (zip/tar.gz) is auto-generated by GitHub and cannot be disabled
+      # We use make_latest to ensure the APK is prominently displayed
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
