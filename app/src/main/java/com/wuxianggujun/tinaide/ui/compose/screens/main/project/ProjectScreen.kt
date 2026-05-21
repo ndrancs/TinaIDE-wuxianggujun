@@ -1,5 +1,8 @@
 package com.wuxianggujun.tinaide.ui.compose.screens.main.project
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
@@ -16,15 +19,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -67,6 +64,7 @@ import com.wuxianggujun.tinaide.storage.StorageManager
 import com.wuxianggujun.tinaide.storage.compose.rememberStoragePermissionRequester
 import com.wuxianggujun.tinaide.tutorial.SpotlightUiState
 import com.wuxianggujun.tinaide.tutorial.spotlight.SpotlightTargets
+import com.wuxianggujun.tinaide.update.AppUpdateInfo
 import com.wuxianggujun.tinaide.ui.ProjectManagerViewModel
 import com.wuxianggujun.tinaide.ui.UiMessageException
 import com.wuxianggujun.tinaide.ui.compose.components.ProjectCardSkeleton
@@ -75,11 +73,9 @@ import com.wuxianggujun.tinaide.ui.compose.components.TinaExpandableFab
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPullToRefreshBox
 import com.wuxianggujun.tinaide.ui.compose.components.TinaSingleChoiceDialog
 import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
-import com.wuxianggujun.tinaide.ui.projectlist.AnnouncementDialog
 import com.wuxianggujun.tinaide.ui.projectlist.DeleteConfirmDialog
 import com.wuxianggujun.tinaide.ui.projectlist.EmptyProjectsView
 import com.wuxianggujun.tinaide.ui.projectlist.GitCloneDialog
-import com.wuxianggujun.tinaide.ui.projectlist.NotificationCenterDialog
 import com.wuxianggujun.tinaide.ui.projectlist.ProjectAction
 import com.wuxianggujun.tinaide.ui.projectlist.ProjectInfoDialog
 import com.wuxianggujun.tinaide.ui.projectlist.ProjectListCard
@@ -139,35 +135,15 @@ fun ProjectScreen(
     var localImportPickerSourceLocation by remember { mutableStateOf<NewProjectSourceLocation?>(null) }
     var gitCloneSourceLocation by remember { mutableStateOf<NewProjectSourceLocation?>(null) }
     var sourceLocationSelectionAction by remember { mutableStateOf<ManagedProjectActionType?>(null) }
-    var showAnnouncementDialog by remember { mutableStateOf(false) }
-    var showNotificationCenter by rememberSaveable { mutableStateOf(false) }
-    var selectedAnnouncementId by rememberSaveable { mutableStateOf<String?>(null) }
     var cloneProgressText by remember { mutableStateOf<String?>(null) }
     var pendingProjectPermissionAction by remember { mutableStateOf<PendingProjectPermissionAction?>(null) }
 
     val projects by viewModel.projects.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val isDeleting by viewModel.isDeleting.collectAsStateWithLifecycle()
-    val notifications by viewModel.notifications.collectAsStateWithLifecycle()
-    val announcement by viewModel.currentAnnouncement.collectAsStateWithLifecycle()
-    val hasUnreadNotification by viewModel.hasUnreadNotification.collectAsStateWithLifecycle()
+    val appUpdateInfo by viewModel.appUpdateInfo.collectAsStateWithLifecycle()
     val permissionStatus by storageManager.permissionStatus.collectAsStateWithLifecycle()
     val hasExternalStoragePermission = permissionStatus == PermissionStatus.GRANTED
-    val selectedAnnouncement = remember(selectedAnnouncementId, notifications, announcement) {
-        selectedAnnouncementId?.let { announcementId ->
-            notifications.firstOrNull { it.id == announcementId }
-                ?: announcement?.takeIf { it.id == announcementId }
-        }
-    }
-
-    LaunchedEffect(announcement?.id, announcement?.isPopup) {
-        val popupAnnouncement = announcement
-        if (popupAnnouncement?.isPopup == true) {
-            selectedAnnouncementId = popupAnnouncement.id
-            showAnnouncementDialog = true
-            viewModel.markAnnouncementViewed(popupAnnouncement.id, popupPresented = true)
-        }
-    }
 
     // 仅在首次进入时加载项目列表，避免切换页面时重复刷新
     var hasInitialized by rememberSaveable { mutableStateOf(false) }
@@ -391,31 +367,7 @@ fun ProjectScreen(
         Scaffold(
             topBar = {
                 TinaTopBar(
-                    title = stringResource(Strings.nav_project),
-                    actions = {
-                        IconButton(
-                            onClick = {
-                                if (notifications.isNotEmpty()) {
-                                    showNotificationCenter = true
-                                } else {
-                                    context.toastInfo(Strings.toast_no_notifications.strOr(context))
-                                }
-                            }
-                        ) {
-                            BadgedBox(
-                                badge = {
-                                    if (hasUnreadNotification) {
-                                        Badge()
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Notifications,
-                                    contentDescription = stringResource(Strings.content_desc_notifications)
-                                )
-                            }
-                        }
-                    }
+                    title = stringResource(Strings.nav_project)
                 )
             },
             containerColor = MaterialTheme.colorScheme.background
@@ -479,7 +431,7 @@ fun ProjectScreen(
                 } else {
                     TinaPullToRefreshBox(
                         isRefreshing = isRefreshing,
-                        onRefresh = { viewModel.reloadProjects(includeAnnouncements = true) },
+                        onRefresh = { viewModel.reloadProjects() },
                         state = pullToRefreshState,
                         enableHapticFeedback = true,
                         modifier = Modifier
@@ -628,20 +580,6 @@ fun ProjectScreen(
         )
     }
 
-    if (showNotificationCenter) {
-        NotificationCenterDialog(
-            notifications = notifications,
-            onDismiss = { showNotificationCenter = false },
-            onAnnouncementClick = { selected ->
-                showNotificationCenter = false
-                selectedAnnouncementId = selected.id
-                showAnnouncementDialog = true
-                viewModel.markAnnouncementViewed(selected.id)
-            },
-            onMarkAllRead = { viewModel.markAllAnnouncementsRead() }
-        )
-    }
-
     localImportSourceLocation?.let { activeSourceLocation ->
         TinaActionChoiceDialog(
             title = stringResource(Strings.dialog_title_local_import),
@@ -665,39 +603,15 @@ fun ProjectScreen(
         )
     }
 
-    // 通知弹窗（公告详情）
-    if (showAnnouncementDialog && selectedAnnouncement != null) {
-        AnnouncementDialog(
-            announcement = selectedAnnouncement!!,
-            onDismiss = {
-                showAnnouncementDialog = false
-                selectedAnnouncementId?.let(viewModel::dismissAnnouncementDialog)
-                selectedAnnouncementId = null
+    // 应用更新提示弹窗
+    appUpdateInfo?.let { updateInfo ->
+        AppUpdateDialog(
+            updateInfo = updateInfo,
+            onDismiss = { viewModel.dismissAppUpdate(updateInfo) },
+            onDownload = {
+                openAppUpdateUrl(context, updateInfo)
+                viewModel.clearAppUpdatePrompt()
             },
-            onAction = if (selectedAnnouncement?.actionText != null) {
-                {
-                    selectedAnnouncementId?.let { announcementId ->
-                        coroutineScope.launch {
-                            viewModel.handleAnnouncementAction(announcementId)
-                                .onSuccess { message ->
-                                    showAnnouncementDialog = false
-                                    selectedAnnouncementId = null
-                                    if (!message.isNullOrBlank()) {
-                                        context.toastSuccess(message)
-                                    }
-                                }
-                                .onFailure { e ->
-                                    context.handleErrorWithToast(
-                                        e,
-                                        e.message ?: Strings.error_unknown.strOr(context)
-                                    )
-                                }
-                        }
-                    }
-                }
-            } else {
-                null
-            }
         )
     }
 
@@ -744,6 +658,19 @@ fun ProjectScreen(
                 }
             }
         )
+    }
+}
+
+private fun openAppUpdateUrl(
+    context: Context,
+    updateInfo: AppUpdateInfo,
+) {
+    val url = updateInfo.downloadUrl.takeIf(String::isNotBlank) ?: updateInfo.releasePageUrl
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    runCatching {
+        context.startActivity(intent)
+    }.onFailure {
+        context.toastError(Strings.app_update_open_failed.strOr(context))
     }
 }
 

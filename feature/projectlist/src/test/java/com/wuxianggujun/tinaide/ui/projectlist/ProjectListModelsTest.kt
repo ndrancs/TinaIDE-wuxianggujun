@@ -22,17 +22,4 @@ class ProjectListModelsTest {
         assertThat(ProjectTag.fromLanguage(ProjectLanguage.MIXED)).isNull()
     }
 
-    @Test
-    fun announcement_shouldDefaultToDismissibleUnreadNonPopup() {
-        val announcement = Announcement(
-            id = "a1",
-            type = AnnouncementType.INFO,
-            title = "Notice"
-        )
-
-        assertThat(announcement.isPopup).isFalse()
-        assertThat(announcement.dismissible).isTrue()
-        assertThat(announcement.isRead).isFalse()
-        assertThat(announcement.reward).isNull()
-    }
 }

@@ -93,30 +93,6 @@ class TinaServerApi private constructor(
         return postMultipart("/api/logs/upload", form.build())
     }
 
-    suspend fun getAnnouncements(): ApiResult<AnnouncementsResponse> {
-        return get("/api/announcements")
-    }
-
-    suspend fun getLatestAnnouncement(): ApiResult<LatestAnnouncementResponse> {
-        return get("/api/announcements/latest")
-    }
-
-    suspend fun reportAnnouncementView(id: String): ApiResult<SimpleSuccessResponse> {
-        return postEmpty("/api/announcements/$id/view")
-    }
-
-    suspend fun reportAnnouncementClick(id: String): ApiResult<SimpleSuccessResponse> {
-        return postEmpty("/api/announcements/$id/click")
-    }
-
-    suspend fun markAnnouncementRead(id: String): ApiResult<AnnouncementReadResponse> {
-        return postEmpty("/api/announcements/$id/read")
-    }
-
-    suspend fun claimAnnouncementReward(id: String): ApiResult<AnnouncementRewardClaimResponse> {
-        return postEmpty("/api/announcements/$id/claim")
-    }
-
     suspend fun getServerConfig(): ApiResult<ServerConfigResponse> = withContext(Dispatchers.IO) {
         try {
             val request = Request.Builder()
@@ -216,27 +192,6 @@ class TinaServerApi private constructor(
             ApiResult.NetworkError(e.message ?: Strings.error_network_connection_failed.str())
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "GET $path unknown error")
-            ApiResult.Error(-1, e.message ?: Strings.error_unknown.str())
-        }
-    }
-
-    private suspend inline fun <reified T> postEmpty(
-        path: String,
-        expectEnvelope: Boolean = true
-    ): ApiResult<T> = withContext(Dispatchers.IO) {
-        try {
-            val response = client.newCall(
-                Request.Builder()
-                    .url("$baseUrl$path")
-                    .post("{}".toRequestBody("application/json".toMediaType()))
-                    .build()
-            ).execute()
-            parseResponse(response, expectEnvelope)
-        } catch (e: IOException) {
-            Timber.tag(TAG).e(e, "POST $path network error")
-            ApiResult.NetworkError(e.message ?: Strings.error_network_connection_failed.str())
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "POST $path unknown error")
             ApiResult.Error(-1, e.message ?: Strings.error_unknown.str())
         }
     }
@@ -369,70 +324,6 @@ data class HealthResponse(
 data class LogUploadResponse(
     val id: String,
     val message: String
-)
-
-@Serializable
-data class AnnouncementsResponse(
-    val announcements: List<ServerAnnouncement> = emptyList()
-)
-
-@Serializable
-data class LatestAnnouncementResponse(
-    val announcement: ServerAnnouncement? = null
-)
-
-@Serializable
-data class ServerAnnouncementReward(
-    @SerialName("quota_amount")
-    val quotaAmount: Long,
-    @SerialName("quota_expires_at")
-    val quotaExpiresAt: String? = null,
-    val claimed: Boolean = false,
-    @SerialName("can_claim")
-    val canClaim: Boolean = false,
-    @SerialName("claimed_at")
-    val claimedAt: String? = null
-)
-
-@Serializable
-data class ServerAnnouncement(
-    val id: String,
-    @SerialName("type")
-    val type: String,
-    val title: String,
-    val content: String,
-    @SerialName("expires_at")
-    val expiresAt: String? = null,
-    @SerialName("is_popup")
-    val isPopup: Boolean = false,
-    @SerialName("is_read")
-    val isRead: Boolean = false,
-    @SerialName("read_at")
-    val readAt: String? = null,
-    val dismissible: Boolean = true,
-    val reward: ServerAnnouncementReward? = null,
-    val timestamp: Long = 0L
-)
-
-@Serializable
-data class AnnouncementRewardClaimResponse(
-    @SerialName("claimed_quota")
-    val claimedQuota: Long,
-    val balance: Long,
-    @SerialName("quota_expires_at")
-    val quotaExpiresAt: String? = null
-)
-
-@Serializable
-data class AnnouncementReadResponse(
-    val success: Boolean = false,
-    @SerialName("read_at")
-    val readAt: String? = null
-)
-
-@Serializable
-data class SimpleSuccessResponse(
-    val success: Boolean = false
 )
 
 @Serializable
