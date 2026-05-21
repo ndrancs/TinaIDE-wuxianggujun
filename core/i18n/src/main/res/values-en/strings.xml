@@ -96,10 +96,6 @@
   <string name="settings_title_about">About</string>
   <string name="settings_desc_about">Version info, GitHub, open source licenses</string>
 
-  <string name="about_join_qq_title">Join QQ Group</string>
-  <string name="about_join_qq_summary">Click to join TinaIDE official group</string>
-  <string name="about_join_qq_error">Cannot open QQ group link, please try again later</string>
-
   <!-- Git SSH -->
   <string name="settings_cat_git_ssh">Git SSH</string>
 
@@ -1070,13 +1066,6 @@
 
 
 
-  <!-- QR dialog -->
-  <string name="btn_activate">Activate</string>
-  <string name="action_ai_recharge">Recharge AI Credits</string>
-  <string name="dialog_title_ai_redeem_code">Recharge AI Credits</string>
-  <string name="hint_ai_redeem_code">Enter AI recharge code</string>
-  <string name="btn_recharge_ai">Recharge</string>
-  <string name="toast_ai_recharge_success">AI recharge succeeded, credited %1$d quota</string>
   <string name="label_ai_balance">AI Balance</string>
   <string name="label_ai_total_consumed">AI Total Consumed</string>
   <string name="label_ai_total_recharged">AI Total Recharged</string>
@@ -1120,8 +1109,6 @@
   <string name="settings_cat_about">About</string>
   <string name="settings_version_info">Version Info</string>
   <string name="settings_cat_community">Community</string>
-  <string name="settings_join_qq_group">Join QQ Group</string>
-  <string name="settings_join_qq_desc">Communicate with developers</string>
   <string name="error_cannot_open_link">Cannot open link</string>
   <string name="settings_github">GitHub</string>
   <string name="settings_github_desc">View source code, submit issues</string>
@@ -3587,7 +3574,7 @@ kept=%3$d bytes
 
   <string name="help_placeholder_tip_label">Tip</string>
   <string name="help_placeholder_tip_body">This document is under construction. Stay tuned.</string>
-  <string name="help_placeholder_tip_contact">If you have any questions, feel free to join our QQ group.</string>
+  <string name="help_placeholder_tip_contact">If you have any questions, use feedback or GitHub Issues to reach us.</string>
   <string name="help_placeholder_related_topics_title">Related Topics</string>
 
   <string-array name="help_keywords_getting_started">

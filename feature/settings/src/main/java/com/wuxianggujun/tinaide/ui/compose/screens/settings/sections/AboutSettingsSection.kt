@@ -52,7 +52,6 @@ import com.wuxianggujun.tinaide.ui.compose.screens.settings.components.SettingsS
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-private const val QQ_GROUP_INVITE_URL = "https://qm.qq.com/q/uRzAvN6jAY"
 private const val GITHUB_URL = "https://github.com/wuxianggujun/TinaIDE"
 
 @Composable
@@ -150,17 +149,6 @@ internal fun AboutSettingsSection(
     SettingsCategoryTitle(stringResource(Strings.settings_cat_community))
 
     SettingsCard {
-        SettingsClickableItem(
-            title = stringResource(Strings.settings_join_qq_group),
-            subtitle = stringResource(Strings.settings_join_qq_desc),
-            onClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(QQ_GROUP_INVITE_URL))
-                runCatching { context.startActivity(intent) }
-                    .onFailure { Toast.makeText(context, cannotOpenLinkError, Toast.LENGTH_SHORT).show() }
-            },
-            showDivider = true
-        )
-
         SettingsClickableItem(
             title = stringResource(Strings.settings_github),
             subtitle = stringResource(Strings.settings_github_desc),

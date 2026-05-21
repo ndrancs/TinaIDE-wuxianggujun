@@ -416,9 +416,6 @@
   <string name="clangd_test_diagnostics">诊断信息</string>
   <string name="clangd_test_no_diagnostics">暂无诊断信息</string>
 
-  <string name="about_join_qq_title">加入 QQ 群</string>
-  <string name="about_join_qq_summary">点击加入 TinaIDE 官方群聊</string>
-
   <!-- Git SSH -->
   <string name="settings_cat_git_ssh">Git SSH</string>
 
@@ -478,9 +475,6 @@
   <string name="git_ssh_passphrase_message">需要为 %1$s 输入口令（Host: %2$s）</string>
   <string name="git_ssh_passphrase_label">口令</string>
   <string name="git_ssh_passphrase_placeholder">请输入口令</string>
-  <string name="about_join_qq_error">无法打开 QQ 群链接，请稍后再试</string>
-
-
   <!-- 插件管理 -->
   <string name="settings_cat_plugins">插件管理</string>
   <string name="settings_plugins_install_from_file">从文件安装插件</string>
@@ -1560,13 +1554,6 @@
   <string name="action_retry_sync_now">立即重试同步</string>
 
 
-  <!-- 二维码弹窗 -->
-  <string name="btn_activate">激活</string>
-  <string name="action_ai_recharge">AI 功能充值</string>
-  <string name="dialog_title_ai_redeem_code">AI 功能充值</string>
-  <string name="hint_ai_redeem_code">请输入 AI 充值码</string>
-  <string name="btn_recharge_ai">充值</string>
-  <string name="toast_ai_recharge_success">AI 充值成功，到账 %1$d 额度</string>
   <string name="label_ai_balance">AI 余额</string>
   <string name="label_ai_total_consumed">AI 累计消费</string>
   <string name="label_ai_total_recharged">AI 累计充值</string>
@@ -1611,8 +1598,6 @@
   <string name="settings_cat_about">关于</string>
   <string name="settings_version_info">版本信息</string>
   <string name="settings_cat_community">社区</string>
-  <string name="settings_join_qq_group">加入 QQ 群</string>
-  <string name="settings_join_qq_desc">与开发者交流反馈</string>
   <string name="error_cannot_open_link">无法打开链接</string>
   <string name="settings_github">GitHub</string>
   <string name="settings_github_desc">查看源代码、提交 Issue</string>
@@ -3116,7 +3101,7 @@ kept=%3$d bytes
 
   <string name="help_placeholder_tip_label">提示</string>
   <string name="help_placeholder_tip_body">此文档正在编写中，敬请期待。</string>
-  <string name="help_placeholder_tip_contact">如果您有任何问题，欢迎加入 QQ 群与我们交流。</string>
+  <string name="help_placeholder_tip_contact">如果您有任何问题，欢迎通过反馈入口或 GitHub Issue 与我们交流。</string>
   <string name="help_placeholder_related_topics_title">相关主题</string>
 
   <!-- Help Keywords -->
@@ -5644,7 +5629,7 @@ kept=%3$d bytes
   <string name="apk_builder_permission_schedule_exact_alarm">设置精确闹钟</string>
   <string name="apk_builder_permission_ignore_battery_optimizations">忽略电池优化</string>
   <string name="apk_builder_keystore_fingerprints_title">签名指纹</string>
-  <string name="apk_builder_keystore_fingerprints_hint">对接微信/高德/QQ 等开放平台时需要提供；长按可复制。</string>
+  <string name="apk_builder_keystore_fingerprints_hint">对接微信、高德等开放平台时需要提供；长按可复制。</string>
   <string name="apk_builder_icon_title">启动器图标</string>
   <string name="apk_builder_icon_hint">可选。不设置则沿用模板自带图标；建议使用正方形 PNG，越大越清晰。</string>
   <string name="apk_builder_icon_pick">选择图标</string>

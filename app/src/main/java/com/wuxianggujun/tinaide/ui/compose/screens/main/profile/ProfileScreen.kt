@@ -42,7 +42,7 @@ import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
 /**
  * 开源版“我的”页。
  *
- * 账号登录、QQ 登录、激活码和会员入口已从主 APK 移除；这里仅保留本地内容、
+ * 账号登录、第三方登录、激活码和会员入口已从主 APK 移除；这里仅保留本地内容、
  * 反馈、日志与关于等仍可用能力。
  */
 @Composable

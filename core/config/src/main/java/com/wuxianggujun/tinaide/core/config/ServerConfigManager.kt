@@ -16,7 +16,7 @@ import timber.log.Timber
 /**
  * 匿名服务端配置管理器。
  *
- * 开源版保留功能开关、公告、反馈等服务端能力，但不再读取登录、QQ 或会员配置。
+ * 开源版保留功能开关、公告、反馈等服务端能力，但不再读取登录或会员配置。
  */
 object ServerConfigManager {
     private const val TAG = "ServerConfigManager"

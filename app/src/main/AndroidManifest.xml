@@ -29,7 +29,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
-    <!-- Android 11+ 查询其他应用的权限（用于检测 QQ 是否安装） -->
     <application
         android:name=".TinaApplication"
         android:allowNativeHeapPointerTagging="false"

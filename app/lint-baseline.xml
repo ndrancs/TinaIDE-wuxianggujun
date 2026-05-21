@@ -3658,40 +3658,6 @@
 
     <issue
         id="UnusedResources"
-        message="The resource `R.string.about_join_qq_title` appears to be unused"
-        errorLine1="  &lt;string name=&quot;about_join_qq_title&quot;>加入 QQ 群&lt;/string>"
-        errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="166"
-            column="11"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.about_join_qq_summary` appears to be unused"
-        errorLine1="  &lt;string name=&quot;about_join_qq_summary&quot;>点击加入 TinaIDE 官方群聊&lt;/string>"
-        errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="167"
-            column="11"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.about_join_qq_error` appears to be unused"
-        errorLine1="  &lt;string name=&quot;about_join_qq_error&quot;>无法打开 QQ 群链接，请稍后再试&lt;/string>"
-        errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="250"
-            column="11"/>
-    </issue>
-
-
-    <issue
-        id="UnusedResources"
         message="The resource `R.string.settings_plugins_details` appears to be unused"
         errorLine1="  &lt;string name=&quot;settings_plugins_details&quot;>插件详情&lt;/string>"
         errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -7809,17 +7775,6 @@
             file="src/main/res/menu/output_menu.xml"
             line="9"
             column="9"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(QQ_GROUP_INVITE_URL))"
-        errorLine2="                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/settings/sections/AboutSettingsSection.kt"
-            line="125"
-            column="57"/>
     </issue>
 
     <issue
