@@ -37,6 +37,17 @@
 - 本项目不使用 `Unreleased` / `未发布` 区块。
 - 所有变更必须归档到明确的版本号区块（版本号来源：`version.properties` 的 `versionName`）。
 
+## [0.16.0] - 2026-05-21
+
+### Changed
+- 发布干净开源基线：公开仓库历史从当前源码重新开始，移除后端、账号登录、QQ 登录、激活码/许可证和会员入口。
+- 保留反馈、日志、下载历史、插件系统、包管理和本地 IDE 能力。
+- 后端与旧分支/tag 已迁入私有归档仓库，公开仓库仅保留 `main` 与 `dev`。
+
+### Verification
+- `.\gradlew.bat :app:assembleArm64Debug --no-daemon`
+- `BUILD SUCCESSFUL`
+
 ## [0.15.18] - 2026-04-30
 
 ### Added
