@@ -4778,27 +4778,14 @@ kept=%3$d bytes
   <string name="market_title">Market</string>
   <string name="market_tab_plugins">Plugins</string>
   <string name="market_tab_packages">Packages</string>
-  <string name="market_tab_snippets">Code</string>
   <string name="market_search_hint">Search...</string>
   <string name="market_empty">No content</string>
   <string name="market_empty_plugins_title">Plugin Market Coming Soon</string>
   <string name="market_empty_plugins_desc">Exciting plugins are on the way, stay tuned</string>
   <string name="market_empty_packages_title">Package Manager Coming Soon</string>
   <string name="market_empty_packages_desc">Development packages are on the way, stay tuned</string>
-  <string name="market_empty_snippets_title">No Snippets Yet</string>
-  <string name="market_empty_snippets_desc">Be the first to share your code</string>
   <string name="market_error_title">Failed to Load</string>
   <string name="market_error_retry">Retry</string>
-  <string name="no_snippets_found">No snippets found</string>
-  <string name="snippet_publish">Publish</string>
-  <string name="snippet_publishing">Publishing...</string>
-  <string name="snippet_create_title">Publish Snippet</string>
-  <string name="snippet_field_title">Title</string>
-  <string name="snippet_field_language">Language</string>
-  <string name="snippet_field_description">Description</string>
-  <string name="snippet_field_code">Code</string>
-  <string name="snippet_favorite">Favorite</string>
-  <string name="snippet_unfavorite">Unfavorite</string>
   <string name="market_installed">Installed</string>
   <string name="market_install">Install</string>
   <string name="market_update">Update</string>
@@ -4809,11 +4796,8 @@ kept=%3$d bytes
   <!-- My Publish Screen -->
   <string name="my_publish_title">My Publish</string>
   <string name="my_publish_plugins_section">My Plugins</string>
-  <string name="my_publish_snippets_section">My Snippets</string>
   <string name="my_publish_no_plugins">No plugins published yet</string>
-  <string name="my_publish_no_snippets">No snippets published yet</string>
   <string name="my_publish_upload_plugin">Upload Plugin</string>
-  <string name="my_publish_create_snippet">Create Snippet</string>
   <string name="my_publish_select_plugin_file">Select plugin file (.tinaplug)</string>
   <string name="my_publish_changelog">Changelog</string>
   <string name="my_publish_changelog_hint">Describe what\'s new in this version (optional)</string>
@@ -4824,14 +4808,6 @@ kept=%3$d bytes
   <string name="status_pending">Pending</string>
   <string name="status_draft">Draft</string>
   <string name="status_rejected">Rejected</string>
-
-  <!-- Snippet -->
-  <string name="snippet_copies">copies</string>
-  <string name="snippet_favorites">favorites</string>
-  <string name="snippet_by_author">by %1$s</string>
-  <string name="snippet_error_title_too_short">Title must be at least 3 characters</string>
-  <string name="snippet_error_language_empty">Language cannot be empty</string>
-  <string name="snippet_error_code_empty">Code content cannot be empty</string>
 
   <!-- Actions (new) -->
   <string name="action_add">Add</string>
@@ -5279,15 +5255,10 @@ kept=%3$d bytes
   <!-- Market -->
   <string name="market_category_all">All</string>
   <string name="market_category_theme">Themes</string>
-  <string name="market_category_snippet">Snippets</string>
   <string name="market_category_tool">Tools</string>
   <string name="market_category_language">Language Support</string>
   <string name="market_download_count">%1$d downloads</string>
   <string name="market_version">Version: %1$s</string>
-  <string name="market_copy_count">%1$d copies</string>
-  <string name="market_error_title_min_length">Title must be at least 3 characters</string>
-  <string name="market_error_language_empty">Language cannot be empty</string>
-  <string name="market_error_code_empty">Code content cannot be empty</string>
   <string name="market_error_read_file">Cannot read file</string>
 
   <!-- Plugin Log -->

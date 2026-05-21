@@ -1340,7 +1340,7 @@ class EditorContainerState(
             CompletionItem(
                 label = candidate.trigger,
                 kind = CompletionItemKind.SNIPPET,
-                detail = candidate.description ?: Strings.market_category_snippet.strOr(context),
+                detail = candidate.description ?: Strings.plugin_marketplace_category_snippet.strOr(context),
                 insertText = candidate.plainInsertText,
                 source = CompletionSource.LOCAL,
                 snippetText = candidate.snippetText

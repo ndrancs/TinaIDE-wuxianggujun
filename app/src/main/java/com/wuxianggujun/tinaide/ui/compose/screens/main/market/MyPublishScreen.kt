@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Card
@@ -51,9 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.snippet.model.SnippetSummary
-import com.wuxianggujun.tinaide.snippet.ui.CreateSnippetDialog
-import com.wuxianggujun.tinaide.snippet.viewmodel.MySnippetsViewModel
 import com.wuxianggujun.tinaide.ui.compose.components.TinaAlertDialog
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogCard
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogContentColumn
@@ -69,23 +65,20 @@ import org.koin.androidx.compose.koinViewModel
 /**
  * 我的发布页面
  *
- * 插件部分由 MyPublishViewModel 管理，代码片段部分由 MySnippetsViewModel 管理。
+ * 开源版不提供账号发布能力，页面保留为统一提示入口。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyPublishScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: MyPublishViewModel = koinViewModel(),
-    snippetsViewModel: MySnippetsViewModel = koinViewModel()
+    viewModel: MyPublishViewModel = koinViewModel()
 ) {
     val isPublishingAvailable = false
     val myPluginsState by viewModel.myPluginsState.collectAsState()
-    val mySnippetsState by snippetsViewModel.state.collectAsState()
     val uploadState by viewModel.uploadState.collectAsState()
 
     var showUploadPluginDialog by remember { mutableStateOf(false) }
-    var showCreateSnippetDialog by remember { mutableStateOf(false) }
 
     BackHandler(enabled = true) { onNavigateBack() }
 
@@ -108,13 +101,10 @@ fun MyPublishScreen(
                 Text(stringResource(Strings.market_publish_unavailable), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
-            val isRefreshing = myPluginsState.isLoading || mySnippetsState.isLoading
-
             TinaPullToRefreshBox(
-                isRefreshing = isRefreshing,
+                isRefreshing = myPluginsState.isLoading,
                 onRefresh = {
                     viewModel.refresh()
-                    snippetsViewModel.loadMySnippets()
                 },
                 enableHapticFeedback = true,
                 modifier = Modifier.fillMaxSize().padding(padding)
@@ -136,19 +126,6 @@ fun MyPublishScreen(
                         items(myPluginsState.plugins, key = { it.id }) { plugin -> MyPluginCard(plugin = plugin) }
                     }
 
-                    item { Spacer(modifier = Modifier.height(8.dp)) }
-
-                    // 我的代码片段区块
-                    item {
-                        SectionHeader(title = stringResource(Strings.my_publish_snippets_section), icon = Icons.Default.Code, count = mySnippetsState.snippets.size, onAddClick = { showCreateSnippetDialog = true })
-                    }
-                    if (mySnippetsState.isLoading && mySnippetsState.snippets.isEmpty()) {
-                        item { Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) } }
-                    } else if (mySnippetsState.snippets.isEmpty()) {
-                        item { EmptySection(message = stringResource(Strings.my_publish_no_snippets), actionText = stringResource(Strings.my_publish_create_snippet), onAction = { showCreateSnippetDialog = true }) }
-                    } else {
-                        items(mySnippetsState.snippets, key = { it.id }) { snippet -> MySnippetCard(snippet = snippet) }
-                    }
                 }
             }
         }
@@ -168,16 +145,6 @@ fun MyPublishScreen(
         )
     }
 
-    if (showCreateSnippetDialog) {
-        CreateSnippetDialog(
-            onDismiss = { showCreateSnippetDialog = false },
-            onCreate = { title, description, language, code, isDraft ->
-                snippetsViewModel.createSnippet(title, description, language, code, isDraft) { success, _ ->
-                    if (success) showCreateSnippetDialog = false
-                }
-            }
-        )
-    }
 }
 
 // ── 内部辅助组件（插件相关，不属于 snippet） ──
@@ -231,28 +198,6 @@ private fun MyPluginCard(plugin: MyPluginSummary) {
 }
 
 @Composable
-private fun MySnippetCard(snippet: SnippetSummary) {
-    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f)) {
-                    Text(snippet.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    snippet.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis) }
-                }
-                Spacer(Modifier.width(8.dp))
-                snippet.status?.let { StatusChip(status = it) }
-            }
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                LanguageChip(language = snippet.language)
-                Text("${snippet.copyCount} ${stringResource(Strings.snippet_copies)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("${snippet.favoriteCount} ${stringResource(Strings.snippet_favorites)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-}
-
-@Composable
 private fun StatusChip(status: String) {
     val (bg, fg) = when (status) {
         "published" -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
@@ -270,13 +215,6 @@ private fun StatusChip(status: String) {
     }
     Box(Modifier.clip(RoundedCornerShape(4.dp)).background(bg).padding(horizontal = 8.dp, vertical = 4.dp)) {
         Text(text, style = MaterialTheme.typography.labelSmall, color = fg)
-    }
-}
-
-@Composable
-private fun LanguageChip(language: String) {
-    Box(Modifier.clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.secondaryContainer).padding(horizontal = 8.dp, vertical = 4.dp)) {
-        Text(language, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
     }
 }
 

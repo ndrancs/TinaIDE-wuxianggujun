@@ -26,7 +26,6 @@ import com.wuxianggujun.tinaide.editor.di.editorModule
 import com.wuxianggujun.tinaide.extensions.applyTinaSystemBars
 import com.wuxianggujun.tinaide.output.di.outputModule
 import com.wuxianggujun.tinaide.plugin.di.pluginModule
-import com.wuxianggujun.tinaide.snippet.di.snippetModule
 import com.wuxianggujun.tinaide.startup.BundledPackagesInstallTask
 import com.wuxianggujun.tinaide.startup.CoreServiceRegistrar
 import com.wuxianggujun.tinaide.startup.ProjectMetadataInitializer
@@ -166,7 +165,6 @@ class TinaApplication : Application() {
                 prootModule,
                 compileModule,
                 aiModule,
-                snippetModule,
                 appModule,
                 appViewModelModule,
             )

@@ -4957,27 +4957,14 @@ kept=%3$d bytes
   <string name="market_title">市场</string>
   <string name="market_tab_plugins">插件</string>
   <string name="market_tab_packages">包管理</string>
-  <string name="market_tab_snippets">代码</string>
   <string name="market_search_hint">搜索...</string>
   <string name="market_empty">暂无内容</string>
   <string name="market_empty_plugins_title">插件市场正在建设中</string>
   <string name="market_empty_plugins_desc">精彩插件即将上线，敬请期待</string>
   <string name="market_empty_packages_title">包管理正在建设中</string>
   <string name="market_empty_packages_desc">开发工具包即将上线，敬请期待</string>
-  <string name="market_empty_snippets_title">暂无代码片段</string>
-  <string name="market_empty_snippets_desc">成为第一个分享代码的人吧</string>
   <string name="market_error_title">加载失败</string>
   <string name="market_error_retry">重试</string>
-  <string name="no_snippets_found">暂无代码片段</string>
-  <string name="snippet_publish">发布</string>
-  <string name="snippet_publishing">发布中...</string>
-  <string name="snippet_create_title">发布代码片段</string>
-  <string name="snippet_field_title">标题</string>
-  <string name="snippet_field_language">语言</string>
-  <string name="snippet_field_description">描述</string>
-  <string name="snippet_field_code">代码内容</string>
-  <string name="snippet_favorite">收藏</string>
-  <string name="snippet_unfavorite">取消收藏</string>
   <string name="market_installed">已安装</string>
   <string name="market_install">安装</string>
   <string name="market_update">更新</string>
@@ -4987,11 +4974,8 @@ kept=%3$d bytes
   <!-- My Publish Screen -->
   <string name="my_publish_title">我的发布</string>
   <string name="my_publish_plugins_section">我的插件</string>
-  <string name="my_publish_snippets_section">我的代码片段</string>
   <string name="my_publish_no_plugins">还没有发布插件</string>
-  <string name="my_publish_no_snippets">还没有发布代码片段</string>
   <string name="my_publish_upload_plugin">上传插件</string>
-  <string name="my_publish_create_snippet">发布代码片段</string>
   <string name="my_publish_select_plugin_file">选择插件文件 (.tinaplug)</string>
   <string name="my_publish_changelog">更新日志</string>
   <string name="my_publish_changelog_hint">描述此版本的更新内容（可选）</string>
@@ -5002,14 +4986,6 @@ kept=%3$d bytes
   <string name="status_pending">审核中</string>
   <string name="status_draft">草稿</string>
   <string name="status_rejected">已拒绝</string>
-
-  <!-- Snippet -->
-  <string name="snippet_copies">复制</string>
-  <string name="snippet_favorites">收藏</string>
-  <string name="snippet_by_author">作者：%1$s</string>
-  <string name="snippet_error_title_too_short">标题至少 3 个字符</string>
-  <string name="snippet_error_language_empty">语言不能为空</string>
-  <string name="snippet_error_code_empty">代码内容不能为空</string>
 
   <!-- Actions (new) -->
   <string name="action_add">添加</string>
@@ -5519,15 +5495,10 @@ kept=%3$d bytes
   <!-- Market -->
   <string name="market_category_all">全部</string>
   <string name="market_category_theme">主题</string>
-  <string name="market_category_snippet">代码片段</string>
   <string name="market_category_tool">工具</string>
   <string name="market_category_language">语言支持</string>
   <string name="market_download_count">%1$d 下载</string>
   <string name="market_version">版本: %1$s</string>
-  <string name="market_copy_count">%1$d 复制</string>
-  <string name="market_error_title_min_length">标题至少 3 个字符</string>
-  <string name="market_error_language_empty">language 不能为空</string>
-  <string name="market_error_code_empty">代码内容不能为空</string>
   <string name="market_error_read_file">无法读取文件</string>
 
   <!-- Plugin Log -->

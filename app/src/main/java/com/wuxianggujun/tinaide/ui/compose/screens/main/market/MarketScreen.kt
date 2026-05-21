@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Favorite
@@ -73,7 +72,6 @@ import com.wuxianggujun.tinaide.plugin.marketplace.PluginDetail
 import com.wuxianggujun.tinaide.plugin.marketplace.PluginMarketplaceSelectionSupport
 import com.wuxianggujun.tinaide.plugin.marketplace.PluginSummary
 import com.wuxianggujun.tinaide.plugin.marketplace.PluginVersion
-import com.wuxianggujun.tinaide.snippet.ui.SnippetsMarketContent
 import com.wuxianggujun.tinaide.ui.compose.components.PluginCardSkeleton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaAlertDialog
 import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
@@ -92,8 +90,7 @@ import org.koin.androidx.compose.koinViewModel
 /**
  * 市场主屏幕
  *
- * 三个 Tab：插件市场、包管理、代码片段
- * 代码片段 Tab 委托给 feature:snippet 模块的 SnippetsMarketContent
+ * 市场主屏幕：插件市场、包管理。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -204,12 +201,6 @@ fun MarketScreen(
                     text = { Text(stringResource(Strings.market_tab_packages)) },
                     icon = { Icon(Icons.Default.Inventory, contentDescription = null) }
                 )
-                Tab(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    text = { Text(stringResource(Strings.market_tab_snippets)) },
-                    icon = { Icon(Icons.Default.Code, contentDescription = null) }
-                )
             }
 
             Box(
@@ -239,7 +230,6 @@ fun MarketScreen(
                         onInstall = viewModel::installPackage,
                         onRefresh = viewModel::retryLoadPackages
                     )
-                    2 -> SnippetsMarketContent()
                 }
             }
         }
@@ -266,7 +256,6 @@ private fun PluginsMarketContent(
     val categories = listOf(
         stringResource(Strings.market_category_all),
         stringResource(Strings.market_category_theme),
-        stringResource(Strings.market_category_snippet),
         stringResource(Strings.market_category_tool),
         stringResource(Strings.market_category_language),
     )

@@ -307,7 +307,6 @@ dependencies {
     implementation(project(":feature:packages"))
     implementation(project(":feature:projectlist"))
     implementation(project(":feature:settings"))
-    implementation(project(":feature:snippet"))
     implementation(project(":feature:terminal"))
     implementation(project(":feature:tutorial"))
     implementation(project(":feature:viewer"))

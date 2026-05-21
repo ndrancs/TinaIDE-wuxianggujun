@@ -32,7 +32,6 @@ import kotlinx.coroutines.launch
  * 市场屏幕 ViewModel
  *
  * 聚合插件市场和包管理的数据。
- * 代码片段逻辑已迁移到 feature:snippet 模块的 SnippetMarketViewModel。
  */
 class MarketScreenViewModel(
     application: Application,
