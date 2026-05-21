@@ -1,6 +1,5 @@
 package com.wuxianggujun.tinaide.ui.compose.screens.packages.di
 
-import com.wuxianggujun.tinaide.core.network.server.TinaServerConfig
 import com.wuxianggujun.tinaide.core.packages.PackageManager
 import com.wuxianggujun.tinaide.core.packages.PackageManagerImpl
 import com.wuxianggujun.tinaide.core.packages.api.PackageApiClient
@@ -12,8 +11,7 @@ import org.koin.dsl.module
 
 val packagesModule = module {
     factory<PackageManager> {
-        val baseUrl = TinaServerConfig.getInstance(get()).getDefaultServerUrl()
-        val apiClient = PackageApiClient.getInstance(baseUrl)
+        val apiClient = PackageApiClient.getInstance()
         val installStateStore = LocalInstallStateStore(get())
         val prootEnv = PRootEnvironment(get())
         PackageManagerImpl(get(), apiClient, installStateStore, prootEnv = prootEnv)

@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.str
 import com.wuxianggujun.tinaide.core.network.ApiResult
-import com.wuxianggujun.tinaide.core.network.server.TinaServerConfig
 import com.wuxianggujun.tinaide.core.packages.PackageManager
 import com.wuxianggujun.tinaide.core.packages.PackageManagerImpl
 import com.wuxianggujun.tinaide.core.packages.api.PackageApiClient
@@ -42,8 +41,7 @@ class MarketScreenViewModel(
     private val packageManager: PackageManager
 
     init {
-        val baseUrl = TinaServerConfig.getInstance(application).getDefaultServerUrl()
-        val apiClient = PackageApiClient.getInstance(baseUrl)
+        val apiClient = PackageApiClient.getInstance()
         val installStateStore = LocalInstallStateStore(application)
         val prootEnv = PRootEnvironment(application)
         packageManager = PackageManagerImpl(application, apiClient, installStateStore, prootEnv = prootEnv)

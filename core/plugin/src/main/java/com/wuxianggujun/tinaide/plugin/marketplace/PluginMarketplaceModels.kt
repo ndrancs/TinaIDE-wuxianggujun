@@ -44,7 +44,9 @@ data class PluginVersion(
     @SerialName("file_size")
     val fileSize: Long,
     @SerialName("file_hash")
-    val fileHash: String,
+    val fileHash: String? = null,
+    @SerialName("download_url")
+    val downloadUrl: String? = null,
     @SerialName("min_app_version")
     val minAppVersion: String? = null,
     val changelog: String? = null,
@@ -122,7 +124,13 @@ data class PluginDetail(
     val createdAt: String,
     @SerialName("updated_at")
     val updatedAt: String
-)
+) {
+    fun latestVersionEntry(): PluginVersion? {
+        return versions.maxWithOrNull(
+            compareBy<PluginVersion> { it.versionCode }.thenBy { it.version }
+        )
+    }
+}
 
 @Serializable
 data class Pagination(

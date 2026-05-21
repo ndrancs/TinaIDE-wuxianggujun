@@ -35,6 +35,9 @@ data class PlatformPackage(
     @SerialName("install_type") val installType: InstallType,
     @SerialName("apt_package") val aptPackage: String? = null, // 历史字段名，当前承载 Linux 系统包名
     val size: Long? = null,
+    @SerialName("download_url") val downloadUrl: String? = null,
+    @SerialName("download_sources") val downloadSources: List<DownloadSource>? = null,
+    val checksum: String? = null,
     val abi: List<String>? = null,
     @SerialName("is_latest") val isLatest: Boolean = false,
     val dependencies: List<String>? = null,
@@ -51,6 +54,8 @@ data class PackageVersion(
     @SerialName("apt_package") val aptPackage: String? = null, // 历史字段名，当前承载 Linux 系统包名
     @SerialName("apt_repository") val aptRepository: String? = null,
     @SerialName("download_size") val downloadSize: Long? = null,
+    @SerialName("download_url") val downloadUrl: String? = null,
+    @SerialName("download_sources") val downloadSources: List<DownloadSource>? = null,
     val checksum: String? = null,
     val abi: List<String>? = null,
     @SerialName("install_script") val installScript: String? = null,
