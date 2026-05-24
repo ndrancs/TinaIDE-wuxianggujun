@@ -63,7 +63,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 
 /**
- * GUI 运行时的悬浮覆盖层。
+ * SDL 图形运行时的悬浮覆盖层。
  *
  * 提供：
  * - 可拖拽的半透明小球（始终显示）

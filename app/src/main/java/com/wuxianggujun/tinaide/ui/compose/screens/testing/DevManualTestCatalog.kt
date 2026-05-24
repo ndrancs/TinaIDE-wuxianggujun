@@ -12,13 +12,6 @@ internal data class DevManualTestEntry(
 )
 
 internal object DevManualTestCatalog {
-    val guiPreview = DevManualTestEntry(
-        registryId = DevTestIds.GuiPreview,
-        titleRes = Strings.dev_options_gui_preview_test,
-        descriptionRes = Strings.dev_options_gui_preview_test_desc,
-        registryContent = { onBack -> GuiPreviewTestScreen(onNavigateBack = onBack) },
-    )
-
     val pluginDatabase = DevManualTestEntry(
         registryId = DevTestIds.PluginDatabase,
         titleRes = Strings.dev_options_plugin_db_test,
@@ -41,7 +34,6 @@ internal object DevManualTestCatalog {
     )
 
     val entries: List<DevManualTestEntry> = listOf(
-        guiPreview,
         pluginDatabase,
         compilerDiagnostics,
         aiChat,

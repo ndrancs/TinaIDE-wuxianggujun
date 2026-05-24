@@ -113,12 +113,12 @@ data class RunConfiguration(
     val singleFileCppStandard: String? = null,
 
     /**
-     * GUI 模式的屏幕方向（仅 outputMode == GUI 时生效）。
+     * 图形模式的屏幕方向（仅 outputMode == GUI 时生效）。
      */
     val guiOrientation: GuiOrientation = GuiOrientation.AUTO,
 
     /**
-     * 是否在 GUI 模式下显示悬浮日志窗口（仅 outputMode == GUI 时生效）。
+     * 是否在图形模式下显示悬浮日志窗口（仅 outputMode == GUI 时生效）。
      *
      * 启用后可在全屏 SDL/ImGui 等图形程序中实时查看 stdout/stderr 输出。
      */
@@ -634,13 +634,13 @@ enum class OutputMode {
     TERMINAL,
 
     /**
-     * 在 GUI 宿主中运行（加载共享库）
+     * 在 SDL 图形运行时中运行（加载共享库）
      */
     GUI
 }
 
 /**
- * GUI 运行时屏幕方向
+ * 图形运行时屏幕方向
  */
 @Serializable
 enum class GuiOrientation {

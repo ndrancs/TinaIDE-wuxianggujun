@@ -11,10 +11,7 @@ import timber.log.Timber
 import java.io.File
 
 /**
- * GUI 启动器:把 `.so` 产物交给 GUI 宿主加载。
- *
- * 校验产物是 SHARED_LIBRARY 且文件存在,返回 [LaunchDescriptor.Gui]。
- * UI 层(CompileActionsHelper)负责向 GUI 宿主发出 OpenGui 指令。
+ * Validates a `.so` artifact before the UI starts the SDL graphical runtime.
  */
 class GuiLauncher : Launcher {
 
@@ -34,11 +31,11 @@ class GuiLauncher : Launcher {
             return LaunchOutcome.Failed(reason)
         }
         if (artifact.kind != ArtifactKind.SHARED_LIBRARY || !file.name.endsWith(".so", ignoreCase = true)) {
-            val reason = Strings.gui_runtime_invalid_shared_library.strOr(ctx.appContext, artifact.absolutePath)
+            val reason = Strings.sdl_runtime_invalid_shared_library.strOr(ctx.appContext, artifact.absolutePath)
             emitter.emit(BuildEvent.Launch.Failed(reason, wasArtifactCached = false))
             return LaunchOutcome.Failed(reason)
         }
-        Timber.tag(TAG).d("gui launch prepared: %s", file.absolutePath)
+        Timber.tag(TAG).d("SDL graphical launch prepared: %s", file.absolutePath)
         emitter.emit(BuildEvent.Launch.Completed)
         return LaunchOutcome.Prepared(LaunchDescriptor.Gui(artifact = artifact, libraryPath = artifact.absolutePath))
     }

@@ -192,7 +192,7 @@ fun RunConfigDialog(
     var enableFloatingLog by remember { mutableStateOf(config.enableFloatingLog) }
     var showVariablesHelp by remember { mutableStateOf(false) }
 
-    // 目标过滤：GUI 模式只加载共享库，终端模式只运行可执行文件。
+    // 目标过滤：图形模式只加载共享库，终端模式只运行可执行文件。
     val selectableTargets = remember(availableTargets, outputMode) {
         availableTargets.filter { target ->
             when (outputMode) {
@@ -590,7 +590,7 @@ fun RunConfigDialog(
                 availableTargets.isNotEmpty()
             ) {
                 Text(
-                    text = stringResource(Strings.gui_runtime_no_shared_library_target),
+                    text = stringResource(Strings.sdl_runtime_no_shared_library_target),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -915,7 +915,7 @@ fun RunConfigDialog(
                 )
             }
 
-            // GUI 运行选项（仅在 GUI 模式下显示）
+            // SDL 图形运行选项（仅在图形模式下显示）
             if (outputMode == OutputMode.GUI) {
                 RunConfigSectionCard(
                     title = stringResource(Strings.run_config_gui_options)

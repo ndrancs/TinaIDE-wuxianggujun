@@ -73,7 +73,7 @@ data class BuildOptions(
     /**
      * 运行场景下是否优先产出共享库（.so）。
      *
-     * 主要用于 GUI 运行模式：GUI 宿主会加载 .so，而不是 ELF 可执行文件。
+     * 主要用于 SDL 图形运行模式：运行时会加载 .so，而不是 ELF 可执行文件。
      */
     val preferSharedLibraryForRun: Boolean = false,
     /**

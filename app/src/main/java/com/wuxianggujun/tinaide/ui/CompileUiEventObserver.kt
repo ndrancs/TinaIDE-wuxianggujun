@@ -7,8 +7,7 @@ import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.terminal.TerminalBackend
 import com.wuxianggujun.tinaide.ui.compose.components.FileTreeState
-import com.wuxianggujun.tinaide.ui.gui.GuiHostActivity
-import com.wuxianggujun.tinaide.ui.runtime.GuiRuntimeLibraryStager
+import com.wuxianggujun.tinaide.ui.runtime.SdlRuntimeLibraryStager
 import com.wuxianggujun.tinaide.ui.sdl.ExternalSdlActivity
 import com.wuxianggujun.tinaide.ui.sdl.SdlRuntimeResolver
 import java.io.File
@@ -111,11 +110,9 @@ class ContextCompileGuiLauncher(
                 launchEnvironment = environment,
             )
 
-            SdlRuntimeResolver.ResolveResult.NonSdl -> launchGuiHost(
-                libraryPath = normalizedLibraryPath,
-                runConfig = runConfig,
-                launchEnvironment = environment,
-            )
+            SdlRuntimeResolver.ResolveResult.NonSdl -> {
+                onError(Strings.sdl_runtime_error_non_sdl_library.strOr(context, normalizedLibraryPath))
+            }
 
             is SdlRuntimeResolver.ResolveResult.Error -> onError(runtime.message)
         }
@@ -130,7 +127,7 @@ class ContextCompileGuiLauncher(
             return Strings.sdl_runtime_error_main_library_invalid.strOr(context, libraryPath)
         }
         if (!libraryFile.name.endsWith(".so", ignoreCase = true)) {
-            return Strings.gui_runtime_invalid_shared_library.strOr(context, libraryPath)
+            return Strings.sdl_runtime_invalid_shared_library.strOr(context, libraryPath)
         }
         return null
     }
@@ -142,17 +139,17 @@ class ContextCompileGuiLauncher(
         launchEnvironment: Map<String, String>,
     ) {
         when (
-            val staged = GuiRuntimeLibraryStager.stage(
+            val staged = SdlRuntimeLibraryStager.stage(
                 context = context,
                 mainLibraryPath = libraryPath,
                 preloadLibraryPaths = runtime.spec.preloadLibraryPaths
             )
         ) {
-            is GuiRuntimeLibraryStager.StageResult.Error -> {
-                onError(Strings.gui_runtime_stage_failed.strOr(context, staged.message))
+            is SdlRuntimeLibraryStager.StageResult.Error -> {
+                onError(Strings.sdl_runtime_stage_failed.strOr(context, staged.message))
             }
 
-            is GuiRuntimeLibraryStager.StageResult.Success -> {
+            is SdlRuntimeLibraryStager.StageResult.Success -> {
                 val intent = ExternalSdlActivity.createIntent(
                     context = context,
                     sdlLibraryPath = runtime.spec.sdlLibraryPath,
@@ -167,43 +164,6 @@ class ContextCompileGuiLauncher(
                     .onFailure { throwable ->
                         onError(
                             Strings.sdl_runtime_error_launch_failed.strOr(
-                                context,
-                                throwable.message ?: throwable.javaClass.simpleName
-                            )
-                        )
-                    }
-            }
-        }
-    }
-
-    private fun launchGuiHost(
-        libraryPath: String,
-        runConfig: RunConfiguration,
-        launchEnvironment: Map<String, String>,
-    ) {
-        when (
-            val staged = GuiRuntimeLibraryStager.stage(
-                context = context,
-                mainLibraryPath = libraryPath
-            )
-        ) {
-            is GuiRuntimeLibraryStager.StageResult.Error -> {
-                onError(Strings.gui_runtime_stage_failed.strOr(context, staged.message))
-            }
-
-            is GuiRuntimeLibraryStager.StageResult.Success -> {
-                val intent = GuiHostActivity.createIntent(
-                    context = context,
-                    libraryPath = staged.runtime.mainLibraryPath,
-                    preloadLibraryPaths = staged.runtime.preloadLibraryPaths,
-                    guiOrientation = runConfig.guiOrientation,
-                    enableFloatingLog = runConfig.enableFloatingLog,
-                    launchEnvironment = launchEnvironment,
-                )
-                runCatching { activityStarter(intent) }
-                    .onFailure { throwable ->
-                        onError(
-                            Strings.gui_runtime_launch_failed.strOr(
                                 context,
                                 throwable.message ?: throwable.javaClass.simpleName
                             )

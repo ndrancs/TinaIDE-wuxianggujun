@@ -93,7 +93,6 @@ class DevEditorTestInfrastructureTest {
             DevTestIds.EditorScroll,
             DevTestIds.CppScrollStress,
             DevTestIds.Clangd,
-            DevTestIds.GuiPreview,
             DevTestIds.PluginDatabase,
             DevTestIds.CompilerDiagnostics,
             DevTestIds.AiChat

@@ -5,15 +5,10 @@ import java.io.File
 import timber.log.Timber
 
 /**
- * GUI 运行时共享库 staging。
- *
- * 设计目标：
- * - 构建产物仍保留在项目 build 目录；
- * - 真正运行前，把主库和同目录下的项目私有依赖复制到 app 私有目录；
- * - 外部已在 app 私有目录内的运行时库（如 installed-packages）保持原路径，避免重复拷贝。
+ * Stages SDL application libraries into app-private storage before launch.
  */
-object GuiRuntimeLibraryStager {
-    private const val TAG = "GuiRuntimeLibraryStager"
+object SdlRuntimeLibraryStager {
+    private const val TAG = "SdlRuntimeLibraryStager"
 
     data class StagedRuntime(
         val mainLibraryPath: String,
@@ -42,7 +37,7 @@ object GuiRuntimeLibraryStager {
         return stage(
             mainLibrary = File(mainLibraryPath),
             preloadLibraryPaths = preloadLibraryPaths,
-            stageRootDir = File(context.filesDir, "run-bin/gui"),
+            stageRootDir = File(context.filesDir, "run-bin/sdl"),
             privatePathPrefixes = privatePathPrefixes
         )
     }
@@ -89,7 +84,7 @@ object GuiRuntimeLibraryStager {
             }
 
             Timber.tag(TAG).i(
-                "Staged GUI runtime: main=%s -> %s, preloadCount=%d",
+                "Staged SDL runtime: main=%s -> %s, preloadCount=%d",
                 mainLibrary.absolutePath,
                 stagedMain.absolutePath,
                 stagedPreloads.size
@@ -102,7 +97,7 @@ object GuiRuntimeLibraryStager {
                 )
             )
         }.getOrElse { throwable ->
-            Timber.tag(TAG).e(throwable, "Failed to stage GUI runtime: %s", mainLibrary.absolutePath)
+            Timber.tag(TAG).e(throwable, "Failed to stage SDL runtime: %s", mainLibrary.absolutePath)
             StageResult.Error(
                 message = throwable.message ?: throwable.javaClass.simpleName,
                 throwable = throwable

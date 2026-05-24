@@ -143,8 +143,6 @@
   <string name="toast_reinstall_bundled_packages_failed">内置包重新安装失败: %1$s</string>
   <string name="dev_options_theme_preview_test">主题预览测试</string>
   <string name="dev_options_theme_preview_test_desc">对比不同主题的配色效果</string>
-  <string name="dev_options_gui_preview_test">GUI 图像预览测试</string>
-  <string name="dev_options_gui_preview_test_desc">加载并显示 SDL3/其他 GUI 库输出的图像</string>
   <string name="dev_options_tree_sitter_test">Tree-sitter 语法高亮测试</string>
   <string name="dev_options_tree_sitter_test_desc">测试不同语言的语法高亮和性能</string>
   <string name="dev_options_editor_lsp_enabled">编辑器 LSP 总开关</string>
@@ -278,25 +276,6 @@
   <string name="dev_options_ai_chat_test">AI 对话测试</string>
   <string name="dev_options_ai_chat_test_desc">测试 AI 消息渲染、Markdown 格式、工具调用等功能</string>
   <string name="dev_options_ai_chat_message_count">%1$d 条消息</string>
-  <string name="gui_preview_test_title">GUI 图像预览测试</string>
-  <string name="gui_preview_test_back">返回</string>
-  <string name="gui_preview_test_hint">可加载 SDL3 或其他 GUI 库导出的图片，也可先生成一张示例图验证显示链路。</string>
-  <string name="gui_preview_test_pick_image">选择图片</string>
-  <string name="gui_preview_test_generate_demo">生成示例图</string>
-  <string name="gui_preview_test_path_label">本地路径</string>
-  <string name="gui_preview_test_path_placeholder">例如：/storage/emulated/0/Download/frame.png</string>
-  <string name="gui_preview_test_load_path">按路径加载</string>
-  <string name="gui_preview_test_empty_hint">暂无图像，请先选择图片或生成示例图</string>
-  <string name="gui_preview_test_image_content_desc">GUI 预览图像</string>
-  <string name="gui_preview_test_image_info">来源：%1$s  |  分辨率：%2$dx%3$d</string>
-  <string name="gui_preview_test_source_document">文档：%1$s</string>
-  <string name="gui_preview_test_source_path">路径：%1$s</string>
-  <string name="gui_preview_test_source_demo">内置示例图</string>
-  <string name="gui_preview_test_error_empty_path">路径不能为空</string>
-  <string name="gui_preview_test_error_file_not_found">文件不存在，请检查路径</string>
-  <string name="gui_preview_test_error_decode_failed">图像解码失败，请确认文件格式</string>
-  <string name="gui_preview_test_error_load_failed">加载失败：%1$s</string>
-  <string name="gui_preview_test_error_unknown">未知错误</string>
   <string name="dev_options_skip_email_verification">跳过邮箱验证码</string>
   <string name="dev_options_skip_email_verification_desc">开启后注册时不需要输入验证码，直接使用邮箱和密码注册（仅在邮件服务不可用时使用）</string>
 
@@ -1960,10 +1939,10 @@
   <string name="run_config_output_terminal">终端</string>
   <string name="run_config_output_terminal_desc">在独立终端中运行，支持交互输入</string>
   <string name="run_config_output_gui">图形界面（GUI）</string>
-  <string name="run_config_output_gui_desc">在 GUI 宿主中运行并实时绘制（输出需为 .so）</string>
+  <string name="run_config_output_gui_desc">在 SDL 图形运行时中启动（输出需为 .so）</string>
 
-  <!-- GUI 运行选项 -->
-  <string name="run_config_gui_options">GUI 运行选项</string>
+  <!-- SDL 图形运行选项 -->
+  <string name="run_config_gui_options">SDL 图形运行选项</string>
   <string name="run_config_gui_orientation">屏幕方向</string>
   <string name="run_config_gui_orientation_auto">自动旋转</string>
   <string name="run_config_gui_orientation_auto_desc">跟随系统自动旋转设置</string>
@@ -1972,12 +1951,12 @@
   <string name="run_config_gui_orientation_portrait">竖屏</string>
   <string name="run_config_gui_orientation_portrait_desc">强制竖屏显示</string>
   <string name="run_config_gui_floating_log">悬浮日志窗口</string>
-  <string name="run_config_gui_floating_log_desc">在 GUI 全屏运行时显示可拖拽的实时日志窗口，方便查看 stdout/stderr 输出</string>
+  <string name="run_config_gui_floating_log_desc">在 SDL 图形全屏运行时显示可拖拽的实时日志窗口，方便查看 stdout/stderr 输出</string>
   <string name="run_config_gui_floating_log_not_ready">悬浮日志功能开发中，敬请期待</string>
 
   <!-- 悬浮覆盖层 -->
   <string name="floating_overlay_exit">退出</string>
-  <string name="floating_overlay_exit_confirm">确定退出 GUI 运行界面？</string>
+  <string name="floating_overlay_exit_confirm">确定退出 SDL 图形运行界面？</string>
   <string name="floating_overlay_exit_confirm_yes">退出</string>
   <string name="floating_overlay_exit_confirm_no">取消</string>
   <string name="floating_overlay_log_title">运行日志</string>
@@ -1986,22 +1965,14 @@
   <string name="floating_overlay_ball_desc">悬浮控制球</string>
   <string name="floating_overlay_double_back_hint">再按一次返回键退出，或点击悬浮球退出</string>
 
-  <string name="gui_host_title">GUI 运行界面</string>
-  <string name="gui_host_error_missing_library">缺少要加载的共享库路径</string>
-  <string name="gui_runtime_invalid_shared_library">GUI 运行需要共享库（.so），当前目标不是可加载的共享库：%1$s</string>
-  <string name="gui_runtime_no_shared_library_target">GUI 运行需要 CMake 共享库目标（.so）。请将 CMake 目标改为 add_library(... SHARED ...)，或切换到终端模式运行可执行文件。</string>
-  <string name="gui_runtime_auto_selected_shared_library_target">GUI 模式已自动切换到共享库目标：%1$s</string>
-  <string name="gui_runtime_launch_failed">启动 GUI 界面失败：%1$s</string>
-  <string name="gui_host_status_loading">正在加载 GUI 运行时...</string>
-  <string name="gui_host_status_running">GUI 正在运行</string>
-  <string name="gui_host_status_error">GUI 运行错误</string>
-  <string name="gui_host_library_path_label">库路径：%1$s</string>
-  <string name="gui_host_frame_stats">帧率：%1$s FPS · 分辨率：%2$dx%3$d</string>
-  <string name="gui_host_image_content_desc">GUI 实时画面</string>
-  <string name="gui_host_render_contract_hint">提示：必须导出 tina_gui_render_argb32 函数。可选实现 tina_gui_init、tina_gui_shutdown、tina_gui_on_touch、tina_gui_on_key。详见 tina_gui.h。</string>
   <string name="sdl_host_title">SDL 运行界面</string>
   <string name="sdl_runtime_error_main_library_missing">缺少待启动的主共享库路径</string>
   <string name="sdl_runtime_error_main_library_invalid">主共享库不存在或不可读：%1$s</string>
+  <string name="sdl_runtime_invalid_shared_library">SDL 图形运行需要共享库（.so），当前目标不是可加载的共享库：%1$s</string>
+  <string name="sdl_runtime_no_shared_library_target">SDL 图形运行需要 CMake 共享库目标（.so）。请将 CMake 目标改为 add_library(... SHARED ...)，或切换到终端模式运行可执行文件。</string>
+  <string name="sdl_runtime_auto_selected_shared_library_target">SDL 图形模式已自动切换到共享库目标：%1$s</string>
+  <string name="sdl_runtime_error_non_sdl_library">当前共享库未检测到 SDL 依赖，无法用 SDL 图形运行时启动：%1$s</string>
+  <string name="sdl_runtime_stage_failed">准备 SDL 图形运行时失败：%1$s</string>
   <string name="sdl_runtime_error_scan_failed">解析共享库失败：%1$s，原因：%2$s</string>
   <string name="sdl_runtime_error_conflicting_versions">检测到目标同时依赖 SDL2 和 SDL3，无法确定运行时版本。</string>
   <string name="sdl_runtime_error_sdl_not_found">检测到 SDL%1$d 依赖，但未在包管理器已安装包运行库目录找到 %2$s。请先安装对应 SDL%1$d 包。</string>
@@ -4505,9 +4476,9 @@ kept=%3$d bytes
   <string name="compile_plugin_project_diagnostic_info">提示: %1$s</string>
   <string name="compile_plugin_project_diagnostic_fix">修复建议: %1$s</string>
   <string name="compile_terminal_no_executable">echo \'未找到可执行文件\'</string>
-  <string name="compile_gui_error_no_output">GUI 模式未找到可运行的共享库产物（.so），请检查目标类型与构建配置。</string>
-  <string name="compile_gui_error_invalid_output">GUI 模式要求输出为 .so，当前产物：%1$s</string>
-  <string name="compile_gui_ready">===GUI 运行准备完成：%1$s===</string>
+  <string name="compile_gui_error_no_output">图形模式未找到可运行的共享库产物（.so），请检查目标类型与构建配置。</string>
+  <string name="compile_gui_error_invalid_output">图形模式要求输出为 .so，当前产物：%1$s</string>
+  <string name="compile_gui_ready">===SDL 图形运行准备完成：%1$s===</string>
   <string name="compile_exception">编译异常: %1$s</string>
   <string name="compile_error_exception">编译异常: %1$s</string>
 
@@ -5690,7 +5661,6 @@ kept=%3$d bytes
   <string name="run_config_build_type_debug_desc">生成带调试信息的产物，适合开发与排查问题</string>
   <string name="run_config_build_type_release">Release</string>
   <string name="run_config_build_type_release_desc">生成发布优化产物，适合最终运行与性能测试</string>
-  <string name="gui_runtime_stage_failed">准备 GUI 运行时失败：%1$s</string>
   <string name="menu_cmake_tools">CMake</string>
   <string name="menu_cmake_open_artifacts_dir">打开构建产物目录</string>
   <string name="menu_cmake_reconfigure">重新配置缓存</string>

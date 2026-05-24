@@ -114,13 +114,6 @@
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".ui.gui.GuiHostActivity"
-            android:exported="false"
-            android:label="@string/gui_host_title"
-            android:parentActivityName=".MainActivity"
-            android:process=":gui"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
-        <activity
             android:name=".ui.sdl.ExternalSdlActivity"
             android:exported="false"
             android:label="@string/sdl_host_title"

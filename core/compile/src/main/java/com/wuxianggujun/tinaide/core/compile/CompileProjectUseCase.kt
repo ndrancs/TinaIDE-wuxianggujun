@@ -302,13 +302,13 @@ class CompileProjectUseCase(
                 ?.let { name -> targets.firstOrNull { it.name == name } }
             val sharedTarget = targets.firstOrNull { it.type == TargetInfo.Type.SHARED_LIBRARY }
             if (sharedTarget == null) {
-                val errorMsg = Strings.gui_runtime_no_shared_library_target.strOr(appContext)
+                val errorMsg = Strings.sdl_runtime_no_shared_library_target.strOr(appContext)
                 log(errorMsg)
                 return@withContext Result.Error(action, errorMsg, null)
             }
             if (selectedTarget == null || selectedTarget.type != TargetInfo.Type.SHARED_LIBRARY) {
                 effectiveTargetName = sharedTarget.name
-                log(Strings.gui_runtime_auto_selected_shared_library_target.strOr(appContext, sharedTarget.name))
+                log(Strings.sdl_runtime_auto_selected_shared_library_target.strOr(appContext, sharedTarget.name))
             }
         }
 

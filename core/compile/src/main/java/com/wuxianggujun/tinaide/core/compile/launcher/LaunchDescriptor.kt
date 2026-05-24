@@ -18,7 +18,7 @@ sealed interface LaunchDescriptor {
         val outputPath: String,
     ) : LaunchDescriptor
 
-    /** GUI 宿主加载 .so 运行。 */
+    /** SDL 图形运行时加载 .so 运行。 */
     data class Gui(
         override val artifact: Artifact,
         val libraryPath: String,

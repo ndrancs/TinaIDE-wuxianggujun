@@ -7,7 +7,6 @@ internal object DevTestIds {
     const val EditorScroll = "editor_scroll"
     const val CppScrollStress = "cpp_scroll_stress"
     const val Clangd = "clangd"
-    const val GuiPreview = "gui_preview"
     const val PluginDatabase = "plugin_database"
     const val CompilerDiagnostics = "compiler_diagnostics"
     const val AiChat = "ai_chat"

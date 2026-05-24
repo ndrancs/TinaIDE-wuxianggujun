@@ -58,18 +58,6 @@ add_library(tina_pty SHARED
     pty/pty_jni.cpp
 )
 
-# ============================================================================
-# GUI 运行时桥接（加载用户 .so 并拉取 ARGB32 帧）
-# ============================================================================
-
-add_library(tina_gui_runtime SHARED
-    gui/gui_runtime_jni.cpp
-)
-
-# ============================================================================
-# 头文件路径
-# ============================================================================
-
 target_include_directories(tina_native PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -81,7 +69,6 @@ target_include_directories(tina_native PRIVATE
 find_library(log-lib log)
 target_link_libraries(tina_native PRIVATE c++_shared ${log-lib})
 target_link_libraries(tina_pty PRIVATE c++_shared ${log-lib})
-target_link_libraries(tina_gui_runtime PRIVATE c++_shared ${log-lib} dl)
 
 # ============================================================================
 # 注意：proot-loader (libproot-loader.so) 可以来自预编译 source set，

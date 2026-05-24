@@ -13,8 +13,8 @@ import com.wuxianggujun.tinaide.core.compile.strategy.BuildContext
  * 3. 返回 [LaunchOutcome.Prepared] 携带 [LaunchDescriptor],
  *    UI 层(CompileActionsHelper)再用它打开终端 / GUI / 调试会话。
  *
- * 这个边界选择的原因:真正 spawn 终端 / GUI / gdbserver 依赖大量 UI 侧资源
- * (TerminalBackend / ProcessManager / OutputManager / GUI 宿主),把它们
+ * 这个边界选择的原因:真正 spawn 终端 / SDL 图形运行时 / gdbserver 依赖大量 UI 侧资源
+ * (TerminalBackend / ProcessManager / OutputManager / Activity),把它们
  * 拉进 core:compile 会反转依赖层级。
  */
 interface Launcher {

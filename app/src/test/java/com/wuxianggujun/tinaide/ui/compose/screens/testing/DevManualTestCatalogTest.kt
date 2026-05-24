@@ -10,7 +10,6 @@ class DevManualTestCatalogTest {
         val entries = DevManualTestCatalog.entries
 
         assertThat(entries.map { it.registryId }).containsExactly(
-            DevTestIds.GuiPreview,
             DevTestIds.PluginDatabase,
             DevTestIds.CompilerDiagnostics,
             DevTestIds.AiChat,

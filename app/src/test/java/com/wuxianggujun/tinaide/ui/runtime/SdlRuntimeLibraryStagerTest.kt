@@ -5,11 +5,11 @@ import java.io.File
 import java.nio.file.Files
 import org.junit.Test
 
-class GuiRuntimeLibraryStagerTest {
+class SdlRuntimeLibraryStagerTest {
 
     @Test
     fun `stage copies public main library and sibling project libraries into private dir`() {
-        val tempRoot = Files.createTempDirectory("gui-runtime-stage-test").toFile()
+        val tempRoot = Files.createTempDirectory("sdl-runtime-stage-test").toFile()
         try {
             val publicDir = File(tempRoot, "public-build").apply { mkdirs() }
             val stageRoot = File(tempRoot, "private-stage")
@@ -20,15 +20,15 @@ class GuiRuntimeLibraryStagerTest {
                 writeText("sdl")
             }
 
-            val result = GuiRuntimeLibraryStager.stage(
+            val result = SdlRuntimeLibraryStager.stage(
                 mainLibrary = mainLibrary,
                 preloadLibraryPaths = listOf(privateRuntime.absolutePath),
                 stageRootDir = stageRoot,
                 privatePathPrefixes = listOf(File(tempRoot, "app-data").absolutePath)
             )
 
-            assertThat(result).isInstanceOf(GuiRuntimeLibraryStager.StageResult.Success::class.java)
-            val success = result as GuiRuntimeLibraryStager.StageResult.Success
+            assertThat(result).isInstanceOf(SdlRuntimeLibraryStager.StageResult.Success::class.java)
+            val success = result as SdlRuntimeLibraryStager.StageResult.Success
             val stagedMain = File(success.runtime.mainLibraryPath)
             val stagedHelper = File(stagedMain.parentFile, siblingLibrary.name)
 
