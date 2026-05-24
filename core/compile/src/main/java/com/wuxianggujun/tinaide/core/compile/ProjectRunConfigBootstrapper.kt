@@ -24,7 +24,7 @@ object ProjectRunConfigBootstrapper {
         val defaultManager = RunConfigurationManager.load(projectPath)
         val saved = RunConfigurationManager.save(projectPath, defaultManager)
         if (saved) {
-            Timber.tag(TAG).i("Initialized explicit GUI run config for SDL3 project: %s", projectPath)
+            Timber.tag(TAG).i("Initialized explicit SDL run config for SDL3 project: %s", projectPath)
         }
         return saved
     }

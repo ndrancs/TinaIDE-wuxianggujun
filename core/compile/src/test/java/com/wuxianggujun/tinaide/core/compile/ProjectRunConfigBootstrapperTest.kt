@@ -10,7 +10,7 @@ import org.junit.Test
 class ProjectRunConfigBootstrapperTest {
 
     @Test
-    fun `initializeIfMissing writes explicit gui config for sdl3 project`() {
+    fun `initializeIfMissing writes explicit sdl config for sdl3 project`() {
         val projectRoot = createTempProjectRoot()
         try {
             ProjectMetadataStore.ensure(
@@ -26,7 +26,8 @@ class ProjectRunConfigBootstrapperTest {
 
             val manager = RunConfigurationManager.load(projectRoot.absolutePath)
             assertThat(manager.selectedConfig.name).isEqualTo("Debug")
-            assertThat(manager.selectedConfig.outputMode).isEqualTo(OutputMode.GUI)
+            assertThat(manager.selectedConfig.outputMode).isEqualTo(OutputMode.SDL)
+            assertThat(runConfigFile(projectRoot).readText()).contains("\"outputMode\": \"SDL\"")
         } finally {
             projectRoot.deleteRecursively()
         }

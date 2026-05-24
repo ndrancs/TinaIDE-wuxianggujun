@@ -67,7 +67,7 @@ friend-engine-sdl3.zip
 
 ## SDL 图形运行链路
 
-运行配置仍使用 `OutputMode.GUI` 作为历史兼容字段，但它的语义已经收敛为 SDL 图形运行。
+运行配置使用 `OutputMode.SDL` 表示 SDL 图形运行。旧配置中的 `OutputMode.GUI` 会在加载时自动迁移为 `OutputMode.SDL`。
 
 关键实现：
 
@@ -111,7 +111,7 @@ target_link_libraries(friend_engine_game PRIVATE SDL3::SDL3)
     {
       "id": "sdl3-debug",
       "name": "SDL3 Debug",
-      "outputMode": "GUI",
+      "outputMode": "SDL",
       "targetName": "friend_engine_game",
       "guiOrientation": "LANDSCAPE",
       "enableFloatingLog": true
@@ -120,7 +120,7 @@ target_link_libraries(friend_engine_game PRIVATE SDL3::SDL3)
 }
 ```
 
-当 CMake 项目选择了 `OutputMode.GUI`，TinaIDE 会优先选择共享库目标。如果项目没有共享库目标，会提示用户改为 `add_library(... SHARED ...)` 或切换到终端模式。
+当 CMake 项目选择了 `OutputMode.SDL`，TinaIDE 会优先选择共享库目标。如果项目没有共享库目标，会提示用户改为 `add_library(... SHARED ...)` 或切换到终端模式。
 
 ## APK 导出
 

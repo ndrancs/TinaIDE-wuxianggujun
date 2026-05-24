@@ -31,13 +31,13 @@ class RunConfigurationManagerMigrationTest {
 
             val manager = RunConfigurationManager.load(projectRoot.absolutePath)
 
-            assertThat(manager.schemaVersion).isEqualTo(2)
+            assertThat(manager.schemaVersion).isEqualTo(3)
             assertThat(manager.selectedId).isEqualTo("cfg-1")
             assertThat(manager.selectedConfig.buildType).isEqualTo(BuildType.DEBUG)
             assertThat(manager.selectedConfig.singleFileCppStandard).isEqualTo("CPP_20")
 
             val persisted = readRunConfig(projectRoot)
-            assertThat(persisted).contains("\"schemaVersion\": 2")
+            assertThat(persisted).contains("\"schemaVersion\": 3")
             assertThat(persisted).contains("\"buildType\": \"DEBUG\"")
             assertThat(persisted).contains("\"singleFileCppStandard\": \"CPP_20\"")
         } finally {
@@ -68,13 +68,13 @@ class RunConfigurationManagerMigrationTest {
 
             val manager = RunConfigurationManager.load(projectRoot.absolutePath)
 
-            assertThat(manager.schemaVersion).isEqualTo(2)
+            assertThat(manager.schemaVersion).isEqualTo(3)
             assertThat(manager.selectedId).isEqualTo("cfg-a")
             assertThat(manager.selectedConfig.buildType).isEqualTo(BuildType.DEBUG)
             assertThat(manager.selectedConfig.singleFileCppStandard).isEqualTo("gnu++2b")
 
             val persisted = readRunConfig(projectRoot)
-            assertThat(persisted).contains("\"schemaVersion\": 2")
+            assertThat(persisted).contains("\"schemaVersion\": 3")
             assertThat(persisted).contains("\"buildType\": \"DEBUG\"")
             assertThat(persisted).contains("\"selectedId\": \"cfg-a\"")
         } finally {
@@ -90,7 +90,7 @@ class RunConfigurationManagerMigrationTest {
                 projectRoot,
                 """
                 {
-                  "schemaVersion": 2,
+                  "schemaVersion": 3,
                   "configurations": [
                     {
                       "id": "cfg-blank",
@@ -106,7 +106,7 @@ class RunConfigurationManagerMigrationTest {
 
             val manager = RunConfigurationManager.load(projectRoot.absolutePath)
 
-            assertThat(manager.schemaVersion).isEqualTo(2)
+            assertThat(manager.schemaVersion).isEqualTo(3)
             assertThat(manager.selectedConfig.buildType).isEqualTo(BuildType.DEBUG)
             assertThat(manager.selectedConfig.customCCompiler).isNull()
             assertThat(manager.selectedConfig.customCppCompiler).isNull()
@@ -128,7 +128,7 @@ class RunConfigurationManagerMigrationTest {
                 projectRoot,
                 """
                 {
-                  "schemaVersion": 2,
+                  "schemaVersion": 3,
                   "configurations": [
                     {
                       "id": "cfg-build-type",
@@ -149,7 +149,7 @@ class RunConfigurationManagerMigrationTest {
     }
 
     @Test
-    fun `load defaults sdl3 project to gui output when config file is missing`() {
+    fun `load defaults sdl3 project to sdl output when config file is missing`() {
         val projectRoot = createTempProjectRoot()
         try {
             ProjectMetadataStore.ensure(
@@ -161,7 +161,42 @@ class RunConfigurationManagerMigrationTest {
             val manager = RunConfigurationManager.load(projectRoot.absolutePath)
 
             assertThat(manager.selectedConfig.name).isEqualTo("Debug")
-            assertThat(manager.selectedConfig.outputMode).isEqualTo(OutputMode.GUI)
+            assertThat(manager.selectedConfig.outputMode).isEqualTo(OutputMode.SDL)
+        } finally {
+            projectRoot.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `load migrates schemaVersion 2 gui output mode to sdl`() {
+        val projectRoot = createTempProjectRoot()
+        try {
+            writeRunConfig(
+                projectRoot,
+                """
+                {
+                  "schemaVersion": 2,
+                  "configurations": [
+                    {
+                      "id": "cfg-sdl",
+                      "name": "SDL Debug",
+                      "outputMode": "GUI"
+                    }
+                  ],
+                  "selectedId": "cfg-sdl"
+                }
+                """.trimIndent()
+            )
+
+            val manager = RunConfigurationManager.load(projectRoot.absolutePath)
+
+            assertThat(manager.schemaVersion).isEqualTo(3)
+            assertThat(manager.selectedConfig.outputMode).isEqualTo(OutputMode.SDL)
+
+            val persisted = readRunConfig(projectRoot)
+            assertThat(persisted).contains("\"schemaVersion\": 3")
+            assertThat(persisted).contains("\"outputMode\": \"SDL\"")
+            assertThat(persisted).doesNotContain("\"outputMode\": \"GUI\"")
         } finally {
             projectRoot.deleteRecursively()
         }

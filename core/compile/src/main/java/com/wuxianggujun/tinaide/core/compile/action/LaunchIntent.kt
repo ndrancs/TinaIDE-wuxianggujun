@@ -15,7 +15,7 @@ sealed interface LaunchIntent {
     /**
      * 运行产物。
      *
-     * @property outputMode 控制启动载体(TERMINAL / GUI / LOG),与 [RunConfiguration] 一致
+     * @property outputMode 控制启动载体(TERMINAL / SDL / LOG),与 [RunConfiguration] 一致
      */
     data class Run(val outputMode: OutputMode) : LaunchIntent
 

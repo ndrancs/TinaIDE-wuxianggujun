@@ -14,7 +14,7 @@ class AiTestExecutionPlannerTest {
     fun `resolve uses phony test target as build operation`() {
         val plan = AiTestExecutionPlanner.resolve(
             request = TestRequest(),
-            selectedConfig = RunConfiguration(outputMode = OutputMode.GUI, targetName = "app"),
+            selectedConfig = RunConfiguration(outputMode = OutputMode.SDL, targetName = "app"),
             targets = listOf(TargetInfo(name = "test", type = TargetInfo.Type.OTHER, sources = emptyList()))
         )
 

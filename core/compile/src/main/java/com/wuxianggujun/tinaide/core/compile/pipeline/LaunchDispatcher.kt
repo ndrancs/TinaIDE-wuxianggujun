@@ -43,6 +43,7 @@ class LaunchDispatcher(
         val outcome: LaunchOutcome = when (intent) {
             is LaunchIntent.Run -> when (intent.outputMode) {
                 OutputMode.TERMINAL -> terminalLauncher.launch(artifact, ctx, emitter)
+                OutputMode.SDL -> guiLauncher.launch(artifact, ctx, emitter)
                 OutputMode.GUI -> guiLauncher.launch(artifact, ctx, emitter)
                 OutputMode.LOG -> nativeLauncher.launch(artifact, ctx, emitter)
             }

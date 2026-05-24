@@ -252,7 +252,7 @@ class CompileProjectUseCase(
             OutputMode.LOG -> OutputMode.TERMINAL
             else -> config.outputMode
         }
-        val preferSharedLibraryForRun = mode == ExecutionMode.RUN && runOutputMode == OutputMode.GUI
+        val preferSharedLibraryForRun = mode == ExecutionMode.RUN && runOutputMode.isSdlGraphical()
         val activeOutputMode = if (mode == ExecutionMode.RUN) runOutputMode else OutputMode.TERMINAL
         val request = operation.resolveRequest(activeOutputMode)
 
@@ -291,7 +291,7 @@ class CompileProjectUseCase(
             onProgress = { msg -> log(msg) },
         )
 
-        // CMake + GUI 必须运行共享库目标；旧配置误选 executable 时自动纠正。
+        // CMake + SDL 图形运行必须运行共享库目标；旧配置误选 executable 时自动纠正。
         if (buildSystem == BuildSystem.CMAKE && preferSharedLibraryForRun) {
             val ctxForTargetsQuery = buildContextFactory.create(
                 appContext = appContext, projectRoot = projectRoot, buildDir = buildDir,

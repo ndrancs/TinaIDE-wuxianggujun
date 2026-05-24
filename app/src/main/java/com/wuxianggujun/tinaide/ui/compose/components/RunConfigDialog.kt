@@ -78,10 +78,9 @@ fun RunConfigDialog(
     var buildType by remember { mutableStateOf(config.buildType) }
     var outputMode by remember {
         mutableStateOf(
-            if (config.outputMode == OutputMode.LOG) {
-                OutputMode.TERMINAL
-            } else {
-                config.outputMode
+            when (config.outputMode) {
+                OutputMode.LOG -> OutputMode.TERMINAL
+                else -> config.outputMode.normalizedForPersistence()
             }
         )
     }
@@ -192,16 +191,16 @@ fun RunConfigDialog(
     var enableFloatingLog by remember { mutableStateOf(config.enableFloatingLog) }
     var showVariablesHelp by remember { mutableStateOf(false) }
 
-    // 目标过滤：图形模式只加载共享库，终端模式只运行可执行文件。
+    // 目标过滤：SDL 图形运行只加载共享库，终端模式只运行可执行文件。
     val selectableTargets = remember(availableTargets, outputMode) {
         availableTargets.filter { target ->
-            when (outputMode) {
-                OutputMode.GUI -> target.type == TargetInfo.Type.SHARED_LIBRARY
+            when {
+                outputMode.isSdlGraphical() -> target.type == TargetInfo.Type.SHARED_LIBRARY
                 else -> target.type == TargetInfo.Type.EXECUTABLE
             }
         }
     }
-    val defaultTargetDescriptionRes = if (outputMode == OutputMode.GUI) {
+    val defaultTargetDescriptionRes = if (outputMode.isSdlGraphical()) {
         Strings.run_config_build_target_desc_gui
     } else {
         Strings.run_config_build_target_desc
@@ -209,9 +208,9 @@ fun RunConfigDialog(
     LaunchedEffect(outputMode, buildSystem, availableTargets, targetName) {
         if (buildSystem != BuildSystem.CMAKE || targetName.isBlank()) return@LaunchedEffect
         val selectedTargetType = availableTargets.firstOrNull { it.name == targetName }?.type ?: return@LaunchedEffect
-        if (outputMode == OutputMode.GUI && selectedTargetType != TargetInfo.Type.SHARED_LIBRARY) {
+        if (outputMode.isSdlGraphical() && selectedTargetType != TargetInfo.Type.SHARED_LIBRARY) {
             targetName = ""
-        } else if (outputMode != OutputMode.GUI && selectedTargetType == TargetInfo.Type.SHARED_LIBRARY) {
+        } else if (!outputMode.isSdlGraphical() && selectedTargetType == TargetInfo.Type.SHARED_LIBRARY) {
             targetName = ""
         }
     }
@@ -586,7 +585,7 @@ fun RunConfigDialog(
                 }
             } else if (
                 buildSystem == BuildSystem.CMAKE &&
-                outputMode == OutputMode.GUI &&
+                outputMode.isSdlGraphical() &&
                 availableTargets.isNotEmpty()
             ) {
                 Text(
@@ -908,15 +907,15 @@ fun RunConfigDialog(
                     description = stringResource(Strings.run_config_output_terminal_desc)
                 )
                 RunConfigOptionRow(
-                    selected = outputMode == OutputMode.GUI,
-                    onClick = { outputMode = OutputMode.GUI },
+                    selected = outputMode.isSdlGraphical(),
+                    onClick = { outputMode = OutputMode.SDL },
                     title = stringResource(Strings.run_config_output_gui),
                     description = stringResource(Strings.run_config_output_gui_desc)
                 )
             }
 
-            // SDL 图形运行选项（仅在图形模式下显示）
-            if (outputMode == OutputMode.GUI) {
+            // SDL 图形运行选项（仅在 SDL 图形运行下显示）
+            if (outputMode.isSdlGraphical()) {
                 RunConfigSectionCard(
                     title = stringResource(Strings.run_config_gui_options)
                 ) {

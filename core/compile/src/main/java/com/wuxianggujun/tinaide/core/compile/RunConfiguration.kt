@@ -17,7 +17,8 @@ import java.util.concurrent.ConcurrentHashMap
 import timber.log.Timber
 
 private const val RUN_CONFIG_SCHEMA_LEGACY = 1
-private const val RUN_CONFIG_SCHEMA_CURRENT = 2
+private const val RUN_CONFIG_SCHEMA_V2 = 2
+private const val RUN_CONFIG_SCHEMA_CURRENT = 3
 
 /**
  * 源文件模式 - 决定编译哪个源文件
@@ -113,12 +114,12 @@ data class RunConfiguration(
     val singleFileCppStandard: String? = null,
 
     /**
-     * 图形模式的屏幕方向（仅 outputMode == GUI 时生效）。
+     * SDL 图形运行的屏幕方向（仅 outputMode == SDL 时生效）。
      */
     val guiOrientation: GuiOrientation = GuiOrientation.AUTO,
 
     /**
-     * 是否在图形模式下显示悬浮日志窗口（仅 outputMode == GUI 时生效）。
+     * 是否在 SDL 图形运行下显示悬浮日志窗口（仅 outputMode == SDL 时生效）。
      *
      * 启用后可在全屏 SDL/ImGui 等图形程序中实时查看 stdout/stderr 输出。
      */
@@ -126,6 +127,7 @@ data class RunConfiguration(
 ) {
     fun normalized(): RunConfiguration {
         return copy(
+            outputMode = outputMode.normalizedForPersistence(),
             toolchainId = toolchainId?.trim()?.takeIf { it.isNotEmpty() },
             customCCompiler = normalizeCompilerPath(customCCompiler),
             customCppCompiler = normalizeCompilerPath(customCppCompiler),
@@ -243,6 +245,7 @@ data class RunConfiguration(
         return when (outputMode) {
             OutputMode.LOG -> Strings.run_config_output_build_log.str()
             OutputMode.TERMINAL -> Strings.run_config_output_terminal.str()
+            OutputMode.SDL -> Strings.run_config_output_gui.str()
             OutputMode.GUI -> Strings.run_config_output_gui.str()
         }
     }
@@ -462,7 +465,7 @@ data class RunConfigurationManager(
                 ?: return OutputMode.TERMINAL
             val apkExportType = ProjectMetadataStore.read(projectRoot)?.apkExportType
             return if (apkExportType == ProjectApkExportType.SDL3) {
-                OutputMode.GUI
+                OutputMode.SDL
             } else {
                 OutputMode.TERMINAL
             }
@@ -488,6 +491,7 @@ data class RunConfigurationManager(
             while (migrated.schemaVersion < RUN_CONFIG_SCHEMA_CURRENT) {
                 migrated = when {
                     migrated.schemaVersion <= RUN_CONFIG_SCHEMA_LEGACY -> migrateFromV1ToV2(migrated)
+                    migrated.schemaVersion == RUN_CONFIG_SCHEMA_V2 -> migrateFromV2ToV3(migrated)
                     else -> {
                         Timber.tag(TAG).w(
                             "Unknown run config schema ${migrated.schemaVersion}, " +
@@ -496,7 +500,7 @@ data class RunConfigurationManager(
                         migrated.copy(schemaVersion = RUN_CONFIG_SCHEMA_CURRENT)
                     }
                 }
-                // TODO(config-migration): schemaVersion 升级到 3+ 时，在这里追加 v2->v3 等迁移步骤。
+                // TODO(config-migration): schemaVersion 升级到 4+ 时，在这里追加 v3->v4 等迁移步骤。
             }
             return migrated
         }
@@ -508,6 +512,16 @@ data class RunConfigurationManager(
                         config.singleFileCppStandard
                     )
                 )
+            }
+            return manager.copy(
+                schemaVersion = RUN_CONFIG_SCHEMA_V2,
+                configurations = migratedConfigs
+            )
+        }
+
+        private fun migrateFromV2ToV3(manager: RunConfigurationManager): RunConfigurationManager {
+            val migratedConfigs = manager.configurations.map { config ->
+                config.copy(outputMode = config.outputMode.normalizedForPersistence())
             }
             return manager.copy(
                 schemaVersion = RUN_CONFIG_SCHEMA_CURRENT,
@@ -636,7 +650,23 @@ enum class OutputMode {
     /**
      * 在 SDL 图形运行时中运行（加载共享库）
      */
-    GUI
+    SDL,
+
+    /**
+     * 旧配置值，仅用于读取历史 run_configs.json。
+     *
+     * 新配置统一写入 [SDL]。
+     */
+    GUI;
+
+    fun normalizedForPersistence(): OutputMode {
+        return when (this) {
+            GUI -> SDL
+            else -> this
+        }
+    }
+
+    fun isSdlGraphical(): Boolean = this == SDL || this == GUI
 }
 
 /**
