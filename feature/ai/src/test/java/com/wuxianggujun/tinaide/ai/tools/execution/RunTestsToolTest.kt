@@ -81,7 +81,7 @@ class RunTestsToolTest {
         assertThat(result).isInstanceOf(ToolExecutionResult.Error::class.java)
         val message = (result as ToolExecutionResult.Error).message
         assertThat(message).contains("Tests failed")
-        assertThat(message).contains("Test execution not implemented yet")
+        assertThat(message).contains("Test execution is unavailable because no test callback is registered.")
         assertThat(message).doesNotContain("Test execution started")
     }
 

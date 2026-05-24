@@ -140,7 +140,7 @@ class RunProjectToolTest {
         assertThat(result).isInstanceOf(ToolExecutionResult.Error::class.java)
         val message = (result as ToolExecutionResult.Error).message
         assertThat(message).contains("Execution failed")
-        assertThat(message).contains("Project execution not implemented yet")
+        assertThat(message).contains("Project execution is unavailable because no run callback is registered.")
         assertThat(message).doesNotContain("Project execution started")
     }
 

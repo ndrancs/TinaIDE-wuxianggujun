@@ -140,7 +140,7 @@ class BuildProjectToolTest {
         assertThat(result).isInstanceOf(ToolExecutionResult.Error::class.java)
         val message = (result as ToolExecutionResult.Error).message
         assertThat(message).contains("Build failed")
-        assertThat(message).contains("Build execution not implemented yet")
+        assertThat(message).contains("Build execution is unavailable because no build callback is registered.")
         assertThat(message).doesNotContain("Build started")
     }
 

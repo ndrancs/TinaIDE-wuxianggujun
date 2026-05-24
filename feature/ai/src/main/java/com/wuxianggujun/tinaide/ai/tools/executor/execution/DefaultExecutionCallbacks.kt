@@ -1,5 +1,7 @@
 package com.wuxianggujun.tinaide.ai.tools.executor.execution
 
+import com.wuxianggujun.tinaide.ai.tools.localizedToolText
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -13,40 +15,33 @@ class DefaultExecutionCallbacks : ExecutionCallbacks {
     private val executionResultMap = ConcurrentHashMap<String, ExecutionResult>()
 
     override fun runProject(request: RunRequest): ExecutionResult {
-        val executionId = UUID.randomUUID().toString()
-
-        val result = ExecutionResult(
-            executionId = executionId,
-            success = false,
-            exitCode = -1,
-            output = "",
-            errorOutput = "Project execution not implemented yet",
-            duration = 0,
-            status = ExecutionStatus.FAILED
+        return failedResult(
+            localizedToolText(
+                Strings.ai_tool_error_default_run_callback_unavailable,
+                "Project execution is unavailable because no run callback is registered."
+            )
         )
-        executionStatusMap[executionId] = result.status
-        executionResultMap[executionId] = result
-        return result
     }
 
     override fun runTests(request: TestRequest): ExecutionResult {
-        val executionId = UUID.randomUUID().toString()
-
-        val result = ExecutionResult(
-            executionId = executionId,
-            success = false,
-            exitCode = -1,
-            output = "",
-            errorOutput = "Test execution not implemented yet",
-            duration = 0,
-            status = ExecutionStatus.FAILED
+        return failedResult(
+            localizedToolText(
+                Strings.ai_tool_error_default_test_callback_unavailable,
+                "Test execution is unavailable because no test callback is registered."
+            )
         )
-        executionStatusMap[executionId] = result.status
-        executionResultMap[executionId] = result
-        return result
     }
 
     override fun buildProject(request: BuildRequest): ExecutionResult {
+        return failedResult(
+            localizedToolText(
+                Strings.ai_tool_error_default_build_callback_unavailable,
+                "Build execution is unavailable because no build callback is registered."
+            )
+        )
+    }
+
+    private fun failedResult(errorOutput: String): ExecutionResult {
         val executionId = UUID.randomUUID().toString()
 
         val result = ExecutionResult(
@@ -54,7 +49,7 @@ class DefaultExecutionCallbacks : ExecutionCallbacks {
             success = false,
             exitCode = -1,
             output = "",
-            errorOutput = "Build execution not implemented yet",
+            errorOutput = errorOutput,
             duration = 0,
             status = ExecutionStatus.FAILED
         )
