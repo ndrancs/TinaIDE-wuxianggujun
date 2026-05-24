@@ -37,6 +37,17 @@
 - 本项目不使用 `Unreleased` / `未发布` 区块。
 - 所有变更必须归档到明确的版本号区块（版本号来源：`version.properties` 的 `versionName`）。
 
+## [0.17.3] - 2026-05-24
+
+### Changed
+- 图形运行时统一迁移到 SDL 输出模式：IDE 内部不再维护自定义 GUI 主机、绘制接口头文件或旧的 `run --gui` 入口，降低用户误用和后续支持成本。
+- 示例与文档同步收口到 SDL3 / NativeActivity 模板，避免继续引导用户使用已移除的自定义图形接口。
+- Release workflow 延长双 ABI Release APK 构建超时：`x86_64` 构建在 GitHub Actions 上进入后半段后不再被 35 分钟步骤超时提前终止。
+
+### Verification
+- GitHub Actions `Dev APK Build` 已在 `dev` 分支通过：run `26361907447`。
+- GitHub Actions `Build and Release` 的 `v0.17.2` 失败原因为 `x86_64` Release APK 步骤 35 分钟超时，不是源码编译错误；本版本通过新的 tag 重新触发发布构建。
+
 ## [0.17.1] - 2026-05-22
 
 ### Changed

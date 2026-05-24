@@ -145,6 +145,7 @@ jobs:
   build-release:
     if: ${{ github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'release') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
@@ -243,7 +244,7 @@ jobs:
           echo "Release tag matches version.properties: $VERSION_NAME"
 
       - name: Build ${{ matrix.abi }} Release APK
-        timeout-minutes: 35
+        timeout-minutes: 60
         run: |
           ./gradlew ${{ matrix.task }} --no-daemon -Ptina.devAbi=${{ matrix.flavor }} \
             -Ptina.allAbi=false \
