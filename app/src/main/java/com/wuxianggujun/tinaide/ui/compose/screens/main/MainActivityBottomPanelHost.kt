@@ -28,6 +28,7 @@ import com.wuxianggujun.tinaide.ui.compose.components.EditorContainer
 import com.wuxianggujun.tinaide.ui.compose.components.EditorStatusBarHeight
 import com.wuxianggujun.tinaide.ui.compose.components.SwipeableDrawerState
 import com.wuxianggujun.tinaide.ui.compose.components.rememberBottomPanelDragState
+import com.wuxianggujun.tinaide.ui.compose.state.DialogState
 import com.wuxianggujun.tinaide.ui.compose.state.editor.EditorContainerState
 import com.wuxianggujun.tinaide.ui.compose.state.git.GitUiState
 import org.koin.compose.koinInject
@@ -36,6 +37,7 @@ import org.koin.compose.koinInject
 internal fun MainActivityBottomPanelHost(
     paddingValues: PaddingValues,
     editorContainerState: EditorContainerState,
+    dialogState: DialogState,
     hostCommandExecutor: HostCommandExecutor?,
     drawerState: SwipeableDrawerState,
     gitUiState: GitUiState,
@@ -125,7 +127,22 @@ internal fun MainActivityBottomPanelHost(
                 onGitCommitClick = callbacks.onGitCommitClick,
                 cursorLine = cursorLine,
                 cursorColumn = cursorColumn,
-                fileEncoding = fileEncoding
+                fileEncoding = fileEncoding,
+                onCursorPositionClick = {
+                    when (editorContainerState.getActiveEditableEditorCommandAvailability()) {
+                        EditorContainerState.ActiveEditorCommandResult.SUCCESS -> {
+                            dialogState.openGotoLineDialog()
+                        }
+
+                        EditorContainerState.ActiveEditorCommandResult.NO_OPEN_FILE -> {
+                            callbacks.onNoOpenFile()
+                        }
+
+                        EditorContainerState.ActiveEditorCommandResult.UNSUPPORTED_EDITOR -> {
+                            callbacks.onUnsupportedEditor()
+                        }
+                    }
+                }
             )
         }
     }

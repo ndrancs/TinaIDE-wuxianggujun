@@ -1,6 +1,7 @@
 package com.wuxianggujun.tinaide.ui.compose.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,6 +56,7 @@ fun EditorStatusBar(
     line: Int = 1,
     column: Int = 1,
     bottomPanelState: BottomPanelDragState? = null,
+    onCursorPositionClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -281,7 +283,12 @@ fun EditorStatusBar(
                     text = stringResource(Strings.editor_cursor_position, line, column),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    modifier = if (onCursorPositionClick != null) {
+                        Modifier.clickable(onClick = onCursorPositionClick)
+                    } else {
+                        Modifier
+                    }
                 )
             }
         }

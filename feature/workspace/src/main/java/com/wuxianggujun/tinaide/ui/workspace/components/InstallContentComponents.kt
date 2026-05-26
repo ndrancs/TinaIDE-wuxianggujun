@@ -2,8 +2,8 @@
 package com.wuxianggujun.tinaide.ui.workspace.components
 
 import android.content.ClipData
+import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -37,7 +37,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.wuxianggujun.tinaide.core.network.server.TinaServerConfig
 import com.wuxianggujun.tinaide.core.i18n.Drawables
 import com.wuxianggujun.tinaide.core.proot.PRootBootstrap
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogActionRow
@@ -571,7 +570,10 @@ fun InstallCompletedContent(
                     textAlign = TextAlign.Center
                 )
                 Row(
-                    horizontalArrangement = Arrangement.Center,
+                    horizontalArrangement = Arrangement.spacedBy(
+                        space = 4.dp,
+                        alignment = Alignment.CenterHorizontally
+                    ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -1106,20 +1108,29 @@ fun InstallFailedContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
+                        text = stringResource(Strings.settings_title_help),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable {
+                            context.openSettingsRoute(
+                                route = SettingsRouteIds.HELP,
+                                helpDocumentId = HelpDocumentIds.FEEDBACK_GUIDE
+                            )
+                        }
+                    )
+                    Text(
+                        text = stringResource(Strings.and_word),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
                         text = stringResource(Strings.contact_support),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(TinaServerConfig.URL_HELP))
-                            runCatching { context.startActivity(intent) }
-                                .onFailure {
-                                    Toast.makeText(
-                                        context,
-                                        Strings.error_cannot_open_link.strOr(context),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                            context.openSettingsRoute(route = SettingsRouteIds.FEEDBACK)
                         }
                     )
                 }
@@ -1464,4 +1475,39 @@ fun SmartInstallHint(
             )
         }
     }
+}
+
+private object SettingsRouteIds {
+    const val HELP = "help"
+    const val FEEDBACK = "feedback"
+}
+
+private object HelpDocumentIds {
+    const val FEEDBACK_GUIDE = "feedback-guide"
+}
+
+private const val SETTINGS_ACTIVITY_CLASS_NAME = "com.wuxianggujun.tinaide.settings.SettingsActivity"
+private const val EXTRA_INITIAL_ROUTE = "extra_initial_route"
+private const val EXTRA_INITIAL_HELP_DOCUMENT_ID = "extra_initial_help_document_id"
+
+private fun Context.openSettingsRoute(
+    route: String,
+    helpDocumentId: String? = null
+) {
+    val intent = Intent()
+        .setClassName(packageName, SETTINGS_ACTIVITY_CLASS_NAME)
+        .putExtra(EXTRA_INITIAL_ROUTE, route)
+
+    helpDocumentId
+        ?.takeUnless { it.isBlank() }
+        ?.let { intent.putExtra(EXTRA_INITIAL_HELP_DOCUMENT_ID, it) }
+
+    runCatching { startActivity(intent) }
+        .onFailure {
+            Toast.makeText(
+                this,
+                Strings.error_cannot_open_link.strOr(this),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
 }

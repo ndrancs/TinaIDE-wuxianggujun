@@ -69,6 +69,7 @@ fun BottomPanel(
     cursorLine: Int = 1,
     cursorColumn: Int = 1,
     fileEncoding: String = "",
+    onCursorPositionClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
@@ -153,7 +154,8 @@ fun BottomPanel(
                     encoding = fileEncoding,
                     line = cursorLine,
                     column = cursorColumn,
-                    bottomPanelState = bottomPanelState
+                    bottomPanelState = bottomPanelState,
+                    onCursorPositionClick = onCursorPositionClick
                 )
             }
 

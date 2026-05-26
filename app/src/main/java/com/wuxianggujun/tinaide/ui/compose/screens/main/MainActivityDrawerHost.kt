@@ -63,6 +63,7 @@ internal fun MainActivityDrawerHost(
             MainActivityBottomPanelHost(
                 paddingValues = paddingValues,
                 editorContainerState = dependencies.editorContainerState,
+                dialogState = dependencies.dialogState,
                 hostCommandExecutor = dependencies.hostCommandExecutor,
                 drawerState = dependencies.drawerState,
                 gitUiState = uiState.gitUiState,
