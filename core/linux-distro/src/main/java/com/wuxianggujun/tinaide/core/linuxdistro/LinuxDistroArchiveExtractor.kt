@@ -8,6 +8,7 @@ interface LinuxDistroArchiveExtractor {
         archiveFile: File,
         targetDir: File,
         format: DistroArchiveFormat,
+        ensureActive: () -> Unit = {},
         progress: (Float) -> Unit = {},
     )
 }
@@ -17,6 +18,7 @@ class TarLinuxDistroArchiveExtractor : LinuxDistroArchiveExtractor {
         archiveFile: File,
         targetDir: File,
         format: DistroArchiveFormat,
+        ensureActive: () -> Unit,
         progress: (Float) -> Unit,
     ) {
         require(archiveFile.isFile) { "Rootfs archive does not exist: ${archiveFile.absolutePath}" }
@@ -25,6 +27,7 @@ class TarLinuxDistroArchiveExtractor : LinuxDistroArchiveExtractor {
             input = archiveFile.inputStream(),
             targetDir = targetDir,
             compressionType = format.compressionType(),
+            ensureActive = ensureActive,
             progress = progress,
         )
     }

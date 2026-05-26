@@ -6,6 +6,7 @@ import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -151,6 +152,19 @@ object PRootBootstrap {
 
     fun isInstalling(): Boolean = installing.get()
 
+    fun cancel(applicationContext: Context, reason: String = "install cancelled") {
+        val job = synchronized(jobLock) { currentJob }
+        if (job == null || !installing.get()) {
+            return
+        }
+
+        logWarning(reason)
+        job.cancel(CancellationException(reason))
+        if (_state.value is BootstrapState.Installing) {
+            _state.value = BootstrapState.Idle
+        }
+    }
+
     fun restart(
         applicationContext: Context,
         reason: String? = null,
@@ -203,32 +217,34 @@ object PRootBootstrap {
 
         if (!installing.compareAndSet(false, true)) return
 
-        val job = scope.launch {
-            try {
-                installLogManager.clear()
-                logInfo(Strings.proot_install_begin.strOr(context))
-                installConfiguredDistro(context, defaultDistroId())
-            } finally {
-                installing.set(false)
-            }
-        }
-        synchronized(jobLock) { currentJob = job }
+        launchInstallJob(context, defaultDistroId())
     }
 
     fun startDistroInstall(applicationContext: Context, distroId: String) {
         val context = applicationContext.applicationContext
         if (!installing.compareAndSet(false, true)) return
 
-        val job = scope.launch {
+        launchInstallJob(context, distroId)
+    }
+
+    private fun launchInstallJob(context: Context, distroId: String) {
+        lateinit var job: Job
+        job = scope.launch(start = CoroutineStart.LAZY) {
             try {
                 installLogManager.clear()
                 logInfo(Strings.proot_install_begin.strOr(context))
                 installConfiguredDistro(context, distroId)
             } finally {
                 installing.set(false)
+                synchronized(jobLock) {
+                    if (currentJob === job) {
+                        currentJob = null
+                    }
+                }
             }
         }
         synchronized(jobLock) { currentJob = job }
+        job.start()
     }
 
     private suspend fun installConfiguredDistro(context: Context, distroId: String) {
@@ -313,6 +329,10 @@ object PRootBootstrap {
             )
             _state.value = BootstrapState.Installed
             logSuccess(Strings.proot_install_success.strOr(context))
+        } catch (e: CancellationException) {
+            _state.value = BootstrapState.Idle
+            logWarning(e.message ?: "PRoot installation cancelled")
+            throw e
         } catch (t: Throwable) {
             val message = t.message?.takeIf { it.isNotBlank() } ?: "Unknown error"
             val isNetworkError = message.contains("download", ignoreCase = true) ||

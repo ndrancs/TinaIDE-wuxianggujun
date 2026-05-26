@@ -179,6 +179,18 @@ class PRootManager(
         }
     }
 
+    private fun clearLaunchConfigFromDisk(reason: String) {
+        runCatching {
+            if (launchConfigFile.exists()) {
+                launchConfigFile.delete()
+            }
+        }.onSuccess {
+            Timber.tag("PRootManager").w("Cleared proot launch config: %s", reason)
+        }.onFailure { e ->
+            Timber.tag("PRootManager").w(e, "Failed to clear proot launch config: %s", reason)
+        }
+    }
+
     private fun isLikelyLinkerHelpOnly(output: String): Boolean {
         val trimmed = output.trim()
         if (trimmed.isEmpty()) return false
@@ -192,6 +204,36 @@ class PRootManager(
         return (lower.contains("not executable") && lower.contains("elf")) ||
             lower.contains("exec format error") ||
             (lower.contains("permission denied") && (lower.contains("proot") || lower.contains("libproot.so")))
+    }
+
+    private fun isLikelyLaunchConfigFailure(result: PRootResult): Boolean {
+        if (result.exitCode == 0 || result.timedOut) return false
+
+        val output = result.combinedOutput
+        if (isLikelyLinkerHelpOnly(output)) return true
+        if (isLikelyExecFormatOrPermissionError(output)) return true
+
+        val lower = output.lowercase()
+        return result.exitCode == 139 ||
+            lower.contains("terminated with signal 11") ||
+            lower.contains("signal 11") ||
+            lower.contains("sigsegv")
+    }
+
+    private fun invalidateLaunchConfigIfNeeded(
+        result: PRootResult,
+        launchConfig: LaunchConfig?,
+    ): Boolean {
+        if (launchConfig == null || !isLikelyLaunchConfigFailure(result)) return false
+
+        synchronized(launchConfigLock) {
+            val current = readLaunchConfigFromDisk()
+            if (current == null || current == launchConfig) {
+                clearLaunchConfigFromDisk("mode=${launchConfig.mode}, exit=${result.exitCode}")
+                return true
+            }
+        }
+        return false
     }
 
     private suspend fun probeLaunchConfig(baseEnv: Map<String, String>): LaunchConfig? = coroutineScope {
@@ -341,9 +383,13 @@ class PRootManager(
 
         // 选择并缓存可用的启动方式（避免在不同 ROM/架构上反复踩坑）
         // Android 15+ 必须使用 nativeLibraryDir 下的 libproot.so
-        ensureLaunchConfig(envMap)?.let { cfg ->
-            envMap["PROOT_LAUNCH_MODE"] = cfg.mode
-            envMap["PROOT_BIN"] = prootBinary.absolutePath
+        val launchConfig = if (env.containsKey("PROOT_LAUNCH_MODE")) {
+            null
+        } else {
+            ensureLaunchConfig(envMap)
+        }
+        launchConfig?.let { cfg ->
+            applyLaunchConfig(envMap, cfg, overwrite = true)
         }
 
         // 转换为环境变量数组
@@ -502,6 +548,20 @@ class PRootManager(
                 )
             }
 
+            if (env[ENV_TINA_PROOT_LAUNCH_CONFIG_RETRY] != "1" &&
+                invalidateLaunchConfigIfNeeded(finalResult, launchConfig)
+            ) {
+                sessionLogger?.writeInfo("auto-retry: cleared stale proot launch config")
+                val retryEnv = env + (ENV_TINA_PROOT_LAUNCH_CONFIG_RETRY to "1")
+                return@withContext execute(
+                    command = command,
+                    workDir = workDir,
+                    env = retryEnv,
+                    timeout = timeout,
+                    stdin = stdin
+                )
+            }
+
             if (shouldAutoRetryWithCompat(finalResult, env)) {
                 sessionLogger?.writeInfo("auto-retry: detected proot runtime crash, retry with PROOT_NO_SECCOMP=1")
                 Timber.tag("PRootManager").w("Detected proot runtime crash; retrying with compat mode (PROOT_NO_SECCOMP=1)")
@@ -580,9 +640,13 @@ class PRootManager(
         }
 
         // Android 15+ 必须使用 nativeLibraryDir 下的 libproot.so
-        ensureLaunchConfig(envMap)?.let { cfg ->
-            envMap["PROOT_LAUNCH_MODE"] = cfg.mode
-            envMap["PROOT_BIN"] = prootBinary.absolutePath
+        val launchConfig = if (env.containsKey("PROOT_LAUNCH_MODE")) {
+            null
+        } else {
+            ensureLaunchConfig(envMap)
+        }
+        launchConfig?.let { cfg ->
+            applyLaunchConfig(envMap, cfg, overwrite = true)
         }
 
         val envArray = envMap.map { "${it.key}=${it.value}" }.toTypedArray()
@@ -688,10 +752,26 @@ class PRootManager(
                 )
             }
 
+            if (env[ENV_TINA_PROOT_LAUNCH_CONFIG_RETRY] != "1" &&
+                invalidateLaunchConfigIfNeeded(finalResult, launchConfig)
+            ) {
+                sessionLogger?.writeInfo("auto-retry: cleared stale proot launch config")
+                onOutput("[TinaIDE] PRoot launch mode changed; retrying...")
+                val retryEnv = env + (ENV_TINA_PROOT_LAUNCH_CONFIG_RETRY to "1")
+                return@withContext executeWithOutput(
+                    command = command,
+                    workDir = workDir,
+                    env = retryEnv,
+                    timeout = timeout,
+                    onProcessStarted = onProcessStarted,
+                    onOutput = onOutput
+                )
+            }
+
             if (shouldAutoRetryWithCompat(finalResult, env)) {
                 sessionLogger?.writeInfo("auto-retry: detected proot runtime crash, retry with PROOT_NO_SECCOMP=1")
                 Timber.tag("PRootManager").w("Detected proot runtime crash; retrying with compat mode (PROOT_NO_SECCOMP=1)")
-                onOutput("[TinaIDE] Detected PRoot runtime compatibility issue; retrying with compat mode…")
+                onOutput("[TinaIDE] Detected PRoot runtime compatibility issue; retrying with compat mode...")
 
                 if (forceCompatMode == null) {
                     forceCompatMode = true
@@ -775,20 +855,11 @@ class PRootManager(
     ): InteractiveProcess {
         ensureSupportedRuntime()
         val prootCommand = buildPRootCommandLine(command, workDir)
-        
-        // 构建环境变量
-        val envMap = mutableMapOf<String, String>()
-        envMap["LD_LIBRARY_PATH"] = listOfNotNull(nativeLibDir.takeIf { it.isNotBlank() })
-            .filter { it.isNotBlank() }
-            .distinct()
-            .joinToString(":")
-        // 交互式终端需要注入 HOME/PS1 等环境，避免暴露私有绝对路径
-        applyEnvironment(envMap, buildExecEnvironment(extraEnv))
+
+        // 交互式进程和普通 execute() 共用同一套环境约定。
+        val envMap = buildExecEnvironment(extraEnv).toMutableMap()
         // 设置工作目录（init-proot.sh 需要）
         envMap["WORK_DIR"] = toGuestPath(workDir)
-        // 不把 LD_PRELOAD 直接带进外层 /system/bin/sh，实际 preload 由 init-proot.sh
-        // 在最终 exec proot/linker 前按启动模式注入。
-        envMap.remove("LD_PRELOAD")
 
         val envArray = envMap.map { "${it.key}=${it.value}" }.toTypedArray()
 
@@ -911,20 +982,20 @@ class PRootManager(
         } catch (e: Exception) {
             Timber.d(e, "PRootManager: canonicalPath failed for: %s", normalized)
             normalized
-        }
+        }.normalizeHostPathForGuestMapping()
 
         val projectsRoot = try {
             projectsHostDir.canonicalPath
         } catch (e: Exception) {
             Timber.d(e, "PRootManager: canonicalPath failed for projectsHostDir")
             projectsHostDir.absolutePath
-        }
+        }.normalizeHostPathForGuestMapping()
         val workspaceRoot = try {
             workspaceHostDir.canonicalPath
         } catch (e: Exception) {
             Timber.d(e, "PRootManager: canonicalPath failed for workspaceHostDir")
             workspaceHostDir.absolutePath
-        }
+        }.normalizeHostPathForGuestMapping()
 
         return when {
             canonicalPath == projectsRoot -> "/projects"
@@ -935,6 +1006,10 @@ class PRootManager(
 
             else -> normalized
         }
+    }
+
+    private fun String.normalizeHostPathForGuestMapping(): String {
+        return replace('\\', '/')
     }
 
     private fun applyEnvironment(
@@ -1020,6 +1095,24 @@ class PRootManager(
         )
     }
 
+    private fun applyLaunchConfig(
+        targetEnv: MutableMap<String, String>,
+        config: LaunchConfig,
+        overwrite: Boolean,
+    ) {
+        if (overwrite || !targetEnv.containsKey("PROOT_LAUNCH_MODE")) {
+            targetEnv["PROOT_LAUNCH_MODE"] = config.mode
+        }
+        if (overwrite || !targetEnv.containsKey("PROOT_BIN")) {
+            targetEnv["PROOT_BIN"] = prootBinary.absolutePath
+        }
+    }
+
+    private fun applyCachedLaunchConfig(targetEnv: MutableMap<String, String>) {
+        val cached = readLaunchConfigFromDisk() ?: return
+        applyLaunchConfig(targetEnv, cached, overwrite = false)
+    }
+
     /**
      * 为 init-proot.sh 准备 tina-exec 环境。
      *
@@ -1063,6 +1156,10 @@ class PRootManager(
             .distinct()
             .joinToString(":")
         applyEnvironment(env, extraEnv)
+        applyCachedLaunchConfig(env)
+        // 不把 LD_PRELOAD 直接带进外层 /system/bin/sh，实际 preload 由 init-proot.sh
+        // 在最终 exec proot/linker 前按启动模式注入。
+        env.remove("LD_PRELOAD")
         val filesDir = context.filesDir.absolutePath
         // HOME 保持为 /root（由 applyEnvironment 设置），不要覆盖为私有路径
         env["TINA_BASE"] = filesDir
@@ -1161,6 +1258,7 @@ class PRootManager(
         private const val ENV_TINA_PROOT_LD_PRELOAD_DIRECT = "TINA_PROOT__LD_PRELOAD_DIRECT"
         private const val ENV_TINA_PROOT_LD_PRELOAD_LINKER = "TINA_PROOT__LD_PRELOAD_LINKER"
         private const val ENV_TINA_PROOT_ENABLE_TINA_EXEC = "TINA_PROOT_ENABLE_TINA_EXEC"
+        private const val ENV_TINA_PROOT_LAUNCH_CONFIG_RETRY = "TINA_PROOT_LAUNCH_CONFIG_RETRY"
         private const val LAUNCH_CONFIG_VERSION = "guest-probe-v1"
         private const val OUTPUT_TAIL_MAX_LINES = 200
 

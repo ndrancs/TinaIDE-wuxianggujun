@@ -66,11 +66,12 @@ object TarExtractor {
         archiveFile: File,
         targetDir: File,
         estimatedTotalEntries: Int = 2500,
+        ensureActive: () -> Unit = {},
         progress: (Float) -> Unit = {},
     ) {
         FileInputStream(archiveFile).use { fis ->
             BufferedInputStream(fis, BUFFER_SIZE).use { bis ->
-                extract(bis, targetDir, estimatedTotalEntries, progress)
+                extract(bis, targetDir, estimatedTotalEntries, ensureActive, progress)
             }
         }
     }
@@ -87,11 +88,13 @@ object TarExtractor {
         bufferedInput: BufferedInputStream,
         targetDir: File,
         estimatedTotalEntries: Int = 2500,
+        ensureActive: () -> Unit = {},
         progress: (Float) -> Unit = {},
     ) {
+        ensureActive()
         val compressionType = detectCompressionType(bufferedInput)
         val tarInput = wrapWithDecompressor(bufferedInput, compressionType)
-        extractTarStream(tarInput, targetDir, estimatedTotalEntries, progress)
+        extractTarStream(tarInput, targetDir, estimatedTotalEntries, ensureActive, progress)
     }
 
     /**
@@ -102,11 +105,13 @@ object TarExtractor {
         targetDir: File,
         compressionType: CompressionType,
         estimatedTotalEntries: Int = 2500,
+        ensureActive: () -> Unit = {},
         progress: (Float) -> Unit = {},
     ) {
+        ensureActive()
         val buffered = if (input is BufferedInputStream) input else BufferedInputStream(input, BUFFER_SIZE)
         val tarInput = wrapWithDecompressor(buffered, compressionType)
-        extractTarStream(tarInput, targetDir, estimatedTotalEntries, progress)
+        extractTarStream(tarInput, targetDir, estimatedTotalEntries, ensureActive, progress)
     }
 
     /**
@@ -171,14 +176,17 @@ object TarExtractor {
         tarInput: TarArchiveInputStream,
         targetDir: File,
         estimatedTotalEntries: Int,
+        ensureActive: () -> Unit,
         progress: (Float) -> Unit,
     ) {
         var entryCount = 0
 
         tarInput.use { tarStream ->
+            ensureActive()
             var entry = tarStream.nextEntry
             val pendingHardLinks = mutableListOf<PendingHardLink>()
             while (entry != null) {
+                ensureActive()
                 entryCount++
                 val safeName = sanitizeTarPath(entry.name)
                 val outputFile = File(targetDir, safeName)
@@ -203,6 +211,7 @@ object TarExtractor {
                         val buffer = ByteArray(BUFFER_SIZE)
                         var len: Int
                         while (tarStream.read(buffer).also { len = it } != -1) {
+                            ensureActive()
                             output.write(buffer, 0, len)
                         }
                     }
@@ -217,6 +226,7 @@ object TarExtractor {
             }
 
             pendingHardLinks.forEach { link ->
+                ensureActive()
                 val targetFile = File(targetDir, link.targetPathInTar)
                 if (!targetFile.exists() || targetFile.isDirectory) {
                     throw IllegalStateException("Hardlink target missing: ${link.targetPathInTar}")

@@ -46,7 +46,6 @@ import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButtonLarge
 import com.wuxianggujun.tinaide.ui.compose.components.TinaOutlinedButton
-import com.wuxianggujun.tinaide.ui.workspace.InstallLogActivity
 import com.wuxianggujun.tinaide.ui.workspace.model.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -157,7 +156,8 @@ fun InstallingContent(
         // 顶部栏
         InstallTopBar(
             title = stringResource(Strings.setup_title_env_config),
-            onBack = onBack
+            onBack = onBack,
+            onCancel = onCancel,
         )
         
         // 紧凑进度区域
@@ -205,7 +205,8 @@ fun InstallingContent(
 @Composable
 private fun InstallTopBar(
     title: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onCancel: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
@@ -232,6 +233,21 @@ private fun InstallTopBar(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.align(Alignment.Center)
             )
+
+            if (onCancel != null) {
+                SetupActionButton(
+                    onClick = onCancel,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(SetupTopBarDefaults.IconSize)
+                ) {
+                    Icon(
+                        painter = rememberWorkspacePainter(Drawables.ic_close),
+                        contentDescription = stringResource(Strings.btn_cancel_install),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
         }
     }
 }
@@ -731,6 +747,7 @@ fun InstallFailedContent(
     isRepairMode: Boolean = false,
     onRetry: () -> Unit,
     onOpenTerminal: (() -> Unit)? = null,
+    onOpenLog: (() -> Unit)? = null,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1088,6 +1105,16 @@ fun InstallFailedContent(
                     onClick = onRetry,
                     icon = rememberWorkspacePainter(Drawables.ic_sync)
                 )
+
+                if (onOpenLog != null) {
+                    TinaOutlinedButton(
+                        text = stringResource(Strings.link_view_full_log),
+                        onClick = onOpenLog,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    )
+                }
 
                 TinaOutlinedButton(
                     text = stringResource(Strings.btn_open_terminal),

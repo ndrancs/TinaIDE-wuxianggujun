@@ -1,6 +1,8 @@
 package com.wuxianggujun.tinaide.core.linuxdistro
 
 import java.io.File
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 class LinuxDistroInstaller(
     private val catalog: LinuxDistroCatalog,
@@ -9,6 +11,7 @@ class LinuxDistroInstaller(
     private val archiveExtractor: LinuxDistroArchiveExtractor = TarLinuxDistroArchiveExtractor(),
     private val rootfsConfigurator: LinuxDistroRootfsConfigurator = BasicLinuxDistroRootfsConfigurator(),
     private val metadataStore: LinuxDistroInstallMetadataStore = JsonLinuxDistroInstallMetadataStore(),
+    private val rootfsProbe: LinuxDistroRootfsProbe = BasicLinuxDistroRootfsProbe,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
@@ -16,6 +19,7 @@ class LinuxDistroInstaller(
         request: LinuxDistroInstallRequest,
         progress: (LinuxDistroInstallProgress) -> Unit = {},
     ): LinuxDistroInstallResult {
+        val coroutineContext = currentCoroutineContext()
         request.layout.ensureDirectories()
         progress(request.progress(LinuxDistroInstallPhase.PREPARING, 0.01f))
 
@@ -31,25 +35,31 @@ class LinuxDistroInstaller(
 
         val targetRootfsDir = request.layout.rootfsDir(resolved.distro.id)
         if (targetRootfsDir.isDirectory && !request.reinstall) {
-            val installation = metadataStore.read(targetRootfsDir) ?: createInstallation(
-                resolved = resolved,
-                rootfsDir = targetRootfsDir,
-                archiveFile = request.layout.archiveFile(resolved),
-                installedAtEpochMillis = targetRootfsDir.lastModified().takeIf { it > 0L } ?: clock(),
-            )
-            metadataStore.write(targetRootfsDir, installation)
-            progress(request.progress(LinuxDistroInstallPhase.COMPLETED, 1f, resolved))
-            return LinuxDistroInstallResult(
-                resolved = resolved,
-                rootfsDir = targetRootfsDir,
-                archiveFile = request.layout.archiveFile(resolved),
-                installation = installation,
-                installed = false,
-            )
+            val existingInstallation = metadataStore.read(targetRootfsDir)
+            if (existingInstallation != null &&
+                existingInstallation.matchesResolvedArtifact(resolved, targetRootfsDir) &&
+                rootfsProbe.hasBootShell(targetRootfsDir)
+            ) {
+                val reusableInstallation = existingInstallation.withResolvedArtifactMetadata(
+                    resolved = resolved,
+                    rootfsDir = targetRootfsDir,
+                    archiveFile = request.layout.archiveFile(resolved),
+                )
+                metadataStore.write(targetRootfsDir, reusableInstallation)
+                progress(request.progress(LinuxDistroInstallPhase.COMPLETED, 1f, resolved))
+                return LinuxDistroInstallResult(
+                    resolved = resolved,
+                    rootfsDir = targetRootfsDir,
+                    archiveFile = request.layout.archiveFile(resolved),
+                    installation = reusableInstallation,
+                    installed = false,
+                )
+            }
         }
 
         val archiveFile = request.layout.archiveFile(resolved)
         ensureArchive(resolved, archiveFile, request, progress)
+        coroutineContext.ensureActive()
         progress(request.progress(LinuxDistroInstallPhase.VERIFYING, 0.45f, resolved))
         try {
             checksumVerifier.requireValid(archiveFile, resolved.artifact.checksum)
@@ -66,6 +76,7 @@ class LinuxDistroInstaller(
                 archiveFile = archiveFile,
                 targetDir = stagingRootfsDir,
                 format = resolved.artifact.format,
+                ensureActive = { coroutineContext.ensureActive() },
             ) { extractProgress ->
                 progress(
                     request.progress(
@@ -76,9 +87,11 @@ class LinuxDistroInstaller(
                 )
             }
 
+            coroutineContext.ensureActive()
             progress(request.progress(LinuxDistroInstallPhase.CONFIGURING, 0.88f, resolved))
             rootfsConfigurator.configure(stagingRootfsDir, request.rootfsConfig)
 
+            coroutineContext.ensureActive()
             val installedAt = clock()
             val installation = createInstallation(
                 resolved = resolved,
@@ -89,13 +102,7 @@ class LinuxDistroInstaller(
             metadataStore.write(stagingRootfsDir, installation)
 
             progress(request.progress(LinuxDistroInstallPhase.REGISTERING, 0.95f, resolved))
-            if (targetRootfsDir.exists()) {
-                targetRootfsDir.deleteRecursively()
-            }
-            targetRootfsDir.parentFile?.mkdirs()
-            check(stagingRootfsDir.renameTo(targetRootfsDir)) {
-                "Failed to move rootfs from ${stagingRootfsDir.absolutePath} to ${targetRootfsDir.absolutePath}"
-            }
+            replaceRootfsDirectory(stagingRootfsDir, targetRootfsDir)
 
             progress(request.progress(LinuxDistroInstallPhase.COMPLETED, 1f, resolved))
             return LinuxDistroInstallResult(
@@ -109,6 +116,52 @@ class LinuxDistroInstaller(
             stagingRootfsDir.deleteRecursively()
             throw throwable
         }
+    }
+
+    private fun replaceRootfsDirectory(
+        stagingRootfsDir: File,
+        targetRootfsDir: File,
+    ) {
+        targetRootfsDir.parentFile?.mkdirs()
+        val backupRootfsDir = targetRootfsDir.takeIf { it.exists() }?.let { newReplacementBackupDir(it) }
+
+        try {
+            if (backupRootfsDir != null) {
+                check(targetRootfsDir.renameTo(backupRootfsDir)) {
+                    "Failed to backup rootfs from ${targetRootfsDir.absolutePath} to ${backupRootfsDir.absolutePath}"
+                }
+            }
+
+            check(stagingRootfsDir.renameTo(targetRootfsDir)) {
+                "Failed to move rootfs from ${stagingRootfsDir.absolutePath} to ${targetRootfsDir.absolutePath}"
+            }
+
+            backupRootfsDir?.deleteRecursively()
+        } catch (throwable: Throwable) {
+            if (backupRootfsDir != null && backupRootfsDir.exists()) {
+                val restoreFailure = runCatching {
+                    if (targetRootfsDir.exists()) {
+                        targetRootfsDir.deleteRecursively()
+                    }
+                    check(backupRootfsDir.renameTo(targetRootfsDir)) {
+                        "Failed to restore rootfs backup from ${backupRootfsDir.absolutePath} to ${targetRootfsDir.absolutePath}"
+                    }
+                }.exceptionOrNull()
+                restoreFailure?.let(throwable::addSuppressed)
+            }
+            throw throwable
+        }
+    }
+
+    private fun newReplacementBackupDir(targetRootfsDir: File): File {
+        val parentDir = targetRootfsDir.parentFile ?: error("Rootfs has no parent: ${targetRootfsDir.absolutePath}")
+        val timestamp = clock()
+        for (attempt in 0 until 100) {
+            val suffix = if (attempt == 0) "" else "-$attempt"
+            val candidate = File(parentDir, ".${targetRootfsDir.name}.replace-backup-$timestamp$suffix")
+            if (!candidate.exists()) return candidate
+        }
+        error("Failed to allocate rootfs backup path for ${targetRootfsDir.absolutePath}")
     }
 
     private suspend fun ensureArchive(
@@ -167,6 +220,34 @@ class LinuxDistroInstaller(
             distroId = resolved?.distro?.id ?: distroId,
             releaseId = resolved?.release?.id ?: releaseId,
             architecture = resolved?.artifact?.architecture ?: architecture,
+        )
+    }
+
+    private fun InstalledLinuxDistro.matchesResolvedArtifact(
+        resolved: ResolvedDistroArtifact,
+        rootfsDir: File,
+    ): Boolean {
+        return distroId == resolved.distro.id &&
+            releaseId == resolved.release.id &&
+            architecture == resolved.artifact.architecture &&
+            (checksum == null || checksum == resolved.artifact.checksum) &&
+            rootfsPath == rootfsDir.absolutePath
+    }
+
+    private fun InstalledLinuxDistro.withResolvedArtifactMetadata(
+        resolved: ResolvedDistroArtifact,
+        rootfsDir: File,
+        archiveFile: File,
+    ): InstalledLinuxDistro {
+        return copy(
+            releaseId = resolved.release.id,
+            architecture = resolved.artifact.architecture,
+            displayName = resolved.distro.displayName,
+            packageManager = resolved.distro.packageManager,
+            rootfsPath = rootfsDir.absolutePath,
+            archivePath = archivePath ?: archiveFile.absolutePath,
+            checksum = checksum ?: resolved.artifact.checksum,
+            updatedAtEpochMillis = clock().coerceAtLeast(installedAtEpochMillis),
         )
     }
 }

@@ -18,6 +18,7 @@ import com.wuxianggujun.tinaide.core.proot.RootfsDistroRuntime
 import com.wuxianggujun.tinaide.core.proot.ToolchainConfig
 import com.wuxianggujun.tinaide.core.proot.toHealthSummary
 import com.wuxianggujun.tinaide.ui.workspace.model.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -70,6 +71,7 @@ class DependencyInstallViewModel(
     private val toolchainProgressWeight = if (installLinuxEnvironment) TOOLCHAIN_PROGRESS_WEIGHT else 0.5f
     private val guestToolchainInstaller by lazy { PRootGuestToolchainInstaller(applicationContext) }
     private var rootfsHealthJob: Job? = null
+    private var toolchainInstallJob: Job? = null
 
     private val initialEnvReady = if (installLinuxEnvironment) {
         PRootBootstrap.isEnvironmentReady(applicationContext)
@@ -274,6 +276,18 @@ class DependencyInstallViewModel(
         _uiState.update { it.copy(isPaused = !it.isPaused) }
     }
 
+    fun cancelInstallation() {
+        val reason = "Dependency installation cancelled by user"
+        toolchainInstallJob?.cancel(CancellationException(reason))
+        toolchainInstallJob = null
+        toolchainInstallStarted = false
+        rootfsHealthJob?.cancel()
+        rootfsHealthJob = null
+        if (installLinuxEnvironment || isRepairMode) {
+            PRootBootstrap.cancel(applicationContext, reason)
+        }
+    }
+
     fun onInstallComplete() {
         configManager.set(ConfigKeys.WorkspaceSetupCompleted, true)
         viewModelScope.launch {
@@ -287,6 +301,11 @@ class DependencyInstallViewModel(
             return
         }
         if (toolchainInstallStarted && !force) return
+        if (force) {
+            toolchainInstallJob?.cancel(CancellationException("Dependency installation restarted"))
+            toolchainInstallJob = null
+            toolchainInstallStarted = false
+        }
 
         toolchainInstallStarted = true
         toolchainInstallCompleted = false
@@ -310,15 +329,22 @@ class DependencyInstallViewModel(
             )
         }
 
-        viewModelScope.launch {
+        toolchainInstallJob = viewModelScope.launch {
             runCatching {
                 installBuiltinToolchain()
             }.onSuccess {
                 toolchainInstallStarted = false
                 toolchainInstallCompleted = true
+                toolchainInstallJob = null
                 markInstallCompleted()
             }.onFailure { error ->
+                if (error is CancellationException) {
+                    toolchainInstallStarted = false
+                    toolchainInstallJob = null
+                    return@onFailure
+                }
                 toolchainInstallStarted = false
+                toolchainInstallJob = null
                 val fallbackMessage = Strings.error_unknown.strOr(applicationContext)
                 val message = error.message?.takeIf { it.isNotBlank() } ?: fallbackMessage
                 _uiState.update { state ->

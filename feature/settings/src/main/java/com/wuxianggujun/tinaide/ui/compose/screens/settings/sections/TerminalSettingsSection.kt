@@ -55,6 +55,10 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import timber.log.Timber
 
+private const val DEPENDENCY_INSTALL_ACTIVITY_CLASS_NAME =
+    "com.wuxianggujun.tinaide.ui.workspace.DependencyInstallActivity"
+private const val EXTRA_INSTALL_LINUX_ENVIRONMENT = "install_linux_environment"
+
 @Composable
 internal fun TerminalSettingsSection(linuxEnvironmentEnabled: Boolean) {
     val context = LocalContext.current
@@ -747,6 +751,17 @@ internal fun TerminalSettingsSection(linuxEnvironmentEnabled: Boolean) {
                     // PRoot 未安装，提示用户
                     Toast.makeText(context, toastPRootNotInstalled, Toast.LENGTH_LONG).show()
                     showBackendModeDialog = false
+                    val installIntent = Intent()
+                        .setClassName(context.packageName, DEPENDENCY_INSTALL_ACTIVITY_CLASS_NAME)
+                        .putExtra(EXTRA_INSTALL_LINUX_ENVIRONMENT, true)
+                    if (context !is Activity) {
+                        installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    runCatching {
+                        context.startActivity(installIntent)
+                    }.onFailure { error ->
+                        Timber.w(error, "Failed to open dependency installer from terminal settings")
+                    }
                 } else {
                     prefs.backendMode = value
                     showBackendModeDialog = false

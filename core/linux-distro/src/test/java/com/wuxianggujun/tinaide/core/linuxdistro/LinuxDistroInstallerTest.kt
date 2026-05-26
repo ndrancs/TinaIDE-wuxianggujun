@@ -63,7 +63,7 @@ class LinuxDistroInstallerTest {
             writeText(sampleManifest(checksum = "0".repeat(64)))
         }
 
-        val catalog = FileLinuxDistroManifestSource(manifestFile).loadCatalog()
+        val catalog = ManifestLinuxDistroCatalog(FileLinuxDistroManifestSource(manifestFile).loadManifest())
 
         assertThat(catalog.resolveDistro("alpine")?.defaultReleaseId).isEqualTo("3.20")
     }
@@ -128,6 +128,171 @@ class LinuxDistroInstallerTest {
     }
 
     @Test
+    fun installer_shouldReuseExistingRootfsOnlyWhenMetadataMatchesAndShellExists() {
+        runBlocking {
+            val tempDir = createTempDirectory("linux-distro-reuse").toFile()
+            val archiveContent = "fake archive"
+            val checksum = sha256(archiveContent)
+            val manifest = LinuxDistroManifestParser.decode(sampleManifest(checksum))
+            val catalog = ManifestLinuxDistroCatalog(manifest)
+            val downloads = mutableListOf<String>()
+            val installer = fakeInstaller(
+                catalog = catalog,
+                archiveContent = archiveContent,
+                onDownload = { downloads += "download" },
+            )
+            val request = LinuxDistroInstallRequest(
+                distroId = "alpine",
+                releaseId = "3.20",
+                architecture = DistroArchitecture.AARCH64,
+                layout = LinuxDistroInstallLayout(runtimeDir = tempDir),
+            )
+
+            val first = installer.install(request)
+            val second = installer.install(request)
+
+            assertThat(first.installed).isTrue()
+            assertThat(second.installed).isFalse()
+            assertThat(second.rootfsDir).isEqualTo(first.rootfsDir)
+            assertThat(downloads).containsExactly("download")
+        }
+    }
+
+    @Test
+    fun installer_shouldReuseExistingRootfsWhenLegacyMetadataHasNoChecksum() {
+        runBlocking {
+            val tempDir = createTempDirectory("linux-distro-legacy-metadata").toFile()
+            val archiveContent = "fake archive"
+            val checksum = sha256(archiveContent)
+            val manifest = LinuxDistroManifestParser.decode(sampleManifest(checksum))
+            val catalog = ManifestLinuxDistroCatalog(manifest)
+            val downloads = mutableListOf<String>()
+            val layout = LinuxDistroInstallLayout(runtimeDir = tempDir)
+            val installer = fakeInstaller(
+                catalog = catalog,
+                archiveContent = archiveContent,
+                onDownload = { downloads += "download" },
+            )
+
+            val targetRootfsDir = layout.rootfsDir("alpine").apply {
+                File(this, "bin/sh").apply {
+                    parentFile?.mkdirs()
+                    writeText("#!/bin/sh\n")
+                }
+            }
+            JsonLinuxDistroInstallMetadataStore().write(
+                rootfsDir = targetRootfsDir,
+                installation = installedLinuxDistro(tempDir).copy(
+                    rootfsPath = targetRootfsDir.absolutePath,
+                    archivePath = null,
+                    checksum = null,
+                ),
+            )
+
+            val result = installer.install(
+                request = LinuxDistroInstallRequest(
+                    distroId = "alpine",
+                    releaseId = "3.20",
+                    architecture = DistroArchitecture.AARCH64,
+                    layout = layout,
+                ),
+            )
+
+            assertThat(result.installed).isFalse()
+            assertThat(result.installation.checksum).isEqualTo(DistroChecksum(DistroChecksumAlgorithm.SHA256, checksum))
+            assertThat(JsonLinuxDistroInstallMetadataStore().read(targetRootfsDir)?.checksum)
+                .isEqualTo(DistroChecksum(DistroChecksumAlgorithm.SHA256, checksum))
+            assertThat(downloads).isEmpty()
+        }
+    }
+
+    @Test
+    fun installer_shouldReinstallExistingRootfsWhenMetadataDoesNotMatch() {
+        runBlocking {
+            val tempDir = createTempDirectory("linux-distro-metadata-mismatch").toFile()
+            val archiveContent = "fake archive"
+            val checksum = sha256(archiveContent)
+            val manifest = LinuxDistroManifestParser.decode(sampleManifest(checksum))
+            val catalog = ManifestLinuxDistroCatalog(manifest)
+            val extracts = mutableListOf<String>()
+            val layout = LinuxDistroInstallLayout(runtimeDir = tempDir)
+            val installer = fakeInstaller(
+                catalog = catalog,
+                archiveContent = archiveContent,
+                onExtract = { extracts += "extract" },
+            )
+
+            val targetRootfsDir = layout.rootfsDir("alpine").apply {
+                File(this, "bin/sh").apply {
+                    parentFile?.mkdirs()
+                    writeText("#!/bin/sh\n")
+                }
+            }
+            JsonLinuxDistroInstallMetadataStore().write(
+                rootfsDir = targetRootfsDir,
+                installation = installedLinuxDistro(tempDir).copy(
+                    releaseId = "3.19",
+                    rootfsPath = targetRootfsDir.absolutePath,
+                ),
+            )
+
+            val result = installer.install(
+                request = LinuxDistroInstallRequest(
+                    distroId = "alpine",
+                    releaseId = "3.20",
+                    architecture = DistroArchitecture.AARCH64,
+                    layout = layout,
+                ),
+            )
+
+            assertThat(result.installed).isTrue()
+            assertThat(result.installation.releaseId).isEqualTo("3.20")
+            assertThat(File(result.rootfsDir, "bin/sh").isFile).isTrue()
+            assertThat(extracts).containsExactly("extract")
+        }
+    }
+
+    @Test
+    fun installer_shouldReinstallExistingRootfsWhenBootShellIsMissing() {
+        runBlocking {
+            val tempDir = createTempDirectory("linux-distro-missing-shell").toFile()
+            val archiveContent = "fake archive"
+            val checksum = sha256(archiveContent)
+            val manifest = LinuxDistroManifestParser.decode(sampleManifest(checksum))
+            val catalog = ManifestLinuxDistroCatalog(manifest)
+            val extracts = mutableListOf<String>()
+            val layout = LinuxDistroInstallLayout(runtimeDir = tempDir)
+            val installer = fakeInstaller(
+                catalog = catalog,
+                archiveContent = archiveContent,
+                onExtract = { extracts += "extract" },
+            )
+
+            val targetRootfsDir = layout.rootfsDir("alpine").apply { mkdirs() }
+            JsonLinuxDistroInstallMetadataStore().write(
+                rootfsDir = targetRootfsDir,
+                installation = installedLinuxDistro(tempDir).copy(
+                    rootfsPath = targetRootfsDir.absolutePath,
+                    checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, checksum),
+                ),
+            )
+
+            val result = installer.install(
+                request = LinuxDistroInstallRequest(
+                    distroId = "alpine",
+                    releaseId = "3.20",
+                    architecture = DistroArchitecture.AARCH64,
+                    layout = layout,
+                ),
+            )
+
+            assertThat(result.installed).isTrue()
+            assertThat(File(result.rootfsDir, "bin/sh").isFile).isTrue()
+            assertThat(extracts).containsExactly("extract")
+        }
+    }
+
+    @Test
     fun manager_shouldInstallRegisterListAndUninstallDistro() = runBlocking {
         val tempDir = createTempDirectory("linux-distro-manager").toFile()
         val archiveContent = "fake archive"
@@ -160,6 +325,8 @@ class LinuxDistroInstallerTest {
     private fun fakeInstaller(
         catalog: LinuxDistroCatalog,
         archiveContent: String,
+        onDownload: () -> Unit = {},
+        onExtract: () -> Unit = {},
     ): LinuxDistroInstaller {
         return LinuxDistroInstaller(
             catalog = catalog,
@@ -168,6 +335,7 @@ class LinuxDistroInstallerTest {
                     request: DistroDownloadRequest,
                     progress: (DistroDownloadProgress) -> Unit,
                 ): File {
+                    onDownload()
                     request.targetFile.writeText(archiveContent)
                     progress(DistroDownloadProgress(archiveContent.length.toLong(), archiveContent.length.toLong()))
                     return request.targetFile
@@ -178,8 +346,11 @@ class LinuxDistroInstallerTest {
                     archiveFile: File,
                     targetDir: File,
                     format: DistroArchiveFormat,
+                    ensureActive: () -> Unit,
                     progress: (Float) -> Unit,
                 ) {
+                    ensureActive()
+                    onExtract()
                     File(targetDir, "bin/sh").apply {
                         parentFile?.mkdirs()
                         writeText("#!/bin/sh\n")

@@ -138,6 +138,7 @@ class DependencyInstallActivity : ComponentActivity(), KoinComponent {
                     viewModel = viewModel,
                     onInstallComplete = ::navigateToProjectManager,
                     onOpenTerminal = ::openTerminal,
+                    onOpenInstallLog = ::openInstallLog,
                     onCancel = ::finish,
                     onBack = ::finish
                 )
@@ -153,6 +154,10 @@ class DependencyInstallActivity : ComponentActivity(), KoinComponent {
         val workDir = filesDir.absolutePath
         get<IAppNavigator>().navigateToTerminal(this, workDir)
     }
+
+    private fun openInstallLog() {
+        startActivity(Intent(this, InstallLogActivity::class.java))
+    }
 }
 
 /**
@@ -163,6 +168,7 @@ fun DependencyInstallScreen(
     viewModel: DependencyInstallViewModel,
     onInstallComplete: () -> Unit,
     onOpenTerminal: (() -> Unit)? = null,
+    onOpenInstallLog: (() -> Unit)? = null,
     onCancel: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -189,6 +195,7 @@ fun DependencyInstallScreen(
         CancelInstallConfirmDialog(
             onConfirm = {
                 showCancelDialog = false
+                viewModel.cancelInstallation()
                 onCancel()
             },
             onDismiss = { showCancelDialog = false }
@@ -270,6 +277,7 @@ fun DependencyInstallScreen(
                         isRepairMode = uiState.isRepairMode,
                         onRetry = { viewModel.retry() },
                         onOpenTerminal = onOpenTerminal,
+                        onOpenLog = onOpenInstallLog,
                         onBack = onBack
                     )
                 }
