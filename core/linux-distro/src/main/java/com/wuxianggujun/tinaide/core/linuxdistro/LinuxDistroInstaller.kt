@@ -40,18 +40,13 @@ class LinuxDistroInstaller(
                 existingInstallation.matchesResolvedArtifact(resolved, targetRootfsDir) &&
                 rootfsProbe.hasBootShell(targetRootfsDir)
             ) {
-                val reusableInstallation = existingInstallation.withResolvedArtifactMetadata(
-                    resolved = resolved,
-                    rootfsDir = targetRootfsDir,
-                    archiveFile = request.layout.archiveFile(resolved),
-                )
-                metadataStore.write(targetRootfsDir, reusableInstallation)
+                metadataStore.write(targetRootfsDir, existingInstallation)
                 progress(request.progress(LinuxDistroInstallPhase.COMPLETED, 1f, resolved))
                 return LinuxDistroInstallResult(
                     resolved = resolved,
                     rootfsDir = targetRootfsDir,
                     archiveFile = request.layout.archiveFile(resolved),
-                    installation = reusableInstallation,
+                    installation = existingInstallation,
                     installed = false,
                 )
             }
@@ -230,25 +225,8 @@ class LinuxDistroInstaller(
         return distroId == resolved.distro.id &&
             releaseId == resolved.release.id &&
             architecture == resolved.artifact.architecture &&
-            (checksum == null || checksum == resolved.artifact.checksum) &&
+            checksum == resolved.artifact.checksum &&
             rootfsPath == rootfsDir.absolutePath
-    }
-
-    private fun InstalledLinuxDistro.withResolvedArtifactMetadata(
-        resolved: ResolvedDistroArtifact,
-        rootfsDir: File,
-        archiveFile: File,
-    ): InstalledLinuxDistro {
-        return copy(
-            releaseId = resolved.release.id,
-            architecture = resolved.artifact.architecture,
-            displayName = resolved.distro.displayName,
-            packageManager = resolved.distro.packageManager,
-            rootfsPath = rootfsDir.absolutePath,
-            archivePath = archivePath ?: archiveFile.absolutePath,
-            checksum = checksum ?: resolved.artifact.checksum,
-            updatedAtEpochMillis = clock().coerceAtLeast(installedAtEpochMillis),
-        )
     }
 }
 

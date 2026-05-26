@@ -159,54 +159,6 @@ class LinuxDistroInstallerTest {
     }
 
     @Test
-    fun installer_shouldReuseExistingRootfsWhenLegacyMetadataHasNoChecksum() {
-        runBlocking {
-            val tempDir = createTempDirectory("linux-distro-legacy-metadata").toFile()
-            val archiveContent = "fake archive"
-            val checksum = sha256(archiveContent)
-            val manifest = LinuxDistroManifestParser.decode(sampleManifest(checksum))
-            val catalog = ManifestLinuxDistroCatalog(manifest)
-            val downloads = mutableListOf<String>()
-            val layout = LinuxDistroInstallLayout(runtimeDir = tempDir)
-            val installer = fakeInstaller(
-                catalog = catalog,
-                archiveContent = archiveContent,
-                onDownload = { downloads += "download" },
-            )
-
-            val targetRootfsDir = layout.rootfsDir("alpine").apply {
-                File(this, "bin/sh").apply {
-                    parentFile?.mkdirs()
-                    writeText("#!/bin/sh\n")
-                }
-            }
-            JsonLinuxDistroInstallMetadataStore().write(
-                rootfsDir = targetRootfsDir,
-                installation = installedLinuxDistro(tempDir).copy(
-                    rootfsPath = targetRootfsDir.absolutePath,
-                    archivePath = null,
-                    checksum = null,
-                ),
-            )
-
-            val result = installer.install(
-                request = LinuxDistroInstallRequest(
-                    distroId = "alpine",
-                    releaseId = "3.20",
-                    architecture = DistroArchitecture.AARCH64,
-                    layout = layout,
-                ),
-            )
-
-            assertThat(result.installed).isFalse()
-            assertThat(result.installation.checksum).isEqualTo(DistroChecksum(DistroChecksumAlgorithm.SHA256, checksum))
-            assertThat(JsonLinuxDistroInstallMetadataStore().read(targetRootfsDir)?.checksum)
-                .isEqualTo(DistroChecksum(DistroChecksumAlgorithm.SHA256, checksum))
-            assertThat(downloads).isEmpty()
-        }
-    }
-
-    @Test
     fun installer_shouldReinstallExistingRootfsWhenMetadataDoesNotMatch() {
         runBlocking {
             val tempDir = createTempDirectory("linux-distro-metadata-mismatch").toFile()
