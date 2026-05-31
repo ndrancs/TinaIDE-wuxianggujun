@@ -39,7 +39,8 @@ Strings.export_failed.strOr(context, errorMessage)
 "导出失败：$message"
 ```
 
-入口文件：`core/i18n/` 下的 `AppStrings.kt`、`ResExt.kt`、`ResAliases.kt`。
+入口文件：`core/i18n/` 下的 `AppStrings.kt`、`ResExt.kt`、`TextResourceAliases.kt`；
+app 层 drawable 别名在 `AppResourceAliases.kt`。
 
 ### 2.3 DI 模式
 使用 **Koin**（编译时解析）：

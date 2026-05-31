@@ -38,7 +38,6 @@ class DependencyInstallViewModel(
     private val installLogManager: InstallLogManager,
     private val toolchainConfig: ToolchainConfig,
     private val preferredLlvmMajorVersion: Int?,
-    private val isRepairMode: Boolean,
     private val installLinuxEnvironment: Boolean
 ) : ViewModel() {
     companion object {
@@ -109,7 +108,6 @@ class DependencyInstallViewModel(
                 PRootBootstrap.InstallStage.PREPARING_RUNTIME
             },
             packageList = buildInitialPackageList(initialEnvReady, initialToolchainReady),
-            isRepairMode = isRepairMode,
             envReady = initialEnvReady,
             rootfsHealth = if (installLinuxEnvironment) {
                 DependencyRootfsHealthUiState(
@@ -126,7 +124,7 @@ class DependencyInstallViewModel(
     val events: SharedFlow<DependencyInstallEvent> = _events.asSharedFlow()
 
     init {
-        if (installLinuxEnvironment || isRepairMode) {
+        if (installLinuxEnvironment) {
             observeBootstrapState()
         }
         startInstallation()
@@ -141,7 +139,7 @@ class DependencyInstallViewModel(
     }
 
     private fun updateStateFromBootstrap(bootstrapState: PRootBootstrap.BootstrapState) {
-        if (!installLinuxEnvironment && !isRepairMode) {
+        if (!installLinuxEnvironment) {
             return
         }
 
@@ -234,17 +232,12 @@ class DependencyInstallViewModel(
             startToolchainInstallIfNeeded()
         }
 
-        if (bootstrapState is PRootBootstrap.BootstrapState.NeedsToolchainRepair && !isRepairMode) {
+        if (bootstrapState is PRootBootstrap.BootstrapState.NeedsToolchainRepair) {
             PRootBootstrap.startToolchainRepair(applicationContext)
         }
     }
 
     private fun startInstallation() {
-        if (isRepairMode) {
-            PRootBootstrap.startToolchainRepair(applicationContext)
-            return
-        }
-
         if (installLinuxEnvironment && !_uiState.value.envReady) {
             PRootBootstrap.start(applicationContext)
             return
@@ -258,7 +251,7 @@ class DependencyInstallViewModel(
     }
 
     fun retry() {
-        if (!installLinuxEnvironment && !isRepairMode) {
+        if (!installLinuxEnvironment) {
             startToolchainInstallIfNeeded(force = true)
             return
         }
@@ -285,7 +278,7 @@ class DependencyInstallViewModel(
         toolchainInstallStarted = false
         rootfsHealthJob?.cancel()
         rootfsHealthJob = null
-        if (installLinuxEnvironment || isRepairMode) {
+        if (installLinuxEnvironment) {
             PRootBootstrap.cancel(applicationContext, reason)
         }
     }

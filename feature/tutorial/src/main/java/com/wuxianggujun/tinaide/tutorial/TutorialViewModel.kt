@@ -268,15 +268,6 @@ class TutorialViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 重置教程进度
-     */
-    fun resetTutorialProgress(tutorialId: String) {
-        viewModelScope.launch {
-            progressStore.resetProgress(tutorialId)
-        }
-    }
-
-    /**
      * 展开/收起分类
      */
     fun toggleCategory(category: TutorialCategory) {
@@ -288,21 +279,6 @@ class TutorialViewModel(application: Application) : AndroidViewModel(application
                 expanded.add(category)
             }
             state.copy(expandedCategories = expanded)
-        }
-    }
-
-    /**
-     * 手动触发新手引导（从设置页面）
-     */
-    fun triggerOnboardingManually() {
-        viewModelScope.launch {
-            // 重置新手引导状态
-            progressStore.setOnboardingCompleted(false)
-            progressStore.setOnboardingSkipped(false)
-            progressStore.resetProgress(TutorialRepository.ONBOARDING_TUTORIAL_ID)
-
-            // 启动新手引导
-            startOnboarding()
         }
     }
 

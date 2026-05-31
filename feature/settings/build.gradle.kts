@@ -38,13 +38,11 @@ dependencies {
     // feature:terminal 依赖已移除，通过 Koin DI 注入接口
     implementation(libs.androidx.activity)
     implementation(libs.activity.compose)
-    implementation(libs.androidx.appcompat)
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
     implementation(libs.timber)
     implementation(libs.kotlinx.coroutines)
     implementation(libs.okhttp)
-    implementation(libs.coil.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.extended)

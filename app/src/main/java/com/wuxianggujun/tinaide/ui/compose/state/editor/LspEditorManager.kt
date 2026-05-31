@@ -82,7 +82,6 @@ import org.eclipse.lsp4j.FoldingRangeRequestParams
 import org.eclipse.lsp4j.Hover
 import org.eclipse.lsp4j.HoverParams
 import org.eclipse.lsp4j.InsertReplaceEdit
-import org.eclipse.lsp4j.MarkedString
 import org.eclipse.lsp4j.MarkupContent
 import org.eclipse.lsp4j.Registration
 import org.eclipse.lsp4j.SemanticTokensParams
@@ -94,6 +93,9 @@ import org.eclipse.lsp4j.Unregistration
 import org.eclipse.lsp4j.WorkspaceEdit
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import timber.log.Timber
+
+@Suppress("DEPRECATION", "TYPEALIAS_EXPANSION_DEPRECATION")
+private typealias ProtocolMarkedString = org.eclipse.lsp4j.MarkedString
 
 class LspEditorManager {
 
@@ -2038,13 +2040,15 @@ class LspEditorManager {
         }
     }
 
-    private fun Either<String, MarkedString>.toMarkdownSection(): String? = if (isLeft) {
+    @Suppress("DEPRECATION", "TYPEALIAS_EXPANSION_DEPRECATION")
+    private fun Either<String, ProtocolMarkedString>.toMarkdownSection(): String? = if (isLeft) {
         left?.trim().takeIf { !it.isNullOrBlank() }
     } else {
         right?.toMarkdownSection()
     }
 
-    private fun MarkedString.toMarkdownSection(): String? {
+    @Suppress("DEPRECATION", "TYPEALIAS_EXPANSION_DEPRECATION")
+    private fun ProtocolMarkedString.toMarkdownSection(): String? {
         val body = value?.trim().orEmpty()
         if (body.isBlank()) return null
         val safeLanguage = language?.trim().orEmpty()

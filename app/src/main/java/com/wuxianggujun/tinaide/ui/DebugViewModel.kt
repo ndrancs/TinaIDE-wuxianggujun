@@ -32,7 +32,6 @@ import kotlinx.coroutines.launch
  * - 管理断点的 UI 操作
  *
  * 设计原则：
- * - 将 MainActivity 中的调试状态转换逻辑迁移到此处
  * - 使用 StateFlow 暴露状态给 Compose
  * - 封装 DebugSessionService 的调用
  */

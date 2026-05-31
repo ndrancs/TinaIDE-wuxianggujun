@@ -5,9 +5,6 @@ import android.content.Intent
 import androidx.activity.ComponentActivity
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.ui.compose.screens.settings.SettingsRoute
-import com.wuxianggujun.tinaide.ui.compose.screens.testing.DevTestActivity
-import com.wuxianggujun.tinaide.ui.compose.screens.testing.DevTestActivitySupport
-import com.wuxianggujun.tinaide.ui.compose.screens.testing.DevTestIds
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -113,29 +110,4 @@ class SettingsActivitySupportTest {
         assertThat(SettingsActivitySupport.resolveInitialRoute(null)).isEqualTo(SettingsRoute.Root)
     }
 
-    @Test
-    fun buildDevTestIntent_shouldReuseDeveloperTestActivityBuilder() {
-        val application = RuntimeEnvironment.getApplication()
-
-        val intent = SettingsActivitySupport.buildDevTestIntent(application, DevTestIds.Clangd)
-
-        assertThat(intent.component?.className).isEqualTo(DevTestActivity::class.java.name)
-        assertThat(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
-            .isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
-        assertThat(DevTestActivitySupport.extractInitialTestId(intent)).isEqualTo(DevTestIds.Clangd)
-        assertThat(DevTestActivitySupport.extractFinishOnBackIfDirect(intent)).isFalse()
-    }
-
-    @Test
-    fun buildDevTestIntent_shouldOpenUnifiedTestingToolsListWhenTestIdMissing() {
-        val application = RuntimeEnvironment.getApplication()
-
-        val intent = SettingsActivitySupport.buildDevTestIntent(application)
-
-        assertThat(intent.component?.className).isEqualTo(DevTestActivity::class.java.name)
-        assertThat(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
-            .isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
-        assertThat(DevTestActivitySupport.extractInitialTestId(intent)).isNull()
-        assertThat(DevTestActivitySupport.extractFinishOnBackIfDirect(intent)).isFalse()
-    }
 }

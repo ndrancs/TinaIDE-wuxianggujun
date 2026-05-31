@@ -138,13 +138,6 @@ class AiConfigTest {
     }
 
     @Test
-    fun `AiProvider displayName returns non-empty string`() {
-        AiProvider.entries.forEach { provider ->
-            assertThat(provider.displayName).isNotEmpty()
-        }
-    }
-
-    @Test
     fun `CUSTOM provider has empty baseUrl and no default models`() {
         assertThat(AiProvider.CUSTOM.defaultBaseUrl).isEmpty()
         assertThat(AiProvider.CUSTOM.defaultModels).isEmpty()

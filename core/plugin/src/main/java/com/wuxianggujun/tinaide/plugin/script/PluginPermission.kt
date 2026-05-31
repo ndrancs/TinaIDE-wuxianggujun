@@ -74,10 +74,3 @@ enum class PluginPermission(
         }
     }
 }
-
-data class PluginPermissionGrant(
-    val pluginId: String,
-    val permission: PluginPermission,
-    val granted: Boolean,
-    val grantedAt: Long = System.currentTimeMillis()
-)

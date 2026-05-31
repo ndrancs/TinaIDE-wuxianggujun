@@ -242,17 +242,8 @@ class DeveloperOptionsSectionSupportTest {
         val disableEffect = DeveloperOptionsSectionSupport.resolveActionEffect(
             DeveloperOptionsAction.DisableDeveloperOptions
         )
-        val openTestingToolsEffect = DeveloperOptionsSectionSupport.resolveActionEffect(
-            DeveloperOptionsAction.OpenTestingTools
-        )
 
         assertThat(disableEffect.disableDeveloperOptions).isTrue()
         assertThat(disableEffect.navigateBack).isTrue()
-        assertThat(disableEffect.openTestingTools).isFalse()
-        assertThat(disableEffect.targetDevTestId).isNull()
-        assertThat(openTestingToolsEffect.disableDeveloperOptions).isFalse()
-        assertThat(openTestingToolsEffect.navigateBack).isFalse()
-        assertThat(openTestingToolsEffect.openTestingTools).isTrue()
-        assertThat(openTestingToolsEffect.targetDevTestId).isNull()
     }
 }

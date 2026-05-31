@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-    This file instructs the resource shrinking tool to keep certain resources
-    that are accessed dynamically (via reflection or runtime resource lookup).
--->
-<resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@raw/aboutlibraries" />

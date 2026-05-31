@@ -7,7 +7,7 @@ import timber.log.Timber
 /**
  * 项目元数据与文件提供器初始化
  *
- * - 设置 ProjectMetadataStore 的 IDE 版本信息（用于项目配置版本迁移）
+ * - 设置 ProjectMetadataStore 的 IDE 版本信息
  */
 class ProjectMetadataInitializer(private val context: Context) {
 

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -26,15 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
  * 骨架屏基础组件 - 带闪烁动画的占位块
  */
 @Composable
-fun SkeletonBox(
+private fun SkeletonBox(
     modifier: Modifier = Modifier,
     shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(TinaShapes.CardCorner)
 ) {
@@ -218,96 +215,5 @@ fun PluginCardSkeleton(
                 shape = RoundedCornerShape(TinaShapes.ButtonCorner)
             )
         }
-    }
-}
-
-/**
- * 列表项骨架屏（通用）
- */
-@Composable
-fun ListItemSkeleton(
-    modifier: Modifier = Modifier,
-    showIcon: Boolean = true,
-    iconSize: Dp = 40.dp
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = TinaSpacing.lg, vertical = TinaSpacing.md),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (showIcon) {
-            SkeletonBox(
-                modifier = Modifier.size(iconSize),
-                shape = CircleShape
-            )
-            Spacer(modifier = Modifier.width(TinaSpacing.lg))
-        }
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(TinaSpacing.sm)
-        ) {
-            SkeletonBox(
-                modifier = Modifier
-                    .fillMaxWidth(0.6f)
-                    .height(18.dp),
-                shape = RoundedCornerShape(TinaShapes.ButtonCorner)
-            )
-            SkeletonBox(
-                modifier = Modifier
-                    .fillMaxWidth(0.4f)
-                    .height(14.dp),
-                shape = RoundedCornerShape(TinaShapes.ButtonCorner)
-            )
-        }
-    }
-}
-
-/**
- * 设置项骨架屏
- */
-@Composable
-fun SettingsItemSkeleton(
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = TinaSpacing.lg, vertical = TinaSpacing.md),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 图标
-        SkeletonBox(
-            modifier = Modifier.size(40.dp),
-            shape = RoundedCornerShape(TinaShapes.ButtonCorner)
-        )
-
-        Spacer(modifier = Modifier.width(TinaSpacing.lg))
-
-        // 文字信息
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(TinaSpacing.xs)
-        ) {
-            SkeletonBox(
-                modifier = Modifier
-                    .fillMaxWidth(0.4f)
-                    .height(18.dp),
-                shape = RoundedCornerShape(TinaShapes.ButtonCorner)
-            )
-            SkeletonBox(
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(14.dp),
-                shape = RoundedCornerShape(TinaShapes.ButtonCorner)
-            )
-        }
-
-        // 右侧箭头占位
-        SkeletonBox(
-            modifier = Modifier.size(24.dp),
-            shape = CircleShape
-        )
     }
 }

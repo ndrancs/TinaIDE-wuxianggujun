@@ -1,16 +1,8 @@
 # TinaIDE 测试文档
 
-> 更新日期：2026-04-22
+> 更新日期：2026-05-31
 
 本目录只保留当前仍值得固定维护的测试入口说明。
-
-### 内置测试框架
-
-TinaIDE 内置了 LSP 测试框架，可在设置 > 开发者选项中访问：
-
-- **LspTestManager**: 测试管理器，支持补全、跳转、诊断等测试
-- **ClangdTestScreen**: Clangd 测试界面，可视化测试结果
-- **LspTestTypes**: 测试类型定义（补全测试、跳转测试、诊断测试等）
 
 ### Popup 回归固定入口
 
@@ -33,12 +25,3 @@ TinaIDE 内置了 LSP 测试框架，可在设置 > 开发者选项中访问：
 
 - [LSP 调试指南](../guides/LSP-Debug-Guide.md) - LSP 调试方法
 - [远程 LSP 使用指南](../guides/Remote-LSP-Guide.md) - 远程 LSP 功能使用
-
-## 相关源码
-
-| 文件 | 说明 |
-|------|------|
-| [LspTestManager.kt](../../core/lsp/src/main/java/com/wuxianggujun/tinaide/testing/lsp/LspTestManager.kt) | LSP 测试管理器 |
-| [LspTestTypes.kt](../../core/lsp/src/main/java/com/wuxianggujun/tinaide/testing/lsp/LspTestTypes.kt) | 测试类型定义 |
-| [ClangdTestScreen.kt](../../app/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/testing/ClangdTestScreen.kt) | Clangd 测试界面 |
-| [ClangdTestActivity.kt](../../app/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/testing/ClangdTestActivity.kt) | 测试 Activity |

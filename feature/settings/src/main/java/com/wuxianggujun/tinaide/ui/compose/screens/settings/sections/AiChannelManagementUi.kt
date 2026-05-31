@@ -113,6 +113,9 @@ internal fun AiChannelManagementDialog(
                                         Spacer(modifier = Modifier.size(8.dp))
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
+                                        val providerName = stringResource(
+                                            AiSettingsSectionSupport.resolveProviderDisplayNameRes(channel.provider)
+                                        )
                                         Text(
                                             text = channel.name,
                                             style = MaterialTheme.typography.titleSmall,
@@ -120,7 +123,11 @@ internal fun AiChannelManagementDialog(
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = "${channel.provider.displayName} · ${channel.model}",
+                                            text = stringResource(
+                                                Strings.settings_ai_channel_provider_model,
+                                                providerName,
+                                                channel.model,
+                                            ),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -269,7 +276,9 @@ internal fun AiChannelEditDialog(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
-                                text = provider.displayName,
+                                text = stringResource(
+                                    AiSettingsSectionSupport.resolveProviderDisplayNameRes(provider)
+                                ),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
@@ -375,7 +384,9 @@ internal fun AiChannelEditDialog(
     )
 
     if (showProviderPicker) {
-        val providerOptions = AiProvider.entries.map { it.name to it.displayName }
+        val providerOptions = AiSettingsSectionSupport.buildProviderOptions().map { option ->
+            option.value to stringResource(option.labelRes)
+        }
         TinaSingleChoiceDialog(
             title = stringResource(Strings.settings_ai_select_provider),
             options = providerOptions,

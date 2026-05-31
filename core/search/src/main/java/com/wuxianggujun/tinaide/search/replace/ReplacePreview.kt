@@ -1,6 +1,4 @@
 package com.wuxianggujun.tinaide.search.replace
-
-import com.wuxianggujun.tinaide.diff.FileDiff
 import java.io.File
 
 /**
@@ -22,8 +20,7 @@ data class ReplacePreview(
     val file: File,
     val originalContent: String,
     val newContent: String,
-    val replacements: List<ReplacementItem>,
-    val diff: FileDiff? = null        // 可选的 Diff 预览
+    val replacements: List<ReplacementItem>
 ) {
     val replacementCount: Int get() = replacements.count { it.isSelected }
     val hasChanges: Boolean get() = replacementCount > 0

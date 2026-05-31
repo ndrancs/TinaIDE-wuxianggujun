@@ -72,8 +72,6 @@ class MainPortalActivity :
             return
         }
 
-        // 注意：首次引导改为“内置运行资产安装”，不再依赖 ToolchainConfigActivity 入口
-
         setContent {
             TinaIDETheme {
                 Surface(

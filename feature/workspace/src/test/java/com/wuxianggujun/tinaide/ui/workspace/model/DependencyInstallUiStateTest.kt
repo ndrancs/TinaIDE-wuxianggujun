@@ -31,7 +31,6 @@ class DependencyInstallUiStateTest {
             installPhase = InstallPhase.FAILED,
             failedMessage = "network timeout",
             isNetworkRelated = true,
-            isRepairMode = true,
             rootfsHealth = DependencyRootfsHealthUiState(
                 status = DependencyRootfsHealthStatus.ATTENTION,
                 detailText = "rootfs needs repair"
@@ -41,7 +40,6 @@ class DependencyInstallUiStateTest {
         assertThat(state.installPhase).isEqualTo(InstallPhase.FAILED)
         assertThat(state.failedMessage).isEqualTo("network timeout")
         assertThat(state.isNetworkRelated).isTrue()
-        assertThat(state.isRepairMode).isTrue()
         assertThat(state.rootfsHealth.status).isEqualTo(DependencyRootfsHealthStatus.ATTENTION)
     }
 

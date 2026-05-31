@@ -76,10 +76,7 @@ class MTDataFilesProvider : DocumentsProvider() {
         packageName = context.packageName
         dataDir = context.filesDir.parentFile!!
 
-        val dataDirPath = dataDir.path
-        if (dataDirPath.startsWith("/data/user/")) {
-            userDeDataDir = File("/data/user_de/" + dataDirPath.substring(11))
-        }
+        userDeDataDir = context.createDeviceProtectedStorageContext().filesDir.parentFile
 
         context.getExternalFilesDir(null)?.let { externalFilesDir ->
             androidDataDir = externalFilesDir.parentFile

@@ -402,20 +402,6 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
     }
 
     /**
-     * 增加字体大小
-     */
-    fun increaseFontSize(step: Float = 1f) {
-        fontSize = (fontSize + step).coerceAtMost(MAX_FONT_SIZE)
-    }
-
-    /**
-     * 减小字体大小
-     */
-    fun decreaseFontSize(step: Float = 1f) {
-        fontSize = (fontSize - step).coerceAtLeast(MIN_FONT_SIZE)
-    }
-
-    /**
      * 重置为默认设置
      */
     fun resetToDefaults() {

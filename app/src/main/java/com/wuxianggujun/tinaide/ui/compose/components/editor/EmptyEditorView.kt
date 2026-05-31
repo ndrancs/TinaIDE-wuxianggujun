@@ -36,8 +36,8 @@ import com.wuxianggujun.tinaide.ui.compose.icons.rememberTinaPainter
 @Composable
 fun EmptyEditorView(
     onOpenFileTree: () -> Unit,
-    onViewRecentProjects: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onViewRecentProjects: () -> Unit = {}
 ) {
     Column(
         modifier = modifier.fillMaxSize(),

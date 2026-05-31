@@ -137,7 +137,7 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
             } else {
                 PermissionStatus.DENIED
             }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        } else {
             // Android 6-10: 检查 READ/WRITE_EXTERNAL_STORAGE
             val hasRead = context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) ==
                 android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -149,9 +149,6 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
             } else {
                 PermissionStatus.DENIED
             }
-        } else {
-            // Android 5-: 无需动态权限
-            PermissionStatus.GRANTED
         }
     }
 
@@ -235,16 +232,12 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
         if (hasExternalStoragePermission()) return StoragePermissionRequest.AlreadyGranted
         val intent = createPermissionRequestIntent()
         if (intent != null) return StoragePermissionRequest.OpenSettings(intent)
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            StoragePermissionRequest.RequestRuntime(
-                arrayOf(
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                )
+        return StoragePermissionRequest.RequestRuntime(
+            arrayOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
-        } else {
-            StoragePermissionRequest.NoActionNeeded
-        }
+        )
     }
     
     // ============ 存储空间管理 ============

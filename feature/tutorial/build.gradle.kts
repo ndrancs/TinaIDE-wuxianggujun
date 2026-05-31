@@ -15,7 +15,6 @@ dependencies {
     implementation(project(":core:i18n"))
     implementation(project(":core:common"))
     implementation(project(":core:designsystem"))
-    implementation(libs.timber)
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.datastore.preferences)
@@ -23,7 +22,5 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.extended)
     implementation(libs.compose.ui)
-    implementation(libs.compose.ui.tooling.preview)
-    implementation(libs.lifecycle.runtime.compose)
-    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.lifecycle.viewmodel)
 }

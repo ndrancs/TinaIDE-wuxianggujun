@@ -47,8 +47,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -77,9 +77,12 @@ fun FloatingOverlay(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
-    val configuration = LocalConfiguration.current
-    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
-    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
+    val windowSize = LocalWindowInfo.current.containerSize
+    val ballSizePx = with(density) { 48.dp.toPx() }
+    val screenWidthPx = windowSize.width.toFloat().coerceAtLeast(ballSizePx)
+    val screenHeightPx = windowSize.height.toFloat().coerceAtLeast(ballSizePx)
+    val maxOffsetX = (screenWidthPx - ballSizePx).coerceAtLeast(0f)
+    val maxOffsetY = (screenHeightPx - ballSizePx).coerceAtLeast(0f)
 
     var offsetX by remember { mutableFloatStateOf(screenWidthPx - with(density) { 60.dp.toPx() }) }
     var offsetY by remember { mutableFloatStateOf(screenHeightPx * 0.3f) }
@@ -140,9 +143,9 @@ fun FloatingOverlay(
                 },
                 onDrag = { dragAmount ->
                     offsetX = (offsetX + dragAmount.x)
-                        .coerceIn(0f, screenWidthPx - with(density) { 48.dp.toPx() })
+                        .coerceIn(0f, maxOffsetX)
                     offsetY = (offsetY + dragAmount.y)
-                        .coerceIn(0f, screenHeightPx - with(density) { 48.dp.toPx() })
+                        .coerceIn(0f, maxOffsetY)
                 }
             )
         }
@@ -216,9 +219,10 @@ private fun FloatingPanel(
     onExit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val configuration = LocalConfiguration.current
-    val panelWidth = (configuration.screenWidthDp * 0.85f).dp
-    val panelHeight = (configuration.screenHeightDp * 0.6f).dp
+    val density = LocalDensity.current
+    val windowSize = LocalWindowInfo.current.containerSize
+    val panelWidth = with(density) { (windowSize.width * 0.85f).toDp() }
+    val panelHeight = with(density) { (windowSize.height * 0.6f).toDp() }
     val panelShape = RoundedCornerShape(TinaShapes.DialogCorner)
 
     TinaOverlayPanelSurface(

@@ -27,7 +27,6 @@ import com.wuxianggujun.tinaide.ui.compose.screens.packages.PackageManagerScreen
 import com.wuxianggujun.tinaide.ui.compose.screens.settings.SettingsRoute
 import com.wuxianggujun.tinaide.ui.compose.screens.settings.SettingsScreen
 import com.wuxianggujun.tinaide.ui.compose.screens.settings.SettingsViewModel
-import com.wuxianggujun.tinaide.ui.compose.screens.testing.DevTestActivitySupport
 import com.wuxianggujun.tinaide.ui.theme.TinaIDETheme
 import com.wuxianggujun.tinaide.ui.wizard.NewProjectWizardActivity
 import com.wuxianggujun.tinaide.ui.workspace.DependencyInstallActivity
@@ -85,7 +84,6 @@ internal object SettingsActivitySupport {
 
     fun resolveInitialRoute(intent: Intent): SettingsRoute = resolveInitialRoute(extractInitialRouteId(intent))
 
-    fun buildDevTestIntent(context: Context, testId: String? = null): Intent = DevTestActivitySupport.buildStartIntent(context, testId)
 }
 
 internal data class SettingsNavigationState(
@@ -269,14 +267,6 @@ class SettingsActivity :
                     },
                     packagesContent = { onBack ->
                         PackageManagerScreen(onNavigateBack = onBack)
-                    },
-                    onNavigateToDevTest = { testId ->
-                        startActivity(
-                            SettingsActivitySupport.buildDevTestIntent(
-                                context = this@SettingsActivity,
-                                testId = testId
-                            )
-                        )
                     },
                     onNavigateToDependencyInstall = {
                         startActivity(DependencyInstallActivity.createIntent(this@SettingsActivity))

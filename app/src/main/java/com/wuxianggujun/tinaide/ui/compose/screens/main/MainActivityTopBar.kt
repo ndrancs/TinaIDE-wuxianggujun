@@ -28,7 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -574,8 +575,9 @@ internal fun MainActivityTopBar(
         title = {
             // title 槽位按内容宽度布局；用 Row + Arrangement.End 把胶囊推到靠近 actions 的一侧，
             // 避免 Material3 TopAppBar 默认让 title 左贴 nav、在右侧留出大片空白。
-            val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
-            val useCompactTitleLayout = screenWidthDp < 360.dp
+            val screenWidthPx = LocalWindowInfo.current.containerSize.width
+            val compactTitleWidthPx = with(LocalDensity.current) { 360.dp.toPx() }
+            val useCompactTitleLayout = screenWidthPx < compactTitleWidthPx
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,

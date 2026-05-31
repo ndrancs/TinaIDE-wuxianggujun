@@ -19,7 +19,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,14 +103,12 @@ data class HexLine(
 /**
  * 十六进制查看器屏幕
  * @param filePath 文件路径
- * @param tabId 标签页 ID（用于搜索回调注册）
  * @param onRegisterSearch 注册搜索回调
  * @param onUnregisterSearch 注销搜索回调
  */
 @Composable
 fun HexViewerScreen(
     filePath: String,
-    tabId: String = filePath,
     onRegisterSearch: ((search: (String) -> List<Long>, goToOffset: (Long) -> Unit) -> Unit)? = null,
     onUnregisterSearch: (() -> Unit)? = null,
     modifier: Modifier = Modifier

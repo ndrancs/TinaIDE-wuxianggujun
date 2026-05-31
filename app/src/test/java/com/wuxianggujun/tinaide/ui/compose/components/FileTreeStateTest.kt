@@ -81,7 +81,7 @@ class FileTreeStateTest {
     }
 
     @Test
-    fun `handleFileChange adds created file into expanded directory`() = runTest {
+    fun `handleFileChanges adds created file into expanded directory`() = runTest {
         val projectDir = tempFolder.newFolder("project-watch-create")
         val srcDir = File(projectDir, "src").apply { mkdirs() }
 
@@ -91,13 +91,13 @@ class FileTreeStateTest {
 
         val createdFile = File(srcDir, "watch.cpp").apply { writeText("int watch = 7;") }
 
-        state.handleFileChange(createdFile, FileTreeState.FileChangeKind.CREATED)
+        state.handleFileChanges(listOf(pendingFileChange(createdFile, FileTreeState.FileChangeKind.CREATED)))
 
         assertThat(state.visibleNodes.map { it.absolutePath }).contains(createdFile.absolutePath)
     }
 
     @Test
-    fun `handleFileChange removes deleted file and clears selection`() = runTest {
+    fun `handleFileChanges removes deleted file and clears selection`() = runTest {
         val projectDir = tempFolder.newFolder("project-watch-delete")
         val srcDir = File(projectDir, "src").apply { mkdirs() }
         val deletedFile = File(srcDir, "gone.cpp").apply { writeText("int gone = 0;") }
@@ -108,7 +108,7 @@ class FileTreeStateTest {
         state.select(deletedFile)
 
         deletedFile.delete()
-        state.handleFileChange(deletedFile, FileTreeState.FileChangeKind.DELETED)
+        state.handleFileChanges(listOf(pendingFileChange(deletedFile, FileTreeState.FileChangeKind.DELETED)))
 
         assertThat(state.visibleNodes.map { it.absolutePath }).doesNotContain(deletedFile.absolutePath)
         assertThat(state.uiState.value.selectedPath).isNull()
@@ -126,7 +126,7 @@ class FileTreeStateTest {
 
         val createdFile = File(srcDir, "background.cpp").apply { writeText("int background = 1;") }
 
-        state.handleFileChange(createdFile, FileTreeState.FileChangeKind.CREATED)
+        state.handleFileChanges(listOf(pendingFileChange(createdFile, FileTreeState.FileChangeKind.CREATED)))
 
         assertThat(state.visibleNodes.map { it.absolutePath }).doesNotContain(createdFile.absolutePath)
         assertThat(state.consumePendingResumeRefresh()).isTrue()
@@ -196,6 +196,11 @@ class FileTreeStateTest {
 
         assertThat(state.visibleNodes.map { it.absolutePath }).contains(nestedFile.absolutePath)
     }
+
+    private fun pendingFileChange(
+        file: File,
+        kind: FileTreeState.FileChangeKind
+    ): FileTreeState.PendingFileChange = FileTreeState.PendingFileChange(file.absolutePath, kind)
 }
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)

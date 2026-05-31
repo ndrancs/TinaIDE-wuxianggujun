@@ -673,12 +673,13 @@ my-plugin.tinaplug
 
 `plugin:com.example.my-theme/themes/my-theme.json`
 
-## 内置测试插件（assets）
+## 当前内置插件（assets）
 
-为方便本地测试，仓库内置了 assets 插件（目录形式，便于调试/版本迭代）：
+仓库当前随 APK 分发的内置插件位于 `app/src/main/assets/bundled_plugins/`：
 
-- `app/src/main/assets/bundled_plugins/sample.theme.dracula/`
-- `app/src/main/assets/bundled_plugins/sample.snippets.cpp/`
+- `tinaide.plugin.starters`：插件 starter 模板入口
+- `tinaide.lsp.python`：Python LSP 示例插件
+- `tinaide.linux-environment`：Linux/PRoot 环境能力插件
 
 应用启动时会自动把 `assets/bundled_plugins/*` 安装到 `filesDir/plugins/`（若已安装同版本则跳过）。
 

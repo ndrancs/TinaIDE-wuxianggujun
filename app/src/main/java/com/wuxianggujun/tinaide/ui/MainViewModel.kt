@@ -19,7 +19,6 @@ import kotlinx.coroutines.launch
  * - 加载和更新项目信息
  *
  * 设计原则：
- * - 保持与 MainActivity 中原有逻辑完全一致
  * - 使用 StateFlow 暴露状态给 Compose
  * - 简单的状态管理，不涉及复杂业务逻辑
  */
@@ -47,9 +46,6 @@ class MainViewModel(
 
     /**
      * 加载项目名称
-     *
-     * 从 MainActivity:updateProjectName():669-677 迁移
-     * 逻辑完全保持不变
      */
     fun loadProjectName() {
         viewModelScope.launch {

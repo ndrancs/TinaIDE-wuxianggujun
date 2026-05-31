@@ -127,8 +127,8 @@ private fun DebugIconButton(
     enabled: Boolean,
     imageVector: androidx.compose.ui.graphics.vector.ImageVector,
     contentDescription: String,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     TinaPanelSegmentButton(
         onClick = onClick,

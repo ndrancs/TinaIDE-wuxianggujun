@@ -50,14 +50,11 @@ private val TinaDialogSectionSpacing = 12.dp
  * - TinaInfoDialog: 信息对话框
  * - TinaErrorDialog: 错误对话框
  * - TinaInputDialog: 输入对话框（受控）
- * - TinaTextInputDialog: 简单文本输入对话框（内部状态）
  * - TinaValidatedInputDialog: 带验证的文本输入对话框
  * - TinaLoadingDialog: 加载/进度对话框
  * - TinaSingleChoiceDialog: 单选对话框
- * - TinaMultiChoiceDialog: 多选对话框
  * - TinaSliderDialog: 滑块对话框
  * - TinaActionChoiceDialog: 操作选择对话框
- * - TinaListDialog: 选择列表对话框（泛型）
  */
 
 // ==================== 基础对话框 ====================
@@ -89,7 +86,6 @@ fun TinaAlertDialog(
         containerColor = MaterialTheme.colorScheme.surface
     )
 }
-
 @Composable
 fun TinaCustomDialog(
     onDismissRequest: () -> Unit,
@@ -138,7 +134,6 @@ fun TinaOverlayPanelSurface(
         content = content
     )
 }
-
 @Composable
 fun TinaDialogCard(
     modifier: Modifier = Modifier,
@@ -585,53 +580,6 @@ fun TinaInputDialog(
 }
 
 /**
- * 简单文本输入对话框（内部状态）
- *
- * 状态由内部管理，适合简单的输入场景
- *
- * @param title 标题
- * @param initialValue 初始值
- * @param placeholder 占位符
- * @param onConfirm 确认回调，返回输入的文本
- * @param onDismiss 取消回调
- */
-@Composable
-fun TinaTextInputDialog(
-    title: String,
-    initialValue: String,
-    placeholder: String = "",
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var text by remember { mutableStateOf(initialValue) }
-
-    TinaAlertDialog(
-        onDismissRequest = onDismiss,
-        title = { TinaDialogTitleText(title) },
-        text = {
-            TinaTextField(
-                value = text,
-                onValueChange = { text = it },
-                placeholder = placeholder,
-                singleLine = true
-            )
-        },
-        confirmButton = {
-            TinaPrimaryButton(
-                text = stringResource(Strings.btn_confirm),
-                onClick = { onConfirm(text) }
-            )
-        },
-        dismissButton = {
-            TinaTextButton(
-                text = stringResource(Strings.btn_cancel),
-                onClick = onDismiss
-            )
-        }
-    )
-}
-
-/**
  * 带验证的文本输入对话框
  *
  * 支持动态验证和提示
@@ -808,81 +756,6 @@ fun TinaSingleChoiceDialog(
 }
 
 /**
- * 多选对话框
- *
- * 可选择多个选项，点击确认后返回选中的值
- *
- * @param title 标题
- * @param options 选项列表，每项为 (value, label) 对
- * @param selectedValues 当前选中的值集合
- * @param onSelected 确认回调，返回选中的值集合
- * @param onDismiss 取消回调
- */
-@Composable
-fun TinaMultiChoiceDialog(
-    title: String,
-    options: List<Pair<String, String>>,
-    selectedValues: Set<String>,
-    onSelected: (Set<String>) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var currentSelection by remember { mutableStateOf(selectedValues) }
-
-    TinaAlertDialog(
-        onDismissRequest = onDismiss,
-        title = { TinaDialogTitleText(title) },
-        text = {
-            TinaDialogContentColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                options.forEach { (value, label) ->
-                    TinaDialogSelectableCard(
-                        selected = currentSelection.contains(value),
-                        onClick = {
-                            currentSelection = if (currentSelection.contains(value)) {
-                                currentSelection - value
-                            } else {
-                                currentSelection + value
-                            }
-                        }
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Checkbox(
-                                checked = currentSelection.contains(value),
-                                onCheckedChange = { checked ->
-                                    currentSelection = if (checked) {
-                                        currentSelection + value
-                                    } else {
-                                        currentSelection - value
-                                    }
-                                }
-                            )
-                            Text(text = label)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TinaPrimaryButton(
-                text = stringResource(Strings.btn_confirm),
-                onClick = { onSelected(currentSelection) }
-            )
-        },
-        dismissButton = {
-            TinaTextButton(
-                text = stringResource(Strings.btn_cancel),
-                onClick = onDismiss
-            )
-        }
-    )
-}
-
-/**
  * 滑块对话框
  *
  * 用于选择数值范围内的值
@@ -984,109 +857,6 @@ fun TinaActionChoiceDialog(
         confirmButton = {
             TinaTextButton(
                 text = stringResource(Strings.btn_cancel),
-                onClick = onDismiss
-            )
-        }
-    )
-}
-
-/**
- * 选择列表对话框（泛型）
- *
- * 用于自定义列表项内容的选择对话框
- *
- * @param title 标题
- * @param items 列表项
- * @param selectedItem 当前选中项
- * @param onItemSelected 选中回调
- * @param onDismiss 取消回调
- * @param itemContent 列表项内容
- */
-@Composable
-fun <T> TinaListDialog(
-    title: String,
-    items: List<T>,
-    selectedItem: T? = null,
-    onItemSelected: (T) -> Unit,
-    onDismiss: () -> Unit,
-    itemContent: @Composable (T, Boolean) -> Unit
-) {
-    TinaAlertDialog(
-        onDismissRequest = onDismiss,
-        title = { TinaDialogTitleText(title) },
-        text = {
-            TinaDialogContentColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items.forEach { item ->
-                    val isSelected = item == selectedItem
-                    TinaDialogSelectableCard(
-                        selected = isSelected,
-                        onClick = { onItemSelected(item) },
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        itemContent(item, isSelected)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TinaTextButton(
-                text = stringResource(Strings.btn_cancel),
-                onClick = onDismiss
-            )
-        }
-    )
-}
-
-/**
- * ID 复制对话框
- *
- * 用于展示用户 ID 并提供复制功能
- *
- * @param userId 用户 ID
- * @param onCopy 复制回调
- * @param onDismiss 关闭回调
- */
-@Composable
-fun TinaIdCopyDialog(
-    userId: String,
-    onCopy: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    TinaAlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            TinaDialogTitleText(stringResource(Strings.dialog_title_user_id))
-        },
-        text = {
-            TinaDialogContentColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                TinaDialogMessageCard(
-                    message = stringResource(Strings.dialog_message_copy_id)
-                )
-                TinaDialogCard(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
-                ) {
-                    Text(
-                        text = userId,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TinaPrimaryButton(
-                text = stringResource(Strings.action_copy_id),
-                onClick = onCopy
-            )
-        },
-        dismissButton = {
-            TinaTextButton(
-                text = stringResource(Strings.btn_ok),
                 onClick = onDismiss
             )
         }

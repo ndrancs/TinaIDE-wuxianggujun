@@ -152,7 +152,6 @@ fun SpotlightOverlay(
         }
     }
 }
-
 @Composable
 private fun SpotlightFallbackTooltip(
     step: TutorialStep,
@@ -231,7 +230,6 @@ private fun SpotlightFallbackTooltip(
         SpotlightProgressCard(currentIndex = currentIndex, totalSteps = totalSteps)
     }
 }
-
 /**
  * 绘制带镂空高亮的遮罩
  */
@@ -287,76 +285,4 @@ private fun DrawScope.drawOverlayWithHighlight(
             }
         }
     }
-}
-
-/**
- * Spotlight 状态管理
- */
-class SpotlightState(
-    initialSteps: List<TutorialStep> = emptyList()
-) {
-    var isVisible by mutableStateOf(false)
-        private set
-
-    var steps by mutableStateOf(initialSteps)
-        private set
-
-    var currentStepIndex by mutableStateOf(0)
-        private set
-
-    val currentStep: TutorialStep?
-        get() = steps.getOrNull(currentStepIndex)
-
-    val isFirstStep: Boolean
-        get() = currentStepIndex == 0
-
-    val isLastStep: Boolean
-        get() = currentStepIndex == steps.size - 1
-
-    val progress: Float
-        get() = if (steps.isEmpty()) 0f else (currentStepIndex + 1).toFloat() / steps.size
-
-    fun start(newSteps: List<TutorialStep>) {
-        steps = newSteps
-        currentStepIndex = 0
-        isVisible = true
-    }
-
-    fun next() {
-        if (currentStepIndex < steps.size - 1) {
-            currentStepIndex++
-        }
-    }
-
-    fun previous() {
-        if (currentStepIndex > 0) {
-            currentStepIndex--
-        }
-    }
-
-    fun goToStep(index: Int) {
-        if (index in steps.indices) {
-            currentStepIndex = index
-        }
-    }
-
-    fun dismiss() {
-        isVisible = false
-    }
-
-    fun reset() {
-        isVisible = false
-        currentStepIndex = 0
-        steps = emptyList()
-    }
-}
-
-/**
- * 创建并记住 SpotlightState
- */
-@Composable
-fun rememberSpotlightState(
-    initialSteps: List<TutorialStep> = emptyList()
-): SpotlightState {
-    return remember { SpotlightState(initialSteps) }
 }

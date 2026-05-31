@@ -107,10 +107,10 @@ fun GoToLineDialog(
 
 @Composable
 fun ReplaceDialog(
-    initialFind: String = "",
     onDismiss: () -> Unit,
     onReplaceAll: (find: String, replacement: String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialFind: String = ""
 ) {
     var findText by remember(initialFind) { mutableStateOf(initialFind) }
     var replaceText by remember { mutableStateOf("") }

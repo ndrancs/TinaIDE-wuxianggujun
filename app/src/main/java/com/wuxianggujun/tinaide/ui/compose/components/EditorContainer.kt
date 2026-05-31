@@ -70,10 +70,10 @@ fun EditorContainer(
     hostCommandExecutor: com.wuxianggujun.tinaide.core.commands.HostCommandExecutor?,
     onOpenFileTree: () -> Unit,
     onEditorStateChanged: (hasFiles: Boolean, canUndo: Boolean, canRedo: Boolean, isDirty: Boolean) -> Unit,
-    onCursorPositionChanged: (line: Int, column: Int) -> Unit = { _, _ -> },
-    onFileEncodingChanged: (encoding: String) -> Unit = { _ -> },
     onSaveFile: (tabId: String, onComplete: () -> Unit) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onCursorPositionChanged: (line: Int, column: Int) -> Unit = { _, _ -> },
+    onFileEncodingChanged: (encoding: String) -> Unit = { _ -> }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -230,7 +230,7 @@ fun EditorContainer(
                             onShowFilePath = showFilePath,
                             onCursorPositionChanged = onCursorPositionChanged,
                             onFileEncodingChanged = onFileEncodingChanged,
-                            primaryModifier = Modifier.weight(primaryRatio),
+                            modifier = Modifier.weight(primaryRatio),
                             secondaryModifier = Modifier.weight(secondaryRatio),
                             handle = {
                                 SplitEditorResizeHandle(
@@ -258,7 +258,7 @@ fun EditorContainer(
                             onShowFilePath = showFilePath,
                             onCursorPositionChanged = onCursorPositionChanged,
                             onFileEncodingChanged = onFileEncodingChanged,
-                            primaryModifier = Modifier.weight(primaryRatio),
+                            modifier = Modifier.weight(primaryRatio),
                             secondaryModifier = Modifier.weight(secondaryRatio),
                             handle = {
                                 SplitEditorResizeHandle(
@@ -428,9 +428,9 @@ private fun EditorPane(
     tabLoadingMap: MutableMap<String, Boolean>,
     onOpenFileTree: () -> Unit,
     onShowFilePath: (String) -> Unit,
+    modifier: Modifier = Modifier,
     onCursorPositionChanged: (line: Int, column: Int) -> Unit = { _, _ -> },
-    onFileEncodingChanged: (encoding: String) -> Unit = { _ -> },
-    modifier: Modifier = Modifier
+    onFileEncodingChanged: (encoding: String) -> Unit = { _ -> }
 ) {
     val allTabs = state.tabs
     val paneTabs = state.getTabsForPane(pane)
@@ -590,7 +590,7 @@ private fun SplitEditorPanePair(
     onShowFilePath: (String) -> Unit,
     onCursorPositionChanged: (line: Int, column: Int) -> Unit,
     onFileEncodingChanged: (encoding: String) -> Unit,
-    primaryModifier: Modifier,
+    modifier: Modifier,
     secondaryModifier: Modifier,
     handle: @Composable () -> Unit
 ) {
@@ -604,7 +604,7 @@ private fun SplitEditorPanePair(
         onShowFilePath = onShowFilePath,
         onCursorPositionChanged = onCursorPositionChanged,
         onFileEncodingChanged = onFileEncodingChanged,
-        modifier = primaryModifier
+        modifier = modifier
     )
 
     handle()
@@ -745,11 +745,11 @@ private fun EditorSearchOverlay(
 private fun EditorPage(
     state: EditorContainerState,
     tab: EditorTabState,
+    modifier: Modifier = Modifier,
     onActivate: () -> Unit = {},
     onCursorPositionChanged: (line: Int, column: Int) -> Unit = { _, _ -> },
     onFileEncodingChanged: (encoding: String) -> Unit = { _ -> },
-    onLoadingStateChanged: (Boolean) -> Unit = {},
-    modifier: Modifier = Modifier
+    onLoadingStateChanged: (Boolean) -> Unit = {}
 ) {
     val latestOnActivate by rememberUpdatedState(onActivate)
     val activatingModifier = modifier.pointerInput(tab.id) {
@@ -806,7 +806,6 @@ private fun EditorPage(
             }
             HexViewerScreen(
                 filePath = tab.file.absolutePath,
-                tabId = tab.id,
                 onRegisterSearch = { searchFn, goToOffsetFn ->
                     state.bindHexViewerSearchCallback(
                         tabId = tab.id,

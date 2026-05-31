@@ -1,62 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name">TinaIDE</string>
-  <string name="title_project_manager">Project Manager</string>
-  <string name="menu_new_project">New Project</string>
-  <string name="menu_choose_dir">Choose Directory</string>
   <string name="menu_refresh">Refresh</string>
   <string name="menu_settings">Settings</string>
-  <string name="menu_debug">Debug</string>
-  <string name="menu_run">Run</string>
-  <string name="menu_save">Save</string>
-  <string name="menu_generate_compile_commands">Generate compile_commands.json</string>
-  <string name="menu_close_project">Close Project</string>
-  <string name="menu_clear_output">Clear Output</string>
-  <string name="menu_allow_edit">Allow Editing</string>
-  <string name="menu_more">More Actions</string>
-  <string name="btn_choose_directory">Choose Directory</string>
-  <string name="permission_not_all_granted">Some permissions not granted, may affect functionality</string>
-  <string name="permission_denied_never_ask">Permission permanently denied, please enable in settings</string>
-  <string name="permission_denied">Permission denied</string>
-  <string name="permission_storage_title">Storage Permission Required</string>
-  <string name="permission_storage_message">TinaIDE needs storage permission to access and manage your project files.</string>
-  <string name="permission_storage_rationale">Please grant storage permission for editor functionality.</string>
+<string name="permission_storage_title">Storage Permission Required</string>
   <string name="permission_storage_settings">Please enable "All files access" in system settings</string>
   <string name="project_public_projects_permission_hint">If you previously saved projects in the public directory (Documents/TinaIDE), grant file-management permission first. After that, the project list will refresh automatically and you can open those projects directly.</string>
   <string name="permission_btn_grant">Grant Permission</string>
-  <string name="permission_btn_settings">Go to Settings</string>
-  <string name="permission_btn_later">Later</string>
-  <string name="empty_projects_hint">No projects yet, create new or choose directory from top-right menu</string>
-  <string name="editor_empty_hint">Select a file from the file tree to start editing</string>
-  <string name="empty_editor">Empty Editor</string>
-  <string name="empty_editor_title">No file open</string>
   <string name="open_file_tree">Open File Tree</string>
-  <string name="empty_editor_shortcut_hint">Tip: Swipe right from left edge to open file tree</string>
+  <string name="empty_editor_title">No file open</string>
 
   <!-- New Project Dialog -->
-  <string name="dialog_title_new_project">New Project</string>
-  <string name="dialog_title_open_project">Open Project</string>
-  <string name="hint_project_name">Project Name</string>
-  <string name="hint_project_path">Project Path</string>
-  <string name="hint_project_type">Project Type</string>
-  <string name="hint_project_description">Project Description (Optional)</string>
   <string name="btn_create">Create</string>
   <string name="btn_cancel">Cancel</string>
-  <string name="btn_browse">Browse</string>
   <string name="error_project_name_empty">Project name cannot be empty</string>
   <string name="error_project_name_invalid_chars">Project name can only contain letters, numbers, underscores and hyphens</string>
-  <string name="error_project_path_empty">Project path cannot be empty</string>
   <string name="error_project_exists">Project already exists</string>
   <string name="error_create_project_dir">Failed to create project directory</string>
   <string name="error_template_failed">Template generation failed</string>
   <string name="success_project_created">Project created successfully</string>
   <string name="success_plugin_project_created">Plugin project created. Run validates and hot-installs it; Package creates a .tinaplug.</string>
-  <string name="no_projects">No projects</string>
 
   <!-- Project manager / main screen strings -->
-  <string name="project_manager_projects">Projects</string>
-  <string name="project_manager_empty_title">No projects yet</string>
-  <string name="project_manager_empty_subtitle">Click the + button at bottom right to quickly create your first project</string>
 
   <!-- Settings root titles & descriptions -->
   <string name="settings_title_editor">Editor</string>
@@ -76,10 +41,6 @@
   <string name="settings_title_ai">AI Assistant</string>
   <string name="settings_desc_ai">Configure API Key, provider, model</string>
 
-  <string name="settings_title_git_auth">Git Auth</string>
-  <string name="settings_desc_git_auth">Manage HTTPS token/username</string>
-  <string name="settings_title_git_ssh">Git SSH</string>
-  <string name="settings_desc_git_ssh">SSH keys and host bindings</string>
 
   <string name="settings_title_appearance">Appearance</string>
   <string name="settings_desc_appearance">App theme, immersive status bar</string>
@@ -158,9 +119,7 @@
 
 
   <!-- Plugin Management -->
-  <string name="settings_cat_plugins">Plugin Management</string>
   <string name="settings_plugins_install_from_file">Install plugin from file</string>
-  <string name="settings_plugins_install_from_file_desc">Select a .tinaplug (zip) file to install</string>
   <string name="settings_plugins_manage">Manage Plugins</string>
   <string name="settings_plugins_selected_count">%1$d selected</string>
   <string name="dialog_title_plugins_batch_uninstall">Uninstall Plugins</string>
@@ -168,16 +127,10 @@
   <string name="settings_plugins_empty_title">No plugins installed</string>
   <string name="settings_plugins_empty_desc">Go to "Market" on the home screen to browse and install plugins, or use the menu above to install from file</string>
   <string name="settings_plugins_details">Plugin details</string>
-  <string name="settings_plugins_details_desc">View plugin info and contributions</string>
   <string name="settings_plugins_uninstall">Uninstall plugin</string>
   <string name="settings_plugins_uninstall_desc">Remove this plugin from device</string>
-  <string name="settings_plugins_uninstall_short">Uninstall</string>
-  <string name="settings_plugins_details_short">Details</string>
   <string name="settings_plugins_theme">Select theme</string>
   <string name="settings_plugins_theme_desc">This plugin provides editor themes</string>
-  <string name="settings_plugins_theme_short">Theme</string>
-  <string name="settings_plugins_select_theme">Choose editor theme</string>
-  <string name="settings_plugins_select_theme_desc">This plugin provides themes</string>
   <string name="settings_plugins_actions">Actions</string>
   <string name="settings_plugins_enabled">Enable plugin</string>
   <string name="settings_plugins_reload">Reload plugin</string>
@@ -188,7 +141,6 @@
   <string name="settings_plugins_logs_desc">Open the log panel filtered to this plugin</string>
   <string name="settings_plugins_diagnostics">Plugin diagnostics</string>
   <string name="settings_plugins_diagnostics_empty">No known issues detected</string>
-  <string name="settings_plugins_diagnostics_overview">Diagnostics overview</string>
   <string name="settings_plugins_diagnostics_filtered_empty_title">No diagnostics match this source</string>
   <string name="settings_plugins_diagnostics_filtered_empty_desc">Switch to another source to inspect load, health check, or runtime issues.</string>
   <string name="settings_plugins_load_issues">Plugins Not Loaded</string>
@@ -199,8 +151,6 @@
   <string name="settings_plugins_filtered_empty_title">No plugins match this filter</string>
   <string name="settings_plugins_filtered_empty_desc">Switch to another diagnostics filter or source to inspect why plugins were not loaded.</string>
   <string name="plugins_status_diagnostics_issue_count">%1$d issues</string>
-  <string name="plugins_status_lsp_diagnostics">LSP Issue</string>
-  <string name="plugins_lsp_diagnostics_list_hint">LSP dependency issues were detected. You can repair them directly.</string>
   <string name="plugins_status_disabled">Disabled</string>
   <string name="plugins_has_themes">Theme</string>
   <string name="plugins_details_id">ID: %1$s</string>
@@ -214,7 +164,6 @@
   <string name="plugins_details_author">Author: %1$s</string>
   <string name="plugins_details_repository">Repository: %1$s</string>
   <string name="plugins_details_license">License: %1$s</string>
-  <string name="plugins_details_description">Description: %1$s</string>
   <string name="plugins_details_permissions">Declared permissions: %1$s</string>
   <string name="plugins_details_granted_permissions">Granted permissions: %1$s</string>
   <string name="plugins_details_runtime_state">Runtime state: %1$s</string>
@@ -295,7 +244,6 @@
   <string name="lsp_plugin_repair_deps_desc">Reinstall failed or missing toolchains required by language server</string>
   <string name="lsp_plugin_install_deps_desc">Install toolchains required by language server</string>
   <string name="lsp_plugin_deps_ready">Dependencies Ready</string>
-  <string name="lsp_plugin_deps_not_ready">Dependencies Required</string>
   <string name="lsp_plugin_dependency_status_title">LSP Dependency Status</string>
   <string name="lsp_plugin_dependency_status_label">Current Status</string>
   <string name="lsp_plugin_dependency_status_ready_desc">Language server dependencies passed checks and can start directly.</string>
@@ -310,7 +258,6 @@
   <string name="lsp_plugin_open_error_logs">View Error Logs</string>
   <string name="lsp_plugin_status_ready">LSP Ready</string>
   <string name="lsp_plugin_status_not_ready">LSP Not Ready</string>
-  <string name="lsp_plugin_installing_deps">Installing dependencies…</string>
   <string name="lsp_plugin_install_deps_title">Install LSP Dependencies</string>
   <string name="lsp_plugin_repair_deps_title">Repair LSP Dependencies</string>
   <string name="lsp_plugin_install_deps_dialog_desc">"%1$s" requires the following toolchains to provide code completion:</string>
@@ -369,14 +316,11 @@
   <string name="lsp_toolchain_error_download_failed">Download failed: HTTP %1$d %2$s</string>
   <string name="lsp_toolchain_error_empty_download_body">Download response body is empty</string>
   <string name="lsp_plugin_install_progress_title">Installing Toolchain</string>
-  <string name="lsp_plugin_install_progress_phase">%1$s</string>
   <string name="lsp_plugin_install_success">Toolchain installation complete</string>
   <string name="lsp_plugin_install_failed">Toolchain installation failed: %1$s</string>
-  <string name="lsp_plugin_checking_deps">Checking dependencies…</string>
 
 
   <!-- Settings categories -->
-  <string name="settings_cat_editor_display">Display</string>
   <string name="settings_cat_editor_behavior">Editing Behavior</string>
   <string name="settings_cat_editor_performance">Performance</string>
   <string name="settings_editor_theme">Editor Theme</string>
@@ -384,57 +328,18 @@
   <string name="settings_editor_hardware_acceleration">Hardware Acceleration</string>
   <string name="settings_editor_hardware_acceleration_summary">Use GPU rendering for better scrolling performance. Disable if you experience stuttering or black screen (requires reopening files)</string>
   <string name="settings_cat_compiler_options">Compiler Options</string>
-  <string name="settings_cat_compiler_debug_perf">Debug &amp; Performance</string>
-  <string name="settings_cat_lsp">Language Server</string>
-  <string name="settings_completion_limit_title">Completion Candidate Limit</string>
-  <string name="settings_completion_limit_summary">Limit the number of candidates returned by clangd. Higher values use more resources, restart LSP to apply changes.</string>
-  <string name="settings_completion_limit_summary_with_value">Current limit: %1$d items</string>
 
   <!-- Native LSP UI -->
-  <string name="native_definition_results">Native Definition List</string>
-  <string name="native_references_results">Native References List</string>
-  <string name="native_navigation_close">Collapse Results Panel</string>
-  <string name="native_navigation_empty">No navigation results to display</string>
 
   <!-- Open Source Licenses -->
   <string name="about_licenses_title">Open Source Components &amp; Licenses</string>
-  <string name="license_view_project">Project Homepage</string>
-  <string name="license_view_license">View License</string>
 
-  <!-- Debug session -->
-  <string name="debug_session_not_ready">Debug session not created yet. Click the \"Debug\" button above the editor to start.</string>
-  <string name="debug_session_ready">Debug session %1$s is ready.</string>
-  <string name="debug_session_descriptor_prefix">Descriptor file:</string>
-  <string name="debug_session_copy_path">Copy Descriptor Path</string>
-  <string name="debug_session_copy_success">Descriptor path copied</string>
-  <string name="debug_session_instructions_title">Instructions</string>
-  <string name="debug_session_instructions_empty">No instructions available.</string>
 
-  <!-- Debug controls -->
-  <string name="debug_continue">Continue</string>
-  <string name="debug_step_over">Step Over</string>
-  <string name="debug_step_into">Step Into</string>
-  <string name="debug_stop">Stop</string>
-  <string name="debug_call_stack">Call Stack</string>
-  <string name="debug_variables">Variables</string>
-  <string name="debug_state_idle">Idle</string>
-  <string name="debug_state_starting">Starting</string>
-  <string name="debug_state_paused">Paused</string>
-  <string name="debug_state_running">Running</string>
-  <string name="debug_state_terminated">Terminated</string>
-  <string name="debug_location_format">%1$s:%2$d</string>
-  <string name="debug_paused_at">Paused at %1$s</string>
 
-  <string name="privacy_agreement_full">I have read and agree to the User Agreement and Privacy Policy</string>
 
   <!-- Output Activity -->
-  <string name="output_activity_title">Build Output</string>
-  <string name="action_stop">Stop</string>
   <string name="action_clear">Clear</string>
-  <string name="action_scroll_to_bottom">Scroll to Bottom</string>
-  <string name="action_scroll_to_top">Scroll to Top</string>
-  <string name="action_copy_all">Copy All</string>
-  <string name="action_copy_name">Copy Name</string>
+<string name="action_copy_name">Copy Name</string>
   <string name="action_copy_relative_path">Copy Relative Path</string>
   <string name="action_select_all">Select All</string>
 
@@ -444,9 +349,6 @@
   <string name="dependency_install_title">Environment Setup</string>
 
   <!-- Project Export -->
-  <string name="export_project">Export Project</string>
-  <string name="export_in_progress">Exporting project...</string>
-  <string name="export_success">Project exported successfully</string>
   <string name="export_failed">Export failed: %1$s</string>
   <string name="export_share_title">Share Project</string>
   <string name="export_share_subject">Project Export: %1$s</string>
@@ -456,7 +358,6 @@
 
   <!-- Project Manager UI -->
   <string name="dialog_title_delete_project">Delete Project</string>
-  <string name="dialog_message_delete_project">Are you sure you want to delete project \"%1$s\"?\n\nThis will permanently delete the project folder and all its contents, and cannot be undone.</string>
   <string name="btn_delete">Delete</string>
   <string name="plugins_status_bundled">Bundled</string>
   <string name="toast_project_deleted">Project deleted</string>
@@ -477,15 +378,12 @@
   <string name="app_update_action_download">Download Update</string>
   <string name="app_update_open_failed">Unable to open update link</string>
   <string name="content_desc_add_project">Add Project</string>
-  <string name="title_project_list">Project List</string>
   <string name="hint_search_project">Search projects...</string>
   <string name="section_recent_projects">Recently Opened</string>
   <string name="section_other_projects">Other Projects</string>
-  <string name="dialog_title_preparing_env">Preparing Build Environment</string>
   <string name="dialog_title_plugins_uninstall_bundled">Cannot Uninstall Bundled Plugin</string>
   <string name="dialog_msg_plugins_uninstall_bundled">Bundled plugins cannot be uninstalled as they are essential system components.</string>
   <string name="dialog_msg_plugins_batch_uninstall_bundled">All selected plugins are bundled and cannot be uninstalled.</string>
-  <string name="dialog_message_proot_failed">PRoot environment installation failed: %1$s</string>
 
   <!-- Project List Components -->
   <string name="content_desc_settings">Settings</string>
@@ -499,20 +397,14 @@
   <string name="empty_no_projects">No projects</string>
   <string name="empty_create_hint">Click the button at bottom right to create a new project</string>
   <string name="empty_fab_hint">Tap + to get started</string>
-  <string name="hint_all_projects_shown">All projects shown</string>
   <string name="path_private_dir">Private Directory</string>
   <string name="path_storage">Storage</string>
-  <string name="path_cpp_stdlib">C++ Standard Library</string>
-  <string name="path_system_headers">System Headers</string>
-  <string name="path_local_headers">Local Headers</string>
-  <string name="path_workspace">Workspace</string>
 
   <!-- Import from Local -->
   <string name="dialog_title_local_import">Import from Local</string>
   <string name="dialog_title_select_import_location">Choose Import Location</string>
   <string name="dialog_title_select_clone_location">Choose Clone Location</string>
   <string name="dialog_message_local_import">Choosing a folder copies it into %1$s. Choosing an archive extracts it into %1$s.</string>
-  <string name="error_invalid_directory">Invalid directory</string>
   <string name="error_import_directory_not_supported">This folder cannot be opened directly as a project. Please choose a real local storage folder.</string>
   <string name="error_invalid_project_archive">Unsupported project archive</string>
   <string name="error_project_archive_empty">The archive is empty and cannot be imported</string>
@@ -535,7 +427,6 @@
   <string name="placeholder_project_name">my-project</string>
   <string name="hint_project_name_example">MyProject</string>
   <string name="label_project_location">Project Location</string>
-  <string name="label_project_type">Project Type</string>
   <string name="label_project_tags">Project Tags</string>
   <string name="dialog_title_git_import">Import from Git</string>
   <string name="label_git_url">Git Repository URL</string>
@@ -553,8 +444,6 @@
   <string name="label_new_name">New Name</string>
   <string name="btn_confirm">Confirm</string>
   <string name="dialog_title_project_info">Project Info</string>
-  <string name="type_git_project">Git Project</string>
-  <string name="type_local_project">Local Project</string>
   <string name="info_project_path">Project Path</string>
   <string name="info_project_size">Project Size</string>
   <string name="info_file_count">File Count</string>
@@ -574,12 +463,10 @@
   <string name="template_cpp_single">C++ Single File</string>
   <string name="template_cmake_exe">CMake Executable</string>
   <string name="template_cmake_lib">CMake Static Library</string>
-  <string name="template_sdl3_cmake">SDL3 + CMake</string>
   <string name="template_make_exe">Makefile Executable</string>
   <string name="template_desc_cpp_single">Suitable for simple programs and learning</string>
   <string name="template_desc_cmake_exe">Standard CMake project structure</string>
   <string name="template_desc_cmake_lib">Includes library and example program</string>
-  <string name="template_desc_sdl3_cmake">Ready-to-run SDL3 app with callback entry point and window demo</string>
   <string name="template_desc_make_exe">Classic Makefile project structure</string>
   <string name="template_ndk_shared_lib">NDK Shared Library</string>
   <string name="template_desc_ndk_shared_lib">Android NDK shared library project with custom API level</string>
@@ -618,7 +505,6 @@
   <string name="wizard_plugin_templates_empty_body">Make sure TinaIDE Plugin Starters is installed and enabled, then open the plugin tutorial entry again.</string>
 
   <!-- Project Tags -->
-  <string name="tag_local">Local</string>
   <string name="tag_public_source">Public</string>
   <string name="tag_private_source">Private</string>
   <string name="tag_git">Git</string>
@@ -706,29 +592,11 @@
   <string name="error_font_set_failed">Font setting failed: %1$s</string>
 
   <!-- Storage Settings -->
-  <string name="settings_cat_sync">Sync Settings</string>
-  <string name="sync_mode_external">Sync to External Directory</string>
-  <string name="sync_mode_android_data">Sync to Android/data</string>
-  <string name="sync_mode_none">No Sync</string>
-  <string name="settings_sync_mode">Sync Mode</string>
-  <string name="sync_desc_external">Data preserved after uninstall, accessible via computer</string>
-  <string name="sync_desc_android_data">No permissions needed, data deleted after uninstall</string>
-  <string name="sync_desc_none">Best performance, data deleted after uninstall</string>
-  <string name="status_selected">Selected</string>
-  <string name="status_not_configured">Not Configured</string>
-  <string name="settings_external_sync_dir">External Sync Directory</string>
-  <string name="settings_cat_auto_sync">Auto Sync</string>
-  <string name="settings_sync_on_startup">Sync on Startup</string>
-  <string name="settings_sync_startup_desc">Import projects from sync target to private workspace</string>
-  <string name="settings_sync_on_exit">Sync on Exit</string>
-  <string name="settings_sync_exit_desc">Export projects from private workspace to sync target</string>
   <string name="settings_cat_advanced">Advanced</string>
   <string name="settings_linux_rootfs_path">Rootfs Path</string>
   <string name="value_default">Default</string>
-  <string name="value_custom">Custom</string>
   <string name="settings_mt_access">MT Manager Access</string>
   <string name="settings_mt_access_desc">Allow MT Manager to access app private directory (no ROOT required)</string>
-  <string name="sync_option_external_recommended">Sync to External Directory (Recommended)</string>
 
   <!-- Storage Cleanup -->
   <string name="settings_title_storage_cleanup">Storage Cleanup</string>
@@ -739,10 +607,7 @@
   <string name="storage_cleanup_clean_all">Clean All</string>
   <string name="storage_cleanup_scanning">Scanning…</string>
   <string name="storage_cleanup_cleaning">Cleaning…</string>
-  <string name="storage_cleanup_action">Clean</string>
   <string name="storage_cleanup_refresh">Rescan</string>
-  <string name="storage_cleanup_confirm_title">Confirm cleanup</string>
-  <string name="storage_cleanup_confirm_message">All files in this category will be deleted. This cannot be undone. Continue?</string>
   <string name="storage_cleanup_confirm_all_title">Clean all categories</string>
   <string name="storage_cleanup_confirm_all_message">Caches, build intermediates, and logs in every category will be removed. Source code, project configuration, and fonts are not affected. Continue?</string>
   <string name="storage_cleanup_done">Freed %1$s</string>
@@ -799,8 +664,6 @@
   <string name="settings_project_apk_export_redetect">Re-detect</string>
   <string name="settings_project_apk_export_redetect_desc">Re-scan this project and refresh APK export support.</string>
   <string name="settings_project_native_paths_no_project_value">No project opened</string>
-  <string name="settings_project_native_paths_unavailable_title">Path Configuration Status</string>
-  <string name="settings_project_native_paths_unavailable_value">Open a project first, then configure Include/Library/Runtime paths</string>
   <string name="settings_project_native_include_dirs">Include Paths</string>
   <string name="settings_project_native_include_dirs_desc">Append header search paths for compile (-I)</string>
   <string name="settings_project_native_library_dirs">Library Paths</string>
@@ -882,7 +745,6 @@
   <string name="settings_rainbow_brackets">Rainbow Brackets</string>
   <string name="settings_rainbow_brackets_desc">Color brackets based on nesting depth</string>
   <string name="settings_rainbow_brackets_max_lines">Rainbow Brackets Line Limit</string>
-  <string name="settings_rainbow_brackets_max_lines_desc">Auto-disable rainbow brackets when exceeding this line count (0 = unlimited)</string>
   <string name="settings_code_folding">Code Folding</string>
   <string name="settings_code_folding_desc">Allow folding/expanding code blocks (functions, classes, etc.)</string>
   <string name="settings_render_whitespace">Render Whitespace</string>
@@ -904,7 +766,6 @@
   <string name="settings_clangd_clang_tidy">Clang-Tidy Static Analysis</string>
   <string name="settings_clangd_clang_tidy_desc">Enable code quality checks with warnings and suggestions</string>
   <string name="settings_clangd_header_insertion">Auto Header Insertion</string>
-  <string name="settings_clangd_header_insertion_desc">Suggest adding #include when using symbols</string>
   <string name="settings_clangd_header_insertion_never">Off</string>
   <string name="settings_clangd_header_insertion_iwyu">Smart (IWYU)</string>
   <string name="settings_clangd_completion_style">Completion Detail Level</string>
@@ -914,7 +775,6 @@
   <string name="settings_clangd_function_arg_placeholders_desc">Insert argument placeholders when completing functions</string>
   <string name="settings_clangd_restart_hint">Changes require reopening files or restarting LSP to take effect</string>
 
-  <string name="settings_cat_indent">Indentation</string>
   <string name="settings_auto_indent">Auto Indent</string>
   <string name="settings_auto_indent_desc">Automatically add indentation on new lines</string>
   <string name="settings_insert_spaces_for_tabs">Spaces for Tabs</string>
@@ -923,8 +783,6 @@
   <string name="toast_tab_width_set">Tab width set to %1$d spaces</string>
   <string name="toast_font_restored">Default font restored</string>
   <string name="dialog_title_font_size">Font Size</string>
-  <string name="label_font_size_range">Range: %1$d - %2$d sp</string>
-  <string name="font_preview_text">Preview: AaBbCc 123</string>
   <string name="dialog_title_custom_font">Custom Font</string>
   <string name="label_select_font_source">Select font source:</string>
   <string name="btn_use_default_font">Use Default Font</string>
@@ -938,17 +796,13 @@
   <string name="opt_level_o2">O2 - Standard Optimization</string>
   <string name="opt_level_o3">O3 - Aggressive Optimization</string>
   <string name="settings_optimization_level">Optimization Level</string>
-  <string name="value_not_selected">Not Selected</string>
   <string name="settings_compiler_threads">Compiler Threads</string>
   <string name="settings_compiler_scope_hint">Scope: these are global defaults. Optimization and threads apply to single-file/Make; CMake build type, generator, and parallel jobs apply only to CMake. Compiler/toolchain/output mode are set in Run Configuration.</string>
   <string name="settings_cat_toolchain_management">Toolchain Management</string>
   <string name="settings_active_toolchain">Active Toolchain</string>
   <string name="toolchain_builtin_name">Built-in Toolchain</string>
   <string name="toolchain_builtin_patched_name">Built-in Toolchain (patched)</string>
-  <string name="settings_toolchain_status">Toolchain Status</string>
   <string name="settings_sysroot_status">Sysroot Status</string>
-  <string name="toolchain_status_installed">Installed</string>
-  <string name="toolchain_status_installed_version">Installed (Version %1$s)</string>
   <string name="toolchain_status_not_installed">Not Installed</string>
   <string name="sysroot_status_installed">Installed</string>
   <string name="sysroot_status_not_installed">Not Installed</string>
@@ -961,15 +815,12 @@
   <string name="settings_import_toolchain_desc">Import custom toolchain from external file</string>
   <string name="settings_import_sysroot">Import Sysroot</string>
   <string name="settings_import_sysroot_desc">Import system root directory from external file</string>
-  <string name="toolchain_import_select_file">Select toolchain archive</string>
   <string name="toolchain_import_in_progress">Importing toolchain...</string>
   <string name="toolchain_import_success">Toolchain imported successfully</string>
   <string name="toolchain_import_failed">Toolchain import failed: %1$s</string>
   <string name="toolchain_import_error_invalid_archive">Invalid toolchain archive, bin/clang not found</string>
   <string name="toolchain_import_error_missing_files">Incomplete toolchain, missing required files</string>
   <string name="toolchain_import_title">Import Toolchain</string>
-  <string name="toolchain_import_success_title">Import Successful</string>
-  <string name="toolchain_import_failed_title">Import Failed</string>
   <string name="toolchain_import_toolchain_info">%1$s (%2$s)</string>
   <string name="toolchain_import_file_name">File Name</string>
   <string name="toolchain_import_file_size">File Size</string>
@@ -1011,7 +862,6 @@
   <string name="toolchain_import_log_finished">Import completed. Toolchain ID: %1$s</string>
   <string name="toolchain_import_log_error">Error: %1$s</string>
   <string name="toolchain_unknown_name">Unknown</string>
-  <string name="sysroot_import_select_file">Select sysroot archive</string>
   <string name="sysroot_import_in_progress">Importing sysroot...</string>
   <string name="sysroot_import_success">Sysroot imported successfully</string>
   <string name="sysroot_import_failed">Sysroot import failed: %1$s</string>
@@ -1076,39 +926,6 @@
 
 
 
-  <string name="label_ai_balance">AI Balance</string>
-  <string name="label_ai_total_consumed">AI Total Consumed</string>
-  <string name="label_ai_total_recharged">AI Total Recharged</string>
-  <string name="label_ai_total_gifted">AI Total Gifted</string>
-  <string name="label_ai_frozen_balance">AI Frozen Balance</string>
-  <string name="label_ai_account_overview">AI Account Overview</string>
-  <string name="status_loading">Loading</string>
-  <string name="status_load_failed">Load Failed</string>
-  <string name="profile_ai_quota_refresh_failed_cached">Refresh failed, showing the last successful data</string>
-  <string name="status_bound">Bound</string>
-  <string name="action_click_to_bind">Click to Bind</string>
-  <string name="toast_bind_in_development">Binding feature in development</string>
-  <string name="account_email">Email</string>
-  <string name="dialog_title_user_profile">User Profile</string>
-  <string name="label_nickname">Nickname:</string>
-  <string name="label_id">ID:</string>
-  <string name="dialog_title_user_id">User ID</string>
-  <string name="dialog_message_copy_id">Long press or click button to copy ID</string>
-  <string name="action_copy_id">Copy ID</string>
-  <string name="toast_id_copied">ID copied to clipboard</string>
-  <string name="label_email">Email:</string>
-  <string name="label_registered_at">Registered:</string>
-  <string name="bound_with_nickname">Bound: %1$s</string>
-  <string name="hint_click_to_change_avatar">Tap to change avatar</string>
-  <string name="toast_feature_in_development">Feature in development</string>
-  <string name="hint_uploading_avatar">Uploading…</string>
-  <string name="toast_avatar_uploaded">Avatar updated</string>
-  <string name="toast_avatar_upload_failed">Avatar upload failed: %1$s</string>
-  <string name="toast_avatar_process_failed">Image processing failed</string>
-  <string name="toast_avatar_crop_failed">Crop failed, using original image</string>
-  <string name="toast_nickname_updated">Nickname updated</string>
-  <string name="toast_nickname_update_failed">Failed to update nickname</string>
-
   <!-- About Settings -->
   <string name="error_get_version_failed">Failed to get version</string>
   <string name="settings_cat_about">About</string>
@@ -1128,60 +945,12 @@
   <!-- ==================== Workspace Setup Flow ==================== -->
 
   <!-- SyncModeSelectionActivity -->
-  <string name="setup_title_sync_mode">Select Sync Mode</string>
-  <string name="setup_subtitle_sync_mode">TinaIDE supports three sync modes, please choose based on your usage habits and needs.</string>
-  <string name="sync_option_external">Sync to External Directory</string>
-  <string name="sync_option_external_desc">Data preserved after uninstall, accessible via computer</string>
-  <string name="sync_option_android_data">Sync to Android/data</string>
-  <string name="sync_option_android_data_desc">No permissions needed, visible in system file manager</string>
-  <string name="sync_option_none">No Sync</string>
-  <string name="sync_option_none_desc">Best performance, uses private directory only</string>
-  <string name="sync_feature_data_safe">Data Safety: User data preserved after uninstall</string>
-  <string name="sync_feature_file_visible">File Visible: Easy access for third-party apps</string>
-  <string name="sync_feature_cross_device">Cross-device: Access project files via computer</string>
-  <string name="sync_feature_no_permission">No Permission: Compatible with all Android versions</string>
-  <string name="sync_feature_file_manager_visible">File Visible: Accessible in system file manager</string>
-  <string name="sync_feature_performance">Performance First: No sync overhead</string>
-  <string name="sync_feature_storage_small">Small Storage: Only one copy of data</string>
-  <string name="sync_warning_permission">Requires storage permission</string>
-  <string name="sync_warning_data_loss">Note: Data will be lost after uninstall</string>
-  <string name="sync_warning_no_file_manager">Cannot access via file manager</string>
-  <string name="setup_btn_next_select_dir">Next: Select Sync Directory</string>
-  <string name="setup_btn_confirm_continue">Confirm and Continue</string>
-  <string name="setup_btn_select_sync_mode">Please select sync mode</string>
-  <string name="setup_hint_sync_mode_changeable">Note: Sync mode can be changed in settings</string>
 
   <!-- SkipWorkspaceDialog -->
-  <string name="dialog_title_skip_workspace">Skip Workspace Configuration?</string>
-  <string name="dialog_skip_workspace_impact">Skipping will have the following effects:</string>
-  <string name="skip_warning_no_external">Cannot use external workspace\n(Documents/TinaIDE)</string>
-  <string name="skip_warning_internal_only">Projects saved only in app internal directory</string>
-  <string name="skip_warning_data_loss">Project data may be lost after uninstalling the app</string>
-  <string name="skip_warning_no_file_access">Cannot access projects directly via file manager</string>
-  <string name="dialog_skip_workspace_suggestion">Suggestion: Go back to select workspace directory for full functionality</string>
-  <string name="btn_back_to_config">Back to Configure</string>
-  <string name="btn_skip_anyway">Skip Anyway</string>
 
   <!-- DependencyInstallActivity -->
   <string name="setup_title_env_config">Environment Configuration</string>
-  <string name="label_error_message">Error details</string>
-  <string name="status_installing">Installing Environment</string>
   <string name="status_paused">Paused</string>
-  <string name="status_preparing">Preparing to install...</string>
-  <string name="status_install_complete">Installation Complete</string>
-  <string name="status_downloading">Downloading...</string>
-  <string name="status_extracting_rootfs">Extracting base environment...</string>
-  <string name="status_installing_toolchain">Installing compiler toolchain...</string>
-  <string name="status_installing_debugger">Installing debugger...</string>
-  <string name="label_current_mirror">Current Mirror</string>
-  <string name="btn_switch_mirror">Switch</string>
-  <string name="label_install_steps">Installation Steps</string>
-  <string name="step_extract_rootfs">Extract Base Environment</string>
-  <string name="step_extract_rootfs_desc">Ubuntu Linux rootfs</string>
-  <string name="step_install_toolchain">Install Compiler Toolchain</string>
-  <string name="step_install_toolchain_desc">Clang/LLVM Compiler</string>
-  <string name="step_install_debugger">Install Debugger</string>
-  <string name="step_install_debugger_desc">LLDB Debugger</string>
   <string name="hint_paused_can_resume">Installation paused. You can resume anytime.</string>
   <string name="hint_first_install_slow">First-time installation may take longer. Please wait.</string>
   <string name="hint_almost_done">Almost done. Finishing up the last steps.</string>
@@ -1197,7 +966,6 @@
   <string name="desc_sandbox_mode">secure sandbox mode</string>
   <string name="desc_sandbox_mode_suffix">, ensuring development security.</string>
   <string name="config_runtime_env">Runtime Env</string>
-  <string name="config_runtime_env_value">Linux distro + Clang</string>
   <string name="config_workspace_path">Workspace Path</string>
   <string name="config_workspace_path_value">/workspace</string>
   <string name="config_security_policy">Security Policy</string>
@@ -1221,9 +989,6 @@
 
   <!-- Install Failed -->
   <string name="status_install_failed">Installation Failed</string>
-  <string name="hint_network_download_failed">Download failure may be due to network issues, try switching mirror source and retry.</string>
-  <string name="btn_retry_install">Retry Installation</string>
-  <string name="btn_switch_mirror_source">Switch Mirror</string>
 
   <!-- ABI Mismatch Error -->
   <string name="btn_exit_app">Exit App</string>
@@ -1253,42 +1018,18 @@
   <!-- ==================== Phase 4: Utility Classes ==================== -->
 
   <!-- FileUtils Error Messages -->
-  <string name="error_parent_dir_not_exist">Parent directory does not exist or is not a directory</string>
-  <string name="error_file_exists">File already exists: %1$s</string>
-  <string name="error_create_file_failed">Failed to create file: %1$s</string>
-  <string name="error_dir_exists">Directory already exists: %1$s</string>
-  <string name="error_create_dir_failed">Failed to create directory: %1$s</string>
-  <string name="error_file_not_exist">File does not exist: %1$s</string>
-  <string name="error_new_name_empty">New name cannot be empty</string>
-  <string name="error_target_exists">Target file already exists: %1$s</string>
-  <string name="error_rename_failed">Rename failed: %1$s -> %2$s</string>
-  <string name="error_source_not_exist">Source file does not exist or is not a file</string>
-  <string name="error_target_file_exists">Target file already exists</string>
-  <string name="error_source_dir_not_exist">Source directory does not exist or is not a directory</string>
-  <string name="error_target_dir_exists">Target directory already exists</string>
-  <string name="error_file_not_exist_or_not_file">File does not exist or is not a file</string>
-  <string name="error_not_a_file">Not a file</string>
 
   <!-- ErrorHandler Messages -->
-  <string name="error_io_operation">File operation failed: %1$s</string>
-  <string name="error_permission_denied">Permission denied: %1$s</string>
-  <string name="error_invalid_argument">Invalid argument: %1$s</string>
-  <string name="error_invalid_state">Invalid state: %1$s</string>
   <string name="error_null_pointer">Data error: Null pointer</string>
   <string name="error_out_of_memory">Out of memory, please close other apps and try again</string>
   <string name="error_unknown_with_message">Unknown error</string>
 
-  <string name="error_wechat_unsupported">WeChat version does not support this feature</string>
 
   <!-- TerminalViewModel -->
-  <string name="error_proot_not_installed">PRoot environment not installed/ready, please deploy development environment in settings first</string>
-  <string name="error_terminal_start_failed">Failed to start terminal: %1$s</string>
-  <string name="error_terminal_exited">Terminal exited (exitCode=%1$d)</string>
 
   <!-- TerminalActivity -->
   <string name="title_terminal">Terminal</string>
   <string name="title_run_output">Run Output</string>
-  <string name="content_desc_terminal_back">Back</string>
   <string name="content_desc_terminal_settings">Terminal Settings</string>
   <string name="status_terminal_starting">Starting terminal...</string>
   <string name="status_terminal_init_failed">Terminal initialization failed</string>
@@ -1298,13 +1039,11 @@
   <string name="project_not_opened">No project open</string>
 
   <!-- ProjectManagerViewModel -->
-  <string name="error_delete_project_failed">Delete failed</string>
 
   <!-- LogView -->
   <string name="toast_copied">Copied</string>
   <string name="toast_cut">Cut</string>
   <string name="toast_pasted">Pasted</string>
-  <string name="toast_all_logs_copied">All logs copied</string>
   <string name="toast_no_matches">No matches found</string>
   <string name="toast_replaced">Replaced %1$d occurrence(s)</string>
   <string name="toast_duplicate_failed">Duplicate failed</string>
@@ -1318,23 +1057,9 @@
   <string name="label_replace_with">Replace with</string>
   <string name="btn_replace_all">Replace All</string>
 
-  <!-- MarkdownViewerScreen -->
-  <string name="error_read_file_failed">Cannot read file: %1$s</string>
-  <string name="content_desc_view_source">View Source</string>
-  <string name="content_desc_preview">Preview</string>
-
-  <!-- JsonViewerScreen -->
-  <string name="error_json_parse_failed">JSON parse failed: %1$s</string>
-  <string name="error_read_json_failed">Failed to read file: %1$s</string>
-  <string name="json_view_tree">Tree</string>
-  <string name="json_view_source">Source</string>
+  <!-- Outline Controls -->
   <string name="content_desc_expand_all">Expand All</string>
   <string name="content_desc_collapse_all">Collapse All</string>
-  <string name="json_object_items">Object (%1$d items)</string>
-  <string name="json_array_items">Array (%1$d items)</string>
-  <string name="json_stats_keys">%1$d keys</string>
-  <string name="json_stats_depth">Depth: %1$d</string>
-  <string name="json_stats_size">Size: %1$s</string>
 
   <!-- ImagePreviewScreen -->
   <string name="error_load_image_failed">Cannot load image</string>
@@ -1354,7 +1079,6 @@
   <string name="error_offset_out_of_range">Offset out of range (0 - %1$d)</string>
 
   <!-- SettingsScreen -->
-  <string name="content_desc_settings_back">Back</string>
 
   <!-- Terminal Tab List Dialog -->
   <string name="terminal_tab_list_title">Terminal Tabs (%1$d)</string>
@@ -1376,15 +1100,9 @@
   <string name="terminal_backend_proot_desc">Run in PRoot virtual Linux environment</string>
 
   <!-- Terminal Context Menu -->
-  <string name="terminal_select_all">Select All</string>
-  <string name="terminal_copy">Copy</string>
-  <string name="terminal_paste">Paste</string>
-  <string name="terminal_copied">Copied</string>
-  <string name="terminal_cannot_open_link">Cannot open link: %1$s</string>
 
   <!-- New File Dialog -->
   <string name="new_file_title">New File</string>
-  <string name="new_file_location">Location: %1$s/</string>
   <string name="new_file_type">File Type</string>
   <string name="label_target_directory">Target Directory</string>
   <string name="label_target_path">Target Path</string>
@@ -1398,8 +1116,6 @@
   <string name="new_file_example_header">e.g.: utils</string>
   <string name="new_file_example_plain">e.g.: config.json</string>
   <string name="new_file_example_text">e.g.: notes</string>
-  <string name="new_file_will_create_pair">Will create: %1$s.h and %2$s.cpp</string>
-  <string name="new_file_will_create">Will create: %1$s.%2$s</string>
   <string name="error_name_empty">Name cannot be empty</string>
   <string name="error_name_invalid_chars">Name can only contain letters, numbers and underscores, and cannot start with a number</string>
   <string name="error_filename_invalid_chars">File name contains invalid characters</string>
@@ -1424,9 +1140,6 @@
   <string name="error_folder_exists">Folder with same name already exists</string>
   <string name="toast_folder_created">Folder %1$s created</string>
   <string name="error_create_folder">Failed to create folder</string>
-  <string name="error_file_name_empty">File name cannot be empty</string>
-  <string name="error_file_name_invalid">File name contains invalid characters</string>
-  <string name="toast_file_created">File %1$s created</string>
   <string name="error_name_same_exists">File or folder with same name already exists</string>
   <string name="toast_renamed">Renamed to %1$s</string>
   <string name="delete_folder_title">Delete Folder</string>
@@ -1462,7 +1175,6 @@
   <string name="ai_image_pick_failed">Failed to process image (try another or use a smaller image)</string>
   <string name="ai_image_load_failed">Failed to load image</string>
   <string name="ai_image_content_description">Image</string>
-  <string name="ai_attach_error">Attach error</string>
   <string name="ai_copy_code">Copy code</string>
   <string name="ai_insert_code">Insert to editor</string>
   <string name="ai_code_lines">lines</string>
@@ -1473,7 +1185,6 @@
   <string name="ai_code_hide">Hide highlight</string>
   <string name="ai_thinking">AI is thinking...</string>
   <string name="ai_error_no_config">Please configure AI settings first</string>
-  <string name="ai_error_network">Network request failed</string>
   <string name="ai_code_copied">Code copied</string>
   <string name="ai_code_inserted">Code inserted</string>
   <string name="ai_close">Close</string>
@@ -1561,7 +1272,6 @@
   <string name="ai_search_label_content">Content:</string>
   <string name="ai_search_content_truncated_note">Content truncated. File has %1$d lines total.</string>
   <string name="ai_search_content_truncated_hint">Use a larger max_lines value to see more, or view the full file at:</string>
-  <string name="ai_search_github_branch_default">Default</string>
   <string name="ai_diag_error">Error</string>
   <string name="ai_diag_warning">Warning</string>
   <string name="ai_diag_info">Info</string>
@@ -1624,32 +1334,7 @@
   <string name="ai_rename">Rename</string>
   <string name="ai_rename_conversation">Rename Conversation</string>
   <string name="ai_conversation_title">Conversation Title</string>
-  <string name="ai_manual_action_prompt">Tool executed, click to continue AI response</string>
-  <string name="ai_continue">Continue</string>
-  <string name="ai_continue_response">Continue Response</string>
-  <string name="ai_tool_result">Tool Result</string>
-  <string name="ai_view_result">View Result</string>
-  <string name="ai_show_params">Show Params</string>
-  <string name="ai_hide_params">Hide Params</string>
-  <string name="ai_tool_result_success">%s - Success</string>
-  <string name="ai_tool_result_failed">%s - Failed</string>
-  <string name="ai_no_result">No result</string>
   <string name="ai_copy">Copy</string>
-  <string name="ai_tool_already_executed">Tool already executed, cannot execute again</string>
-  <string name="ai_tool_executed_failed">Tool %s execution failed</string>
-  <string name="ai_status_user_sent">User Sent</string>
-  <string name="ai_status_responding">AI Responding</string>
-  <string name="ai_status_tool_pending">Tool Pending</string>
-  <string name="ai_status_tool_executing">Tool Executing</string>
-  <string name="ai_status_continuing">AI Continuing</string>
-  <string name="ai_status_completed">Completed</string>
-  <string name="ai_execute_action">Execute Action</string>
-  <string name="ai_action_pending">Pending</string>
-  <string name="ai_action_executing">Executing</string>
-  <string name="ai_action_completed">Completed</string>
-  <string name="ai_action_failed">Failed</string>
-  <string name="ai_action_cancelled">Cancelled</string>
-  <string name="ai_status_error">Error</string>
 
   <!-- AI Settings -->
   <string name="settings_cat_ai">AI Assistant</string>
@@ -1660,14 +1345,12 @@
   <string name="settings_ai_access_mode_cloud">Official gateway</string>
   <string name="settings_ai_access_mode_custom">Custom channel</string>
   <string name="settings_ai_access_mode_cloud_subtitle">The official AI gateway is not bundled in the open-source build</string>
-  <string name="settings_ai_access_mode_cloud_need_login">The official AI gateway is not bundled in the open-source build</string>
   <string name="settings_ai_access_mode_custom_subtitle">Bring your own API key (BYOK)</string>
   <string name="settings_ai_image_detail">Image detail</string>
   <string name="settings_ai_image_detail_auto">Auto</string>
   <string name="settings_ai_image_detail_low">Low (cheaper)</string>
   <string name="settings_ai_image_detail_high">High (clearer)</string>
   <string name="settings_ai_not_configured">Not configured</string>
-  <string name="settings_ai_configured">Configured</string>
   <string name="settings_ai_channel_management">Channel management</string>
   <string name="settings_ai_channel_list_empty">No custom channels yet. Tap below to add one.</string>
   <string name="settings_ai_channel_add">Add channel</string>
@@ -1679,6 +1362,7 @@
   <string name="settings_ai_channel_active">Active</string>
   <string name="settings_ai_channel_apikey_keep">Leave empty to keep the existing key</string>
   <string name="settings_ai_channel_apikey_required">Required</string>
+  <string name="settings_ai_channel_provider_model">%1$s · %2$s</string>
   <string name="settings_ai_channel_error_name_blank">Channel name cannot be empty</string>
   <string name="settings_ai_channel_error_url_blank">Base URL cannot be empty</string>
   <string name="settings_ai_channel_error_url_invalid">Base URL must start with http:// or https://</string>
@@ -1687,11 +1371,6 @@
   <string name="ai_error_no_active_channel">Please pick or add a channel in Settings → Channel management.</string>
   <string name="ai_error_gateway_unavailable">The official AI gateway is not bundled in the open-source build. Add a custom channel in Settings.</string>
   <string name="settings_ai_advanced">Advanced</string>
-  <string name="settings_ai_advanced_desc">Temperature, token limit, system prompt</string>
-  <string name="settings_ai_test_connection">Test Connection</string>
-  <string name="settings_ai_test_success">Connected! Model: %s</string>
-  <string name="settings_ai_test_failed">Connection failed: %s</string>
-  <string name="settings_ai_api_key_help">Your API Key is encrypted and stored locally. It will never be uploaded.\n\nGet your API Key:\n• DeepSeek: platform.deepseek.com\n• OpenAI: platform.openai.com\n• Qwen: dashscope.console.aliyun.com</string>
   <string name="settings_ai_base_url">API URL</string>
   <string name="settings_ai_max_tokens">Max Output Tokens</string>
   <string name="settings_ai_temperature">Temperature</string>
@@ -1715,12 +1394,9 @@
   <string name="settings_ai_retry_count">Auto Retry Count</string>
   <string name="settings_ai_retry_delay">Retry Interval (seconds)</string>
   <string name="settings_ai_summary_prompt">Summary Prompt</string>
-  <string name="settings_ai_summary_prompt_subtitle">Prompt used for conversation summarization</string>
   <string name="settings_ai_manage_tools">Manage Tools</string>
   <string name="settings_ai_manage_tools_subtitle">View and manage AI tool enabled states</string>
   <string name="settings_ai_tools_dialog_title">AI Tools Management</string>
-  <string name="settings_ai_tool_enabled">Enabled</string>
-  <string name="settings_ai_tool_disabled">Disabled</string>
   <string name="settings_ai_save">Save</string>
   <string name="settings_ai_loading_models">Loading models...</string>
   <string name="settings_ai_provider_openai">OpenAI</string>
@@ -1737,7 +1413,6 @@
   <string name="editor_hint_line1">Select a file from the sidebar to start editing, or click</string>
   <string name="editor_hint_line2">the button below to browse your project file tree.</string>
   <string name="editor_view_recent">View recently opened projects</string>
-  <string name="editor_loading_file">Loading file content</string>
   <string name="editor_load_failed">Load failed</string>
 
   <!-- GlobalSearchScreen -->
@@ -1752,14 +1427,10 @@
   <string name="hint_replacement_text">Replace with...</string>
   <string name="btn_toggle_replace">Toggle Replace Mode</string>
   <string name="btn_replace_selected">Replace Selected</string>
-  <string name="btn_preview_replace">Preview Replace</string>
   <string name="btn_select_all">Select All</string>
   <string name="btn_deselect_all">Deselect All</string>
   <string name="selected_count">%1$d selected</string>
-  <string name="replace_preview_title">Replace Preview</string>
   <string name="replace_progress">Replacing: %1$d/%2$d</string>
-  <string name="replace_success">Replaced %1$d occurrences in %2$d files</string>
-  <string name="replace_failed">Replace failed: %1$s</string>
   <string name="search_history_title">Search History</string>
   <string name="search_history_clear">Clear History</string>
   <string name="search_history_empty">No search history</string>
@@ -1768,13 +1439,6 @@
   <string name="search_history_favorite">Favorite</string>
   <string name="search_history_unfavorite">Unfavorite</string>
   <string name="search_history_delete">Delete</string>
-  <string name="search_scope_project">Entire Project</string>
-  <string name="search_scope_current_file">Current File</string>
-  <string name="search_scope_open_files">Open Files</string>
-  <string name="search_scope_custom">Custom Directory</string>
-  <string name="search_include_pattern">Include files</string>
-  <string name="search_exclude_pattern">Exclude files</string>
-
   <!-- GitLogPanel -->
   <string name="git_no_branch">No branch</string>
   <string name="git_current_branch">Current branch</string>
@@ -1788,15 +1452,11 @@
   <string name="toast_please_open_project">Please open a project first</string>
   <string name="toast_commit_success">Commit successful</string>
   <string name="content_desc_open_file_tree">Open file tree</string>
-  <string name="toast_config_copied">Configuration copied</string>
-  <string name="toast_config_deleted">Configuration deleted</string>
-  <string name="content_desc_run">Run</string>
   <string name="content_desc_debug">Debug</string>
   <string name="content_desc_more">More</string>
   <string name="menu_section_file">File</string>
   <string name="menu_section_code">Code</string>
-  <string name="menu_new_file">New File</string>
-  <string name="menu_save_all">Save All</string>
+<string name="menu_save_all">Save All</string>
   <string name="menu_format_code">Format Code</string>
   <string name="menu_goto_line">Go to Line</string>
   <string name="menu_section_view">View</string>
@@ -1817,22 +1477,18 @@
   <string name="menu_exit_workspace">Exit Workspace</string>
   <string name="toast_saved">Saved</string>
   <string name="toast_save_failed">Save failed: %1$s</string>
-  <string name="toast_file_not_support_search">Current file does not support search</string>
   <string name="toast_git_branch_switched">Switched to branch: %1$s</string>
-  <string name="toast_commit_info">Commit: %1$s - %2$s</string>
   <string name="dialog_close_project_title">Close Project</string>
   <string name="dialog_close_project_message">You can reopen it from the project home page. Session state is preserved by default.</string>
   <string name="btn_close_project">Close</string>
   <string name="btn_close_and_forget">Close and Forget</string>
   <string name="toast_run_config_saved">Run configuration saved</string>
   <string name="toast_git_init_success">Git repository initialized successfully</string>
-  <string name="toast_created">Created: %1$s</string>
   <string name="toast_debug_start_failed">Debug start failed: executable path not found</string>
   <string name="toast_compile_done_starting_debug">Compilation complete, starting debug...</string>
   <string name="toast_terminal_run_failed">Terminal run failed: command not found</string>
   <string name="toast_compile_done_opening_terminal">Compilation complete, opening terminal...</string>
   <string name="toast_compile_done_opening_sdl">Compilation complete, opening SDL graphical runtime...</string>
-  <string name="toast_project_config_migrated">Legacy configuration detected and migrated automatically (project.json %1$d item(s), run_configs.json %2$d item(s))</string>
   <string name="toast_compile_done_artifact_exported">Compilation complete, build artifact exported</string>
   <string name="toast_compile_done_no_runnable_output">Build complete: this project has no directly runnable output, and the artifact was exported</string>
   <string name="toast_compile_done_non_runnable_artifact">Build complete: this project produced a %1$s and cannot be run directly</string>
@@ -1866,12 +1522,10 @@
   <string name="toast_compiling">Compiling...</string>
 
   <!-- LargeTextViewerScreen -->
-  <string name="large_file_viewer_title">Large File Viewer</string>
   <string name="large_file_viewer_info">Large File Viewer  •  %1$s  •  %2$d KB</string>
   <string name="large_file_open_editor">Open in Editor</string>
   <string name="large_file_hex">Hex View</string>
   <string name="large_file_load_failed">Load failed</string>
-  <string name="large_file_open_failed">Failed to open file</string>
   <string name="large_file_retry">Retry</string>
   <string name="large_file_reached_limit">Reached display limit (%1$d lines), consider using hex view or opening in editor.</string>
   <string name="large_file_end_of_file">End of file</string>
@@ -1881,10 +1535,8 @@
   <string name="content_desc_drag">Drag</string>
 
   <!-- ThemeSelectionDialog -->
-  <string name="dialog_title_select_terminal_theme">Select Theme</string>
 
   <!-- EditorTab -->
-  <string name="content_desc_close_tab">Close</string>
 
   <!-- OpenSourceLicensesActivity -->
   <string name="license_load_error">Failed to load open source license data: %1$s</string>
@@ -1896,18 +1548,8 @@
 
 If you need to verify lower-level source or native submodules, please also check the LICENSE / NOTICE files shipped with the repository.</string>
   <string name="license_bundled_termux_desc">Terminal emulation and view module used by the in-app terminal (bundled with the app).</string>
-  <string name="license_bundled_json_desc">Single-header JSON library used by the app\'s native code.</string>
 
   <!-- Captcha -->
-  <string name="captcha_title_default">Enter verification code</string>
-  <string name="captcha_label">Verification code</string>
-  <string name="captcha_placeholder">Enter verification code</string>
-  <string name="captcha_load">Load captcha</string>
-  <string name="captcha_click_to_load">Tap to load captcha</string>
-  <string name="captcha_load_failed">Load failed</string>
-  <string name="captcha_load_failed_retry">Load failed, tap to retry</string>
-  <string name="captcha_content_desc">Captcha</string>
-
   <!-- EditorKeepAliveService -->
   <string name="service_editor_keep_alive_channel_name">Editor Running in Background</string>
   <string name="service_editor_keep_alive_channel_desc">Keep the editor running in the background to prevent being killed</string>
@@ -1950,19 +1592,7 @@ kept=%3$d bytes
   <string name="apk_builder_debug_keystore_unavailable">Default signing is unavailable. Place debug.keystore in assets/apk_templates/.</string>
 
   <!-- OutputActivity -->
-  <string name="output_title">Output</string>
-  <string name="output_title_starting">Output - Starting...</string>
-  <string name="output_title_running">Output - Running</string>
-  <string name="output_title_stopping">Output - Stopping...</string>
-  <string name="output_title_terminated">Output - Terminated</string>
-  <string name="output_title_error">Output - Error</string>
-  <string name="output_title_completed">Output - Completed</string>
-  <string name="output_title_exited">Output - Exited (%1$d)</string>
-  <string name="output_title_stopped">Output - Stopped</string>
-
-  <!-- OutputView -->
-  <string name="toast_copied_content">Copied</string>
-  <string name="toast_copied_all_content">All content copied</string>
+<!-- OutputView -->
 
   <!-- ==================== Phase 6: Core Layer Hardcoded Strings ==================== -->
 
@@ -1980,15 +1610,9 @@ kept=%3$d bytes
 
   <!-- DependencyInstallActivity -->
   <string name="package_list_title">Installing Packages</string>
-  <string name="install_stage_extract_ndk_sysroot">Extract NDK</string>
-  <string name="install_stage_extract_system">Extract System</string>
-  <string name="install_stage_update_index">Update Index</string>
   <string name="install_stage_downloading">Downloading</string>
-  <string name="install_stage_installing">Installing</string>
-  <string name="install_stage_install_debugger">Install Debugger</string>
   <string name="install_stage_verifying">Verifying</string>
   <string name="install_stage_configuring">Configuring</string>
-  <string name="install_stage_clean_cache">Clean Cache</string>
   <string name="install_stage_completed">Completed</string>
   <string name="package_status_completed">Completed</string>
   <string name="package_status_installing">Installing</string>
@@ -2026,42 +1650,21 @@ kept=%3$d bytes
 
 
   <!-- License Status -->
-  <string name="license_expired_at">Expired at: %1$s</string>
 
 
   <!-- License Validation -->
-  <string name="license_valid">License valid</string>
 
   <!-- License Status Card -->
 
   <!-- Premium Feature Dialog -->
 
   <!-- Premium Feature Names -->
-  <string name="feature_name_cloud_sync">Cloud Sync</string>
-  <string name="feature_name_deps_download">Dependencies Download</string>
-  <string name="feature_name_code_completion">Code Completion</string>
-  <string name="feature_name_git_integration">Git Integration</string>
-  <string name="feature_name_terminal">Terminal</string>
-  <string name="feature_name_multi_file_edit">Multi-file Editing</string>
-  <string name="feature_name_theme_customization">Theme Customization</string>
-  <string name="feature_name_plugins">Plugin System</string>
 
   <!-- Premium Feature Descriptions -->
-  <string name="feature_desc_cloud_sync">Sync your projects and settings to the cloud, access your code anytime, anywhere.</string>
-  <string name="feature_desc_deps_download">Automatically download and manage project dependencies, supports multiple package managers.</string>
-  <string name="feature_desc_code_completion">Intelligent code completion to improve coding efficiency.</string>
-  <string name="feature_desc_git_integration">Built-in Git support for easy version control management.</string>
-  <string name="feature_desc_terminal">Integrated terminal to execute commands directly in the IDE.</string>
-  <string name="feature_desc_multi_file_edit">Edit multiple files simultaneously to improve productivity.</string>
-  <string name="feature_desc_theme_customization">Customize editor themes and color schemes.</string>
-  <string name="feature_desc_plugins">Install and manage plugins to extend IDE functionality.</string>
 
   <!-- License Debug -->
 
   <!-- Toolchain Configuration -->
-  <string name="llvm_version_selection">LLVM Version</string>
-  <string name="llvm_version_selection_desc">Prefer installing versioned Ubuntu packages (e.g. clang-19); automatically fall back on failure</string>
-  <string name="llvm_version_auto_recommended">Auto (recommended: prefer 19)</string>
 
   <!-- Plugin Command Strings (HostCommands) -->
   <!-- File Operations Extended -->
@@ -2124,11 +1727,6 @@ kept=%3$d bytes
 
   <!-- Toolchain Config -->
   <string name="badge_recommended">Recommended</string>
-  <string name="toolchain_clang_desc">Modern C/C++ compiler with friendly diagnostics</string>
-  <string name="toolchain_gcc_desc">GNU Compiler Collection with good compatibility</string>
-  <string name="toolchain_lld_desc">LLVM linker with faster linking speed</string>
-  <string name="toolchain_gnu_ld_desc">Traditional linker with best compatibility</string>
-  <string name="toolchain_total_size">About %1$dMB</string>
 
   <!-- Installation Status -->
   <string name="install_status_preparing">Preparing...</string>
@@ -2172,8 +1770,6 @@ kept=%3$d bytes
   <string name="exception_toolchain_not_installed">Compiler %1$s not installed</string>
   <string name="exception_toolchain_suggestion">Please install %1$s toolchain in settings</string>
   <string name="exception_debugger_error">Debugger error: %1$s</string>
-  <string name="compile_exception">Compile exception: %1$s</string>
-  <string name="compile_error_output">Compile error: %1$s\n%2$s</string>
 
   <!-- Common Buttons (extra) -->
   <string name="btn_apply">Apply</string>
@@ -2181,19 +1777,6 @@ kept=%3$d bytes
 
 
   <!-- Clangd Test Screen (extra) -->
-  <string name="clangd_test_custom_json_title">Custom JSON message</string>
-  <string name="clangd_test_select_template">Select template</string>
-  <string name="clangd_test_template_params">Template parameters</string>
-  <string name="clangd_test_custom_json_label">LSP JSON message (editable)</string>
-  <string name="clangd_test_generate_json">Generate JSON</string>
-  <string name="clangd_test_click_send_hint">Tap “Send request” to start testing</string>
-  <string name="clangd_test_select_template_dialog_title">Select LSP message template</string>
-  <string name="clangd_test_toast_benchmark_done">Benchmark finished</string>
-  <string name="clangd_test_toast_batch_done">Batch test finished</string>
-  <string name="clangd_test_toast_failed">Test failed: %1$s</string>
-  <string name="clangd_test_suite_test_count">%1$d tests</string>
-  <string name="clangd_test_current_test">Current: %1$s</string>
-  <string name="clangd_test_success_rate_label">Success rate: %1$s%%</string>
   <string name="exception_lldb_not_installed">LLDB debugger not installed</string>
   <string name="exception_lldb_suggestion">Please redeploy development environment in settings or try again later</string>
   <string name="exception_lldb_python_missing">LLDB Python binding missing</string>
@@ -2210,24 +1793,11 @@ kept=%3$d bytes
   <string name="exception_timeout_suggestion">Please check network connection or try again later</string>
   <string name="exception_process_failed">Process execution failed: %1$s</string>
 
-  <string name="toast_code_sent">Verification code sent</string>
-  <string name="label_verification_code">Verification Code</string>
-  <string name="hint_verification_code">6-digit code</string>
-  <string name="btn_get_code">Get Code</string>
-  <string name="btn_get_code_countdown">%1$ds</string>
-  <string name="hint_password_register">8+ characters, letters and numbers</string>
-  <string name="label_confirm_password">Confirm Password</string>
-  <string name="hint_confirm_password">Enter password again</string>
-  <string name="privacy_user_agreement">User Agreement</string>
-  <string name="privacy_and"> and </string>
-  <string name="privacy_policy">Privacy Policy</string>
-  <string name="disclaimer_as_is">as-is</string>
 
   <!-- Command Executor -->
   <string name="error_no_directory_selected">Cannot create: No directory selected</string>
 
   <!-- Git Panel -->
-  <string name="hint_commit_message">Enter commit message...</string>
 
   <!-- Editor Status Bar -->
   <string name="status_scanning">Scanning</string>
@@ -2252,16 +1822,6 @@ kept=%3$d bytes
 
   <!-- PRoot Bootstrap Messages -->
   <string name="proot_restarting">Configuration updated, restarting installation</string>
-  <string name="proot_toolchain_repair_start">Incomplete toolchain detected, repairing</string>
-  <string name="proot_toolchain_repair_complete">========== Linux Toolchain Repair Complete ==========</string>
-  <string name="proot_install_start">Preparing to install Linux environment</string>
-  <string name="proot_runtime_ready">PRoot runtime ready</string>
-  <string name="proot_prepare_install_dir">Preparing installation directory</string>
-  <string name="proot_verifying_install">Verifying installation...</string>
-  <string name="proot_verify_missing_dirs">Missing required directories: %1$s</string>
-  <string name="proot_verify_missing_files">Missing required files: %1$s</string>
-  <string name="proot_verify_ca_cert_missing">ca-certificates.crt is missing or empty</string>
-  <string name="proot_verify_ok">All required files and directories are present</string>
 
   <!-- Run Configuration Dialog -->
   <string name="run_config_title">Run Configuration</string>
@@ -2436,22 +1996,6 @@ kept=%3$d bytes
 
   <!-- Ubuntu Toolchain Installer -->
   <string name="toolchain_error_proot_not_installed">PRoot environment not installed, please call initialize() first</string>
-  <string name="toolchain_detected_installed">Detected toolchain package installed (%1$s), verifying...</string>
-  <string name="toolchain_preparing">Preparing to install toolchain...</string>
-  <string name="toolchain_error_update_index">Failed to update package index: %1$s</string>
-  <string name="toolchain_checking_versions">Checking available Ubuntu versioned packages (will auto-downgrade on failure)...</string>
-  <string name="toolchain_no_supported_version">Current software source does not support available clang/llvm versioned packages, tried: %1$s</string>
-  <string name="toolchain_error_no_plan">No available installation plan found</string>
-  <string name="toolchain_selected_plan">Selected installation plan: %1$s</string>
-  <string name="toolchain_error_download_network">Failed to download packages (network error): %1$s</string>
-  <string name="toolchain_installing">Installing compiler toolchain...</string>
-  <string name="toolchain_installed_package">Installed: %1$s</string>
-  <string name="toolchain_error_install_failed">Failed to install toolchain: %1$s</string>
-  <string name="toolchain_verifying">Verifying installation...</string>
-  <string name="toolchain_configuring_symlinks">Configuring symlinks...</string>
-  <string name="toolchain_install_complete">Installation complete</string>
-  <string name="toolchain_error_verify_failed">Unable to verify clang version after toolchain installation</string>
-  <string name="toolchain_error_exception">Error during installation: %1$s</string>
 
   <!-- Terminal Shell Resolver -->
   <string name="shell_not_found_proot">No available Shell found in PRoot environment</string>
@@ -2474,46 +2018,8 @@ kept=%3$d bytes
   <string name="zsh_error_exception">Installation error: %1$s</string>
 
   <!-- Ubuntu Debugger Installer -->
-  <string name="debugger_error_proot_not_installed">PRoot environment not installed, please call initialize() first</string>
-  <string name="debugger_already_installed">LLDB already installed (%1$s), verifying...</string>
-  <string name="debugger_ready">LLDB is ready</string>
-  <string name="debugger_preparing">Preparing to install LLDB...</string>
-  <string name="debugger_error_update_index">Failed to update package index: %1$s</string>
-  <string name="debugger_checking_versions">Checking available LLDB versioned packages (will auto-downgrade on failure)...</string>
-  <string name="debugger_error_no_supported_version">Current software source does not support available LLDB versioned packages, tried: %1$s</string>
-  <string name="debugger_error_no_plan">No available installation plan found</string>
-  <string name="debugger_selected_plan">Selected installation plan: %1$s</string>
-  <string name="debugger_downloading">Downloading: %1$s</string>
-  <string name="debugger_error_download_network">Failed to download LLDB (network error): %1$s</string>
-  <string name="debugger_installing">Installing LLDB debugger...</string>
-  <string name="debugger_configuring">Configuring: %1$s</string>
-  <string name="debugger_unpacking">Unpacking: %1$s</string>
-  <string name="debugger_error_install_failed">Failed to install LLDB: %1$s</string>
-  <string name="debugger_verifying">Verifying installation...</string>
-  <string name="debugger_error_verify_failed">LLDB post-installation verification failed (Python bindings may be missing)</string>
-  <string name="debugger_install_complete">LLDB installation complete</string>
-  <string name="debugger_error_exception">Installation error: %1$s</string>
-  <string name="debugger_not_available_installing">LLDB not available, installing...</string>
 
   <!-- Git SSH Manager -->
-  <string name="git_ssh_error_agent_start_failed">Failed to start ssh-agent</string>
-  <string name="git_ssh_error_parse_agent_output">Unable to parse ssh-agent output (SSH_AUTH_SOCK/SSH_AGENT_PID)</string>
-  <string name="git_ssh_error_agent_not_started">ssh-agent not started</string>
-  <string name="git_ssh_error_agent_not_running">ssh-agent not running (please start it first)</string>
-  <string name="git_ssh_error_key_not_found">SSH key file not found: %1$s</string>
-  <string name="git_ssh_error_passphrase_incorrect">Incorrect passphrase</string>
-  <string name="git_ssh_error_ssh_add_failed">ssh-add failed</string>
-  <string name="git_ssh_error_host_empty">Host cannot be empty</string>
-  <string name="git_ssh_error_keygen_failed">ssh-keygen execution failed</string>
-  <string name="git_ssh_error_not_private_key">Does not appear to be SSH private key content (missing PRIVATE KEY header)</string>
-  <string name="git_ssh_error_write_key_failed">Failed to write private key</string>
-  <string name="git_ssh_error_proot_not_installed">PRoot environment not installed: Please install/initialize the Linux distro environment in Settings → Compiler</string>
-  <string name="git_ssh_error_openssh_install_failed">Failed to install openssh-client: %1$s</string>
-  <string name="git_ssh_error_key_name_empty">Key name cannot be empty</string>
-  <string name="git_ssh_error_key_name_invalid">Key name can only contain letters/numbers/._- (and cannot contain paths)</string>
-  <string name="git_ssh_error_parse_url_failed">Unable to parse SSH URL: %1$s</string>
-  <string name="git_ssh_error_key_not_found_for_host">SSH key not found: %1$s (Please generate/import in Settings → Git SSH and set as default or bind to %2$s)</string>
-  <string name="git_ssh_error_passphrase_required">This SSH private key requires a passphrase: %1$s</string>
 
   <!-- Locale Installer -->
   <string name="locale_error_proot_not_installed">PRoot environment not installed</string>
@@ -2627,24 +2133,6 @@ kept=%3$d bytes
   <string name="editor_encoding_binary">Binary</string>
 
   <!-- Ubuntu Mirror Sources -->
-  <string name="mirror_aliyun_name">Aliyun</string>
-  <string name="mirror_aliyun_desc">Aliyun mirror, recommended for China</string>
-  <string name="mirror_tsinghua_name">Tsinghua University</string>
-  <string name="mirror_tsinghua_desc">Tsinghua University open source mirror</string>
-  <string name="mirror_ustc_name">USTC</string>
-  <string name="mirror_ustc_desc">University of Science and Technology of China mirror</string>
-  <string name="mirror_huawei_name">Huawei Cloud</string>
-  <string name="mirror_huawei_desc">Huawei Cloud mirror</string>
-  <string name="mirror_tencent_name">Tencent Cloud</string>
-  <string name="mirror_tencent_desc">Tencent Cloud mirror</string>
-  <string name="mirror_netease_name">NetEase</string>
-  <string name="mirror_netease_desc">NetEase mirror</string>
-  <string name="mirror_sjtu_name">SJTU</string>
-  <string name="mirror_sjtu_desc">Shanghai Jiao Tong University mirror</string>
-  <string name="mirror_official_name">Official</string>
-  <string name="mirror_official_desc">Ubuntu official source (not recommended, prone to DNS hijacking)</string>
-  <string name="mirror_error_write_failed">Failed to write sources.list/apt configuration</string>
-  <string name="mirror_error_all_unavailable">All mirror sources are unavailable</string>
 
   <!-- Terminal Preferences -->
   <string name="terminal_locale_c_utf8">English (C.UTF-8)</string>
@@ -2670,40 +2158,19 @@ kept=%3$d bytes
   <string name="error_request_failed_with_code">Request failed (%1$d)</string>
 
   <!-- Header Navigation -->
-  <string name="header_nav_jump_to_header">Jump to header file</string>
-  <string name="header_nav_not_found">Header file not found: %1$s</string>
 
   <!-- Terminal Session -->
   <string name="terminal_session_start_failed">Failed to start terminal: %1$s</string>
 
   <!-- Open Source Licenses -->
-  <string name="licenses_error_missing_field">Missing field: libraries</string>
 
   <!-- LSP Editor -->
   <string name="lsp_error_connection_failed">Connection failed</string>
   <string name="lsp_error_editor_not_found">LSP editor not found</string>
   <string name="lsp_error_not_connected">LSP not connected</string>
 
-  <!-- LSP Testing -->
-  <string name="clangd_test_real_lsp_requires_connection">Real LSP mode requires an active LSP connection in the editor first</string>
-  <string name="lsp_test_report_title">       TinaIDE LSP Test Report</string>
-  <string name="lsp_test_report_generated_at">Generated at: %1$s</string>
-  <string name="lsp_test_report_section_connection_status">[Connection Status]</string>
-  <string name="lsp_test_report_status_line">Status: %1$s</string>
-  <string name="lsp_test_report_server_line">Server: %1$s %2$s</string>
-  <string name="lsp_test_report_capabilities_line">Capabilities: %1$d</string>
-  <string name="lsp_test_report_section_history">[History Summary]</string>
-  <string name="lsp_test_report_section_benchmark">[Benchmarks]</string>
-  <string name="lsp_test_report_section_batch">[Test Suite Result]</string>
-  <string name="lsp_validation_invalid_json_with_message">Invalid JSON: %1$s</string>
-  <string name="lsp_validation_missing_jsonrpc">Missing jsonrpc field</string>
-  <string name="lsp_validation_jsonrpc_should_be_2_0">jsonrpc must be &quot;2.0&quot;</string>
-  <string name="lsp_validation_missing_id">Missing id field</string>
-  <string name="lsp_validation_missing_method">Missing method field</string>
-  <string name="lsp_validation_method_mismatch">Method mismatch</string>
 
   <!-- Project List -->
-  <string name="project_type_local">Local</string>
   <string name="ai_auto_retrying">Auto retrying... (%1$d/%2$d)</string>
   <string name="ai_retry_error_title">Retry Error</string>
 
@@ -2719,12 +2186,10 @@ kept=%3$d bytes
   <string name="git_error_pull_failed">Pull failed</string>
   <string name="git_error_push_failed">Push failed</string>
   <string name="git_error_clone_failed">Clone failed</string>
-  <string name="git_error_clone_timeout">Clone timed out. The repo may be large or the network is slow. Please try again later.</string>
   <string name="git_error_get_conflict_files_failed">Failed to list conflict files</string>
   <string name="git_error_get_conflict_status_failed">Failed to detect conflict status</string>
   <string name="git_error_merge_conflicts_need_resolution">Merge conflicts detected. Please resolve the following files:</string>
   <string name="git_error_rebase_continue_failed">Failed to continue rebase</string>
-  <string name="git_error_merge_continue_failed">Failed to finish merge</string>
   <string name="git_error_no_in_progress_merge_or_rebase">No merge/rebase in progress</string>
   <string name="git_error_continue_operation_failed">Failed to continue operation</string>
   <string name="git_error_rebase_skip_failed">Failed to skip rebase</string>
@@ -2733,16 +2198,7 @@ kept=%3$d bytes
   <string name="git_error_file_path_empty">File path is empty</string>
   <string name="git_error_checkout_ours_failed">Failed to accept ours</string>
   <string name="git_error_checkout_theirs_failed">Failed to accept theirs</string>
-
-  <string name="git_remote_error_auth_failed">Authentication failed. Please check username/token.\n\n%1$s</string>
-  <string name="git_remote_error_permission_denied">Permission denied. Please check repo permissions or SSH/token config.\n\n%1$s</string>
-  <string name="git_remote_error_network_failed">Network error. Please check network/proxy settings.\n\n%1$s</string>
-  <string name="git_remote_error_non_fast_forward">Push rejected (non-fast-forward). Please pull first or confirm force push.\n\n%1$s</string>
-  <string name="git_remote_error_conflict">Merge conflict. Please resolve conflicts and try again.\n\n%1$s</string>
-  <string name="git_remote_error_repo_not_found">Repository not found or no access.\n\n%1$s</string>
-  <string name="git_remote_error_https_credentials_needed">HTTPS credentials required. Please configure token/password and retry.\n\n%1$s</string>
-
-  <string name="build_var_desc_project_dir">Absolute path of project root</string>
+<string name="build_var_desc_project_dir">Absolute path of project root</string>
   <string name="build_var_desc_project_name">Project name</string>
   <string name="build_var_desc_current_file">Absolute path of current file</string>
   <string name="build_var_desc_current_file_name">Current file name (with extension)</string>
@@ -2775,9 +2231,6 @@ kept=%3$d bytes
   <string name="project_autosave_interval_seconds">%1$d seconds</string>
 
   <!-- Toolchain Config -->
-  <string name="debugger_llvm_desc">LLVM debugger, works best with Clang</string>
-  <string name="debugger_gdb_desc">GNU debugger, classic and stable</string>
-  <string name="storage_available_gb">/ %.1f GB available</string>
 
   <!-- Install Components -->
   <string name="error_keyword_abi_mismatch">ABI mismatch</string>
@@ -2793,15 +2246,10 @@ kept=%3$d bytes
   <string name="build_log_level_warning">Warning</string>
   <string name="build_log_level_info">Info</string>
   <string name="build_log_level_progress">Progress</string>
-  <string name="build_log_project_metadata_migrated">project.json migrated automatically: schema %1$d -> %2$d</string>
-  <string name="build_log_run_config_migrated">run_configs.json migrated automatically: schema %1$d -> %2$d, normalized %3$d config(s)</string>
-  <string name="build_log_run_config_invalid_filtered">run_configs.json filtered invalid entries: %1$d</string>
-  <string name="build_log_run_config_selected_reset">run_configs.json selected config was invalid and has been reset to the first entry</string>
 
   <!-- Debug Toolbar Position -->
   <string name="debug_toolbar_top">Top</string>
   <string name="debug_toolbar_bottom">Bottom</string>
-  <string name="debug_toolbar_floating">Floating</string>
   <string name="debug_toolbar_both">Top and Bottom</string>
 
   <!-- AUTO-GENERATED: synced missing keys from base values -->
@@ -2816,17 +2264,7 @@ kept=%3$d bytes
   <string name="action_new_folder">New Folder</string>
   <string name="action_stage_all">Stage All</string>
   <string name="action_unstage_all">Unstage All</string>
-  <string name="agree_by_clicking_prefix">By clicking Start, you agree to </string>
   <string name="and_word">and</string>
-  <string name="available_space">Available Storage</string>
-  <string name="badge_recommended_choice">Recommended</string>
-  <string name="batch_test_duration">Total time: %1$dms</string>
-  <string name="batch_test_failed">Failed: %1$d</string>
-  <string name="batch_test_passed">Passed: %1$d</string>
-  <string name="batch_test_report_footer">================================</string>
-  <string name="batch_test_report_header">========== Batch Test Report ==========</string>
-  <string name="batch_test_skipped">Skipped: %1$d</string>
-  <string name="batch_test_total">Total tests: %1$d</string>
   <string name="bookmark_clear_all">Clear All</string>
   <string name="bookmark_clear_all_confirm">Clear all bookmarks for the current project?</string>
   <string name="bookmark_clear_all_title">Clear Bookmarks</string>
@@ -2844,11 +2282,7 @@ kept=%3$d bytes
   <string name="bottom_panel_outline">Outline</string>
   <string name="bottom_panel_git">Git</string>
   <string name="bottom_panel_symbols">Symbols</string>
-  <string name="bottom_panel_terminal">Terminal</string>
-  <string name="btn_back_to_presets">Back to Presets</string>
-  <string name="btn_cancel_default">Cancel</string>
   <string name="btn_confirm_cancel_install">Confirm Cancel</string>
-  <string name="btn_confirm_default">Confirm</string>
   <string name="btn_continue_install">Continue Installation</string>
   <string name="btn_discard_and_exit">Discard and Exit</string>
   <string name="btn_dont_save">Don\'t Save</string>
@@ -2856,116 +2290,25 @@ kept=%3$d bytes
   <string name="btn_save_all_and_exit">Save All and Exit</string>
   <string name="btn_save_and_close">Save and Close</string>
   <string name="btn_save_and_test">Save and Test</string>
-  <string name="btn_start_install">Start Installation</string>
-  <string name="btn_start_shell">Start Shell</string>
   <string name="build_log_empty">No build logs</string>
   <string name="build_log_clipboard_label">Build log</string>
   <string name="run_output_empty">No run output</string>
   <string name="run_output_clipboard_label">Run output</string>
-  <string name="clangd_test_batch_duration">Total time</string>
-  <string name="clangd_test_batch_failed">Failed</string>
-  <string name="clangd_test_batch_passed">Passed</string>
-  <string name="clangd_test_batch_progress">Progress: %1$d/%2$d</string>
-  <string name="clangd_test_batch_results">Batch results</string>
-  <string name="clangd_test_batch_run">Run test suite</string>
-  <string name="clangd_test_batch_running">Running batch test...</string>
-  <string name="clangd_test_batch_select_suite">Select test suite</string>
-  <string name="clangd_test_batch_title">Batch test suites</string>
-  <string name="clangd_test_batch_total">Total tests</string>
-  <string name="clangd_test_benchmark_avg">Average</string>
-  <string name="clangd_test_benchmark_iterations">Iterations</string>
-  <string name="clangd_test_benchmark_max">Max</string>
-  <string name="clangd_test_benchmark_min">Min</string>
-  <string name="clangd_test_benchmark_p95">P95</string>
-  <string name="clangd_test_benchmark_results">Benchmark results</string>
-  <string name="clangd_test_benchmark_run">Run benchmark</string>
-  <string name="clangd_test_benchmark_running">Running benchmark...</string>
-  <string name="clangd_test_benchmark_success_rate">Success rate</string>
-  <string name="clangd_test_benchmark_title">Performance benchmark</string>
-  <string name="clangd_test_category_basic">Basic</string>
-  <string name="clangd_test_category_benchmark">Benchmark</string>
-  <string name="clangd_test_category_document_sync">Document sync</string>
-  <string name="clangd_test_category_navigation">Navigation</string>
-  <string name="clangd_test_category_semantic">Semantic</string>
-  <string name="clangd_test_clear_history">Clear history</string>
-  <string name="clangd_test_column">Column</string>
-  <string name="clangd_test_connection_status">Connection status</string>
-  <string name="clangd_test_diagnostics">Diagnostics</string>
-  <string name="clangd_test_file_uri">File URI</string>
-  <string name="clangd_test_history">History</string>
-  <string name="clangd_test_line">Line</string>
-  <string name="clangd_test_no_diagnostics">No diagnostics</string>
-  <string name="clangd_test_no_history">No history</string>
-  <string name="clangd_test_not_connected">LSP not connected</string>
-  <string name="clangd_test_validation_passed">JSON validation passed</string>
-  <string name="clangd_test_validation_failed">JSON validation failed: %1$s</string>
-  <string name="clangd_test_params">Parameters</string>
-  <string name="clangd_test_report_export">Export report</string>
-  <string name="clangd_test_report_export_json">Export JSON</string>
-  <string name="clangd_test_report_export_text">Export text</string>
-  <string name="clangd_test_report_exported">Report exported: %1$s</string>
-  <string name="clangd_test_report_title">Report</string>
-  <string name="clangd_test_request">Request</string>
-  <string name="clangd_test_response">Response</string>
-  <string name="clangd_test_scenario">Scenario</string>
-  <string name="clangd_test_scenario_completion">Completion test</string>
-  <string name="clangd_test_scenario_custom">Custom message</string>
-  <string name="clangd_test_scenario_definition">Go-to-definition test</string>
-  <string name="clangd_test_scenario_hover">Hover test</string>
-  <string name="clangd_test_scenario_init">Initialize test</string>
-  <string name="clangd_test_send_request">Send request</string>
-  <string name="clangd_test_server_info">Server info</string>
-  <string name="clangd_test_status_error">Error</string>
-  <string name="clangd_test_status_idle">Ready</string>
-  <string name="clangd_test_status_sending">Sending...</string>
-  <string name="clangd_test_status_success">Success</string>
-  <string name="clangd_test_suite_basic">Basic suite</string>
-  <string name="clangd_test_suite_document_sync">Document sync suite</string>
-  <string name="clangd_test_suite_full">Full suite</string>
-  <string name="clangd_test_suite_navigation">Navigation suite</string>
-  <string name="clangd_test_suite_performance">Benchmark suite</string>
-  <string name="clangd_test_suite_semantic">Semantic suite</string>
-  <string name="clangd_test_tab_batch">Batch</string>
-  <string name="clangd_test_tab_benchmark">Benchmark</string>
-  <string name="clangd_test_tab_report">Report</string>
-  <string name="clangd_test_title">Clangd LSP Test</string>
-  <string name="clangd_test_trigger_char">Trigger character</string>
   <string name="code_actions_empty">No available code actions</string>
   <string name="code_actions_title">Code actions</string>
-  <string name="compile_build_failed">Build failed:\n%1$s</string>
-  <string name="compile_build_output_dir">Build output directory: %1$s</string>
-  <string name="compile_build_success">Build succeeded: %1$s</string>
-  <string name="compile_build_success_no_output">Build succeeded</string>
-  <string name="compile_build_output_resolved">Build artifact: %1$s</string>
-  <string name="compile_build_artifact_kind">Build artifact type: %1$s</string>
-  <string name="compile_artifact_exported">Exported build artifact to project directory: %1$s</string>
-  <string name="compile_artifact_export_failed">Failed to export build artifact: %1$s</string>
   <string name="compile_artifact_kind_executable">executable</string>
   <string name="compile_artifact_kind_shared_library">shared library</string>
   <string name="compile_artifact_kind_static_library">static library</string>
   <string name="compile_artifact_kind_plugin_package">plugin package</string>
   <string name="compile_artifact_kind_unknown">unknown artifact</string>
   <string name="compile_build_system">Build system: %1$s</string>
-  <string name="compile_building">Building...</string>
-  <string name="compile_check_compiler">Checking compiler: %1$s...</string>
-  <string name="compile_check_debugger">Checking debugger (LLDB)...</string>
-  <string name="compile_check_proot">Checking PRoot environment...</string>
-  <string name="compile_clang_output">clang output: %1$s</string>
-  <string name="compile_clang_probe">clang probe: exit=%1$d, timedOut=%2$s</string>
-  <string name="compile_clang_unavailable_installing">Clang is unavailable. Trying to auto-install the LLVM toolchain...</string>
-  <string name="compile_compiler_type">Compiler type: %1$s</string>
-  <string name="compile_compiler_version">Compiler version: %1$s</string>
-  <string name="compile_compiler_version_unknown">Unknown</string>
   <string name="compile_complete">=== Build complete ===</string>
-  <string name="compile_result_build_complete_with_artifact_kind">Build complete (%1$s)</string>
-  <!-- New pipeline fine-grained stage copy (aligned with BuildEvent.Planning / Build.Skipped / AutoFallback) -->
+<!-- New pipeline fine-grained stage copy (aligned with BuildEvent.Planning / Build.Skipped / AutoFallback) -->
   <string name="compile_checking_artifact">Checking build state…</string>
   <string name="compile_reusing_artifact">Cache hit, launching…</string>
   <string name="compile_rebuilding">Sources changed, rebuilding…</string>
   <string name="compile_rebuild_reason">Why rebuild: %1$s</string>
   <string name="compile_autofallback_triggered">Cached artifact failed to launch (%1$s), rebuilding…</string>
-  <string name="compile_autofallback_success">Successfully ran after rebuild</string>
-  <string name="compile_autofallback_failed">Rebuild did not resolve the issue; please check sources/environment</string>
   <string name="compile_current_file">Current file: %1$s</string>
   <string name="compile_debug_ready">=== Debug ready ===</string>
   <string name="compile_plugin_project_actions_unavailable">Plugin project runner is unavailable.</string>
@@ -2984,87 +2327,37 @@ kept=%3$d bytes
   <string name="compile_plugin_project_diagnostic_warning">Warning: %1$s</string>
   <string name="compile_plugin_project_diagnostic_info">Info: %1$s</string>
   <string name="compile_plugin_project_diagnostic_fix">Fix: %1$s</string>
-  <string name="compile_diagnostic_probe_exception">Diagnostic probe exception: %1$s</string>
-  <string name="compile_error_cannot_read_dir">Cannot read project directory. Please check storage permissions.</string>
+<string name="compile_error_cannot_read_dir">Cannot read project directory. Please check storage permissions.</string>
   <string name="compile_error_clang_unavailable">Clang is unavailable and auto-installation failed. Please check your network connection and retry, or install the LLVM toolchain manually in Settings.</string>
-  <string name="compile_error_custom_compiler_incomplete">Custom compiler selected, but the C/C++ compiler paths are incomplete.</string>
-  <string name="compile_error_custom_compiler_unavailable">Custom compiler is unavailable:\nC: %1$s\nC++: %2$s\nPlease make sure the paths exist and are executable in the PRoot environment.</string>
+<string name="compile_error_custom_compiler_unavailable">Custom compiler is unavailable:\nC: %1$s\nC++: %2$s\nPlease make sure the paths exist and are executable in the PRoot environment.</string>
   <string name="compile_error_empty_dir">Project directory is empty. Please add source files (.c, .cpp, etc.).</string>
-  <string name="compile_error_exception">Compilation exception: %1$s</string>
-  <string name="compile_error_gcc_unavailable">GCC is not installed or unavailable. Please install the GCC (gcc/g++) toolchain in Settings and retry.</string>
-  <string name="compile_error_lldb_unavailable">LLDB is not installed and auto-installation failed. Please redeploy the dev environment in Settings or retry later.</string>
-  <string name="compile_error_no_executable">No executable file found</string>
+<string name="compile_error_gcc_unavailable">GCC is not installed or unavailable. Please install the GCC (gcc/g++) toolchain in Settings and retry.</string>
   <string name="compile_error_no_project">No project found</string>
   <string name="compile_error_no_source_files">No supported source files detected. Directory contents: %1$s\nSupported file types: .c, .cc, .cpp, .cxx, CMakeLists.txt</string>
-  <string name="compile_error_proot_installing">PRoot environment is initializing. Please retry later (it auto-installs on first launch/update).</string>
-  <string name="compile_error_proot_needs_update">PRoot environment needs an update. Restart the app and wait for the background update to finish, then compile again.</string>
-  <string name="compile_error_proot_not_installed">PRoot environment is not installed. Open the app and wait for the first-launch auto-install to complete, then compile again.</string>
-  <string name="compile_error_unsupported_build_system">Unsupported build system: %1$s</string>
+<string name="compile_error_unsupported_build_system">Unsupported build system: %1$s</string>
   <string name="compile_file">Compiling file: %1$s</string>
-  <string name="compile_single_file_no_config">No configuration needed for single-file projects</string>
-  <string name="compile_single_file_no_source_files">No C/C++ source file found</string>
   <string name="compile_single_file_source_not_exist">Source file does not exist: %1$s</string>
   <string name="compile_single_file_invalid_source">Not a valid C/C++ source file: %1$s</string>
   <string name="compile_single_file_compiling">Compiling: %1$s</string>
   <string name="compile_single_file_compile_success">Compile succeeded: %1$s</string>
-  <string name="compile_single_file_clean_failed">Clean failed</string>
-
-  <!-- Make build -->
-  <string name="make_no_configure_needed">No configuration step needed for Makefile projects</string>
+<!-- Make build -->
   <string name="make_building">Running make...</string>
   <string name="make_build_success">Make build succeeded</string>
   <string name="make_clean_failed">make clean failed</string>
 
   <string name="compile_get_current_file_failed">Failed to get current editor file: %1$s</string>
-  <string name="compile_lldb_unavailable_installing">LLDB is unavailable (not installed or missing Python bindings). Trying to install/repair...</string>
-  <string name="compile_path">Path: %1$s</string>
+<string name="compile_path">Path: %1$s</string>
   <string name="compile_project">Project: %1$s</string>
-  <string name="compile_project_path">Project path: %1$s</string>
-  <string name="compile_proot_installing">PRoot environment is initializing. Please retry later.</string>
-  <string name="compile_proot_needs_update">PRoot environment needs an update. Please restart the app and wait for the background update to finish.</string>
-  <string name="compile_proot_not_installed">PRoot environment is not installed. Open the app and wait for auto-installation to complete.</string>
-  <string name="compile_proot_shell_output">PRoot shell output: %1$s</string>
-  <string name="compile_proot_shell_probe">PRoot shell probe: exit=%1$d, timedOut=%2$s</string>
-  <string name="compile_pty_no_output_warning">PTY produced no output bytes (exitCode=%1$d, command=%2$s)</string>
-  <string name="compile_result_build_complete">Build complete</string>
+<string name="compile_result_build_complete">Build complete</string>
   <string name="compile_result_debug_ready">Compilation complete. Ready to debug.</string>
   <string name="compile_result_terminal_ready">Compilation complete. Ready to run in terminal.</string>
-  <string name="compile_run_args">Arguments: %1$s</string>
-  <string name="compile_run_error_exit">Program exited abnormally, exit code: %1$d</string>
-  <string name="compile_run_exit_code">\n[Program exited, code: %1$d]\n</string>
-  <string name="compile_run_press_enter_to_close">\n[Program exited, code: %1$d]\nPress Enter to close this screen...</string>
-  <string name="compile_run_guest_executable">Guest executable: %1$s</string>
-  <string name="compile_run_guest_working_dir">Guest working directory: %1$s</string>
-  <string name="compile_run_host_executable">Host executable: %1$s</string>
-  <string name="compile_run_host_working_dir">Host working directory: %1$s</string>
-  <string name="compile_run_normal_exit">\n[Program exited normally]\n</string>
-  <string name="compile_run_result_terminated">Program terminated</string>
-  <string name="compile_run_start">=== Running program ===</string>
-  <string name="compile_run_success">Run succeeded</string>
-  <string name="compile_run_terminated">\n[Program terminated]\n</string>
-  <string name="compile_run_working_dir">Working directory: %1$s</string>
+<string name="compile_run_press_enter_to_close">\n[Program exited, code: %1$d]\nPress Enter to close this screen...</string>
   <string name="compile_source_file_mode">Source file mode: %1$s</string>
   <string name="compile_start">=== Compilation started ===</string>
-  <string name="compile_terminal_no_executable">echo \'No executable file found\'</string>
-  <string name="compile_sdl_error_no_output">SDL graphical runtime could not find a runnable shared library output (.so). Please check your target type and build settings.</string>
-  <string name="compile_sdl_error_invalid_output">SDL graphical runtime requires a .so output, current artifact: %1$s</string>
-  <string name="compile_sdl_ready">=== SDL graphical runtime ready: %1$s ===</string>
   <string name="compile_terminal_ready">=== Terminal run ready ===</string>
-  <string name="compile_toolchain_install_failed">Toolchain auto-install failed</string>
-  <string name="compile_toolchain_install_hint">Hint: please check your network connection, or install the toolchain manually in Settings</string>
-  <string name="compile_toolchain_install_success">Toolchain installed successfully</string>
-  <string name="compile_warning_no_file_open">Warning: no file open, using auto-detect mode</string>
-  <string name="compile_warning_no_output">Warning: no build output found</string>
-  <string name="compile_warning_no_runnable_output">Warning: no runnable build output found</string>
+<string name="compile_warning_no_file_open">Warning: no file open, using auto-detect mode</string>
   <string name="compile_warning_not_source_file">Warning: current file is not a C/C++ source file, using auto-detect mode</string>
   <string name="compile_warning_specified_file_invalid">Warning: specified source file is invalid, using auto-detect mode</string>
-  <string name="compiler_selection">Compiler</string>
-  <string name="compiler_selection_desc">Select at least one compiler</string>
-  <string name="connection_status_connected">Connected</string>
-  <string name="connection_status_connecting">Connecting</string>
-  <string name="connection_status_disconnected">Disconnected</string>
-  <string name="connection_status_error">Connection error</string>
-  <string name="connection_status_reconnecting">Reconnecting</string>
   <string name="contact_support">Contact Support</string>
   <string name="content_desc_add_file">Add file</string>
   <string name="content_desc_close_panel">Close bottom panel</string>
@@ -3072,8 +2365,6 @@ kept=%3$d bytes
   <string name="content_desc_discard_changes">Discard changes</string>
   <string name="content_desc_emoji">Emoji</string>
   <string name="content_desc_expand_fullscreen">Expand to fullscreen</string>
-  <string name="content_desc_find">Find</string>
-  <string name="content_desc_goto_line">Go to line</string>
   <string name="content_desc_history">History</string>
 
   <!-- Gitmoji Picker -->
@@ -3116,9 +2407,7 @@ kept=%3$d bytes
   <string name="content_desc_previous">Previous</string>
   <string name="content_desc_redo">Redo</string>
   <string name="content_desc_restore_panel">Restore panel height</string>
-    <string name="content_desc_send">Send</string>
     <string name="content_desc_stage">Stage</string>
-    <string name="content_desc_stage_all">Stage all</string>
     <string name="content_desc_start">Start</string>
     <string name="content_desc_step_into">Step into</string>
     <string name="content_desc_step_out">Step out</string>
@@ -3152,11 +2441,6 @@ kept=%3$d bytes
   <string name="crash_no_info">No crash information</string>
   <string name="crash_title">The app crashed</string>
   <string name="crash_title_user_native">The user program crashed</string>
-  <string name="custom_config_title">Custom Toolchain Components</string>
-  <string name="custom_expert_mode">Custom Expert Mode</string>
-  <string name="custom_expert_mode_desc">Manually set compiler paths and flags</string>
-  <string name="custom_install">Custom Install</string>
-  <string name="custom_install_desc">Choose compiler, linker, and debugger</string>
   <string name="debug_console_copied">Console output copied</string>
   <string name="debug_empty_breakpoints">No breakpoints. Tap a line number to add one.</string>
   <string name="debug_empty_call_stack">No call stack (hit a breakpoint or tap Pause to view).</string>
@@ -3170,25 +2454,11 @@ kept=%3$d bytes
   <string name="debug_variable_name">Name</string>
   <string name="debug_variable_type">Type</string>
   <string name="debug_variable_value">Value</string>
-  <string name="debugger_selection">Debugger (optional)</string>
-  <string name="debugger_selection_desc">You can install the debugger later when needed</string>
   <string name="dev_options_backend">Backend Services</string>
-  <string name="dev_options_clangd_test">Clangd LSP Test</string>
-  <string name="dev_options_clangd_test_desc">Test LSP protocol and messages</string>
-  <string name="dev_options_theme_preview_test">Theme Preview Test</string>
-  <string name="dev_options_theme_preview_test_desc">Compare different theme colors</string>
-  <string name="dev_options_tree_sitter_test">Tree-sitter Syntax Test</string>
-  <string name="dev_options_tree_sitter_test_desc">Test syntax highlighting and performance</string>
   <string name="dev_options_editor_lsp_enabled">Editor LSP master switch</string>
   <string name="dev_options_editor_lsp_enabled_desc">When off, no editor LSP session is attached, so you can inspect Tree-sitter highlighting only</string>
   <string name="dev_options_builtin_cmake_lsp_enabled">Built-in CMake LSP</string>
   <string name="dev_options_builtin_cmake_lsp_enabled_desc">When off, built-in CMake semantic completion and highlighting are disabled for Tree-sitter-only verification</string>
-  <string name="tree_sitter_test_preview_hint">The editor below is the highlighting preview. Selecting a language loads its sample file, and Reanalyze rebuilds the file and refreshes highlighting.</string>
-  <string name="tree_sitter_test_lsp_hint">Use this page to isolate Tree-sitter highlighting. Turn off the editor LSP master switch to keep Tree-sitter as the only highlighter.</string>
-  <string name="tree_sitter_test_cmake_hint">If you only want to verify the impact of the built-in CMake LSP, keep the master switch on and disable only the built-in CMake LSP.</string>
-  <string name="tree_sitter_test_recommended_files">Recommended files: CMakeLists.txt, *.cmake, and CMake scripts containing variables, targets, functions, and macros.</string>
-  <string name="dev_options_editor_scroll_test">Editor Scroll Test</string>
-  <string name="dev_options_editor_scroll_test_desc">Test different scroll configurations</string>
   <string name="dev_options_diagnostics">Diagnostic logs</string>
   <string name="dev_options_diagnostics_enabled">Enable diagnostic logs</string>
   <string name="dev_options_diagnostics_enabled_desc">Master switch: when off, no extra diagnostic logs are emitted (reduces performance overhead/log volume)</string>
@@ -3200,125 +2470,7 @@ kept=%3$d bytes
   <string name="dev_options_editor_touch_diagnostics_desc">Record editor touch/scroll sequences (including MOVE_NO_SCROLL/UP velocity/offset) to diagnose &quot;scroll stuck/no inertia&quot;</string>
   <string name="dev_options_gesture_trace">Gesture trace</string>
   <string name="dev_options_gesture_trace_desc">Record gesture consumption in Compose (Drawer/bottom panel, etc.) to trace ACTION_CANCEL source</string>
-  <string name="dev_options_plugin_db_test">Plugin database test</string>
-  <string name="dev_options_plugin_db_test_desc">Test plugin SQLite database API</string>
-    <string name="dev_options_compiler_diagnostics_test">Compiler diagnostics test</string>
-    <string name="dev_options_compiler_diagnostics_test_desc">Step-by-step test of compilation stages to quickly locate compile/link issues</string>
-    <string name="compiler_diagnostics_test_back_content_description">Back</string>
-    <string name="compiler_diagnostics_test_heading">Compilation pipeline diagnostics</string>
-    <string name="dev_options_compiler_diagnostics_toolchain_variant_title">Toolchain variant</string>
-    <string name="compiler_diagnostics_toolchain_variant_patched">Current patched toolchain</string>
-    <string name="compiler_diagnostics_toolchain_variant_patched_desc">Uses the stable baseline package with LLVM/CMake Android exec patches and does not add tina-exec.</string>
-    <string name="compiler_diagnostics_test_output_title">Test output</string>
-    <string name="compiler_diagnostics_test_output_placeholder">Tap a button above to start a test...</string>
-    <string name="compiler_diagnostics_test_report_failure_prefix">❌ Test failed:</string>
-    <string name="compiler_diagnostics_test_report_working_directory">Working directory</string>
-    <string name="compiler_diagnostics_test_report_command">Command</string>
-    <string name="compiler_diagnostics_test_report_extra_environment">Extra environment variables</string>
-    <string name="compiler_diagnostics_test_report_exit_code">Exit code</string>
-    <string name="compiler_diagnostics_test_report_duration">Duration</string>
-    <string name="compiler_diagnostics_test_report_object_file">Object file</string>
-    <string name="compiler_diagnostics_test_report_dependency_file">Dependency file</string>
-    <string name="compiler_diagnostics_test_report_stdout">Standard output</string>
-    <string name="compiler_diagnostics_test_report_stderr">Standard error</string>
-    <string name="compiler_diagnostics_test_report_lookup_ld_lld_title">Test 1: Query ld.lld path</string>
-    <string name="compiler_diagnostics_test_report_lookup_lld_title">Test 2: Query lld path</string>
-    <string name="compiler_diagnostics_test_report_resolved_path_check_title">Test 3: Check ld.lld path returned by clang++</string>
-    <string name="compiler_diagnostics_test_report_output">Output</string>
-    <string name="compiler_diagnostics_test_report_error">Error</string>
-    <string name="compiler_diagnostics_test_report_path">Path</string>
-    <string name="compiler_diagnostics_test_report_exists">Exists</string>
-    <string name="compiler_diagnostics_test_report_size">Size</string>
-    <string name="compiler_diagnostics_test_report_executable">Executable</string>
-    <string name="compiler_diagnostics_test_report_resolved_linker">Resolved linker</string>
-    <string name="compiler_diagnostics_test_report_unresolved_linker">&lt;unresolved&gt;</string>
-    <string name="compiler_diagnostics_test_report_critical_binaries">Critical binaries</string>
-    <string name="compiler_diagnostics_test_report_runtime_libraries">Runtime libraries</string>
-    <string name="compiler_diagnostics_test_report_preferred_builtins">Preferred builtins</string>
-    <string name="compiler_diagnostics_test_report_preferred_unwind">Preferred libunwind</string>
-    <string name="compiler_diagnostics_test_report_installed">Installed</string>
-    <string name="compiler_diagnostics_test_report_output_file">Output file</string>
-    <string name="compiler_diagnostics_test_report_test_command">Test command</string>
-    <string name="compiler_diagnostics_test_report_forced_linker_argument">Forced linker argument</string>
-    <string name="compiler_diagnostics_test_report_missing_compile_object">❌ Error: object file missing, run "Compile only" first</string>
-    <string name="compiler_diagnostics_test_report_missing_critical_link_files">❌ Critical link files missing, skipping execution</string>
-    <string name="compiler_diagnostics_test_report_missing_direct_execution_object">❌ Missing %1$s, run "3. Compile only" first</string>
-    <string name="compiler_diagnostics_test_report_toolchain_directory">Toolchain directory</string>
-    <string name="compiler_diagnostics_test_report_bin_directory">Bin directory</string>
-    <string name="compiler_diagnostics_test_report_runtime_linux_base_directory">Clang Runtime Linux Base directory</string>
-    <string name="compiler_diagnostics_test_report_runtime_linux_arch_directory">Clang Runtime Linux Arch directory</string>
-    <string name="compiler_diagnostics_test_report_runtime_triple_directory">Clang Runtime Triple directory (api%1$d)</string>
-    <string name="compiler_diagnostics_test_report_sysroot_directory">Sysroot directory</string>
-    <string name="compiler_diagnostics_test_report_linux_base_entries_title">Linux Base directory contents:</string>
-    <string name="compiler_diagnostics_test_report_linux_arch_entries_title">Linux Arch subdirectory contents:</string>
-    <string name="compiler_diagnostics_test_report_triple_entries_title">Triple subdirectory contents:</string>
-    <string name="compiler_diagnostics_test_report_direct_execution_explanation">Note: this test forces direct exec clang++ and does not go through NativeExecutableRunner\'s linker64 wrapper.</string>
-    <string name="compiler_diagnostics_test_report_direct_execution_test_a_title">Test A: link only (direct clang++)</string>
-    <string name="compiler_diagnostics_test_report_direct_execution_test_b_title">Test B: full compile + link (direct clang++)</string>
-    <string name="compiler_diagnostics_test_report_direct_execution_comparison_suggestion">Comparison hint: compare this test\'s exit code and errors with items 4 and 5.</string>
-    <string name="compiler_diagnostics_test_report_resolution_mode_explanation">Note: this uses -### and does not actually execute linking.</string>
-    <string name="compiler_diagnostics_test_report_conclusion_suggestions">Conclusions</string>
-    <string name="compiler_diagnostics_test_report_baseline_matrix_section_title">Baseline compile-only comparison (cache dir + absolute paths)</string>
-    <string name="compiler_diagnostics_test_report_cmake_like_intro_title">CMake-like try_compile comparison (API 28 + Scratch dir + relative depfile)</string>
-    <string name="compiler_diagnostics_test_report_simulated_target_triple">Simulated target triple</string>
-    <string name="compiler_diagnostics_test_report_simulated_scratch_directory">Simulated Scratch directory</string>
-    <string name="compiler_diagnostics_test_report_simulated_object_relative_path">Simulated object relative path</string>
-    <string name="compiler_diagnostics_test_report_simulated_depfile_relative_path">Simulated depfile relative path</string>
-    <string name="compiler_diagnostics_test_report_cmake_like_matrix_section_title">CMake-like try_compile launch matrix</string>
-    <string name="compiler_diagnostics_test_report_path_alias_skipped">Path alias check: non-app-private path (skipped)</string>
-    <string name="compiler_diagnostics_test_report_path_alias_equivalent">Path alias check: /data/user/0 and /data/data are equivalent (same dev+ino)</string>
-    <string name="compiler_diagnostics_test_report_path_alias_different">Path alias check: current path and alias path are not equivalent (different dev+ino)</string>
-    <string name="compiler_diagnostics_test_report_path_alias_unavailable">Path alias check: unable to verify dev+ino (path missing or permission denied)</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_1">Case1: baseline (-fuse-ld=lld)</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_2">Case2: +COMPILER_PATH + -fuse-ld=lld</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_3">Case3: +PATH with bin prepended + -fuse-ld=lld</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_4">Case4: + -B&lt;bin&gt; + -fuse-ld=lld</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_5">Case5: absolute -fuse-ld=&lt;ld.lld&gt;</string>
-    <string name="compiler_diagnostics_test_report_launcher_chain_case_1">Case1 current-native-runner</string>
-    <string name="compiler_diagnostics_test_report_launcher_chain_case_2">Case2 shell-shim-without-exec</string>
-    <string name="compiler_diagnostics_test_report_launcher_chain_case_3">Case3 shell-shim-with-linker-preload</string>
-    <string name="compiler_diagnostics_test_launcher_chain_recommendation_1">1. If the baseline passes but the CMake-like current-native-runner still fails, the issue is more likely the CMake try_compile shape itself rather than the wrapper alone.</string>
-    <string name="compiler_diagnostics_test_launcher_chain_recommendation_2">2. If the CMake-like current-native-runner succeeds but wrapper-direct fails, the main issue is likely in the wrapper chain; consider falling back to linker64 as the CMake compiler launcher.</string>
-    <string name="compiler_diagnostics_test_launcher_chain_recommendation_3">3. If only the shell shim succeeds while current and wrapper both fail, the issue is more likely the exec/preload combination with real clang.</string>
-    <string name="compiler_diagnostics_test_launcher_chain_recommendation_4">4. If all CMake-like cases fail, the issue is more likely API 28 flags, relative depfiles, the scratch working directory, or ROM restrictions.</string>
-    <string name="compiler_diagnostics_test_check_toolchain_files">1. Check toolchain files</string>
-    <string name="compiler_diagnostics_test_compiler_executable">2. Verify compiler executable</string>
-    <string name="compiler_diagnostics_test_compile_only">3. Compile-only test (generate .o)</string>
-    <string name="compiler_diagnostics_test_link_only">4. Link-only test (.o → executable)</string>
-    <string name="compiler_diagnostics_test_full_compile">5. Full compile + link test</string>
-    <string name="compiler_diagnostics_test_check_library_dependencies">6. Check library dependencies</string>
-    <string name="compiler_diagnostics_test_linker_directly">7. Test lld linker</string>
-    <string name="compiler_diagnostics_test_linker_full_link">8. Direct full link with lld</string>
-    <string name="compiler_diagnostics_test_clang_find_linker">9. Test clang++ linker path lookup</string>
-    <string name="compiler_diagnostics_test_clang_direct_no_outer_linker">10. Launch clang++ directly (skip outer linker64)</string>
-    <string name="compiler_diagnostics_test_clang_linker_resolution_modes">11. Compare linker resolution strategies (ENV/-B/-fuse-ld)</string>
-    <string name="compiler_diagnostics_test_launcher_chain_compare">16. Launcher chain comparison (current / wrapper / sh)</string>
-    <string name="compiler_diagnostics_test_single_file_project_smoke">12. Real single-file loop (compile_commands + clangd)</string>
-    <string name="compiler_diagnostics_test_cmake_project_smoke">13. Real CMake project loop (build + clangd)</string>
-  <string name="compiler_diagnostics_test_sdl3_project_smoke">14. Real SDL3 CMake project loop (build + clangd)</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_all">15. Run project loop comparison (single-file / CMake / SDL3)</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_title">Project loop comparison</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_status_passed">Passed</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_status_failed">Failed</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_checks">Checks</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_total_duration">Total duration</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_stage_timings">Stage timings</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_clangd_mode">clangd mode</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_diagnostics_total">Diagnostics total</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_diagnostics_error">Error count</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_diagnostics_warning">Warning count</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_completion_count">Completion candidates</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_hits">Matched completions</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_failed_stage">Failed stage</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_failure_reason">Failure reason</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_fastest">Fastest</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_slowest">Slowest</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_bottleneck">Bottleneck</string>
-  <string name="dev_options_ai_chat_test">AI Chat Test</string>
-  <string name="dev_options_ai_chat_test_desc">Test AI message rendering, Markdown formatting, tool calls, etc.</string>
   <string name="dev_options_ai_chat_message_count">%1$d messages</string>
-  <string name="dev_options_skip_email_verification">Skip email verification</string>
-  <string name="dev_options_skip_email_verification_desc">When enabled, registration does not require verification code (use only when email service is unavailable)</string>
   <string name="dev_options_editor_internal_touch_log">Editor internal logs</string>
   <string name="dev_options_editor_internal_touch_log_desc">Output internal logs like editor onFling (to confirm fling triggers and parameters)</string>
   <string name="dev_options_editor_scale_touch_log">Editor scale logs</string>
@@ -3329,10 +2481,7 @@ kept=%3$d bytes
   <string name="dev_options_editor_scroll_touch_log_desc">Output scroll delta consumption logs (delta/consumed/offset)</string>
   <string name="dev_options_editor_fling_touch_log">Editor fling logs</string>
   <string name="dev_options_editor_fling_touch_log_desc">Output fling start/end logs (axis, offset, max range)</string>
-  <string name="dev_options_testing_tools">Testing Tools</string>
-  <string name="dev_options_testing_tools_desc">Theme preview, syntax highlighting, LSP and other test entries</string>
-  <string name="dev_editor_test_more_options">More options</string>
-  <string name="dev_editor_test_info">Info</string>
+  <string name="dev_options_runtime_tools">Runtime tools</string>
   <string name="dev_options_reinstall_bundled_packages">Reinstall Bundled Packages</string>
   <string name="dev_options_reinstall_bundled_packages_desc">Force re-extract precompiled libraries (SDL3, etc.) from assets</string>
   <string name="toast_reinstalling_bundled_packages">Reinstalling bundled packages...</string>
@@ -3340,7 +2489,6 @@ kept=%3$d bytes
   <string name="toast_reinstall_bundled_packages_failed">Failed to reinstall bundled packages: %1$s</string>
   <string name="dev_options_tina_server_url">TinaServer URL</string>
   <string name="dev_options_tina_server_url_desc">Switch backend URL and test connectivity</string>
-  <string name="dev_options_title">Developer Options</string>
   <string name="diagnostic_error">Error</string>
   <string name="diagnostic_hint">Hint</string>
   <string name="diagnostic_information">Information</string>
@@ -3361,7 +2509,6 @@ kept=%3$d bytes
   <string name="dialog_title_installing_zsh">Installing Zsh</string>
   <string name="dialog_title_remote_lsp_host">Server Host</string>
   <string name="dialog_title_remote_lsp_port">Server Port</string>
-  <string name="dialog_title_remote_lsp_rsync_port">rsync Port</string>
   <string name="dialog_title_remote_lsp_sync_method">Sync Method</string>
   <string name="dialog_title_remote_lsp_sync_mode">Sync Mode</string>
   <string name="dialog_title_remote_lsp_workspace_root_uri">Remote Workspace Root URI</string>
@@ -3370,14 +2517,8 @@ kept=%3$d bytes
   <string name="dialog_title_shell_type">Shell Type</string>
   <string name="dialog_title_tina_server_url">TinaServer URL</string>
   <string name="dialog_title_upload_logs">Upload Logs</string>
-  <string name="drawer_tab_files">Files</string>
-  <string name="drawer_tab_git">Git</string>
   <string name="drawer_title_source_control">Source Control</string>
   <string name="empty_no_search_results">No matching logs found</string>
-  <string name="env_deploy_title">Environment Deployment</string>
-  <string name="estimated_size_value">Estimated: %1$s</string>
-  <string name="feature_cpp20_stdlib">Full C++20 standard library support</string>
-  <string name="feature_hardware_accel">Hardware-accelerated compilation optimizations</string>
   <string name="git_action_clear_output">Clear output</string>
   <string name="git_action_fetch">Fetch</string>
   <string name="git_action_pull">Pull</string>
@@ -3442,9 +2583,6 @@ kept=%3$d bytes
   <string name="git_force_push_title">Confirm force push</string>
   <string name="git_init">Initialize</string>
   <string name="git_init_hint">You can initialize with git init</string>
-  <string name="git_init_message">This project is not a Git repository. Initialize now?</string>
-  <string name="git_init_title">Initialize Git repository</string>
-  <string name="git_initializing">Initializing...</string>
   <string name="git_no_changes">No changes</string>
   <string name="git_no_diff">No diff</string>
   <string name="git_not_a_repo">This project is not a Git repository</string>
@@ -3457,8 +2595,6 @@ kept=%3$d bytes
   <string name="git_remotes_empty">No remotes</string>
   <string name="git_remotes_title">Remotes</string>
   <string name="git_section_changes">Changes</string>
-  <string name="git_section_staged">Staged changes</string>
-  <string name="git_section_untracked">Untracked</string>
   <string name="git_settings_tab_https">HTTPS</string>
   <string name="git_settings_tab_ssh">SSH</string>
   <string name="git_staged_changes">Staged changes</string>
@@ -3823,10 +2959,6 @@ kept=%3$d bytes
   <string name="hint_search">Search...</string>
   <string name="hint_search_log">Search log content...</string>
   <string name="label_tina_server_url">Server base URL</string>
-  <string name="lightweight_install">Lightweight install</string>
-  <string name="lightweight_install_desc">Use GCC to save space, suitable for devices with limited storage</string>
-  <string name="linker_selection">Linker</string>
-  <string name="linker_selection_desc">Select one or more linkers</string>
   <string name="loading">Loading</string>
   <string name="log_export_filename">TinaIDE_logs_%1$s.zip</string>
   <string name="log_share_subject">TinaIDE logs</string>
@@ -3840,214 +2972,26 @@ kept=%3$d bytes
   <string name="log_export_version_code">Version code: %1$d</string>
   <string name="log_export_export_time">Export time: %1$s</string>
   <!-- Plugin Database Test Screen -->
-  <string name="dev_options_plugin_db_quick_actions">Quick Actions</string>
-  <string name="dev_options_plugin_db_create_table">Create Table</string>
-  <string name="dev_options_plugin_db_insert">Insert</string>
-  <string name="dev_options_plugin_db_query">Query</string>
-  <string name="dev_options_plugin_db_drop_table">Drop Table</string>
-  <string name="dev_options_plugin_db_transaction">Transaction Test</string>
-  <string name="dev_options_plugin_db_clear">Clear Data</string>
-  <string name="dev_options_plugin_db_custom_sql">Custom SQL</string>
-  <string name="dev_options_plugin_db_execute">Execute</string>
-  <string name="dev_options_plugin_db_result">Result</string>
-  <string name="dev_options_plugin_db_log">Log</string>
-  <string name="dev_options_plugin_db_clear_log">Clear</string>
-  <string name="dev_options_plugin_db_sql_label">SQL</string>
-  <string name="dev_options_plugin_db_initialized">Database initialized: %1$s</string>
-  <string name="dev_options_plugin_db_database_not_ready">Database is not ready. Try again shortly.</string>
-  <string name="dev_options_plugin_db_no_data">No data</string>
-  <string name="dev_options_plugin_db_table_created_log">Table test_todos is ready</string>
-  <string name="dev_options_plugin_db_table_created_result">Table created successfully</string>
-  <string name="dev_options_plugin_db_task_title">Task %1$d</string>
-  <string name="dev_options_plugin_db_batch_task_title">Batch Task %1$d</string>
-  <string name="dev_options_plugin_db_inserted">Inserted: %1$s</string>
-  <string name="dev_options_plugin_db_query_rows">Query returned %1$d rows</string>
-  <string name="dev_options_plugin_db_table_dropped_log">Table test_todos dropped</string>
-  <string name="dev_options_plugin_db_table_dropped_result">Table dropped</string>
-  <string name="dev_options_plugin_db_transaction_inserted_log">Transaction: 5 rows inserted</string>
-  <string name="dev_options_plugin_db_transaction_inserted_result">Transaction successful: 5 rows inserted</string>
-  <string name="dev_options_plugin_db_transaction_error">Transaction error: %1$s</string>
-  <string name="dev_options_plugin_db_all_data_deleted">All data deleted</string>
-  <string name="dev_options_plugin_db_sql_executed">SQL executed: %1$s</string>
-  <string name="dev_options_plugin_db_sql_executed_success">SQL executed successfully</string>
-  <string name="dev_options_plugin_db_sql_error">SQL error: %1$s</string>
-  <string name="dev_options_plugin_db_error">Error: %1$s</string>
 
-  <string name="lsp_template_ast">AST tree</string>
-  <string name="lsp_template_ast_desc">Get AST syntax tree (Clangd-specific)</string>
-  <string name="lsp_template_call_hierarchy">Call hierarchy</string>
-  <string name="lsp_template_call_hierarchy_desc">Prepare call hierarchy</string>
-  <string name="lsp_template_code_action">Code actions</string>
-  <string name="lsp_template_code_action_desc">Get available code actions (quick fixes, etc.)</string>
-  <string name="lsp_template_code_lens">Code lens</string>
-  <string name="lsp_template_code_lens_desc">Get code lens information</string>
-  <string name="lsp_template_declaration">Declaration</string>
-  <string name="lsp_template_declaration_desc">Jump to the declaration of a symbol</string>
-  <string name="lsp_template_did_change">Document change</string>
-  <string name="lsp_template_did_change_desc">Notify the server that document content changed</string>
-  <string name="lsp_template_did_close">Document close</string>
-  <string name="lsp_template_did_close_desc">Notify the server that the document was closed</string>
-  <string name="lsp_template_did_open">Document open</string>
-  <string name="lsp_template_did_open_desc">Notify the server that the document was opened</string>
-  <string name="lsp_template_did_save">Document save</string>
-  <string name="lsp_template_did_save_desc">Notify the server that the document was saved</string>
-  <string name="lsp_template_document_highlight">Document highlight</string>
-  <string name="lsp_template_document_highlight_desc">Highlight occurrences of the same symbol</string>
-  <string name="lsp_template_document_link">Document links</string>
-  <string name="lsp_template_document_link_desc">Get links in the document</string>
-  <string name="lsp_template_document_symbol">Document symbols</string>
-  <string name="lsp_template_document_symbol_desc">Get all symbols in the document</string>
-  <string name="lsp_template_folding_range">Folding range</string>
-  <string name="lsp_template_folding_range_desc">Get code folding ranges</string>
-  <string name="lsp_template_formatting">Format document</string>
-  <string name="lsp_template_formatting_desc">Format the entire document</string>
-  <string name="lsp_template_implementation">Implementation</string>
-  <string name="lsp_template_implementation_desc">Jump to implementations of an interface/abstract method</string>
-  <string name="lsp_template_inlay_hint">Inlay hints</string>
-  <string name="lsp_template_inlay_hint_desc">Get inline hints like parameter names and types</string>
-  <string name="lsp_template_memory_usage">Memory usage</string>
-  <string name="lsp_template_memory_usage_desc">Get Clangd memory usage</string>
-  <string name="lsp_template_prepare_rename">Prepare rename</string>
-  <string name="lsp_template_prepare_rename_desc">Check whether the symbol can be renamed</string>
-  <string name="lsp_template_range_formatting">Format selection</string>
-  <string name="lsp_template_range_formatting_desc">Format the selected range</string>
-  <string name="lsp_template_references">Find references</string>
-  <string name="lsp_template_references_desc">Find all references to the symbol</string>
   <string name="lsp_template_rename">Rename symbol</string>
-  <string name="lsp_template_rename_desc">Rename symbols such as variables and functions</string>
-  <string name="lsp_template_selection_range">Selection range</string>
-  <string name="lsp_template_selection_range_desc">Get smart selection ranges</string>
-  <string name="lsp_template_semantic_tokens_full">Semantic tokens (full)</string>
-  <string name="lsp_template_semantic_tokens_full_desc">Get semantic tokens for the entire document</string>
-  <string name="lsp_template_semantic_tokens_range">Semantic tokens (range)</string>
-  <string name="lsp_template_semantic_tokens_range_desc">Get semantic tokens for the specified range</string>
-  <string name="lsp_template_signature_help">Signature help</string>
-  <string name="lsp_template_signature_help_desc">Get function signature information</string>
-  <string name="lsp_template_switch_source_header">Switch source/header</string>
-  <string name="lsp_template_switch_source_header_desc">Switch between .h and .cpp (Clangd-specific)</string>
-  <string name="lsp_template_symbol_info">Symbol info</string>
-  <string name="lsp_template_symbol_info_desc">Get detailed symbol information (Clangd-specific)</string>
-  <string name="lsp_template_type_definition">Type definition</string>
-  <string name="lsp_template_type_definition_desc">Jump to the type definition of a variable</string>
-  <string name="lsp_template_type_hierarchy">Type hierarchy</string>
-  <string name="lsp_template_type_hierarchy_desc">Prepare type hierarchy</string>
-  <string name="lsp_template_workspace_symbol">Workspace symbols</string>
-  <string name="lsp_template_workspace_symbol_desc">Search symbols in the workspace</string>
-  <string name="lsp_test_benchmark_completion">Completion benchmark</string>
-  <string name="lsp_test_benchmark_hover">Hover benchmark</string>
-  <string name="lsp_test_completion">Completion test</string>
-  <string name="lsp_test_custom">Custom message</string>
-  <string name="lsp_test_declaration">Declaration test</string>
-  <string name="lsp_test_definition">Definition test</string>
-  <string name="lsp_test_did_change">Document change test</string>
-  <string name="lsp_test_did_close">Document close test</string>
-  <string name="lsp_test_did_open">Document open test</string>
-  <string name="lsp_test_hover">Hover test</string>
-  <string name="lsp_test_implementation">Implementation test</string>
-  <string name="lsp_test_initialize">Initialize test</string>
-  <string name="lsp_test_inlay_hint">Inlay hints test</string>
-  <string name="lsp_test_selection_range">Selection range test</string>
-  <string name="lsp_test_semantic_tokens_full">Semantic tokens (full)</string>
-  <string name="lsp_test_semantic_tokens_range">Semantic tokens (range)</string>
-  <string name="lsp_test_type_definition">Type definition test</string>
   <string name="need_help_prefix">Need help?</string>
-  <string name="proot_abi_mismatch_error">ABI mismatch error: %1$s</string>
-  <string name="proot_clang_missing">Toolchain incomplete: missing clang</string>
-  <string name="proot_clang_resource_dir_missing">Toolchain incomplete: missing clang resource directory (checked version: %1$s)</string>
-  <string name="proot_clangd_missing">Toolchain incomplete: missing clangd</string>
-  <string name="proot_command_execute">Executing command: %1$s</string>
-  <string name="proot_compiler_install_failed">Compiler toolchain installation failed: %1$s</string>
-  <string name="proot_compiler_install_failed_network">Toolchain installation failed: %1$s\n\nSuggestion: check your network connection, or switch mirrors in Settings and retry.</string>
-  <string name="proot_compiler_install_failed_proot_error">Toolchain installation failed: PRoot runtime error (proot failed to start).\n%1$s</string>
-  <string name="proot_compiler_install_success">Compiler toolchain installed: %1$s</string>
-  <string name="proot_compiler_installed_incomplete">Installed but incomplete</string>
-  <string name="proot_compiler_progress">Compiler toolchain: %1$s (%2$d%%)</string>
-  <string name="proot_cpp_headers_missing">Toolchain incomplete: missing C++ standard library headers (%1$s)</string>
-  <string name="proot_debugger_install_failed">Debugger toolchain installation failed: %1$s</string>
-  <string name="proot_debugger_install_success">Debugger toolchain installed successfully</string>
-  <string name="proot_debugger_packages_parsed">Parsed debugger dependency list (%1$d packages)</string>
-  <string name="proot_debugger_progress">Debugger toolchain: %1$s (%2$d%%)</string>
-  <string name="proot_debugger_retry_on_first_debug">Debugger will retry installation on first debug</string>
   <string name="proot_environment_ready">Linux environment is installed</string>
   <string name="proot_install_already_running">Installation already in progress; skipping duplicate request</string>
   <string name="proot_install_begin">========== Linux environment install started ==========</string>
   <string name="proot_install_complete">Install complete</string>
   <string name="proot_install_failed">Linux environment installation failed: %1$s</string>
   <string name="proot_install_success">========== Linux environment install complete ==========</string>
-  <string name="proot_installed">Installed</string>
-  <string name="proot_installing_debugger">Installing debugger...</string>
   <string name="proot_logs_empty">No PRoot log files</string>
   <string name="proot_logs_title">PRoot Logs</string>
-  <string name="proot_manifest_outdated">Toolchain manifest is outdated or incomplete; falling back to scan</string>
-  <string name="proot_manifest_write_failed">Failed to write toolchain manifest: %1$s</string>
-  <string name="proot_manifest_write_success">Wrote toolchain manifest: clangd=%1$s, resource-dir=%2$s</string>
-  <string name="proot_manifest_written">Wrote toolchain manifest: clangd=%1$s, resource-dir=%2$s</string>
-  <string name="proot_not_installed">Not installed</string>
   <string name="proot_package_already_done">Installed</string>
-  <string name="proot_package_already_latest">Already up to date</string>
-  <string name="proot_package_clang">Clang compiler</string>
-  <string name="proot_package_clangd">Clang language server</string>
-  <string name="proot_package_cmake">CMake build system</string>
-  <string name="proot_package_git">Git version control</string>
-  <string name="proot_package_libcpp_dev">C++ standard library headers</string>
-  <string name="proot_package_libcppabi_dev">C++ ABI library</string>
-  <string name="proot_package_lld">LLVM linker (lld)</string>
-  <string name="proot_package_lldb">LLDB debugger</string>
-  <string name="proot_package_llvm">LLVM core tools</string>
-  <string name="proot_package_make">Make build tool</string>
-  <string name="proot_package_ninja_build">Ninja build system</string>
-  <string name="proot_package_proot_runtime">PRoot runtime</string>
-  <string name="proot_package_python3_lldb">LLDB Python bindings</string>
   <string name="proot_package_android_sysroot">Android System Libraries</string>
   <string name="proot_package_native_toolchain">Clang Compiler Toolchain</string>
   <string name="proot_package_guest_toolchain">PRoot Linux Toolchain</string>
   <string name="proot_toolchain_error_unavailable">PRoot package is unavailable: %1$s</string>
   <string name="proot_toolchain_error_not_installed">PRoot guest toolchain is not fully installed</string>
-  <string name="proot_package_apt_update">Update package index</string>
-  <string name="proot_packages_parsed">Parsed dependency list (%1$d packages)</string>
   <string name="proot_restart_reason">: %1$s</string>
   <string name="proot_restart_request">Received restart install request%1$s</string>
-  <string name="proot_step_install_ndk_sysroot">Step 1/4: Install Android NDK Sysroot</string>
-  <string name="proot_extracting_ndk_sysroot">Extracting Android NDK Sysroot…</string>
-  <string name="proot_extracting_ndk_sysroot_progress">Extracting Android NDK Sysroot (%1$d%%)</string>
-  <string name="proot_ndk_sysroot_complete">Android NDK Sysroot installation complete</string>
-  <string name="proot_ndk_sysroot_failed">Android NDK Sysroot installation failed: %1$s</string>
-  <string name="proot_ndk_sysroot_already_installed">Android NDK Sysroot already installed, skipping</string>
-  <string name="proot_step_install_compiler">Step 3/4: Install compiler toolchain (apk)</string>
-  <string name="proot_step_install_debugger">Step 4/4: Install debugger (LLDB)</string>
-  <string name="proot_toolchain_config">Toolchain config: %1$s</string>
-  <string name="proot_toolchain_files_missing">Critical toolchain files missing; trying to install/repair from network</string>
-  <string name="proot_toolchain_files_still_missing">Toolchain install finished but critical files are still missing; considered failed</string>
-  <string name="proot_toolchain_incomplete">Toolchain is incomplete; repair required</string>
-  <string name="proot_toolchain_install_exception">Toolchain install exception: %1$s</string>
-  <string name="proot_toolchain_install_failed_files_missing">Toolchain install finished but critical files are missing. LSP will be unavailable. Please check your network connection and retry.</string>
-  <string name="proot_toolchain_ready">Toolchain is ready</string>
-  <string name="proot_toolchain_ready_filesystem">Toolchain status: ready via manifest fast check (clangd=%1$s)</string>
-  <string name="proot_toolchain_ready_skip_network">Toolchain files are complete via filesystem check; skipping all network installs</string>
-  <string name="proot_toolchain_repair_begin">========== Ubuntu toolchain repair started ==========</string>
-  <string name="proot_toolchain_repair_failed">Toolchain repair failed</string>
-  <string name="proot_toolchain_repair_failed_network">Toolchain repair failed. LSP will be unavailable. Please check your network connection and retry.</string>
-  <string name="proot_toolchain_repair_not_needed">startToolchainRepair called but state is not NeedsToolchainRepair</string>
-  <string name="proot_toolchain_repair_running">Toolchain repair already in progress</string>
-  <string name="proot_toolchain_status">Checking toolchain status: compiler=%1$s, debugger=%2$s</string>
-  <string name="proot_updating_index">Updating package index</string>
-  <string name="quick_install">Quick install</string>
-  <string name="quick_install_desc">Recommended for beginners. One-click install of the complete Clang dev environment</string>
-  <string name="recommended_install">Recommended</string>
-  <string name="recommended_install_desc">Includes the Clang compiler and full toolchain; suitable for most scenarios</string>
-  <string name="required_components">Required components</string>
-  <string name="required_components_list">Clangd (LSP), LLVM, C++ standard library, CMake, Ninja, Make, Git</string>
-  <string name="rsync_not_available">rsync is unavailable</string>
-  <string name="rsync_progress">%1$s / %2$s (%3$s)</string>
-  <string name="rsync_state_error">Sync error</string>
   <string name="rsync_error_exit_code">rsync failed with exit code %1$d</string>
-  <string name="rsync_state_idle">Idle</string>
-  <string name="rsync_state_success">Sync succeeded</string>
-  <string name="rsync_state_syncing">Syncing...</string>
-  <string name="rsync_version">rsync version: %1$s</string>
-  <string name="run_config_args_prefix">Arguments: %1$s</string>
-  <string name="run_config_output_build_log">Build log</string>
-  <string name="run_config_output_build_log_desc">Output is shown in the build log panel at the bottom</string>
   <string name="run_config_output_mode">Output mode</string>
   <string name="run_config_output_terminal">Terminal</string>
   <string name="run_config_output_terminal_desc">Run in a separate terminal, supports interactive input</string>
@@ -4065,7 +3009,6 @@ kept=%3$d bytes
   <string name="run_config_sdl_orientation_portrait_desc">Force portrait mode</string>
   <string name="run_config_sdl_floating_log">Floating Log Window</string>
   <string name="run_config_sdl_floating_log_desc">Show a draggable real-time log window during fullscreen SDL graphical runtime for stdout/stderr output</string>
-  <string name="run_config_sdl_floating_log_not_ready">Floating log feature is under development, stay tuned</string>
 
   <!-- Floating overlay -->
   <string name="floating_overlay_exit">Exit</string>
@@ -4098,7 +3041,6 @@ kept=%3$d bytes
   <string name="run_config_toolchain_default">Default (Use globally active toolchain)</string>
   <string name="run_config_toolchain_desc">Select the toolchain version for this configuration</string>
   <string name="search_result_count">Found %1$d results (of %2$d)</string>
-  <string name="service_agreement">Service Agreement</string>
   <string name="settings_cat_bookmarks">Bookmarks</string>
   <string name="settings_cat_diagnostics">Diagnostics &amp; Debugging</string>
   <string name="settings_cat_format">Code Formatting</string>
@@ -4143,13 +3085,6 @@ kept=%3$d bytes
   <string name="settings_linux_health_missing_optional">Missing optional items: %1$s</string>
   <string name="settings_linux_health_check_failed">Self-check failed: %1$s</string>
   <string name="settings_linux_installing">Installing Linux system…</string>
-  <string name="settings_linux_install_phase_preparing">Preparing installation</string>
-  <string name="settings_linux_install_phase_downloading">Downloading</string>
-  <string name="settings_linux_install_phase_verifying">Verifying</string>
-  <string name="settings_linux_install_phase_extracting">Extracting</string>
-  <string name="settings_linux_install_phase_inspecting">Inspecting system info</string>
-  <string name="settings_linux_install_phase_completed">Completed</string>
-  <string name="settings_linux_install_progress_format">%1$s (%2$d%%)</string>
   <string name="settings_linux_switching">Switching Linux system…</string>
   <string name="settings_linux_renaming">Renaming Linux system…</string>
   <string name="settings_linux_deleting">Deleting Linux system…</string>
@@ -4224,23 +3159,13 @@ kept=%3$d bytes
   <string name="settings_remote_lsp_status_error">Connection error</string>
   <string name="settings_remote_lsp_sync_method">Sync method</string>
   <string name="settings_remote_lsp_sync_method_builtin">Built-in sync (WebSocket)</string>
-  <string name="settings_remote_lsp_sync_method_builtin_desc">Zero configuration, suitable for small to medium projects</string>
   <string name="settings_remote_lsp_sync_method_manual">Manual sync</string>
-  <string name="settings_remote_lsp_sync_method_manual_desc">Sync files using external tools</string>
   <string name="settings_remote_lsp_sync_method_rsync">rsync incremental sync</string>
-  <string name="settings_remote_lsp_sync_method_rsync_desc">Incremental transfer, suitable for large projects</string>
   <string name="settings_remote_lsp_sync_mode">Sync mode</string>
   <string name="settings_remote_lsp_sync_mode_auto">Auto (recommended)</string>
-  <string name="settings_remote_lsp_sync_mode_auto_desc">Auto-select based on project size</string>
   <string name="settings_remote_lsp_sync_mode_lightweight">Lightweight mode</string>
-  <string name="settings_remote_lsp_sync_mode_lightweight_desc">Only sync opened files</string>
   <string name="settings_remote_lsp_sync_mode_project">Project mode</string>
-  <string name="settings_remote_lsp_sync_mode_project_desc">Sync the entire project directory</string>
   <string name="settings_remote_lsp_test">Test connection</string>
-  <string name="settings_remote_lsp_test_failed">Connection failed: %1$s</string>
-  <string name="settings_remote_lsp_test_success">Connected! Latency: %1$d ms</string>
-  <string name="settings_remote_lsp_test_timeout">Connection timed out</string>
-  <string name="settings_remote_lsp_testing">Testing connection...</string>
   <string name="settings_remote_lsp_workspace_root_uri">Remote workspace root URI</string>
   <string name="settings_remote_lsp_workspace_root_uri_desc">Path mapping for remote clangd; can be left empty for built-in sync</string>
   <string name="settings_remote_lsp_workspace_root_uri_error">Enter a file:// URI or an absolute path (e.g. C:\\path or /path), or leave empty</string>
@@ -4262,52 +3187,6 @@ kept=%3$d bytes
   <string name="shell_type_sh_desc">Most basic shell, best compatibility</string>
   <string name="shell_type_zsh">Zsh</string>
   <string name="shell_type_zsh_desc">Modern shell with powerful completion and themes</string>
-  <string name="standard_dev_kit">Standard dev kit</string>
-  <string name="standard_dev_kit_subtitle">Clang 16.0 + LLVM Runtime</string>
-  <string name="status_downloading_package">Downloading:</string>
-  <string name="status_installing_package">Installing:</string>
-  <string name="sync_button_cancel">Cancel sync</string>
-  <string name="sync_button_resync">Resync</string>
-  <string name="sync_button_start">Start sync</string>
-  <string name="sync_current_file">Current: %1$s</string>
-  <string name="sync_dialog_message">Sync project to remote server?\n\nProject: %1$s\nFiles: %2$d\nTotal size: %3$s</string>
-  <string name="sync_dialog_title">Project Sync</string>
-  <string name="sync_mode_detected">Detection result: %1$s</string>
-  <string name="sync_mode_reason">Reason: %1$s</string>
-  <string name="sync_phase_cleaning">Cleaning files...</string>
-  <string name="sync_phase_copying">Copying files...</string>
-  <string name="sync_phase_scanning">Scanning files...</string>
-  <string name="sync_preparing">Preparing sync...</string>
-  <string name="sync_progress_complete">Sync complete: %1$d files</string>
-  <string name="sync_progress_compressing">Compressing: %1$d / %2$d files</string>
-  <string name="sync_progress_scanning">Scanning: %1$s</string>
-  <string name="sync_progress_uploading">Uploading: %1$s / %2$s</string>
-  <string name="sync_stat_count_unit">%1$d items</string>
-  <string name="sync_stat_duration">Duration</string>
-  <string name="sync_stat_duration_seconds">%1$.1f s</string>
-  <string name="sync_stat_files_deleted">Files deleted</string>
-  <string name="sync_stat_files_scanned">Files scanned</string>
-  <string name="sync_stat_files_synced">Files synced</string>
-  <string name="sync_stat_sync_size">Synced size</string>
-  <string name="sync_state_compressing">Compressing files...</string>
-  <string name="sync_state_error">Sync error</string>
-  <string name="sync_state_idle">Idle</string>
-  <string name="sync_state_scanning">Scanning project...</string>
-  <string name="sync_state_synced">Synced</string>
-  <string name="sync_state_uploading">Uploading...</string>
-  <string name="sync_status_complete">Complete</string>
-  <string name="sync_status_failed">Failed</string>
-  <string name="sync_status_syncing">Syncing</string>
-  <string name="template_category_clangd">Clangd-specific</string>
-  <string name="template_category_code_action">Code actions</string>
-  <string name="template_category_document">Document actions</string>
-  <string name="template_category_document_sync">Document sync</string>
-  <string name="template_category_hierarchy">Hierarchy</string>
-  <string name="template_category_navigation">Navigation</string>
-  <string name="template_category_other">Other</string>
-  <string name="template_category_semantic">Semantic analysis</string>
-  <string name="template_category_symbol">Symbol search</string>
-  <string name="terminal_not_started">Terminal not started</string>
   <string name="terminal_shell_auto_resolved">Auto-detected: %1$s</string>
   <string name="terminal_shell_available">Available: %1$s</string>
   <string name="terminal_shell_backend_host">Environment: System</string>
@@ -4324,35 +3203,10 @@ kept=%3$d bytes
   <string name="backend_mode_host_desc">Run directly on Android, can execute NDK-compiled binaries</string>
   <string name="toast_backend_mode_changed">Terminal mode changed, please restart terminal to apply</string>
   <string name="toast_proot_not_installed">PRoot not installed, will use system mode</string>
-  <string name="test_avg_time">Avg time: %1$sms</string>
-  <string name="test_category_basic">Basic tests</string>
-  <string name="test_category_benchmark">Benchmark</string>
-  <string name="test_category_custom">Custom</string>
-  <string name="test_category_document_sync">Document sync</string>
-  <string name="test_category_navigation">Navigation</string>
-  <string name="test_category_semantic">Semantic analysis</string>
-  <string name="test_iterations">Iterations: %1$d</string>
-  <string name="test_max_time">Max: %1$dms</string>
-  <string name="test_median_time">Median: %1$dms</string>
-  <string name="test_min_time">Min: %1$dms</string>
-  <string name="test_p95_time">P95: %1$dms</string>
-  <string name="test_result_failed">Failed</string>
-  <string name="test_result_success">Success (%1$dms)</string>
-  <string name="test_scenario">Scenario: %1$s</string>
-  <string name="test_success_rate">Success rate: %1$s%%</string>
-  <string name="test_suite_basic">Basic functionality tests</string>
-  <string name="test_suite_default">Default Test Suite</string>
-  <string name="test_suite_document_sync">Document Sync Suite</string>
-  <string name="test_suite_full">Full Test Suite</string>
-  <string name="test_suite_navigation">Navigation Suite</string>
-  <string name="test_suite_performance">Performance Benchmark Suite</string>
-  <string name="test_suite_semantic">Semantic Analysis Suite</string>
-  <string name="toast_all_logs_copied_full">All logs copied</string>
   <string name="toast_bookmark_ignored_blank_line">Cannot set a bookmark on this line</string>
   <string name="toast_bookmark_pruned">Removed %1$d invalid bookmarks</string>
   <string name="toast_clear_logs_failed">Failed to clear logs: %1$s</string>
   <string name="toast_clearing_logs">Clearing logs...</string>
-  <string name="toast_clone_failed">Clone failed: %1$s</string>
   <string name="toast_clone_success">Repository cloned</string>
   <string name="toast_cloning">Cloning repository...</string>
   <string name="toast_export_logs_failed">Failed to export logs: %1$s</string>
@@ -4367,21 +3221,13 @@ kept=%3$d bytes
   <string name="toast_tina_server_test_ok">Connection successful</string>
   <string name="toast_upload_logs_failed">Upload failed: %1$s</string>
   <string name="toast_uploading_logs">Uploading logs...</string>
-  <string name="toast_zsh_install_failed">Zsh install failed: %1$s</string>
   <string name="toast_zsh_install_success">Zsh installed</string>
   <string name="toast_guest_dev_packages_install_success">Development essentials installed</string>
   <string name="toast_zsh_unavailable_on_host">System environment detected. Cannot auto-install Zsh; please install the PRoot Linux environment first or switch to Bash/Sh.</string>
-  <string name="toolchain_config_description">To ensure efficient compilation and debugging, we need to set up the underlying toolchain. The system will automatically match the best version for your device architecture.</string>
-  <string name="toolchain_config_main_title">Toolchain Setup</string>
-  <string name="toolchain_config_title">Toolchain Setup</string>
-  <string name="toolchain_select_mode">Select installation method</string>
-  <string name="toolchain_select_mode_desc">You can change toolchain settings anytime in Settings</string>
-  <string name="total_install_size">Estimated install size</string>
   <string name="unsaved_changes_message">File \"%1$s\" has unsaved changes.\n\nSave changes?</string>
   <string name="unsaved_changes_on_exit_message">%1$d files have unsaved changes.\n\nSave before exiting?</string>
   <string name="unsaved_changes_on_exit_title">Unsaved changes</string>
   <string name="unsaved_changes_title">Unsaved changes</string>
-  <string name="value_installed">Installed</string>
   <string name="value_not_installed">Not installed</string>
 
   <!-- CMake Build -->
@@ -4420,7 +3266,6 @@ kept=%3$d bytes
   <string name="lsp_goto_type_definition">Go to Type Definition</string>
   <string name="lsp_goto_implementation">Go to Implementation</string>
   <string name="lsp_call_hierarchy_incoming">Call Hierarchy: Incoming Calls</string>
-  <string name="lsp_switch_header_source">Switch Header/Source</string>
   <string name="lsp_location_dialog_title_definition">Definition</string>
   <string name="lsp_location_dialog_title_peek_definition">Definition Preview</string>
   <string name="lsp_location_dialog_title_references">References (%1$d)</string>
@@ -4436,7 +3281,6 @@ kept=%3$d bytes
 
   <!-- Feedback -->
   <string name="feedback_title">Feedback</string>
-  <string name="feedback_desc">Submit bug reports or feature requests</string>
   <string name="feedback_category_label">Feedback Type</string>
   <string name="feedback_category_bug">Bug Report</string>
   <string name="feedback_category_feature">Feature Request</string>
@@ -4451,7 +3295,6 @@ kept=%3$d bytes
   <string name="feedback_submit_success">Submitted successfully!</string>
   <string name="feedback_hint">We read every feedback carefully. Thank you for your support!</string>
   <string name="feedback_min_chars_hint">%1$d more characters needed</string>
-  <string name="feedback_error_submit_failed">Submission failed, please try again later</string>
   <string name="feedback_error_too_frequent">Too many submissions, please wait %1$d seconds</string>
   <string name="feedback_error_title_too_short">Title must be at least %1$d characters</string>
   <string name="feedback_error_title_too_long">Title cannot exceed %1$d characters</string>
@@ -4464,21 +3307,15 @@ kept=%3$d bytes
   <!-- Plugin Marketplace -->
   <string name="error_download_failed">Download failed</string>
   <string name="error_file_hash_mismatch">File hash mismatch</string>
-  <string name="error_parse_response">Failed to parse response</string>
   <string name="plugin_marketplace_title">Plugin Marketplace</string>
   <string name="plugin_marketplace_search">Search plugins</string>
   <string name="plugin_marketplace_empty">No plugins</string>
   <string name="plugin_marketplace_loading">Loading...</string>
-  <string name="plugin_marketplace_load_more">Load more</string>
   <string name="plugin_marketplace_load_failed">Failed to load</string>
   <string name="plugin_marketplace_retry">Retry</string>
   <string name="plugin_marketplace_install">Install</string>
-  <string name="plugin_marketplace_installing">Installing...</string>
   <string name="plugin_marketplace_installed">Installed</string>
   <string name="plugin_marketplace_update">Update</string>
-  <string name="plugin_marketplace_update_available">Update available</string>
-  <string name="plugin_marketplace_downloads">Downloads</string>
-  <string name="plugin_marketplace_rating">Rating</string>
   <string name="plugin_marketplace_version">Version</string>
   <string name="plugin_marketplace_versions">Versions</string>
   <string name="plugin_marketplace_publisher">Publisher</string>
@@ -4501,8 +3338,6 @@ kept=%3$d bytes
   <string name="plugin_marketplace_description">Description</string>
   <string name="plugin_marketplace_info">Plugin Info</string>
   <string name="plugin_marketplace_tags">Tags</string>
-  <string name="action_add_favorite">Add to Favorites</string>
-  <string name="action_remove_favorite">Remove from Favorites</string>
   <string name="market_favorite_failed">Failed to add to favorites</string>
   <string name="market_unfavorite_failed">Failed to remove from favorites</string>
   <string name="market_open_source_interaction_unavailable">Server-backed interactions are not bundled in the open-source build. Rating, comments, and reports are unavailable.</string>
@@ -4520,12 +3355,10 @@ kept=%3$d bytes
   <string name="plugin_marketplace_comment_submit">Submit Comment</string>
   <string name="plugin_marketplace_comments_empty">No comments yet. Be the first to write one.</string>
   <string name="plugin_marketplace_comment_required">Comment content cannot be empty</string>
-  <string name="plugin_marketplace_comment_submit_success">Comment submitted</string>
   <string name="plugin_marketplace_comment_report">Report</string>
   <string name="plugin_marketplace_comment_report_title">Report Comment</string>
   <string name="plugin_marketplace_comment_report_details">Additional details (optional)</string>
   <string name="plugin_marketplace_comment_report_submit">Submit Report</string>
-  <string name="plugin_marketplace_comment_report_success">Report submitted. We will review it soon.</string>
   <string name="plugin_marketplace_report_reason_sexual">Sexual</string>
   <string name="plugin_marketplace_report_reason_violence">Violence</string>
   <string name="plugin_marketplace_report_reason_vulgar">Vulgar</string>
@@ -4563,17 +3396,13 @@ kept=%3$d bytes
   <string name="plugin_log_copy">Copy</string>
   <string name="plugin_log_repair_lsp_dependencies">View and Repair Dependencies</string>
   <string name="plugin_log_copied">Copied to clipboard</string>
-  <string name="plugin_log_count">%1$d logs</string>
   <string name="plugin_log_latest_error">Latest error</string>
 
   <!-- Package Manager -->
   <string name="pkg_manager_title">Package Manager</string>
   <string name="pkg_manager_selected">%1$d selected</string>
   <string name="pkg_manager_search_hint">Search packages…</string>
-  <string name="pkg_manager_all">All</string>
-  <string name="pkg_manager_no_packages">No packages found</string>
   <string name="pkg_manager_no_installed_packages">No packages installed</string>
-  <string name="pkg_manager_no_installed_hint">Go to "Market" on the home screen to browse and install packages</string>
   <string name="pkg_manager_error_unknown">Unknown error</string>
   <string name="pkg_manager_error_package_not_found">Package not found: %1$s</string>
   <string name="pkg_manager_error_package_versions_not_found">Package versions not found: %1$s</string>
@@ -4583,11 +3412,6 @@ kept=%3$d bytes
   <string name="pkg_manager_check_updates">Check Updates</string>
   <string name="pkg_manager_refresh">Refresh</string>
   <string name="pkg_manager_select">Select</string>
-  <string name="pkg_manager_history">History</string>
-  <string name="pkg_manager_installed">Installed</string>
-  <string name="pkg_manager_not_installed">Not Installed</string>
-  <string name="pkg_manager_install_linux">Install Linux</string>
-  <string name="pkg_manager_install_android">Install Android</string>
   <string name="pkg_manager_uninstall_linux">Uninstall Linux</string>
   <string name="pkg_manager_uninstall_android">Uninstall Android</string>
   <string name="pkg_manager_batch_complete_title">Batch Install Complete</string>
@@ -4633,11 +3457,6 @@ kept=%3$d bytes
   <string name="pkg_manager_progress_failed_simple">Failed: %1$s</string>
 
   <!-- Install History -->
-  <string name="pkg_history_title">Install History</string>
-  <string name="pkg_history_empty">No install history</string>
-  <string name="pkg_history_clear_title">Clear History</string>
-  <string name="pkg_history_clear_msg">Are you sure you want to clear all install history?</string>
-  <string name="pkg_history_clear_btn">Clear</string>
 
   <!-- Package Detail -->
   <string name="pkg_detail_info">Basic Information</string>
@@ -4670,82 +3489,31 @@ kept=%3$d bytes
   <string name="pkg_detail_update">Update</string>
   <string name="pkg_detail_installing">Installing… %1$d%%</string>
   <string name="pkg_detail_update_available">Update available: %1$s → %2$s</string>
-  <string name="pkg_detail_downloading">Downloading: %1$d%% - %2$s/s</string>
   <string name="pkg_detail_extracting">Extracting…</string>
   <string name="pkg_detail_installed">Installed</string>
   <string name="pkg_detail_installing_status">Installing…</string>
 
   <!-- Clangd Settings -->
-  <string name="clangd_header_insertion_never">Never</string>
-  <string name="clangd_header_insertion_iwyu">Smart Insert (IWYU)</string>
-  <string name="clangd_completion_style_detailed">Detailed</string>
-  <string name="clangd_completion_style_bundled">Bundled</string>
 
   <!-- Editor Scroll Test Screen -->
-  <string name="editor_scroll_test_status_format">Single-direction fling: %1$s | Content: %2$s</string>
-  <string name="editor_scroll_test_enabled">Enabled</string>
-  <string name="editor_scroll_test_disabled">Disabled</string>
-  <string name="editor_scroll_test_back">Back</string>
   <string name="editor_scroll_test_config">Config</string>
   <string name="editor_scroll_test_content_size">Content Size</string>
   <string name="editor_scroll_test_scroll_config">Scroll Config</string>
   <string name="editor_scroll_test_single_direction_fling">Single-direction Fling</string>
   <string name="editor_scroll_test_single_direction_dragging">Single-direction Drag Lock</string>
   <string name="editor_scroll_test_enable_fling">Enable Fling</string>
-  <string name="editor_scroll_test_overscroll">Overscroll</string>
-  <string name="editor_scroll_test_performance_config">Performance Config</string>
-  <string name="editor_scroll_test_hardware_acceleration">Hardware Acceleration</string>
-  <string name="editor_scroll_test_debug_tools">Debug Tools</string>
+<string name="editor_scroll_test_debug_tools">Debug Tools</string>
   <string name="editor_scroll_test_touch_diagnostics">Touch Diagnostics Log</string>
   <string name="editor_scroll_test_content_size_small">Small (100 lines)</string>
   <string name="editor_scroll_test_content_size_medium">Medium (500 lines)</string>
   <string name="editor_scroll_test_content_size_large">Large (1000 lines)</string>
   <string name="editor_scroll_test_content_size_xlarge">XLarge (3000 lines)</string>
   <string name="editor_scroll_test_content_size_xxlarge">XXLarge (5000 lines)</string>
-  <string name="editor_scroll_test_content_header">Editor Scroll Test Content - %1$s</string>
-  <string name="editor_scroll_test_content_hint1">Try fast swiping to test fling effect</string>
-  <string name="editor_scroll_test_content_hint2">Pay attention to diagonal fast swipes - check for \"lag\" or single-direction scrolling</string>
-  <string name="editor_scroll_test_content_progress">========== Line %1$d ========== Progress: %2$d%%</string>
-  <string name="editor_scroll_test_content_complete">Test complete - %1$d lines total</string>
-
-  <!-- Theme Preview Test Screen -->
-  <string name="theme_preview_test_title">Theme Preview</string>
-  <string name="theme_preview_test_status_format">%1$s | %2$d themes</string>
-  <string name="theme_preview_test_back">Back</string>
-  <string name="theme_preview_test_menu">Menu</string>
-  <string name="theme_preview_test_layout_mode">Layout Mode</string>
-  <string name="theme_preview_test_select_themes">Select Themes...</string>
-  <string name="theme_preview_test_dialog_title">Select Themes</string>
-  <string name="theme_preview_test_builtin_themes">Built-in Themes</string>
+<!-- Theme Preview Test Screen -->
+<string name="theme_preview_test_menu">Menu</string>
   <string name="theme_preview_test_plugin_themes">Plugin Themes</string>
-  <string name="theme_preview_test_confirm">OK</string>
-  <string name="theme_preview_test_cancel">Cancel</string>
-  <string name="theme_preview_test_layout_single">Single Theme</string>
-  <string name="theme_preview_test_layout_horizontal_2">Horizontal Split (2)</string>
-  <string name="theme_preview_test_layout_vertical_2">Vertical Split (2)</string>
-  <string name="theme_preview_test_layout_grid_2x2">Grid 2x2</string>
-  <string name="theme_preview_test_layout_grid_3x2">Grid 3x2</string>
-  <string name="theme_preview_test_layout_list">List Mode</string>
-  <string name="theme_preview_test_theme_gray">TinaGray (Default)</string>
-  <string name="theme_preview_test_theme_dark">TinaDark (Dark)</string>
-  <string name="theme_preview_test_theme_light">TinaLight (Light)</string>
-  <string name="theme_preview_test_theme_auto">Auto (Follow System)</string>
 
   <!-- Tree-sitter Test Screen -->
-  <string name="tree_sitter_test_title">Tree-sitter Test</string>
-  <string name="tree_sitter_test_back">Back</string>
-  <string name="tree_sitter_test_no_languages">No Tree-sitter language dependencies found</string>
-  <string name="tree_sitter_test_no_languages_hint">Please add implementation(\"com.itsaky.androidide.treesitter:tree-sitter-xxx\") to app dependencies, then Sync/Build.</string>
-  <string name="tree_sitter_test_analyzing">Analyzing...</string>
-  <string name="tree_sitter_test_status_format">%1$s | Parse: %2$dms | Nodes: ~%3$d</string>
-  <string name="tree_sitter_test_menu">Menu</string>
-  <string name="tree_sitter_test_select_language">Select Language</string>
-  <string name="tree_sitter_test_feature_config">Feature Config</string>
-  <string name="tree_sitter_test_rainbow_brackets">Rainbow Brackets</string>
-  <string name="tree_sitter_test_code_folding">Code Folding</string>
-  <string name="tree_sitter_test_show_line_numbers">Show Line Numbers</string>
-  <string name="tree_sitter_test_actions">Actions</string>
-  <string name="tree_sitter_test_reanalyze">Reanalyze</string>
 
   <!-- Bottom Navigation -->
   <string name="nav_project">Projects</string>
@@ -4758,7 +3526,6 @@ kept=%3$d bytes
   <string name="market_tab_plugins">Plugins</string>
   <string name="market_tab_packages">Packages</string>
   <string name="market_search_hint">Search...</string>
-  <string name="market_empty">No content</string>
   <string name="market_empty_plugins_title">Plugin Market Coming Soon</string>
   <string name="market_empty_plugins_desc">Exciting plugins are on the way, stay tuned</string>
   <string name="market_empty_packages_title">Package Manager Coming Soon</string>
@@ -4767,7 +3534,6 @@ kept=%3$d bytes
   <string name="market_error_retry">Retry</string>
   <string name="market_installed">Installed</string>
   <string name="market_install">Install</string>
-  <string name="market_update">Update</string>
   <string name="market_downloads">downloads</string>
   <string name="market_rating">Rating %1$.1f</string>
   <string name="pkg_manager_bundled">Bundled</string>
@@ -4811,6 +3577,20 @@ kept=%3$d bytes
   <string name="tutorial_related_destination_tutorial_action">Continue tutorial</string>
   <string name="tutorial_related_destination_help_action">View help</string>
   <string name="tutorial_related_destination_external_action">Open link</string>
+  <string-array name="tutorial_related_section_titles">
+    <item>相关文档</item>
+    <item>建议下一步</item>
+    <item>相关阅读</item>
+    <item>相关教程</item>
+    <item>继续学习</item>
+    <item>下一步</item>
+    <item>related docs</item>
+    <item>related documents</item>
+    <item>related tutorials</item>
+    <item>next steps</item>
+    <item>suggested next steps</item>
+    <item>continue learning</item>
+  </string-array>
   <string name="tutorial_skip">Skip</string>
   <string name="tutorial_next">Next</string>
   <string name="tutorial_previous">Previous</string>
@@ -4867,10 +3647,8 @@ kept=%3$d bytes
   <string name="onboarding_complete_dismiss">Got it</string>
 
   <!-- Profile Screen -->
-  <string name="profile_title">Profile</string>
   <string name="profile_open_source_title">TinaIDE Open Source</string>
   <string name="profile_open_source_desc">Private identity and commercial features have been moved out. Feedback, logs, plugins, package downloads, favorites, and download history remain available.</string>
-  <string name="profile_open_source_badge">Open Source</string>
   <string name="profile_version_format">Version %1$s</string>
   <string name="profile_settings">Settings</string>
   <string name="profile_feedback">Feedback</string>
@@ -4879,7 +3657,6 @@ kept=%3$d bytes
   <string name="profile_my_packages">My Packages</string>
   <string name="profile_download_history">Download History</string>
   <string name="profile_favorites">Favorites</string>
-  <string name="profile_unknown_user">Unknown User</string>
   <string name="profile_section_my_content">My Content</string>
   <string name="profile_section_settings_help">Settings &amp; Help</string>
   <string name="profile_my_plugins_desc">Installed plugins</string>
@@ -4892,36 +3669,12 @@ kept=%3$d bytes
   <string name="app_slogan">Make mobile development easier</string>
 
   <!-- NDK Configuration -->
-  <string name="ndk_platform_native">Native</string>
-  <string name="ndk_platform_native_desc">Run directly on device</string>
-  <string name="ndk_platform_android">Android NDK</string>
-  <string name="ndk_platform_android_desc">Cross-compile with NDK sysroot</string>
-  <string name="ndk_enable_label">Enable Android NDK Support</string>
-  <string name="ndk_enable_desc">Compile with NDK sysroot, enables Android APIs</string>
   <string name="ndk_api_level_label">API Level</string>
   <string name="ndk_api_level_display_name">API %1$d (%2$s)</string>
-  <string name="ndk_link_dynamic">Dynamic Linking</string>
-  <string name="ndk_link_dynamic_desc">Smaller size, requires shared libraries</string>
 
-  <string name="cmake_select_target_title">Select Build Target</string>
-  <string name="cmake_no_targets">No build targets found</string>
-  <string name="cmake_rebuilding">Rebuilding...</string>
 
   <!-- Text Action Menu Groups -->
-  <string name="text_action_group_text">Text</string>
-  <string name="text_action_group_edit">Edit</string>
   <string name="text_action_group_navigation">Navigate</string>
-  <string name="text_action_select_all">Select All</string>
-  <string name="text_action_copy">Copy</string>
-  <string name="text_action_paste">Paste</string>
-  <string name="text_action_cut">Cut</string>
-  <string name="text_action_long_select">Long Select</string>
-  <string name="text_action_undo">Undo</string>
-  <string name="text_action_redo">Redo</string>
-  <string name="text_action_delete_line">Delete Line</string>
-  <string name="text_action_duplicate_line">Duplicate Line</string>
-  <string name="text_action_move_line_up">Move Up</string>
-  <string name="text_action_move_line_down">Move Down</string>
 
   <!-- Developer Options: Server Config Dialog -->
   <string name="dev_options_view_server_config">View Server Config</string>
@@ -4931,9 +3684,6 @@ kept=%3$d bytes
   <string name="dev_options_config_updated_at">Updated at: %1$s</string>
   <string name="dev_options_config_refresh_interval">Refresh interval: %1$d sec</string>
   <string name="dev_options_config_unknown">Unknown</string>
-  <string name="dev_options_config_email_verification">• Email verification required: %1$s</string>
-  <string name="dev_options_config_email_code_expires">• Verification code expires: %1$d sec</string>
-  <string name="dev_options_config_registration">• Registration enabled: %1$s</string>
   <string name="dev_options_config_features">Feature flags:</string>
   <string name="dev_options_config_feedback">• Feedback: %1$s</string>
   <string name="dev_options_config_plugin_market">• Plugin market: %1$s</string>
@@ -4967,7 +3717,6 @@ kept=%3$d bytes
   <string name="ai_context_current_file">Current file: %1$s</string>
   <string name="ai_context_selected_code">Selected code (%1$s:%2$d-%3$d):</string>
   <string name="ai_context_error_info">Error info:</string>
-  <string name="ai_tool_call_label">(Tool call)</string>
   <string name="ai_toggle_tool_calls_show">Show %1$d more tools</string>
   <string name="ai_toggle_tool_calls_hide">Hide tools</string>
   <string name="ai_execute">Execute</string>
@@ -4984,10 +3733,8 @@ kept=%3$d bytes
   <string name="ai_tool_cancelled_label">Cancellation Reason</string>
   <string name="ai_expand">Expand</string>
   <string name="ai_collapse">Collapse</string>
-  <string name="ai_no_params">(No parameters)</string>
   <string name="ai_toggle_reasoning_show">Show reasoning</string>
   <string name="ai_toggle_reasoning_hide">Hide reasoning</string>
-  <string name="ai_tool_call_missing_id">Tool call missing id, cannot execute</string>
   <string name="ai_tool_call_missing_name">Tool call missing name, cannot execute</string>
   <string name="ai_tool_not_found">Tool not found: %1$s</string>
   <string name="ai_tool_execution_failed">Tool execution failed: %1$s</string>
@@ -5206,23 +3953,12 @@ kept=%3$d bytes
   <string name="ai_tool_success_execution_stopped">Execution stopped successfully: %1$s</string>
   <string name="ai_tool_success_navigated_run_output">Navigated to run output panel. The run output tab is now visible and focused.</string>
   <string name="ai_tool_success_navigated_build_log">Navigated to build log panel. The build log tab is now visible and focused.</string>
-  <string name="ai_tool_executed">Executed tool: %1$s</string>
   <string name="ai_new_conversation_count">New Chat %1$d</string>
 
   <!-- AI Provider -->
-  <string name="ai_provider_qwen">Tongyi Qianwen</string>
-  <string name="ai_provider_zhipu">Zhipu AI</string>
-  <string name="ai_provider_ollama">Ollama (Local)</string>
-  <string name="ai_provider_custom">Custom</string>
 
 
   <!-- Diff -->
-  <string name="diff_label_original">Original</string>
-  <string name="diff_label_modified">Modified</string>
-  <string name="diff_label_file">File</string>
-  <string name="diff_label_editor">Editor</string>
-  <string name="diff_label_left">Left</string>
-  <string name="diff_label_right">Right</string>
   <string name="diff_error_left_not_found">Left file not found: %1$s</string>
   <string name="diff_error_right_not_found">Right file not found: %1$s</string>
   <string name="diff_error_file_too_large">File too large, max 5MB supported</string>
@@ -5242,7 +3978,6 @@ kept=%3$d bytes
   <string name="market_category_language">Language Support</string>
   <string name="market_download_count">%1$d downloads</string>
   <string name="market_version">Version: %1$s</string>
-  <string name="market_error_read_file">Cannot read file</string>
 
   <!-- Plugin Log -->
   <string name="plugin_log_time">Time: %1$s</string>
@@ -5255,47 +3990,22 @@ kept=%3$d bytes
   <string name="settings_title_lsp">Language Server</string>
   <string name="settings_desc_lsp">Clangd, code completion, remote LSP</string>
   <string name="settings_cat_lsp_behavior">LSP Behavior</string>
-  <string name="settings_cat_basic_info">Basic Info</string>
-  <string name="settings_title_profile_edit">Profile</string>
-
-  <string name="action_retry_sync_now">Retry sync now</string>
-  <string name="action_go_install">Install</string>
-
-
-  <string name="dev_options_cpp_scroll_stress_test">C++ syntax highlight scroll stress test</string>
-  <string name="dev_options_cpp_scroll_stress_test_desc">Use very long C++ code to test the impact of highlighting/folding/rainbow brackets on scrolling</string>
-  <string name="cpp_scroll_stress_test_title">C++ scroll stress test</string>
-  <string name="cpp_scroll_stress_test_syntax_highlighting">Syntax highlighting</string>
-  <string name="cpp_scroll_stress_test_profile">Stress level</string>
-  <string name="cpp_scroll_stress_test_status_format">%1$s | Highlight:%2$s | Fold:%3$s | Rainbow:%4$s</string>
 
   <string name="tutorial_step_project_fab_title">Project actions menu</string>
   <string name="tutorial_step_project_fab_desc">Tap the bottom-right button to expand the menu: New project, Import from Git, Import from local</string>
-
-  <string name="dialog_title_edit_nickname">Edit nickname</string>
 
   <!-- Linux PRoot -->
   <string name="proot_profile_missing_shell">Linux system "%1$s" is missing required shell: %2$s</string>
 
   <!-- Favorites & Download History -->
-  <string name="favorites_empty">No favorites yet</string>
-  <string name="favorites_title">My Favorites</string>
+<string name="favorites_title">My Favorites</string>
   <string name="favorites_refresh">Refresh</string>
   <string name="favorites_remove">Remove</string>
   <string name="favorites_remove_confirm">Remove \"%1$s\" from favorites?</string>
   <string name="favorites_remove_confirm_title">Remove Favorite</string>
   <string name="favorites_sync_failed">Sync failed, please check network</string>
-  <string name="favorites_syncing">Syncing...</string>
-  <string name="favorites_sync_success">Sync successful</string>
   <string name="favorites_not_synced">Not synced</string>
-  <string name="favorites_detail_title">Favorite Details</string>
-  <string name="favorites_plugin_name">Plugin Name</string>
-  <string name="favorites_plugin_id">Plugin ID</string>
-  <string name="favorites_description">Description</string>
-  <string name="favorites_category">Category</string>
-  <string name="favorites_latest_version">Latest Version</string>
-  <string name="favorites_tags">Tags</string>
-  <string name="favorites_empty_hint">No favorites yet</string>
+<string name="favorites_empty_hint">No favorites yet</string>
   <string name="favorites_go_to_market">Browse Market</string>
   <string name="download_history_empty">No download history</string>
   <string name="download_history_detail_title">Download Details</string>
@@ -5304,20 +4014,15 @@ kept=%3$d bytes
   <string name="download_history_detail_version">Version</string>
   <string name="download_history_detail_size">Size</string>
   <string name="download_history_detail_time">Downloaded At</string>
-  <string name="dialog_title_remove_favorite">Remove Favorite</string>
-  <string name="dialog_message_remove_favorite">Remove \"%1$s\" from favorites?</string>
   <string name="filter_all">All</string>
   <string name="filter_plugins">Plugins</string>
   <string name="filter_packages">Packages</string>
   <string name="filter_snippets">Snippets</string>
   <string name="action_retry">Retry</string>
-  <string name="action_remove">Remove</string>
-  <string name="action_close">Close</string>
+<string name="action_close">Close</string>
   <string name="action_ok">OK</string>
 
   <!-- Mirror Settings -->
-  <string name="settings_cat_tips">Tips</string>
-  <string name="progress_updating_index">Updating package index…</string>
 
   <!-- APK Builder -->
   <string name="menu_section_build">Build</string>
@@ -5345,7 +4050,6 @@ kept=%3$d bytes
   <string name="file_provider_config_invalid">File sharing provider is misconfigured. Reinstall TinaIDE or export logs for diagnosis.</string>
   <string name="apk_builder_share">Share</string>
   <string name="apk_builder_share_failed">Failed to share the APK: %1$s</string>
-  <string name="apk_builder_no_so_files">No .so files found. Please build the project first.</string>
   <string name="apk_builder_no_entry_library">No libmain.so found. Please build the project first.</string>
   <string name="apk_builder_no_executable_file">No executable file found. Please build the project first.</string>
   <string name="apk_builder_template_unavailable">Template APK not available</string>
@@ -5389,7 +4093,6 @@ kept=%3$d bytes
   <string name="apk_builder_permissions_summary_with_risk">%1$d built-in permission(s) selected (%2$d high-risk)</string>
   <string name="apk_builder_permissions_manage">Manage permissions</string>
   <string name="apk_builder_permissions_sheet_title">Select permissions</string>
-  <string name="apk_builder_permissions_sheet_done">Done</string>
   <string name="apk_builder_permission_max_sdk">Declared only on Android %1$d and below</string>
   <string name="apk_builder_permission_high_risk_tag">High risk</string>
   <string name="apk_builder_permission_high_risk_warning_title">High-risk permission notice</string>
@@ -5427,13 +4130,7 @@ kept=%3$d bytes
   <string name="apk_builder_runtime_libraries_import_failed">Failed to import runtime libraries: %1$s</string>
   <string name="apk_builder_runtime_libraries_invalid_selection">No shared library files (.so) were selected</string>
 
-  <!-- TinaStateContainer -->
-  <string name="tina_state_empty_title">No Content</string>
-  <string name="tina_state_empty_subtitle">There is no data here yet</string>
-  <string name="tina_state_error_title">Load Failed</string>
-  <string name="tina_state_error_subtitle">Please check your network and try again</string>
   <string name="ai_summarize_and_continue">Summarize &amp; Continue</string>
-  <string name="ai_summarizing">Summarizing conversation...</string>
   <string name="ai_summary_prompt">Please summarize the key content of the above conversation, including:\n1. Main issues discussed\n2. Work completed\n3. Problems encountered and solutions\n4. Pending tasks\n\nPlease summarize concisely while preserving technical details.</string>
 
   <!-- AI Tool Categories -->
@@ -5521,14 +4218,11 @@ kept=%3$d bytes
     <string name="toast_cmake_clean_and_reconfiguring">Cleaning and reconfiguring CMake...</string>
     <string name="toast_cmake_clearing_build_dir">Clearing CMake build directory...</string>
     <string name="compile_error_not_cmake_project">The current project is not a CMake project</string>
-    <string name="compile_cmake_reconfigure_started">Reconfiguring CMake cache...</string>
-    <string name="compile_cmake_reconfigure_finished">CMake cache reconfigured</string>
+<string name="compile_cmake_reconfigure_finished">CMake cache reconfigured</string>
     <string name="compile_cmake_reconfigure_failed">Failed to reconfigure CMake cache</string>
-    <string name="compile_cmake_clean_and_reconfigure_started">Cleaning the build directory and reconfiguring the CMake cache...</string>
-    <string name="compile_cmake_clean_and_reconfigure_finished">Cleaned the build directory and reconfigured the CMake cache</string>
+<string name="compile_cmake_clean_and_reconfigure_finished">Cleaned the build directory and reconfigured the CMake cache</string>
     <string name="compile_cmake_clean_and_reconfigure_failed">Failed to clean and reconfigure the CMake cache</string>
-    <string name="compile_cmake_clear_build_dir_started">Clearing build directory...</string>
-    <string name="compile_cmake_clear_build_dir_finished">Build directory cleared</string>
+<string name="compile_cmake_clear_build_dir_finished">Build directory cleared</string>
     <string name="compile_cmake_clear_build_dir_failed">Failed to clear build directory</string>
     <string name="editor_status_remote_lsp">Remote LSP</string>
     <string name="editor_status_lsp_ready">LSP Ready</string>
@@ -5661,6 +4355,4 @@ kept=%3$d bytes
   <string name="ai_tool_doc_property_description">The %1$s parameter</string>
   <string name="ai_tool_doc_param_description">Description of %1$s</string>
   <string name="ai_tool_doc_return_description">Description of return value</string>
-  <string name="clangd_test_real_lsp_request_finished">Real LSP request finished</string>
-  <string name="clangd_test_real_lsp_request_failed">Real LSP request failed: %1$s</string>
 </resources>

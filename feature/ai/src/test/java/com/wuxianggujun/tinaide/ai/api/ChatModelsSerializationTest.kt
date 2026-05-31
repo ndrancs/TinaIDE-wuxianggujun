@@ -34,43 +34,6 @@ class ChatModelsSerializationTest {
     }
 
     @Test
-    fun `stream chunk preserves delta content usage and finish reason`() {
-        val chunk = ChatStreamChunk(
-            id = "chunk-1",
-            choices = listOf(
-                ChatStreamChoice(
-                    index = 0,
-                    delta = ChatDelta(
-                        role = "assistant",
-                        content = "hello",
-                        reasoningContent = "thinking",
-                        toolCalls = listOf(
-                            ToolCallDelta(
-                                index = 0,
-                                id = "call-1",
-                                type = "function",
-                                function = ToolFunctionDelta(
-                                    name = "read_file",
-                                    arguments = "{}",
-                                ),
-                            ),
-                        ),
-                    ),
-                    finishReason = "tool_calls",
-                ),
-            ),
-            usage = ChatUsage(promptTokens = 1, completionTokens = 2, totalTokens = 3),
-        )
-
-        val encoded = json.encodeToString(chunk)
-        val decoded = json.decodeFromString<ChatStreamChunk>(encoded)
-
-        assertThat(encoded).contains("reasoning_content")
-        assertThat(encoded).contains("finish_reason")
-        assertThat(decoded).isEqualTo(chunk)
-    }
-
-    @Test
     fun `message contexts keep their typed payload fields`() {
         val currentFile = MessageContext.CurrentFile(
             fileName = "Main.kt",
@@ -123,53 +86,4 @@ class ChatModelsSerializationTest {
         assertThat(encoded).contains("budget_tokens")
     }
 
-    @Test
-    fun `models list response accepts gateway minimal model items`() {
-        val decoded = json.decodeFromString<ModelsListResponse>(
-            """
-                {
-                  "data":[
-                    {"id":"gateway-model"}
-                  ]
-                }
-            """.trimIndent()
-        )
-
-        assertThat(decoded.`object`).isNull()
-        assertThat(decoded.data.single().id).isEqualTo("gateway-model")
-        assertThat(decoded.data.single().`object`).isNull()
-        assertThat(decoded.data.single().created).isNull()
-        assertThat(decoded.data.single().ownedBy).isNull()
-    }
-
-    @Test
-    fun `models list response preserves optional model metadata`() {
-        val decoded = json.decodeFromString<ModelsListResponse>(
-            """
-                {
-                  "object":"list",
-                  "data":[
-                    {
-                      "id":"full-model",
-                      "object":"model",
-                      "created":123456,
-                      "owned_by":"team-a"
-                    }
-                  ]
-                }
-            """.trimIndent()
-        )
-        val defaultResponse = ModelsListResponse()
-
-        assertThat(decoded.`object`).isEqualTo("list")
-        assertThat(decoded.data.single()).isEqualTo(
-            ModelInfo(
-                id = "full-model",
-                `object` = "model",
-                created = 123456,
-                ownedBy = "team-a",
-            )
-        )
-        assertThat(defaultResponse.data).isEmpty()
-    }
 }

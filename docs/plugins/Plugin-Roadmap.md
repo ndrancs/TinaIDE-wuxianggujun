@@ -164,8 +164,8 @@ interface HostCommand {
 
 - 只加载 JSON 数据（不执行插件代码）
 - 在补全列表中展示 snippet，并使用 Tina 片段控制器进行插入
-- 示例可直接复用本文的 snippet JSON 结构；若需要内置插件，也可参考
-  `assets/bundled_plugins/sample.snippets.cpp/`
+- 示例可直接复用本文的 snippet JSON 结构；当前仓库不再随 APK 内置
+  `sample.snippets.cpp`，插件 starter 中保留了 snippet 配置示例。
 
 建议分两步：
 

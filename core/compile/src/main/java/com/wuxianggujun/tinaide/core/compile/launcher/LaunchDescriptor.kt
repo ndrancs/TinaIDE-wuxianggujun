@@ -4,19 +4,11 @@ import com.wuxianggujun.tinaide.core.compile.artifact.Artifact
 import java.io.File
 
 /**
- * Launch 描述符:告知 UI 层"要启动什么、怎么启动",
- * 但不包含实际的 shell 命令组装(终端启动时 UI 调 TerminalCommandBuilder 完成)。
- *
- * 对应旧 `CompileProjectUseCase.LaunchSpec` 的语义,但迁移到新架构。
+ * Launch 描述符：告知 UI 层要启动什么。
+ * 这里不组装实际 shell 命令；终端启动时由 UI 层调用 TerminalCommandBuilder 完成。
  */
 sealed interface LaunchDescriptor {
     val artifact: Artifact
-
-    /** 直接原生启动(LOG 输出模式,不常用,保留给 ExecutionOutcome.Run+LOG 走)。 */
-    data class Native(
-        override val artifact: Artifact,
-        val outputPath: String,
-    ) : LaunchDescriptor
 
     /** SDL 图形运行时加载 .so 运行。 */
     data class Sdl(

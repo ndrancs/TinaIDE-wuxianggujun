@@ -12,5 +12,5 @@
     加上 SplashScreen 的安全区域裁剪，总 inset ≈ 17% + 12% = 29%
 -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ic_app_logo"
+    android:drawable="@mipmap/ic_launcher"
     android:inset="29%" />

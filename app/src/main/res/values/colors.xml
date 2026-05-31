@@ -6,10 +6,6 @@
         系统会根据当前模式自动选择对应的颜色
     -->
 
-    <!-- 基础颜色 -->
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-
     <!-- ========== Material Design 3 语义化颜色（浅色模式） ========== -->
 
     <!-- Primary 主色调 - 青色系 -->
@@ -51,12 +47,6 @@
     <color name="md_theme_outlineVariant">#BFC9C5</color>
 
     <!-- 其他 -->
-    <color name="md_theme_scrim">#000000</color>
-    <color name="md_theme_inverseSurface">#2E3130</color>
-    <color name="md_theme_inverseOnSurface">#EFF1EF</color>
-    <color name="md_theme_inversePrimary">#03DAC6</color>
-    <color name="md_theme_surfaceDim">#DAD9D7</color>
-    <color name="md_theme_surfaceBright">#FAFDFB</color>
     <color name="md_theme_surfaceContainerLowest">#FFFFFF</color>
     <color name="md_theme_surfaceContainerLow">#F4F6F4</color>
     <color name="md_theme_surfaceContainer">#EEEFED</color>
@@ -69,100 +59,11 @@
     <color name="statusBarColor">#FAFDFB</color>
     <color name="navigationBarColor">#FAFDFB</color>
 
-    <!-- TextInputLayout 颜色 -->
-    <color name="textInputStrokeDefault">#6F7976</color>
-    <color name="textInputStrokeFocused">#006B61</color>
-
-    <!-- Dropdown 颜色 -->
-    <color name="dropdownBackground">#FFFFFF</color>
-
-    <!-- LSP 状态颜色 -->
-    <color name="lspStatusConnected">#2E7D32</color>
-    <color name="lspStatusDisconnected">#C62828</color>
-    <color name="lspStatusInitializing">#F9A825</color>
-
     <!-- 按钮颜色 -->
-    <color name="buttonTonalBackground">#CCE8E2</color>
-
     <!-- 文本颜色 -->
-    <color name="textPrimary">#191C1B</color>
-    <color name="textSecondary">#3F4946</color>
     <color name="textHint">#6F7976</color>
-
-    <!-- 图标颜色 -->
-    <color name="iconPrimary">#191C1B</color>
-    <color name="iconSecondary">#3F4946</color>
-
-    <!-- 分隔线颜色 -->
-    <color name="divider">#DBE5E1</color>
 
     <!-- 高亮选择颜色 -->
     <color name="textHighlight">#40006B61</color>
 
-    <!-- SplashScreen 图标背景色 - 与 ic_app_logo 背景色匹配 -->
-    <color name="splash_icon_background">#4BA3C7</color>
-
-    <!-- ========== 灰色主题专用颜色 ========== -->
-    <!-- 灰色主题使用深灰色背景 #2D2D2D，比纯黑色更柔和，减少视觉疲劳 -->
-
-    <!-- Gray 主色调 - 青绿色（与深色模式相同） -->
-    <color name="gray_theme_primary">#03DAC6</color>
-    <color name="gray_theme_onPrimary">#003731</color>
-    <color name="gray_theme_primaryContainer">#00504A</color>
-    <color name="gray_theme_onPrimaryContainer">#6FF7E2</color>
-
-    <!-- Gray Secondary 次要色调 -->
-    <color name="gray_theme_secondary">#B1CCC6</color>
-    <color name="gray_theme_onSecondary">#1C3531</color>
-    <color name="gray_theme_secondaryContainer">#3D4D4A</color>
-    <color name="gray_theme_onSecondaryContainer">#CCE8E2</color>
-
-    <!-- Gray Tertiary 第三色调 -->
-    <color name="gray_theme_tertiary">#AACBDF</color>
-    <color name="gray_theme_onTertiary">#103445</color>
-    <color name="gray_theme_tertiaryContainer">#324A5C</color>
-    <color name="gray_theme_onTertiaryContainer">#C6E7FB</color>
-
-    <!-- Gray Error 错误色 -->
-    <color name="gray_theme_error">#FFB4AB</color>
-    <color name="gray_theme_onError">#690005</color>
-    <color name="gray_theme_errorContainer">#93000A</color>
-    <color name="gray_theme_onErrorContainer">#FFDAD6</color>
-
-    <!-- Gray Background 背景色 - 核心：深灰色背景 -->
-    <color name="gray_theme_background">#2D2D2D</color>
-    <color name="gray_theme_onBackground">#E1E3E0</color>
-
-    <!-- Gray Surface 表面色 -->
-    <color name="gray_theme_surface">#2D2D2D</color>
-    <color name="gray_theme_onSurface">#E1E3E0</color>
-    <color name="gray_theme_surfaceVariant">#484848</color>
-    <color name="gray_theme_onSurfaceVariant">#C0C0C0</color>
-
-    <!-- Gray Outline 轮廓线 -->
-    <color name="gray_theme_outline">#8A8A8A</color>
-    <color name="gray_theme_outlineVariant">#484848</color>
-
-    <!-- Gray 其他 -->
-    <color name="gray_theme_scrim">#000000</color>
-    <color name="gray_theme_inverseSurface">#E1E3E0</color>
-    <color name="gray_theme_inverseOnSurface">#2D2D2D</color>
-    <color name="gray_theme_inversePrimary">#006B61</color>
-    <color name="gray_theme_surfaceDim">#252525</color>
-    <color name="gray_theme_surfaceBright">#424242</color>
-    <color name="gray_theme_surfaceContainerLowest">#1A1A1A</color>
-    <color name="gray_theme_surfaceContainerLow">#242424</color>
-    <color name="gray_theme_surfaceContainer">#2D2D2D</color>
-    <color name="gray_theme_surfaceContainerHigh">#383838</color>
-    <color name="gray_theme_surfaceContainerHighest">#424242</color>
-
-    <!-- Gray 状态栏和导航栏 -->
-    <color name="gray_statusBarColor">#2D2D2D</color>
-    <color name="gray_navigationBarColor">#2D2D2D</color>
-
-    <!-- Gray 按钮颜色 -->
-    <color name="gray_buttonTonalBackground">#3D4D4A</color>
-
-    <!-- Gray 高亮选择颜色 -->
-    <color name="gray_textHighlight">#4003DAC6</color>
 </resources>

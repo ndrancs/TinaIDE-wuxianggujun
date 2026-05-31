@@ -6,7 +6,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val workspaceModule = module {
-    viewModel { (tc: ToolchainConfig, llvm: Int?, repair: Boolean, installLinuxEnv: Boolean) ->
-        DependencyInstallViewModel(get(), get(), get(), tc, llvm, repair, installLinuxEnv)
+    viewModel { (tc: ToolchainConfig, llvm: Int?, installLinuxEnv: Boolean) ->
+        DependencyInstallViewModel(get(), get(), get(), tc, llvm, installLinuxEnv)
     }
 }

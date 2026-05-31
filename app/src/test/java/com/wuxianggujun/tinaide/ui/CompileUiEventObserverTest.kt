@@ -1,12 +1,10 @@
 package com.wuxianggujun.tinaide.ui
 
 import com.wuxianggujun.tinaide.core.terminal.TerminalBackend
-import com.wuxianggujun.tinaide.ui.compose.components.FileTreeState
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
 import java.io.File
-import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -99,27 +97,6 @@ class CompileUiEventObserverTest {
 
         coVerify(exactly = 1) {
             projectTreeRevealer.reveal(file, selectTarget = false)
-        }
-    }
-
-    @Test
-    fun `file tree revealer reveals target without redundant refresh`() = runTest {
-        val fileTreeState = mockk<FileTreeState>(relaxed = true)
-        val revealer = FileTreeStateCompileProjectTreeRevealer { fileTreeState }
-        val target = Files.createTempFile("compile-ui-event-observer", ".bin").toFile()
-
-        try {
-            revealer.reveal(target, selectTarget = false)
-
-            coVerify(exactly = 0) { fileTreeState.refresh() }
-            coVerify(exactly = 1) {
-                fileTreeState.reveal(
-                    match { it.absolutePath == target.absolutePath },
-                    selectTarget = false
-                )
-            }
-        } finally {
-            target.delete()
         }
     }
 }

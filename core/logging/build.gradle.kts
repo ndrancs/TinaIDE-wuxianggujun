@@ -13,5 +13,4 @@ dependencies {
     implementation(project(":core:storage"))
     implementation(libs.timber)
     implementation(libs.kotlinx.coroutines)
-    implementation(libs.androidx.core.ktx)
 }

@@ -168,18 +168,6 @@ class SymbolIndexCache(private val context: Context) {
         }
     }
 
-    /**
-     * 清除所有缓存
-     */
-    fun clearAllCaches() {
-        try {
-            cacheDir.listFiles()?.forEach { it.delete() }
-            Timber.tag(TAG).i("Cleared all caches")
-        } catch (e: Exception) {
-            Timber.tag(TAG).w("Failed to clear all caches: ${e.message}")
-        }
-    }
-
     private fun getCacheFile(projectRoot: String): File {
         val hash = md5(projectRoot)
         return File(cacheDir, "index_$hash.json")

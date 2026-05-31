@@ -16,13 +16,8 @@ internal data class DeveloperDiagnosticsControlsState(
     val editorFlingLogControlEnabled: Boolean
 )
 
-internal data class DeveloperTestingToolsState(
-    val builtinCmakeLspControlEnabled: Boolean
-)
-
 internal enum class DeveloperOptionsAction {
-    DisableDeveloperOptions,
-    OpenTestingTools
+    DisableDeveloperOptions
 }
 
 internal enum class DeveloperServerUrlFeedback {
@@ -77,9 +72,7 @@ internal data class DeveloperToastSpec(
 
 internal data class DeveloperOptionsActionEffect(
     val disableDeveloperOptions: Boolean = false,
-    val navigateBack: Boolean = false,
-    val openTestingTools: Boolean = false,
-    val targetDevTestId: String? = null
+    val navigateBack: Boolean = false
 )
 
 internal object DeveloperOptionsSectionSupport {
@@ -101,10 +94,6 @@ internal object DeveloperOptionsSectionSupport {
             editorFlingLogControlEnabled = touchSubControlsEnabled
         )
     }
-
-    fun resolveTestingToolsState(): DeveloperTestingToolsState = DeveloperTestingToolsState(
-        builtinCmakeLspControlEnabled = true
-    )
 
     fun createServerUrlDialogState(currentServerUrl: String): DeveloperServerUrlDialogState = DeveloperServerUrlDialogState(
         urlText = currentServerUrl,
@@ -211,10 +200,6 @@ internal object DeveloperOptionsSectionSupport {
         DeveloperOptionsAction.DisableDeveloperOptions -> DeveloperOptionsActionEffect(
             disableDeveloperOptions = true,
             navigateBack = true
-        )
-
-        DeveloperOptionsAction.OpenTestingTools -> DeveloperOptionsActionEffect(
-            openTestingTools = true
         )
     }
 }

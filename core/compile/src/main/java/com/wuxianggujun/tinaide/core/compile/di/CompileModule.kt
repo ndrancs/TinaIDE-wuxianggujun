@@ -8,7 +8,6 @@ import com.wuxianggujun.tinaide.core.compile.artifact.JsonArtifactStore
 import com.wuxianggujun.tinaide.core.compile.event.BuildEventEmitter
 import com.wuxianggujun.tinaide.core.compile.event.SharedFlowBuildEventEmitter
 import com.wuxianggujun.tinaide.core.compile.launcher.DebugLauncher
-import com.wuxianggujun.tinaide.core.compile.launcher.NativeLauncher
 import com.wuxianggujun.tinaide.core.compile.launcher.SdlLauncher
 import com.wuxianggujun.tinaide.core.compile.launcher.TerminalLauncher
 import com.wuxianggujun.tinaide.core.compile.pipeline.BuildExecutor
@@ -36,7 +35,7 @@ import org.koin.dsl.module
  * - 每次编译请求拿到独立的 [BuildOrchestrator],避免把无关项目全局串行化
  */
 val compileModule = module {
-    // 进程管理(历史遗留,保留以兼容旧 UseCase)
+    // 进程管理:供 UI 和 AI 执行工具控制当前运行进程
     single { ProcessManager() }
 
     // ---------- 产物层 ----------
@@ -80,7 +79,6 @@ val compileModule = module {
     }
 
     // ---------- Launcher(P3 stub;P4 接入真实启动逻辑) ----------
-    single { NativeLauncher() }
     single { SdlLauncher() }
     single { DebugLauncher() }
     single { TerminalLauncher() }
@@ -92,7 +90,6 @@ val compileModule = module {
     factory { BuildExecutor() }
     factory {
         LaunchDispatcher(
-            nativeLauncher = get(),
             sdlLauncher = get(),
             debugLauncher = get(),
             terminalLauncher = get(),

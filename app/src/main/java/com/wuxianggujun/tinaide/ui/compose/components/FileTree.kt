@@ -62,12 +62,12 @@ private data class FileTreeContextMenuState(
 fun FileTree(
     state: FileTreeState,
     pluginManager: PluginManager,
-    hostCommandExecutor: HostCommandExecutor? = null,
     onFileClick: (File) -> Unit,
+    modifier: Modifier = Modifier,
+    hostCommandExecutor: HostCommandExecutor? = null,
     onFileLongClick: (File) -> Unit = {},
     onContextAction: (FileContextAction) -> Unit = {},
-    gitStatusMap: Map<String, FileGitStatus> = emptyMap(),
-    modifier: Modifier = Modifier
+    gitStatusMap: Map<String, FileGitStatus> = emptyMap()
 ) {
     val scope = rememberCoroutineScope()
     val pullToRefreshState = rememberPullToRefreshState()

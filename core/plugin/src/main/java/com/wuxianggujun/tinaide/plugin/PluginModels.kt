@@ -30,7 +30,7 @@ data class PluginManifest(
     val permissions: List<String>? = null,
     val optionalPermissions: List<String>? = null,
     val networkHosts: List<String>? = null,
-    val isBundled: Boolean = false // 是否为内置插件（从 assets/bundled_plugins 安装）
+    val isBundled: Boolean = false // 是否为内置插件（从 assets/bundled_plugins 或 assets/plugins 安装）
 )
 
 @Serializable

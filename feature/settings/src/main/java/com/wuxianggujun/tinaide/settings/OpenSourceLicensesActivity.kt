@@ -299,14 +299,6 @@ private fun AboutLibrariesData.mergeBundledLibraries(context: android.content.Co
             description = context.getString(Strings.license_bundled_termux_desc),
             website = null,
             licenseIds = listOf("Apache-2.0")
-        ),
-        LibraryEntry(
-            uniqueId = "bundled:nlohmann-json",
-            name = "JSON for Modern C++",
-            artifactVersion = "3.11.3",
-            description = context.getString(Strings.license_bundled_json_desc),
-            website = "https://github.com/nlohmann/json",
-            licenseIds = listOf("MIT")
         )
     )
 

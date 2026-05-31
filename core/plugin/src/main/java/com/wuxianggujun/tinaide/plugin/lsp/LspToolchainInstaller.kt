@@ -339,7 +339,7 @@ class LspToolchainInstaller(
         )
 
         if (result.exitCode != 0) {
-            // 尝试不带 --break-system-packages（旧版 pip）
+            // 部分 pip 环境不支持 --break-system-packages。
             val fallbackCommand = mutableListOf("pip3", "install", "--user")
             fallbackCommand.addAll(packages)
 

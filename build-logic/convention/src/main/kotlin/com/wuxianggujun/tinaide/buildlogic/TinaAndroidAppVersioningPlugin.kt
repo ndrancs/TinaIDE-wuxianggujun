@@ -8,17 +8,12 @@ import org.gradle.kotlin.dsl.configure
 /**
  * 版本号管理策略：
  *
- * 历史实现把「自增」放在 `autoIncrementVersion` 任务的 `doFirst` 中执行，
- * 但 AGP 在 **configuration 阶段** 就把 `defaultConfig.versionCode/versionName`
- * 烙进了 manifest。结果：
- *   - APK manifest = 旧版本
- *   - version.properties / 重命名后的 APK 文件名 = 新版本
- *   - Mapping 上传 = 旧版本
- * 三者错位一代，难以对齐崩溃日志。
+ * AGP 在 **configuration 阶段** 就会固化 `defaultConfig.versionCode/versionName`，
+ * 因此 release 自动自增必须在 apply() 阶段完成。
  *
- * 现在改为：apply() 阶段根据 `gradle.startParameter.taskNames` 判断本次构建是否
- * 包含 release assemble/bundle/install，若是则**先自增**再读取版本号，这样
- * manifest、extension、mapping upload、脚本重命名读到的是同一个值。
+ * apply() 阶段根据 `gradle.startParameter.taskNames` 判断本次构建是否包含 release
+ * assemble/bundle/install，若是则**先自增**再读取版本号，这样 manifest、extension、
+ * mapping upload、脚本重命名读到的是同一个值。
  * GitHub tag 发版使用提交中已锁定的 version.properties，不再二次自增，
  * 避免 tag、APK manifest 与 changelog 版本错位。
  */

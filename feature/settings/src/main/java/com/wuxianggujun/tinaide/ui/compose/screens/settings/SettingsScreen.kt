@@ -108,7 +108,6 @@ fun SettingsScreen(
     feedbackContent: (@Composable (onBack: () -> Unit) -> Unit)? = null,
     packagesContent: (@Composable (onBack: () -> Unit) -> Unit)? = null,
     // Navigation callbacks for Activity launches
-    onNavigateToDevTest: (String?) -> Unit = {},
     onNavigateToDependencyInstall: () -> Unit = {},
     onNavigateToPRootLog: () -> Unit = {},
     onNavigateToLicenses: () -> Unit = {}
@@ -427,8 +426,7 @@ fun SettingsScreen(
                     SettingsScrollableContent.Appearance -> AppearanceSettingsSection(settingsViewModel)
                     SettingsScrollableContent.Keyboard -> KeyboardSettingsSection()
                     SettingsScrollableContent.Developer -> DeveloperOptionsSection(
-                        onNavigateBack = onNavigateBack,
-                        onNavigateToDevTest = onNavigateToDevTest
+                        onNavigateBack = onNavigateBack
                     )
                     SettingsScrollableContent.About -> AboutSettingsSection(
                         showPRootDiagnostics = settingsState.linuxEnvironmentEnabled,

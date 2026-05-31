@@ -280,7 +280,6 @@ androidComponents {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
 
@@ -297,13 +296,11 @@ dependencies {
     implementation(project(":core:i18n"))
     implementation(project(":core:logging"))
     implementation(project(":core:lsp"))
-    implementation(project(":core:model"))
     implementation(project(":core:ndk"))
     implementation(project(":core:network"))
     implementation(project(":core:packages"))
     implementation(project(":core:plugin"))
     implementation(project(":core:project"))
-    implementation(project(":core:security"))
     implementation(project(":core:storage"))
     implementation(project(":core:proot"))
     implementation(project(":core:search"))
@@ -332,11 +329,6 @@ dependencies {
 
     // Kotlin Serialization
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.documentfile)
-
-    // AndroidX Preference (Material Design)
-    implementation(libs.androidx.preference.ktx)
 
     // Tree-sitter grammar 依赖由 :core:tree-sitter 统一管理
     // GenerateTreeSitterLanguageRegistry task 仍需要解析 implementation deps，
@@ -347,13 +339,6 @@ dependencies {
 
     // Termux 终端模块（Apache 2.0 许可证）
     implementation(project(":termux-terminal:terminal-view"))
-
-    // Apache Commons Compress for tar.gz/tar.xz extraction (PRoot rootfs, NDK sysroot)
-    implementation(libs.commons.compress) {
-        exclude(group = "com.github.luben", module = "zstd-jni")
-    }
-    // XZ compression support (required by commons-compress for .tar.xz files)
-    implementation(libs.tukaani.xz)
 
     // Kotlin Coroutines for async operations
     implementation(libs.kotlinx.coroutines)
@@ -369,7 +354,6 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.extended)
-    implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.activity.compose)
 
@@ -384,26 +368,11 @@ dependencies {
     // 详见：docs/design/16KB-Page-Alignment-Fix.md
     // implementation("com.nerdoftheherd:android-rsync:3.4.1")
 
-    // Security - 加密存储 Token
-    implementation(libs.androidx.security.crypto)
-
-    // DataStore - 用户偏好存储
-    implementation(libs.datastore.preferences)
-
     // WorkManager - 后台任务调度（服务器配置同步等）
     implementation(libs.work.runtime)
 
-    // xCrash - Native 崩溃捕获（支持 Java/Native/ANR）
-    // 使用本地编译版本，支持 16KB page alignment (Android 15+)
-    implementation(project(":xcrash"))
-
     // Timber - 日志框架（支持文件日志）
     implementation(libs.timber)
-
-    // LuaJava - Lua 脚本引擎（用于脚本插件）
-    // 使用 gudzpoz/luajava 库，Native Lua 5.4（通过 JNI）
-    // https://github.com/gudzpoz/luajava
-    implementation(libs.luajava.lua54)
 
     // Coil - 图片加载（用于图片预览器和 Markdown 渲染）
     // Coil 3.3.0 会携带更高版本的 kotlin-stdlib 约束，统一排除后交由项目 Kotlin 版本管理。
@@ -421,9 +390,6 @@ dependencies {
         // GIF 支持
         exclude(group = "org.jetbrains.kotlin")
     }
-
-    // ExifInterface - 图片方向信息读取（用于头像旋转校正）
-    implementation(libs.androidx.exifinterface)
 
     // JetBrains Markdown Parser - Markdown AST 解析（AI 聊天自研渲染层）
     implementation(libs.jetbrains.markdown)

@@ -55,7 +55,6 @@ internal fun MainActivityScreenHost(
     editorActionBridge: MainActivityEditorActionBridge,
     dialogCoordinator: MainActivityDialogCoordinator,
     workspaceActions: MainActivityWorkspaceActionsDelegate,
-    onProjectLoaded: (String) -> Unit,
     onOpenWithExternalApp: (File) -> Unit,
     onShareFileOrDirectory: (File) -> Unit,
 ) {
@@ -89,7 +88,6 @@ internal fun MainActivityScreenHost(
         mainScreenState = mainScreenState,
         workspaceActions = workspaceActions,
         dialogCoordinator = dialogCoordinator,
-        onProjectLoaded = onProjectLoaded,
         toastInfo = activity::toastInfo,
         toastError = activity::toastError,
         onOpenWithExternalApp = onOpenWithExternalApp,

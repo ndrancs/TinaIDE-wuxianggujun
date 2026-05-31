@@ -1305,8 +1305,8 @@ class EditorContainerStateTest {
         state.updateTabState(tabId = "tab-1", isDirty = true, canUndo = true, canRedo = false)
 
         assertThat(state.isActiveTabDirty()).isTrue()
-        assertThat(state.canUndoInActiveTab()).isTrue()
-        assertThat(state.canRedoInActiveTab()).isFalse()
+        assertThat(state.getActiveEditorToolBarState().canUndo).isTrue()
+        assertThat(state.getActiveEditorToolBarState().canRedo).isFalse()
     }
 
     @Test

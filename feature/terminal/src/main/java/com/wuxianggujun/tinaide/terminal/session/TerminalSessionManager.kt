@@ -216,8 +216,6 @@ class TerminalSessionManager(
         }
     }
 
-    // 旧的 Shell 解析/启动逻辑已迁移到 TerminalShellResolver，避免 SessionManager 内部出现两套分支。
-
     /**
      * 关闭会话
      *

@@ -104,8 +104,6 @@ class ProjectManagerViewModel(
                     val knownDirs = LinkedHashMap<String, File>()
                     val appContext = getApplication<Application>()
 
-                    cleanupLegacyExternalProjects(appContext)
-
                     fun addKnownDir(dir: File) {
                         if (!dir.isDirectory) return
                         if (!isManagedProject(appContext, dir)) return
@@ -255,29 +253,6 @@ class ProjectManagerViewModel(
             return
         }
         throw UiMessageException(access.failureMessageResId ?: Strings.toast_open_failed)
-    }
-
-    private fun cleanupLegacyExternalProjects(appContext: Application) {
-        projectLocationManager.getAllProjects()
-            .asSequence()
-            .filterNot { isManagedProject(appContext, File(it.sourceRootPath)) }
-            .forEach { location ->
-                runCatching {
-                    projectLocationManager.unregisterProject(location.projectId, deleteWorkspace = true)
-                }.onSuccess {
-                    Timber.tag(TAG).i(
-                        "Removed legacy unmanaged project mapping: %s (%s)",
-                        location.projectDirName,
-                        location.sourceRootPath,
-                    )
-                }.onFailure { throwable ->
-                    Timber.tag(TAG).e(
-                        throwable,
-                        "Failed to remove legacy unmanaged project mapping: %s",
-                        location.sourceRootPath,
-                    )
-                }
-            }
     }
 
     private fun isManagedProject(appContext: Application, dir: File): Boolean =

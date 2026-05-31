@@ -50,10 +50,10 @@ fun ChatMessageBubble(
     message: ChatMessage,
     onCopyCode: (String) -> Unit,
     onInsertCode: (String) -> Unit,
+    modifier: Modifier = Modifier,
     onExecuteToolCall: ((com.wuxianggujun.tinaide.ai.api.ToolCall) -> Unit)? = null,
     onCancelToolCall: ((com.wuxianggujun.tinaide.ai.api.ToolCall) -> Unit)? = null,
-    showTokenUsage: Boolean = false,
-    modifier: Modifier = Modifier
+    showTokenUsage: Boolean = false
 ) {
     val isUser = message.role == ChatRole.USER
     val toolCalls = remember(message.id, message.toolCalls) { message.toolCalls.orEmpty() }

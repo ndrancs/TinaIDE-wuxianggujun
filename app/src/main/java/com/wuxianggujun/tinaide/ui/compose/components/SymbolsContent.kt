@@ -572,52 +572,6 @@ private fun SymbolListItemCard(
 }
 
 @Composable
-private fun SymbolRow(
-    symbol: SymbolInfo,
-    onNavigate: (file: File, line: Int, column: Int) -> Unit,
-) {
-    val file = remember(symbol.filePath) { File(symbol.filePath) }
-    val line = symbol.location?.startLine ?: 0
-    val column = symbol.location?.startColumn ?: 0
-    SymbolListItemCard(
-        onClick = { onNavigate(file, line, column) }
-    ) {
-        Icon(
-            imageVector = symbolKindIcon(symbol.kind.name),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Text(
-            text = symbol.name,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(0.55f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = symbol.kind.name,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.2f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = symbol.displayDetail,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.25f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
 private fun LspWorkspaceSymbolRow(
     item: WorkspaceSymbolItem,
     onClick: () -> Unit,

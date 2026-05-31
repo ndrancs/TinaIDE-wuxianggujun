@@ -45,7 +45,6 @@ internal class MainActivityScreenCallbacks(
 
 @Stable
 internal class MainActivityWorkspaceCallbacks(
-    val onProjectLoaded: (String) -> Unit,
     val onOpenSettings: () -> Unit,
     val toastInfo: (String) -> Unit,
     val toastError: (String) -> Unit,
@@ -122,7 +121,6 @@ internal fun rememberMainActivityScreenCallbacks(
 
 @Composable
 internal fun rememberMainActivityWorkspaceCallbacks(
-    onProjectLoaded: (String) -> Unit,
     onOpenSettings: () -> Unit,
     toastInfo: (String) -> Unit,
     toastError: (String) -> Unit,
@@ -170,14 +168,12 @@ internal fun rememberMainActivityWorkspaceCallbacks(
     )
 
     return remember(
-        onProjectLoaded,
         onOpenSettings,
         toastInfo,
         toastError,
         screenCallbacks,
     ) {
         MainActivityWorkspaceCallbacks(
-            onProjectLoaded = onProjectLoaded,
             onOpenSettings = onOpenSettings,
             toastInfo = toastInfo,
             toastError = toastError,

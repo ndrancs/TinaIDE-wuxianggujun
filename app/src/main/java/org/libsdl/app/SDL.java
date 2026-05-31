@@ -1,5 +1,6 @@
 package org.libsdl.app;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 
@@ -8,6 +9,8 @@ import java.lang.reflect.Method;
 /**
     SDL library initialization
 */
+// SDL stores the current Activity for native callbacks; lifecycle code clears it on init.
+@SuppressLint("StaticFieldLeak")
 public class SDL {
 
     // This function should be called first and sets up the native code

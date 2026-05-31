@@ -10,9 +10,8 @@ import java.util.Properties
  * Shared verification logic for `tina-toolchain` assets declared under
  * `app/src/<flavor>/assets/tina-toolchain/current.properties`.
  *
- * The logic is extracted from the legacy inline task previously defined in
- * `app/build.gradle.kts` so that it can be reused from a convention plugin
- * without coupling build script logic to Android DSL internals.
+ * Kept in the convention plugin so the app build script does not need to
+ * duplicate Gradle task logic or depend directly on Android DSL internals.
  */
 internal object TinaToolchainAssetsVerification {
 
@@ -106,18 +105,18 @@ internal object TinaToolchainAssetsVerification {
         val relParts = relSpec.split('/')
         val flavorName = relParts.getOrNull(1) ?: "unknown"
         val assetsDir = specFile.parentFile
-        val legacyArchiveDir = assetsDir.resolve("archive")
-        val legacyArchiveFile = if (legacyArchiveDir.isDirectory) {
-            legacyArchiveDir.walkTopDown().firstOrNull { it.isFile }
+        val forbiddenArchiveDir = assetsDir.resolve("archive")
+        val forbiddenArchiveFile = if (forbiddenArchiveDir.isDirectory) {
+            forbiddenArchiveDir.walkTopDown().firstOrNull { it.isFile }
         } else {
             null
         }
-        if (legacyArchiveFile != null) {
-            val relLegacyDir = legacyArchiveDir.relativeTo(project.projectDir).invariantSeparatorsPath
-            val relLegacyFile = legacyArchiveFile.relativeTo(project.projectDir).invariantSeparatorsPath
+        if (forbiddenArchiveFile != null) {
+            val relForbiddenDir = forbiddenArchiveDir.relativeTo(project.projectDir).invariantSeparatorsPath
+            val relForbiddenFile = forbiddenArchiveFile.relativeTo(project.projectDir).invariantSeparatorsPath
             throw GradleException(
-                "Found legacy toolchain archive under assets: $relLegacyDir\n" +
-                    "Sample file: $relLegacyFile\n" +
+                "Found toolchain archive under assets: $relForbiddenDir\n" +
+                    "Sample file: $relForbiddenFile\n" +
                     "Move archived versions out of app/src to avoid packaging into APK " +
                     "(recommended: app/.local/toolchain-archive/$flavorName).",
             )

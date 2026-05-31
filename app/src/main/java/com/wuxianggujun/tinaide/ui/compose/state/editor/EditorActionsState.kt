@@ -3,6 +3,7 @@ package com.wuxianggujun.tinaide.ui.compose.state.editor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -22,8 +23,8 @@ internal class EditorActionsState {
     // LSP Rename
     var showLspRenameDialog by mutableStateOf(false)
     var renameTabId by mutableStateOf<String?>(null)
-    var renameLine by mutableStateOf(0)
-    var renameColumn by mutableStateOf(0)
+    var renameLine by mutableIntStateOf(0)
+    var renameColumn by mutableIntStateOf(0)
     var renameCurrentName by mutableStateOf("")
     var renameIsLoading by mutableStateOf(false)
     var renameError by mutableStateOf<String?>(null)

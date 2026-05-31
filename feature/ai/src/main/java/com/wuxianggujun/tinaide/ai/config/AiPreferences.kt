@@ -2,8 +2,6 @@ package com.wuxianggujun.tinaide.ai.config
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import com.wuxianggujun.tinaide.core.config.ai.AiConfig
 import com.wuxianggujun.tinaide.core.config.ai.AiConfigProvider
 import com.wuxianggujun.tinaide.core.config.ai.AiConfigStrategy
@@ -18,30 +16,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import timber.log.Timber
 
 /**
  * AI 配置存储。
  *
  * 底层 SharedPreferences key 保持扁平，外部统一暴露 [AiConfig] 聚合模型。
- * 旧版 API Key 只在迁移时读取并清理，渠道密钥由 AiChannelApiKeyStore 管理。
+ * 渠道密钥由 AiChannelApiKeyStore 管理，不在这里读取或写入。
  */
 class AiPreferences(
     context: Context,
 ) : AiConfigProvider {
-
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-
-    // 加密存储仅用于迁移旧版 apiKey，新数据从 AiChannelApiKeyStore 读取。
-    private val encryptedPrefs: SharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "ai_secure_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
 
     private val prefs: SharedPreferences = context.getSharedPreferences(
         "ai_config_prefs",
@@ -55,25 +39,16 @@ class AiPreferences(
 
     private fun loadConfig(): AiConfig {
         val modeRaw = prefs.getString(KEY_ACCESS_MODE, null)
-        val legacyApiKey = encryptedPrefs.getString(KEY_API_KEY, "") ?: ""
-        val migration = AiConfigStrategy.resolveMigration(
-            persistedAccessMode = modeRaw,
-            legacyApiKeyPresent = legacyApiKey.isNotBlank(),
-        )
+        val accessMode = AiConfigStrategy.resolveAccessMode(modeRaw)
 
-        // 老数据首次迁移：清空遗留 apiKey 并固化 access_mode。
         if (modeRaw == null) {
-            if (migration.clearLegacyApiKey) {
-                Timber.tag(TAG).w("Legacy apiKey detected during migration; clearing and forcing CUSTOM_BYOK")
-                encryptedPrefs.edit().remove(KEY_API_KEY).apply()
-            }
-            prefs.edit().putString(KEY_ACCESS_MODE, migration.accessMode.name).apply()
+            prefs.edit().putString(KEY_ACCESS_MODE, accessMode.name).apply()
         }
 
         val fallbackSummaryPrompt = AiConfig.DEFAULT_SUMMARY_PROMPT
 
         return AiConfig(
-            accessMode = migration.accessMode,
+            accessMode = accessMode,
             activeChannelId = prefs.getString(KEY_ACTIVE_CHANNEL_ID, null)?.takeIf { it.isNotBlank() },
             generation = AiGenerationSettings(
                 model = prefs.getString(KEY_MODEL, "") ?: "",
@@ -155,10 +130,7 @@ class AiPreferences(
     }
 
     companion object {
-        private const val TAG = "AiPreferences"
-
         private const val KEY_ACCESS_MODE = "access_mode"
-        private const val KEY_API_KEY = "api_key" // legacy, 仅用于迁移时清空检测
         private const val KEY_MODEL = "model"
         private const val KEY_ACTIVE_CHANNEL_ID = "active_channel_id"
         private const val KEY_MAX_TOKENS = "max_tokens"

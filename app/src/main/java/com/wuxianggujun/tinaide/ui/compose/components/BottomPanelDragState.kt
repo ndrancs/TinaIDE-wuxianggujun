@@ -167,11 +167,6 @@ class BottomPanelDragState(
         heightAnimatable.snapTo(clamped)
     }
 
-    /**
-     * 获取指定比例对应的像素高度
-     */
-    fun getHeightForFraction(fraction: Float): Float = minHeight + (maxHeight - minHeight) * fraction.coerceIn(0f, 1f)
-
     // ============ 拖拽处理 ============
 
     /**

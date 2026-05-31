@@ -30,16 +30,15 @@ class LinuxDistroManifestTest {
     }
 
     @Test
-    fun staticSource_shouldReturnManifestAndCatalog() {
+    fun manifestCatalog_shouldResolveManifestDistros() {
         val manifest = LinuxDistroManifest(
             schemaVersion = LinuxDistroManifest.CURRENT_SCHEMA_VERSION,
             generatedAt = "2026-05-03T00:00:00Z",
             distros = listOf(distro("alpine"))
         )
-        val source = StaticLinuxDistroManifestSource(manifest)
+        val catalog = ManifestLinuxDistroCatalog(manifest)
 
-        assertThat(source.loadManifest()).isSameInstanceAs(manifest)
-        assertThat(source.loadCatalog().resolveDistro("alpine")?.displayName)
+        assertThat(catalog.resolveDistro("alpine")?.displayName)
             .isEqualTo("Alpine")
     }
 

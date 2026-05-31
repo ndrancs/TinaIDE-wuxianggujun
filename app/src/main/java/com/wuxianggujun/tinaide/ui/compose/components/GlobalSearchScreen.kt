@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.search.ProjectSearchResult
 import com.wuxianggujun.tinaide.search.history.SearchHistoryEntry
 import com.wuxianggujun.tinaide.ui.GlobalSearchViewModel
@@ -84,11 +85,11 @@ fun GlobalSearchScreen(
     LaunchedEffect(replaceResult) {
         replaceResult?.let { result ->
             val message = if (result.isSuccess) {
-                context.getString(Strings.search_replace_success, result.totalReplacements, result.successFiles)
+                Strings.search_replace_success.strOr(context, result.totalReplacements, result.successFiles)
             } else if (result.hasPartialSuccess) {
-                context.getString(Strings.search_replace_partial, result.successFiles, result.failedFiles)
+                Strings.search_replace_partial.strOr(context, result.successFiles, result.failedFiles)
             } else {
-                context.getString(Strings.search_replace_failed)
+                Strings.search_replace_failed.strOr(context)
             }
             snackbarHostState.showSnackbar(message)
             viewModel.clearReplaceResult()

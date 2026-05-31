@@ -70,6 +70,11 @@ class TinaAndroidAppTreeSitterPlugin : Plugin<Project> {
                 description = "Generate Tree-sitter language registry for app module."
                 outputDir.set(generatedRegistryDir)
                 grammarModulesRoot.set(grammarModulesRootFile)
+                bindingSourceFiles.from(
+                    fileTree(grammarModulesRootFile) {
+                        include("*/src/main/java/**/TSLanguage*.java")
+                    },
+                )
                 grammarLanguages.set(provider {
                     TinaTreeSitterSupport.treeSitterLangsFromDependencies(project)
                 })

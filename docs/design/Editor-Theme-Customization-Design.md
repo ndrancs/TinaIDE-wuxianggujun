@@ -24,19 +24,22 @@
 
 #### 当前主题系统
 
-TinaIDE 旧实现曾使用 **Sora Editor** 的 `EditorColorScheme` 类管理编辑器颜色：
+TinaIDE 当前实现使用 `core:editor-view` 内的 `EditorColorScheme` 管理编辑器 UI 与语法高亮颜色；内置主题由伴生对象提供，插件主题由 `PluginEditorThemeRegistry` 读取启用插件贡献的 `ThemeConfig` 后注入：
 
 ```
-EditorColorScheme (基类)
-├── TinaDarkColorScheme   - 深色主题
-├── TinaLightColorScheme  - 浅色主题
-└── TinaGrayColorScheme   - 灰色主题
+EditorColorScheme
+├── builtinDark()   - 深色主题
+├── builtinLight()  - 浅色主题
+└── builtinGray()   - 灰色主题
+
+PluginEditorThemeRegistry
+└── ThemeConfig.colors -> EditorColorScheme.fromThemeConfig(...)
 ```
 
 **关键文件**：
-- [TinaDarkColorScheme.kt](../../feature/editor/src/main/java/com/wuxianggujun/tinaide/editor/TinaDarkColorScheme.kt)
-- [TinaLightColorScheme.kt](../../feature/editor/src/main/java/com/wuxianggujun/tinaide/editor/TinaLightColorScheme.kt)
-- [TinaGrayColorScheme.kt](../../feature/editor/src/main/java/com/wuxianggujun/tinaide/editor/TinaGrayColorScheme.kt)
+- [EditorColorScheme.kt](../../core/editor-view/src/main/java/com/wuxianggujun/tinaide/core/editorview/EditorColorScheme.kt)
+- [PluginEditorThemeRegistry.kt](../../feature/editor/src/main/java/com/wuxianggujun/tinaide/editor/theme/PluginEditorThemeRegistry.kt)
+- [PluginModels.kt](../../core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/PluginModels.kt)
 
 #### 语法高亮系统
 

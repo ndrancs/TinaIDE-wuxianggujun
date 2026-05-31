@@ -97,7 +97,7 @@ class OpenAiCompatibleStreamParserTest {
     }
 
     @Test
-    fun `parses legacy function_call delta with default choice index`() {
+    fun `parses function_call delta with default choice index`() {
         val payload = """
             {"choices":[{"delta":{"function_call":{"name":"lookup","arguments":"{\"q\":\"hi\"}"}}}]}
         """.trimIndent()

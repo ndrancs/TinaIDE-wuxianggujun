@@ -58,7 +58,7 @@ internal data class HighlightLineCacheChange(
 }
 
 /**
- * 按 [HighlightLineCacheChange] 迁移 lineCache：
+ * 按 [HighlightLineCacheChange] 更新 lineCache：
  * - 未编辑区的行：原样保留或按 [HighlightLineCacheChange.lineDelta] 平移行号。
  * - 编辑区内的行（`[startLine..oldChangedEndLine]`）：
  *   - 单行内编辑（无 `\n` 进出）：保留旧 segments，并按列偏移做"近似平移"——

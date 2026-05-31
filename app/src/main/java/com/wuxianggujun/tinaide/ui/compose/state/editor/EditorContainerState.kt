@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -340,7 +341,7 @@ class EditorContainerState(
     var focusedPane by mutableStateOf(EditorPaneId.PRIMARY)
         private set
 
-    var splitEditorPrimaryRatio by mutableStateOf(DEFAULT_SPLIT_EDITOR_PRIMARY_RATIO)
+    var splitEditorPrimaryRatio by mutableFloatStateOf(DEFAULT_SPLIT_EDITOR_PRIMARY_RATIO)
         private set
 
     var splitEditorLayout by mutableStateOf(SplitEditorLayout.HORIZONTAL)
@@ -696,10 +697,6 @@ class EditorContainerState(
         )
     }
 
-    internal fun canUndoInActiveTab(): Boolean = getActiveTab()?.canUndo ?: false
-
-    internal fun canRedoInActiveTab(): Boolean = getActiveTab()?.canRedo ?: false
-
     internal fun isActiveTabDirty(): Boolean = getActiveTab()?.isDirty ?: false
 
     private fun getActiveCodeEditorCallback(): CodeEditorCallback? {
@@ -851,15 +848,6 @@ class EditorContainerState(
         line == other.line &&
         column == other.column
 
-    fun replaceAllInActiveTab(findText: String, replaceText: String): Int {
-        if (findText.isEmpty()) return 0
-        val callback = getActiveCodeEditorCallback() ?: return 0
-        val searchState = currentSearchState
-        val caseSensitive = searchState.caseSensitive
-        val useRegex = searchState.useRegex
-        return callback.replaceAll(findText, replaceText, caseSensitive, useRegex)
-    }
-
     internal fun snapshotActiveEditableEditorContent(): ActiveEditableEditorSnapshotResult = when (val activeEditor = resolveActiveEditableEditorBindingResult()) {
         ActiveEditableEditorBindingResult.NoOpenFile -> ActiveEditableEditorSnapshotResult.NoOpenFile
         ActiveEditableEditorBindingResult.UnsupportedEditor -> ActiveEditableEditorSnapshotResult.UnsupportedEditor
@@ -943,11 +931,6 @@ class EditorContainerState(
             tabId = activeTab.id,
             edits = edits
         )
-    }
-
-    fun toggleLineCommentInActiveTab(commentToken: String): Boolean {
-        val callback = getActiveCodeEditorCallback() ?: return false
-        return callback.toggleLineComment(commentToken)
     }
 
     fun undoInActiveTab(): Boolean {

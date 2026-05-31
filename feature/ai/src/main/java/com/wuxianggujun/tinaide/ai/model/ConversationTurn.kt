@@ -56,7 +56,6 @@ data class AssistantResponse(
     val actions: List<ToolAction> = emptyList(),
     val timestamp: Long = System.currentTimeMillis()
 )
-
 /**
  * 工具动作 - 封装工具调用的执行层
  */
@@ -97,7 +96,6 @@ data class ToolResult(
     val success: Boolean = true,
     val timestamp: Long = System.currentTimeMillis()
 )
-
 /**
  * 动作状态
  */
@@ -141,16 +139,4 @@ data class AiPanelConfig(
     val toolExecutionMode: ToolExecutionMode = ToolExecutionMode.AUTO,
     val autoScrollToBottom: Boolean = true,
     val showTokenUsage: Boolean = true
-)
-
-/**
- * 对话元数据（包含配置）
- */
-@Serializable
-data class ConversationMetadata(
-    val id: String = UUID.randomUUID().toString(),
-    val title: String = "",
-    val toolExecutionMode: ToolExecutionMode = ToolExecutionMode.AUTO,
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
 )

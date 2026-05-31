@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.wuxianggujun.tinaide.core.git.GitRemote
 import com.wuxianggujun.tinaide.core.i18n.Strings
@@ -456,14 +458,15 @@ private fun GitRemoteActionButton(
     onClick: () -> Unit,
     enabled: Boolean,
     color: Color,
-    modifier: Modifier = Modifier.size(32.dp),
+    modifier: Modifier = Modifier,
+    minHeight: Dp = 32.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     TinaPanelSegmentButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier,
-        minHeight = 32.dp,
+        modifier = modifier.defaultMinSize(minWidth = minHeight, minHeight = minHeight),
+        minHeight = minHeight,
         shape = MaterialTheme.shapes.small,
         color = color,
         contentPadding = PaddingValues(0.dp),

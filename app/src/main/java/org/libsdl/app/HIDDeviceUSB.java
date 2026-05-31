@@ -1,11 +1,14 @@
 package org.libsdl.app;
 
+import android.annotation.SuppressLint;
 import android.hardware.usb.*;
 import android.os.Build;
 import android.util.Log;
 import java.util.Arrays;
 import java.util.Locale;
 
+// SDL HID glue uses Android Log to match the upstream Java backend.
+@SuppressLint("LogNotTimber")
 class HIDDeviceUSB implements HIDDevice {
 
     private static final String TAG = "hidapi";

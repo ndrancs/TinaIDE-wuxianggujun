@@ -7,7 +7,6 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.net.Uri
-import android.os.Build
 import android.provider.OpenableColumns
 import android.provider.Settings
 import android.widget.Toast
@@ -53,6 +52,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.wuxianggujun.tinaide.core.apkbuilder.ApkBuildConfig
 import com.wuxianggujun.tinaide.core.apkbuilder.ApkBuilder
 import com.wuxianggujun.tinaide.core.apkbuilder.ApkKeyStoreManager
@@ -1385,7 +1385,7 @@ private fun resolveSigningProfileFile(outputDir: File, fallbackRoot: File): File
     return if (projectRoot != null) {
         ProjectDirStructure.getApkSigningPropertiesFile(projectRoot.absolutePath)
     } else {
-        File(fallbackRoot, "apk-signing.properties")
+        File(File(fallbackRoot, "apk-export"), "signing.properties")
     }
 }
 
@@ -1393,9 +1393,6 @@ private fun loadRememberedCustomSigning(
     outputDir: File,
     fallbackRoot: File
 ): RememberedCustomSigning? {
-    outputDir.parentFile?.parentFile?.let { projectRoot ->
-        ProjectDirStructure.migrateLegacyApkSigningPropertiesIfNeeded(projectRoot.absolutePath)
-    }
     val profileFile = resolveSigningProfileFile(outputDir, fallbackRoot)
     if (!profileFile.exists()) return null
 
@@ -1571,8 +1568,7 @@ private suspend fun installBuiltApk(context: Context, apkFile: File) {
     val shareableFile = ExternalFileIntents.ensureShareableFile(context, apkFile).getOrThrow()
     val apkUri = buildApkUri(context, shareableFile)
     ExternalFileIntents.logFileProviderDiagnostics(context, shareableFile)
-    val canRequestInstalls = Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
-        context.packageManager.canRequestPackageInstalls()
+    val canRequestInstalls = context.packageManager.canRequestPackageInstalls()
 
     Timber.tag(APK_PACKAGE_DIALOG_TAG).i(
         "Install requested: source=%s shareable=%s exists=%s size=%d uri=%s canRequestInstalls=%s",
@@ -1590,7 +1586,7 @@ private suspend fun installBuiltApk(context: Context, apkFile: File) {
         )
         val settingsIntent = Intent(
             Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-            Uri.parse("package:${context.packageName}")
+            "package:${context.packageName}".toUri()
         ).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
@@ -1620,19 +1616,6 @@ private suspend fun installBuiltApk(context: Context, apkFile: File) {
 
 private fun createApkInstallIntent(context: Context, apkUri: Uri, apkName: String): Intent {
     val packageManager = context.packageManager
-    val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
-        setDataAndType(apkUri, "application/vnd.android.package-archive")
-        clipData = ClipData.newUri(context.contentResolver, apkName, apkUri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    findPreferredPackageInstaller(packageManager, installIntent)?.let { installerPackage ->
-        installIntent.setPackage(installerPackage)
-    }
-    if (installIntent.resolveActivity(packageManager) != null) {
-        return installIntent
-    }
-
     val viewIntent = Intent(Intent.ACTION_VIEW).apply {
         setDataAndType(apkUri, "application/vnd.android.package-archive")
         clipData = ClipData.newUri(context.contentResolver, apkName, apkUri)

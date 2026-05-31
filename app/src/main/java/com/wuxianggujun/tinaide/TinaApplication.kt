@@ -7,7 +7,6 @@ import android.content.Context
 import com.itsaky.androidide.treesitter.TreeSitter
 import com.wuxianggujun.tinaide.ai.di.aiModule
 import com.wuxianggujun.tinaide.core.compile.di.compileModule
-import com.wuxianggujun.tinaide.core.config.AppPreferences
 import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.core.config.di.configModule
 import com.wuxianggujun.tinaide.core.crash.CrashLogAutoUploader
@@ -81,7 +80,7 @@ class TinaApplication : Application() {
         // 必须在 attachBaseContext 中尽早调用
         val processName = Application.getProcessName()
         // 主进程和原生运行容器进程弹出崩溃界面。
-        // GUI/SDL 用户 native 程序运行在隔离进程，崩溃时只结束运行容器，并由 :crash 进程展示日志。
+        // SDL 用户 native 程序运行在隔离进程，崩溃时只结束运行容器，并由 :crash 进程展示日志。
         // 用户项目/插件运行日志属于用户隐私，只本地保存与展示，不上传到 TinaIDE 服务器。
         val crashSource = when {
             CrashLogPrivacyClassifier.isHostAppProcess(packageName, processName) -> CrashActivity.SOURCE_APP
@@ -124,10 +123,6 @@ class TinaApplication : Application() {
             themeInitializer.applyNightMode()
             Timber.tag(TAG).i("Native runtime process detected, skipping host app initialization: %s", processName)
             return
-        }
-
-        if (isHostAppProcess) {
-            AppPreferences.migrateFromDefaultIfNeeded(this)
         }
 
         // 初始化项目元数据存储的 IDE 版本信息

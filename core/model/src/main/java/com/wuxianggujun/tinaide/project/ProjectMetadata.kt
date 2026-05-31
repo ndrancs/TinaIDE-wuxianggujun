@@ -73,8 +73,8 @@ data class ProjectMetadata(
     /**
      * project.json schema 版本。
      *
-     * - 新项目默认写入 2
-     * - 旧项目在读取阶段由 ProjectMetadataStore 自动迁移
+     * - 新写入始终使用 2
+     * - 读取阶段由 ProjectMetadataStore 做当前 schema 的字段归一化
      */
     val schemaVersion: Int = 2,
     val id: String,

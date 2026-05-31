@@ -49,7 +49,6 @@
 - PRootEnvironment.checkLinuxDistroHealth() 是当前活动 rootfs 的结构化自检入口。
 - LinuxDistroRootfsHealthChecker 会检查 rootfs 可用性、包管理器命令、包管理器版本、必需基础命令、可选基础命令、uname -m 和 /etc/os-release。
 - 可选 proot 缺失不会阻塞 isUsable；bash/curl/tar/xz/file/update-ca-certificates 等必需命令缺失会标记不可用。
-- 旧 healthCheck() 已改为适配该结构化报告，后续设置页可直接展示 LinuxDistroRootfsHealthReport。
 
 ## Manifest 维护
 

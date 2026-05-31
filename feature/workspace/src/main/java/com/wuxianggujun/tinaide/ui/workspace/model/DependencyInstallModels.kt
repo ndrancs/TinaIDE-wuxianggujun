@@ -12,29 +12,6 @@ enum class InstallPhase {
 }
 
 /**
- * 依赖包状态
- */
-enum class DependencyStatus {
-    PENDING,      // 等待中
-    DOWNLOADING,  // 下载中
-    EXTRACTING,   // 解压中
-    COMPLETED,    // 完成
-    FAILED        // 失败
-}
-
-/**
- * 依赖包数据
- */
-data class DependencyItem(
-    val name: String,
-    val version: String,
-    val size: String,
-    val status: DependencyStatus = DependencyStatus.PENDING,
-    val progress: Float = 0f,
-    val statusText: String = ""
-)
-
-/**
  * 已安装组件数据
  */
 data class InstalledComponent(
@@ -94,7 +71,6 @@ data class DependencyInstallUiState(
     val failedMessage: String = "",
     val isNetworkRelated: Boolean = false,
     val isPaused: Boolean = false,
-    val isRepairMode: Boolean = false,
     val envReady: Boolean = false,
     val rootfsHealth: DependencyRootfsHealthUiState = DependencyRootfsHealthUiState(),
 )

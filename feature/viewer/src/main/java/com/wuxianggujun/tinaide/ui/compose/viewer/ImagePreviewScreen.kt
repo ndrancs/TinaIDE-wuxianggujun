@@ -67,7 +67,6 @@ fun ImagePreviewScreen(
     filePath: String,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val file = remember { File(filePath) }
 
     // 图片信息状态

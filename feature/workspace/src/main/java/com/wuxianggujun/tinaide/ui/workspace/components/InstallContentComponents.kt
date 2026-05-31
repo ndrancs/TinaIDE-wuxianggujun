@@ -1,4 +1,3 @@
-
 package com.wuxianggujun.tinaide.ui.workspace.components
 
 import android.content.ClipData
@@ -7,7 +6,6 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,11 +28,9 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wuxianggujun.tinaide.core.i18n.Drawables
@@ -43,11 +39,9 @@ import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogActionRow
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogContentColumn
 import com.wuxianggujun.tinaide.ui.compose.components.TinaOverlayPanelSurface
 import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
-import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButtonLarge
 import com.wuxianggujun.tinaide.ui.compose.components.TinaOutlinedButton
 import com.wuxianggujun.tinaide.ui.workspace.model.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.wuxianggujun.tinaide.core.i18n.Strings
@@ -62,7 +56,6 @@ import com.wuxianggujun.tinaide.core.i18n.strOr
  * - InstallCompletedContent: 安装完成内容
  * - InstallFailedContent: 安装失败内容
  * - EnvironmentConfigCard: 环境配置卡片
- * - InstalledComponentCard: 已安装组件卡片
  */
 
 /**
@@ -138,7 +131,6 @@ fun InstallingContent(
     installStage: PRootBootstrap.InstallStage,
     packageList: List<PRootBootstrap.PackageInfo>,
     currentPackage: String?,
-    isRepairMode: Boolean = false,
     onBack: () -> Unit,
     onPauseToggle: () -> Unit,
     onCancel: () -> Unit,
@@ -373,9 +365,7 @@ private fun CompactProgressHeader(
 fun InstallCompletedContent(
     installedComponents: List<InstalledComponent>,
     rootfsHealth: DependencyRootfsHealthUiState = DependencyRootfsHealthUiState(),
-    isRepairMode: Boolean = false,
     onEnterWorkspace: () -> Unit,
-    onBack: () -> Unit,
     onRefreshRootfsHealth: (() -> Unit)? = null,
     onOpenLog: (() -> Unit)? = null,
     onOpenTerminal: (() -> Unit)? = null,
@@ -476,34 +466,15 @@ fun InstallCompletedContent(
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 条件显示返回按钮（仅修复模式显示）
-            if (isRepairMode) {
-                SetupActionButton(
-                    onClick = onBack,
-                    modifier = Modifier.size(SetupTopBarDefaults.IconSize)
-                ) {
-                    Icon(
-                        painter = rememberWorkspacePainter(Drawables.ic_arrow_back),
-                        contentDescription = stringResource(Strings.content_desc_back),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-
             // 标题
             Text(
                 text = stringResource(Strings.setup_title_ide_extension),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = if (isRepairMode) Modifier.weight(1f) else Modifier.fillMaxWidth(),
-                textAlign = if (isRepairMode) TextAlign.Center else TextAlign.Start
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Start
             )
-
-            // 占位，保持标题居中（仅修复模式需要）
-            if (isRepairMode) {
-                Spacer(modifier = Modifier.size(SetupTopBarDefaults.IconSize))
-            }
         }
 
         // 主内容区域
@@ -796,7 +767,6 @@ fun EnvironmentConfigCard(
 fun InstallFailedContent(
     errorMessage: String,
     isNetworkRelated: Boolean,
-    isRepairMode: Boolean = false,
     onRetry: () -> Unit,
     onOpenTerminal: (() -> Unit)? = null,
     onOpenLog: (() -> Unit)? = null,
@@ -1219,184 +1189,6 @@ fun InstallFailedContent(
 }
 
 /**
- * 已安装组件卡片
- */
-@Composable
-fun InstalledComponentCard(
-    component: InstalledComponent,
-    modifier: Modifier = Modifier
-) {
-    TinaOverlayPanelSurface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(TinaShapes.ButtonCorner),
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
-        shadowElevation = 1.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 组件图标
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = rememberWorkspacePainter(component.iconRes),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = Color.Unspecified // 保持原始颜色
-                    )
-                }
-                
-                Column {
-                    Text(
-                        text = component.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = component.version,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            // 完成勾选
-            Icon(
-                painter = rememberWorkspacePainter(Drawables.ic_check_circle),
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
-}
-
-/**
- * 性能标签
- */
-@Composable
-fun PerformanceTag(
-    label: String,
-    isHighlighted: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        color = if (isHighlighted) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant
-        }
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (isHighlighted) {
-                MaterialTheme.colorScheme.onPrimaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-    }
-}
-
-/**
- * 带动画效果的进度百分比文字
- *
- * 特性：
- * - 数字平滑变化动画
- * - 暂停时显示不同样式
- */
-@Composable
-fun AnimatedProgressText(
-    progress: Float,
-    isPaused: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val percentage = (progress * 100).roundToInt()
-
-    // 轻微的缩放动画，当数字变化时
-    val scale by animateFloatAsState(
-        targetValue = if (isPaused) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "textScale"
-    )
-
-    Text(
-        text = "$percentage%",
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
-        color = if (isPaused) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.primary
-        },
-        modifier = modifier.scale(scale)
-    )
-}
-
-/**
- * 带脉冲动画的状态指示圆点
- *
- * 用于显示"运行中"的状态
- */
-@Composable
-fun PulsingStatusDot(
-    modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.primary,
-    size: androidx.compose.ui.unit.Dp = 12.dp
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "statusDot")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dotScale"
-    )
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dotAlpha"
-    )
-
-    Box(
-        modifier = modifier
-            .size(size)
-            .scale(scale)
-            .graphicsLayer { this.alpha = alpha }
-            .clip(CircleShape)
-            .background(color)
-    )
-}
-
-/**
  * 紧凑版智能提示（仅在关键时刻显示）
  */
 @Composable
@@ -1455,94 +1247,6 @@ fun SmartInstallHintCompact(
                 painter = rememberWorkspacePainter(icon),
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
-                tint = iconTint
-            )
-
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-/**
- * 智能安装提示
- *
- * 根据安装状态和网络情况动态显示不同的提示信息
- */
-@Composable
-fun SmartInstallHint(
-    overallProgress: Float,
-    isPaused: Boolean,
-    isNetworkSlow: Boolean,
-    modifier: Modifier = Modifier
-) {
-    // 根据进度和状态决定显示什么提示
-    val (icon, message) = when {
-        isPaused -> {
-            Pair(
-                Drawables.ic_pause,
-                stringResource(Strings.hint_paused_can_resume)
-            )
-        }
-        isNetworkSlow -> {
-            Pair(
-                Drawables.ic_warning_amber,
-                stringResource(Strings.hint_slow_download)
-            )
-        }
-        overallProgress < 0.3f -> {
-            Pair(
-                Drawables.ic_info_outline,
-                stringResource(Strings.hint_first_install_slow)
-            )
-        }
-        overallProgress > 0.8f -> {
-            Pair(
-                Drawables.ic_check_circle,
-                stringResource(Strings.hint_almost_done)
-            )
-        }
-        else -> {
-            Pair(
-                Drawables.ic_info_outline,
-                stringResource(Strings.hint_installing_packages)
-            )
-        }
-    }
-    val containerColor = when {
-        isPaused -> MaterialTheme.colorScheme.surfaceVariant
-        isNetworkSlow -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-        overallProgress > 0.8f -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-        else -> MaterialTheme.colorScheme.surfaceVariant
-    }
-    val iconTint = when {
-        isNetworkSlow -> MaterialTheme.colorScheme.error
-        overallProgress > 0.8f -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    TinaOverlayPanelSurface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        containerColor = containerColor,
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                painter = rememberWorkspacePainter(icon),
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
                 tint = iconTint
             )
 

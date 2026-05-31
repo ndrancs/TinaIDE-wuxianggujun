@@ -18,7 +18,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -39,7 +38,12 @@ class CompileProjectUseCasePluginProjectTest {
 
     @Before
     fun setUp() {
-        context = RuntimeEnvironment.getApplication()
+        context = mockk(relaxed = true)
+        every { context.applicationContext } returns context
+        every { context.getString(any<Int>()) } answers { "string-${firstArg<Int>()}" }
+        every { context.getString(any<Int>(), *anyVararg()) } answers {
+            "string-${firstArg<Int>()}-formatted"
+        }
         tempRoot = Files.createTempDirectory("compile-plugin-project-").toFile()
         projectRoot = File(tempRoot, "demo-plugin").apply { mkdirs() }
         buildDir = File(projectRoot, "build")

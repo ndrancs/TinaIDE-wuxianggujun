@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun DebugContentWithHorizontalTabs(
+    modifier: Modifier = Modifier,
     breakpoints: List<BreakpointInfo> = emptyList(),
     variables: List<DebugVariable> = emptyList(),
     callStack: List<StackFrame> = emptyList(),
@@ -52,8 +53,7 @@ fun DebugContentWithHorizontalTabs(
     onBreakpointRemove: (Int) -> Unit = {},
     onVariableClick: (DebugVariable) -> Unit = {},
     onStackFrameClick: (StackFrame) -> Unit = {},
-    onClearConsole: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onClearConsole: () -> Unit = {}
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 

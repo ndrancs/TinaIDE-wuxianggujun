@@ -1,5 +1,6 @@
 package org.libsdl.app;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -41,6 +42,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -53,10 +56,14 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Locale;
 
+import androidx.annotation.RequiresApi;
+
 
 /**
     SDL Activity
 */
+// SDL Java glue keeps upstream static/native callback shape at this vendor boundary.
+@SuppressLint({"LogNotTimber", "StaticFieldLeak"})
 public class SDLActivity extends Activity implements View.OnSystemUiVisibilityChangeListener {
     private static final String TAG = "SDL";
     private static final int SDL_MAJOR_VERSION = 3;
@@ -165,8 +172,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     }
 */
 
-    public static boolean mIsResumedCalled, mHasFocus;
-    public static final boolean mHasMultiWindow = (Build.VERSION.SDK_INT >= 24  /* Android 7.0 (N) */);
+    public static boolean mIsResumedCalled;
 
     // Cursor types
     // private static final int SDL_SYSTEM_CURSOR_NONE = -1;
@@ -228,17 +234,14 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     protected static boolean mActivityCreated = false;
     private static SDLFileDialogState mFileDialogState = null;
     protected static boolean mDispatchingKeyEvent = false;
+    private Object mBackInvokedCallback;
 
     public static SDLGenericMotionListener_API14 getMotionListener() {
         if (mMotionListener == null) {
             if (Build.VERSION.SDK_INT >= 29 /* Android 10 (Q) */) {
                 mMotionListener = new SDLGenericMotionListener_API29();
-            } else if (Build.VERSION.SDK_INT >= 26 /* Android 8.0 (O) */) {
-                mMotionListener = new SDLGenericMotionListener_API26();
-            } else if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-                mMotionListener = new SDLGenericMotionListener_API24();
             } else {
-                mMotionListener = new SDLGenericMotionListener_API14();
+                mMotionListener = new SDLGenericMotionListener_API26();
             }
         }
 
@@ -350,7 +353,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         mLastCursorID = 0;
         mSDLThread = null;
         mIsResumedCalled = false;
-        mHasFocus = true;
         mNextNativeState = NativeState.INIT;
         mCurrentNativeState = NativeState.INIT;
     }
@@ -367,6 +369,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         Log.v(TAG, "Model: " + Build.MODEL);
         Log.v(TAG, "onCreate()");
         super.onCreate(savedInstanceState);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerBackInvokedCallback();
+        }
 
 
         /* Control activity re-creation */
@@ -482,11 +487,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         SDLActivity.onNativeRotationChanged(mCurrentRotation);
 
         try {
-            if (Build.VERSION.SDK_INT < 24 /* Android 7.0 (N) */) {
-                mCurrentLocale = getContext().getResources().getConfiguration().locale;
-            } else {
-                mCurrentLocale = getContext().getResources().getConfiguration().getLocales().get(0);
-            }
+            mCurrentLocale = getContext().getResources().getConfiguration().getLocales().get(0);
         } catch(Exception ignored) {
         }
 
@@ -547,9 +548,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         if (mHIDDeviceManager != null) {
             mHIDDeviceManager.setFrozen(true);
         }
-        if (!mHasMultiWindow) {
-            pauseNativeThread();
-        }
     }
 
     @Override
@@ -560,27 +558,20 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         if (mHIDDeviceManager != null) {
             mHIDDeviceManager.setFrozen(false);
         }
-        if (!mHasMultiWindow) {
-            resumeNativeThread();
-        }
     }
 
     @Override
     protected void onStop() {
         Log.v(TAG, "onStop()");
         super.onStop();
-        if (mHasMultiWindow) {
-            pauseNativeThread();
-        }
+        pauseNativeThread();
     }
 
     @Override
     protected void onStart() {
         Log.v(TAG, "onStart()");
         super.onStart();
-        if (mHasMultiWindow) {
-            resumeNativeThread();
-        }
+        resumeNativeThread();
     }
 
     public static int getNaturalOrientation() {
@@ -636,7 +627,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
            return;
         }
 
-        mHasFocus = hasFocus;
         if (hasFocus) {
            mNextNativeState = NativeState.RESUMED;
            SDLActivity.getMotionListener().reclaimRelativeMouseModeIfNeeded();
@@ -646,10 +636,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         } else {
            nativeFocusChanged(false);
-           if (!mHasMultiWindow) {
-               mNextNativeState = NativeState.PAUSED;
-               SDLActivity.handleNativeState();
-           }
         }
     }
 
@@ -674,8 +660,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
            return;
         }
 
-        if (mCurrentLocale == null || !mCurrentLocale.equals(newConfig.locale)) {
-            mCurrentLocale = newConfig.locale;
+        Locale newLocale = newConfig.getLocales().get(0);
+        if (mCurrentLocale == null || !mCurrentLocale.equals(newLocale)) {
+            mCurrentLocale = newLocale;
             SDLActivity.onNativeLocaleChanged();
         }
 
@@ -692,6 +679,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     @Override
     protected void onDestroy() {
         Log.v(TAG, "onDestroy()");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            unregisterBackInvokedCallback();
+        }
 
         if (mHIDDeviceManager != null) {
             HIDDeviceManager.release(mHIDDeviceManager);
@@ -727,8 +717,45 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         super.onDestroy();
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private void registerBackInvokedCallback() {
+        if (mBackInvokedCallback != null) {
+            return;
+        }
+        OnBackInvokedCallback callback = new OnBackInvokedCallback() {
+            @Override
+            public void onBackInvoked() {
+                handleBackPressed();
+            }
+        };
+        getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                callback);
+        mBackInvokedCallback = callback;
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private void unregisterBackInvokedCallback() {
+        if (mBackInvokedCallback == null) {
+            return;
+        }
+        getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(
+                (OnBackInvokedCallback) mBackInvokedCallback);
+        mBackInvokedCallback = null;
+    }
+
     @Override
+    @SuppressLint("GestureBackNavigation")
     public void onBackPressed() {
+        handleBackPressed();
+    }
+
+    protected void handleBackPressed() {
+        if (SDLActivity.mBrokenLibraries) {
+            performSystemBack();
+            return;
+        }
+
         // Check if we want to block the back button in case of mouse right click.
         //
         // If we do, the normal hardware back button will no longer work and people have to use home,
@@ -741,6 +768,11 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         }
 
         // Default system back button behavior.
+        performSystemBack();
+    }
+
+    @SuppressWarnings("deprecation")
+    protected void performSystemBack() {
         if (!isFinishing()) {
             super.onBackPressed();
         }
@@ -802,7 +834,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
     // Used to access the system back behavior.
     public void superOnBackPressed() {
-        super.onBackPressed();
+        performSystemBack();
     }
 
     @Override
@@ -861,7 +893,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         // Try a transition to resumed state
         if (mNextNativeState == NativeState.RESUMED) {
-            if (mSurface.mIsSurfaceReady && (mHasFocus || mHasMultiWindow) && mIsResumedCalled) {
+            if (mSurface.mIsSurfaceReady && mIsResumedCalled) {
                 if (mSDLThread == null) {
                     // This is the entry point to the C app.
                     // Start up the C app thread and enable sensor input for the first time
@@ -1232,17 +1264,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      */
     public static boolean supportsRelativeMouse()
     {
-        // DeX mode in Samsung Experience 9.0 and earlier doesn't support relative mice properly under
-        // Android 7 APIs, and simply returns no data under Android 8 APIs.
-        //
-        // This is fixed in Samsung Experience 9.5, which corresponds to Android 8.1.0, and
-        // thus SDK version 27.  If we are in DeX mode and not API 27 or higher, as a result,
-        // we should stick to relative mode.
-        //
-        if (Build.VERSION.SDK_INT < 27 /* Android 8.1 (O_MR1) */ && isDeXMode()) {
-            return false;
-        }
-
         return SDLActivity.getMotionListener().supportsRelativeMouse();
     }
 
@@ -1349,9 +1370,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * This method is called by SDL using JNI.
      */
     public static boolean isDeXMode() {
-        if (Build.VERSION.SDK_INT < 24 /* Android 7.0 (N) */) {
-            return false;
-        }
         try {
             final Configuration config = getContext().getResources().getConfiguration();
             final Class<?> configClass = config.getClass();
@@ -1828,13 +1846,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         Bitmap bitmap = Bitmap.createBitmap(colors, width, height, Bitmap.Config.ARGB_8888);
         ++mLastCursorID;
 
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-            try {
-                mCursors.put(mLastCursorID, PointerIcon.create(bitmap, hotSpotX, hotSpotY));
-            } catch (Exception e) {
-                return 0;
-            }
-        } else {
+        try {
+            mCursors.put(mLastCursorID, PointerIcon.create(bitmap, hotSpotX, hotSpotY));
+        } catch (Exception e) {
             return 0;
         }
         return mLastCursorID;
@@ -1844,11 +1858,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * This method is called by SDL using JNI.
      */
     public static void destroyCustomCursor(int cursorID) {
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-            try {
-                mCursors.remove(cursorID);
-            } catch (Exception e) {
-            }
+        try {
+            mCursors.remove(cursorID);
+        } catch (Exception e) {
         }
         return;
     }
@@ -1858,13 +1870,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      */
     public static boolean setCustomCursor(int cursorID) {
 
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-            try {
-                mSurface.setPointerIcon(mCursors.get(cursorID));
-            } catch (Exception e) {
-                return false;
-            }
-        } else {
+        try {
+            mSurface.setPointerIcon(mCursors.get(cursorID));
+        } catch (Exception e) {
             return false;
         }
         return true;
@@ -1937,12 +1945,10 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             cursor_type = 1014; //PointerIcon.TYPE_HORIZONTAL_DOUBLE_ARROW;
             break;
         }
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7.0 (N) */) {
-            try {
-                mSurface.setPointerIcon(PointerIcon.getSystemIcon(getContext(), cursor_type));
-            } catch (Exception e) {
-                return false;
-            }
+        try {
+            mSurface.setPointerIcon(PointerIcon.getSystemIcon(getContext(), cursor_type));
+        } catch (Exception e) {
+            return false;
         }
         return true;
     }
@@ -1951,11 +1957,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      * This method is called by SDL using JNI.
      */
     public static void requestPermission(String permission, int requestCode) {
-        if (Build.VERSION.SDK_INT < 23 /* Android 6.0 (M) */) {
-            nativePermissionResult(requestCode, true);
-            return;
-        }
-
         Activity activity = (Activity)getContext();
         if (activity.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
             activity.requestPermissions(new String[]{permission}, requestCode);
@@ -2128,14 +2129,10 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      */
     public static String getPreferredLocales() {
         String result = "";
-        if (Build.VERSION.SDK_INT >= 24 /* Android 7 (N) */) {
-            LocaleList locales = LocaleList.getAdjustedDefault();
-            for (int i = 0; i < locales.size(); i++) {
-                if (i != 0) result += ",";
-                result += formatLocale(locales.get(i));
-            }
-        } else if (mCurrentLocale != null) {
-            result = formatLocale(mCurrentLocale);
+        LocaleList locales = LocaleList.getAdjustedDefault();
+        for (int i = 0; i < locales.size(); i++) {
+            if (i != 0) result += ",";
+            result += formatLocale(locales.get(i));
         }
         return result;
     }
@@ -2165,6 +2162,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 /**
     Simple runnable to start the SDL application
 */
+@SuppressLint("LogNotTimber")
 class SDLMain implements Runnable {
     @Override
     public void run() {
@@ -2201,11 +2199,7 @@ class SDLClipboardHandler implements
     }
 
     public boolean clipboardHasText() {
-        if (Build.VERSION.SDK_INT >= 28 /* Android 9 (P) */) {
-            return mClipMgr.hasPrimaryClip();
-        } else {
-            return mClipMgr.hasText();
-        }
+        return mClipMgr.hasPrimaryClip();
     }
 
     public String clipboardGetText() {
@@ -2225,12 +2219,7 @@ class SDLClipboardHandler implements
     public void clipboardSetText(String string) {
         mClipMgr.removePrimaryClipChangedListener(this);
         if (string.isEmpty()) {
-            if (Build.VERSION.SDK_INT >= 28 /* Android 9 (P) */) {
-                mClipMgr.clearPrimaryClip();
-            } else {
-                ClipData clip = ClipData.newPlainText(null, "");
-                mClipMgr.setPrimaryClip(clip);
-            }
+            mClipMgr.clearPrimaryClip();
         } else {
             ClipData clip = ClipData.newPlainText(null, string);
             mClipMgr.setPrimaryClip(clip);

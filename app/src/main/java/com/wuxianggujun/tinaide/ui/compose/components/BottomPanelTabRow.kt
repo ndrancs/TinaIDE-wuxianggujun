@@ -1,11 +1,9 @@
 package com.wuxianggujun.tinaide.ui.compose.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -35,12 +33,12 @@ import com.wuxianggujun.tinaide.core.i18n.Strings
 @Composable
 fun BottomPanelTabRow(
     selectedTab: BottomPanelTab,
-    tabs: List<BottomPanelTab> = BottomPanelTab.entries,
     onTabSelected: (BottomPanelTab) -> Unit,
+    modifier: Modifier = Modifier,
+    tabs: List<BottomPanelTab> = BottomPanelTab.entries,
     isNearFullScreen: Boolean = false,
     onToggleFullScreen: (() -> Unit)? = null,
-    onClose: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onClose: (() -> Unit)? = null
 ) {
     val selectedTabIndex = tabs.indexOf(selectedTab).let { if (it >= 0) it else 0 }
     Row(
@@ -114,19 +112,5 @@ fun BottomPanelTabRow(
                 )
             }
         }
-    }
-}
-
-/**
- * 底部面板内容区域占位符
- */
-@Composable
-fun BottomPanelContent(
-    selectedTab: BottomPanelTab,
-    modifier: Modifier = Modifier,
-    content: @Composable (BottomPanelTab) -> Unit
-) {
-    Box(modifier = modifier.fillMaxSize()) {
-        content(selectedTab)
     }
 }

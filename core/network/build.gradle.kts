@@ -15,6 +15,5 @@ dependencies {
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.msgpack.core)
-    implementation(libs.datastore.preferences)
     implementation(libs.timber)
 }

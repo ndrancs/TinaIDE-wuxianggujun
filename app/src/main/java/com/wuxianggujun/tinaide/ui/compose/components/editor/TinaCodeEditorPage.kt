@@ -100,10 +100,10 @@ import timber.log.Timber
 fun TinaCodeEditorPage(
     state: EditorContainerState,
     tab: EditorTabState,
+    modifier: Modifier = Modifier,
     onCursorPositionChanged: (line: Int, column: Int) -> Unit = { _, _ -> },
     onFileEncodingChanged: (encoding: String) -> Unit = { _ -> },
-    onLoadingStateChanged: (Boolean) -> Unit = {},
-    modifier: Modifier = Modifier
+    onLoadingStateChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

@@ -1,5 +1,6 @@
 package com.wuxianggujun.tinaide.ui.sdl
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -67,7 +68,6 @@ class ExternalSdlActivity :
         const val EXTRA_PRELOAD_LIBRARY_PATHS = "extra_preload_library_paths"
         const val EXTRA_SDL_ORIENTATION = "extra_sdl_orientation"
         const val EXTRA_ENABLE_FLOATING_LOG = "extra_enable_floating_log"
-        private const val EXTRA_LEGACY_GUI_ORIENTATION = "extra_gui_orientation"
 
         fun createIntent(
             context: Context,
@@ -146,7 +146,6 @@ class ExternalSdlActivity :
             .orEmpty()
 
         val orientationName = intent.getStringExtra(EXTRA_SDL_ORIENTATION)
-            ?: intent.getStringExtra(EXTRA_LEGACY_GUI_ORIENTATION)
         userOrientation = orientationName?.let {
             runCatching { SdlOrientation.valueOf(it) }.getOrDefault(SdlOrientation.AUTO)
         } ?: SdlOrientation.AUTO
@@ -260,8 +259,7 @@ class ExternalSdlActivity :
      *   第一次按返回键显示 Toast 提示，2 秒内再按一次强制退出。
      *   悬浮球的退出按钮始终可用作备选退出方式。
      */
-    @Suppress("DEPRECATION")
-    override fun onBackPressed() {
+    override fun handleBackPressed() {
         val trapBack = nativeGetHintBoolean("SDL_ANDROID_TRAP_BACK_BUTTON", false)
         if (!trapBack) {
             exitToParent()
@@ -284,6 +282,7 @@ class ExternalSdlActivity :
     override fun loadLibraries() {
         val loadedPaths = linkedSetOf<String>()
 
+        @SuppressLint("UnsafeDynamicallyLoadedCode")
         fun loadAbsolutePath(path: String) {
             if (path.isBlank() || !loadedPaths.add(path)) return
             Timber.tag(TAG).d("System.load: %s", path)

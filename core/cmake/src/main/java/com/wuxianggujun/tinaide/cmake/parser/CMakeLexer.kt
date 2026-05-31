@@ -622,22 +622,6 @@ class CMakeLexer(private val source: String) {
     }
 
     /**
-     * 强制使用 Legacy 模式解析参数
-     * 用于已知需要 Legacy 语法支持的场景
-     */
-    fun parseArgumentLegacy(): Result<Token>? {
-        skipSpaces()
-        if (isAtEnd()) return null
-
-        return when (peek()) {
-            '"' -> parseQuotedArgument()
-            '[' -> parseBracketArgument()
-            ')', '\n', '\r', '#' -> null
-            else -> parseLegacyUnquotedArgument()
-        }
-    }
-
-    /**
      * 解析括号块注释
      */
     fun parseBracketComment(): Result<Comment.Bracket>? {

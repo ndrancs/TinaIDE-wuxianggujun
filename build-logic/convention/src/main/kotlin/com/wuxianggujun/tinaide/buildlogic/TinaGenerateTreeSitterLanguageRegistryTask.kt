@@ -2,10 +2,13 @@ package com.wuxianggujun.tinaide.buildlogic
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.SetProperty
+import org.gradle.api.tasks.IgnoreEmptyDirectories
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -26,9 +29,9 @@ import java.io.File
  * - [grammarLanguages]: grammar identifiers (e.g. `cpp`, `kotlin`). The
  *   plugin populates this by inspecting the `implementation` dependency
  *   configuration at apply time.
- * - [grammarModulesRoot]: `external/tina-android-tree-sitter/grammar-modules`,
- *   where each grammar ships a `src/main/java/.../TSLanguage*.java`
- *   binding that exposes the generated factory singleton.
+ * - [bindingSourceFiles]: `src/main/java/.../TSLanguage*.java` files under
+ *   `external/tina-android-tree-sitter/grammar-modules`, used for Gradle input
+ *   tracking without snapshotting native build scratch directories like `.cxx`.
  *
  * Output:
  * - [outputDir]: Kotlin source root that the consumer registers as an
@@ -42,9 +45,13 @@ abstract class TinaGenerateTreeSitterLanguageRegistryTask : DefaultTask() {
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
 
-    @get:InputDirectory
-    @get:PathSensitive(PathSensitivity.RELATIVE)
+    @get:Internal
     abstract val grammarModulesRoot: DirectoryProperty
+
+    @get:InputFiles
+    @get:IgnoreEmptyDirectories
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val bindingSourceFiles: ConfigurableFileCollection
 
     @TaskAction
     fun run() {

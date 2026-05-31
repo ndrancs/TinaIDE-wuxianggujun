@@ -11,8 +11,6 @@ dependencies {
     implementation(project(":core:i18n"))
     implementation(project(":core:network"))
     implementation(libs.kotlinx.coroutines)
-    implementation(libs.datastore.preferences)
-    implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.timber)
 }

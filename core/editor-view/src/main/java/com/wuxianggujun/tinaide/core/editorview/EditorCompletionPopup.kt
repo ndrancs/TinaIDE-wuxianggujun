@@ -47,9 +47,9 @@ import androidx.compose.ui.window.Popup
 
 internal val completionPopupRowMinHeight = 28.dp
 internal val completionPopupRowHorizontalPadding = 8.dp
-internal val completionPopupRowVerticalPadding = 4.dp
+internal val completionPopupRowVerticalPadding = 2.dp
 internal val completionPopupRowSpacing = 6.dp
-internal val completionPopupDetailSpacing = 2.dp
+internal val completionPopupDetailSpacing = 0.dp
 internal val completionPopupKindSlotSize = 18.dp
 internal val completionPopupKindIconSize = 14.dp
 internal val completionPopupLabelFontSize = 13.sp

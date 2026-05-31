@@ -17,7 +17,6 @@ android {
 dependencies {
     implementation(project(":core:i18n"))
 
-    testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso)
 }

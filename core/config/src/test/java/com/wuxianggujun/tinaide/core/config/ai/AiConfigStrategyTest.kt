@@ -4,50 +4,33 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 /**
- * [AiConfigStrategy] 单元测试——覆盖迁移与开源版配置归一化两个关键决策。
+ * [AiConfigStrategy] 单元测试，覆盖访问模式解析与开源版配置归一化。
  */
 class AiConfigStrategyTest {
 
-    // ==================== resolveMigration ====================
-
     @Test
-    fun `resolveMigration without persisted mode returns CUSTOM_BYOK and requests legacy wipe`() {
-        val result = AiConfigStrategy.resolveMigration(
-            persistedAccessMode = null,
-            legacyApiKeyPresent = true,
-        )
-        assertThat(result.accessMode).isEqualTo(AiAccessMode.CUSTOM_BYOK)
-        assertThat(result.clearLegacyApiKey).isTrue()
+    fun `resolveAccessMode without persisted mode returns CUSTOM_BYOK`() {
+        val result = AiConfigStrategy.resolveAccessMode(persistedAccessMode = null)
+
+        assertThat(result).isEqualTo(AiAccessMode.CUSTOM_BYOK)
     }
 
     @Test
-    fun `resolveMigration without persisted mode and no legacy key skips wipe`() {
-        val result = AiConfigStrategy.resolveMigration(
-            persistedAccessMode = null,
-            legacyApiKeyPresent = false,
-        )
-        assertThat(result.accessMode).isEqualTo(AiAccessMode.CUSTOM_BYOK)
-        assertThat(result.clearLegacyApiKey).isFalse()
-    }
-
-    @Test
-    fun `resolveMigration honors persisted BYOK mode`() {
-        val result = AiConfigStrategy.resolveMigration(
+    fun `resolveAccessMode honors persisted BYOK mode`() {
+        val result = AiConfigStrategy.resolveAccessMode(
             persistedAccessMode = AiAccessMode.CUSTOM_BYOK.name,
-            legacyApiKeyPresent = true,
         )
-        assertThat(result.accessMode).isEqualTo(AiAccessMode.CUSTOM_BYOK)
-        assertThat(result.clearLegacyApiKey).isFalse()
+
+        assertThat(result).isEqualTo(AiAccessMode.CUSTOM_BYOK)
     }
 
     @Test
-    fun `resolveMigration falls back to custom BYOK on unknown mode string`() {
-        val result = AiConfigStrategy.resolveMigration(
+    fun `resolveAccessMode falls back to custom BYOK on unknown mode string`() {
+        val result = AiConfigStrategy.resolveAccessMode(
             persistedAccessMode = "FUTURE_MODE",
-            legacyApiKeyPresent = false,
         )
-        assertThat(result.accessMode).isEqualTo(AiAccessMode.CUSTOM_BYOK)
-        assertThat(result.clearLegacyApiKey).isFalse()
+
+        assertThat(result).isEqualTo(AiAccessMode.CUSTOM_BYOK)
     }
 
     // ==================== normalizeForOpenSource ====================

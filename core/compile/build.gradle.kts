@@ -12,7 +12,6 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:config"))
     implementation(project(":core:i18n"))
-    implementation(project(":core:model"))
     implementation(project(":core:ndk"))
     implementation(project(":core:packages"))
     implementation(project(":core:project"))

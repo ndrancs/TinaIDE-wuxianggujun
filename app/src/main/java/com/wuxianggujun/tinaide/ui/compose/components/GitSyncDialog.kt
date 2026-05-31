@@ -46,15 +46,15 @@ fun GitSyncDialog(
     isSyncing: Boolean,
     output: String?,
     error: String?,
-    conflicts: List<String> = emptyList(),
-    conflictKind: GitConflictKind = GitConflictKind.NONE,
-    onOpenConflicts: () -> Unit = {},
     onFetch: (remote: String, branch: String?, prune: Boolean) -> Unit,
     onPull: (remote: String, branch: String?, rebase: Boolean) -> Unit,
     onPush: (remote: String, branch: String?, setUpstream: Boolean, force: Boolean, tags: Boolean) -> Unit,
     onDismiss: () -> Unit,
     onClear: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    conflicts: List<String> = emptyList(),
+    conflictKind: GitConflictKind = GitConflictKind.NONE,
+    onOpenConflicts: () -> Unit = {}
 ) {
     val defaultRemote = remember(remotes) { remotes.firstOrNull()?.name ?: "origin" }
     val defaultBranch = currentBranch ?: branches.firstOrNull { !it.isRemote }?.name

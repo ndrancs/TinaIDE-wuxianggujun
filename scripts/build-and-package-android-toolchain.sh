@@ -19,7 +19,6 @@ Common env flags:
   ENABLE_STATIC_PIE=0|1
   USE_CCACHE=0|1
   LLVM_PARALLEL_LINK_JOBS=6
-  APPLY_LLVM_ANDROID_EXEC_PATCH=0|1        # legacy umbrella for both LLVM pathfix and execwrap
   APPLY_LLVM_ANDROID_PATH_FIX_PATCH=0|1   # only fix clang InstalledDir under linker64
   APPLY_LLVM_ANDROID_EXEC_WRAP_PATCH=0|1  # wrap LLVM internal exec via linker64
   APPLY_CMAKE_ANDROID_EXEC_PATCH=0|1
@@ -56,10 +55,9 @@ STRIP_BINARIES="${STRIP_BINARIES:-1}"   # 1=strip toolchain binaries, 0=keep uns
 PRESERVE_LEGACY_RELEASE="${PRESERVE_LEGACY_RELEASE:-1}" # 1=move old release artifacts out of active release dir
 USE_CCACHE="${USE_CCACHE:-1}"           # 1=enable ccache launcher when available
 LLVM_PARALLEL_LINK_JOBS="${LLVM_PARALLEL_LINK_JOBS:-6}"
-APPLY_LLVM_ANDROID_EXEC_PATCH="${APPLY_LLVM_ANDROID_EXEC_PATCH:-1}" # legacy umbrella for LLVM Android source patches
-APPLY_LLVM_ANDROID_PATH_FIX_PATCH="${APPLY_LLVM_ANDROID_PATH_FIX_PATCH:-${APPLY_LLVM_ANDROID_EXEC_PATCH}}" # 1=fix clang InstalledDir when launched through linker/linker64
-APPLY_LLVM_ANDROID_EXEC_WRAP_PATCH="${APPLY_LLVM_ANDROID_EXEC_WRAP_PATCH:-${APPLY_LLVM_ANDROID_EXEC_PATCH}}" # 1=wrap LLVM internal exec() through linker/linker64
-APPLY_CMAKE_ANDROID_EXEC_PATCH="${APPLY_CMAKE_ANDROID_EXEC_PATCH:-${APPLY_LLVM_ANDROID_EXEC_PATCH}}" # 1=patch CMake subprocess exec() sources
+APPLY_LLVM_ANDROID_PATH_FIX_PATCH="${APPLY_LLVM_ANDROID_PATH_FIX_PATCH:-1}" # 1=fix clang InstalledDir when launched through linker/linker64
+APPLY_LLVM_ANDROID_EXEC_WRAP_PATCH="${APPLY_LLVM_ANDROID_EXEC_WRAP_PATCH:-1}" # 1=wrap LLVM internal exec() through linker/linker64
+APPLY_CMAKE_ANDROID_EXEC_PATCH="${APPLY_CMAKE_ANDROID_EXEC_PATCH:-1}" # 1=patch CMake subprocess exec() sources
 PACKAGE_VARIANT="${PACKAGE_VARIANT:-}"   # optional package suffix, e.g. patched
 NINJA_TARGETS="${NINJA_TARGETS:-}"       # empty=use default targets list; otherwise build only specified targets (space/comma separated)
 SKIP_STAGE_AND_PACKAGE="${SKIP_STAGE_AND_PACKAGE:-0}" # 1=stop after ninja build (for incremental rebuild/debug)
@@ -152,7 +150,6 @@ log "LLVM_TARGETS: ${LLVM_TARGETS}"
 log "BUILD_TOOLS=${BUILD_TOOLS} PACKAGE_FULL=${PACKAGE_FULL} PACKAGE_BASE=${PACKAGE_BASE} PACKAGE_TOOLS=${PACKAGE_TOOLS}"
 log "ENABLE_STATIC_PIE=${ENABLE_STATIC_PIE}"
 log "USE_CCACHE=${USE_CCACHE} LLVM_PARALLEL_LINK_JOBS=${LLVM_PARALLEL_LINK_JOBS}"
-log "APPLY_LLVM_ANDROID_EXEC_PATCH=${APPLY_LLVM_ANDROID_EXEC_PATCH} (legacy umbrella)"
 log "APPLY_LLVM_ANDROID_PATH_FIX_PATCH=${APPLY_LLVM_ANDROID_PATH_FIX_PATCH}"
 log "APPLY_LLVM_ANDROID_EXEC_WRAP_PATCH=${APPLY_LLVM_ANDROID_EXEC_WRAP_PATCH}"
 log "APPLY_CMAKE_ANDROID_EXEC_PATCH=${APPLY_CMAKE_ANDROID_EXEC_PATCH}"

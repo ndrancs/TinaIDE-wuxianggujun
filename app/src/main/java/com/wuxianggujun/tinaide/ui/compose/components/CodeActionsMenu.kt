@@ -89,7 +89,6 @@ fun CodeActionsMenu(
         modifier = modifier
     )
 }
-
 @Composable
 private fun CodeActionItem(
     action: LspCodeActionService.CodeActionItem,
@@ -132,32 +131,6 @@ private fun CodeActionItem(
             colors = ListItemDefaults.colors(
                 containerColor = MaterialTheme.colorScheme.surface
             )
-        )
-    }
-}
-
-/**
- * 代码操作按钮（用于编辑器工具栏）
- */
-@Composable
-fun CodeActionsButton(
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier
-    ) {
-        Icon(
-            imageVector = Icons.Default.Build,
-            contentDescription = stringResource(Strings.code_actions_title),
-            tint = if (enabled) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            }
         )
     }
 }

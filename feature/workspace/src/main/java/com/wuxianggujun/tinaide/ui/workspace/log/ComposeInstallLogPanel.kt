@@ -21,8 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wuxianggujun.tinaide.core.proot.InstallLogEntry
 import com.wuxianggujun.tinaide.core.proot.InstallLogLevel
-import kotlinx.coroutines.flow.StateFlow
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
 
@@ -184,29 +182,5 @@ private fun copyToClipboard(context: Context, entry: InstallLogEntry) {
     val clip = ClipData.newPlainText("Install Log", entry.fullText)
     clipboardManager.setPrimaryClip(clip)
     Toast.makeText(context, Strings.toast_copied.strOr(context), Toast.LENGTH_SHORT).show()
-}
-
-/**
- * 使用 StateFlow 的安装日志面板
- */
-@Composable
-fun ComposeInstallLogPanelWithFlow(
-    entriesFlow: StateFlow<List<InstallLogEntry>>,
-    modifier: Modifier = Modifier,
-    backgroundColor: Color = MaterialTheme.colorScheme.background,
-    autoScroll: Boolean = true,
-    fontSizeSp: Float = 13f,
-    onEntryClick: ((InstallLogEntry) -> Unit)? = null
-) {
-    val entries by entriesFlow.collectAsStateWithLifecycle()
-    
-    ComposeInstallLogPanel(
-        entries = entries,
-        modifier = modifier,
-        backgroundColor = backgroundColor,
-        autoScroll = autoScroll,
-        fontSizeSp = fontSizeSp,
-        onEntryClick = onEntryClick
-    )
 }
 

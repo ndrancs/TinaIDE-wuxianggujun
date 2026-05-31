@@ -159,14 +159,6 @@ class TinaTerminalViewClient(
         imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
-    /**
-     * 切换软键盘
-     */
-    @Suppress("DEPRECATION")
-    fun toggleSoftKeyboard() {
-        imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0)
-    }
-
     companion object {
         private const val TAG = "TinaTerminalView"
     }

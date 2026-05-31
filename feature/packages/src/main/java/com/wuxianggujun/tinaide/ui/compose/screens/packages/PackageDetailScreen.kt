@@ -2,9 +2,9 @@ package com.wuxianggujun.tinaide.ui.compose.screens.packages
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import timber.log.Timber
 import com.wuxianggujun.tinaide.core.i18n.strOr
-import com.wuxianggujun.tinaide.extensions.toastWarning
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -87,7 +87,11 @@ fun PackageDetailScreen(
                                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(homepage)))
                             } catch (e: Exception) {
                                 Timber.tag(TAG).w(e, "Failed to open URL: %s", homepage)
-                                context.toastWarning(Strings.toast_open_with_failed.strOr(context, homepage))
+                                Toast.makeText(
+                                    context,
+                                    Strings.toast_open_with_failed.strOr(context, homepage),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     }

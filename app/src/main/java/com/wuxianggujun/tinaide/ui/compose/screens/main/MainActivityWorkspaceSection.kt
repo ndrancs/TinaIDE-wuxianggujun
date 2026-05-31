@@ -64,7 +64,7 @@ internal fun MainActivityWorkspaceSection(
     val uiScope = mainScreenState.scope
     val editorContainerState = editorHostState.editorContainerState
 
-    val currentAiChatViewModel = MainActivityHostEffects(
+    val currentAiChatViewModel = mainActivityHostEffects(
         context = activity,
         lifecycleScope = lifecycleScope,
         projectContext = projectContext,
@@ -78,7 +78,6 @@ internal fun MainActivityWorkspaceSection(
         editorManager = editorManager,
         outputManager = outputManager,
         bottomPanelController = bottomPanelController,
-        onProjectLoaded = callbacks.onProjectLoaded,
     )
 
     BindMainActivityEditorHost(

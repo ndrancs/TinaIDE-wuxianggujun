@@ -2,14 +2,11 @@ package com.wuxianggujun.tinaide.ai.tools.executor
 
 import com.wuxianggujun.tinaide.ai.tools.ToolExecutionContext
 import com.wuxianggujun.tinaide.ai.tools.executor.code.DefaultCodeAnalysisCallbacks
-import com.wuxianggujun.tinaide.ai.tools.executor.code.EnhancedCodeAnalysisCallbacks
 import com.wuxianggujun.tinaide.ai.tools.executor.diagnostics.DefaultDiagnosticsCallbacks
 import com.wuxianggujun.tinaide.ai.tools.executor.diagnostics.DiagnosticsCallbacks
-import com.wuxianggujun.tinaide.ai.tools.executor.editor.EditorToolCallbacks
 import com.wuxianggujun.tinaide.ai.tools.executor.execution.DefaultExecutionCallbacks
 import com.wuxianggujun.tinaide.ai.tools.executor.execution.ExecutionCallbacks
 import com.wuxianggujun.tinaide.ai.tools.executor.filesystem.DefaultFileSystemCallbacks
-import com.wuxianggujun.tinaide.core.symbol.IProjectSymbolIndexService
 
 /**
  * 上下文数据提供者接口
@@ -44,47 +41,6 @@ class ProjectInfoProvider(
     }
 
     override val priority: Int = 0 // 最高优先级
-}
-
-/**
- * 编辑器回调提供者
- */
-class EditorCallbacksProvider(
-    private val getEditorCallbacks: () -> EditorToolCallbacks?
-) : ContextDataProvider {
-    override fun provideData(): Map<String, Any> = buildMap {
-        getEditorCallbacks()?.let { put("editorCallbacks", it) }
-    }
-
-    override val priority: Int = 10
-}
-
-/**
- * 代码分析回调提供者
- */
-class CodeAnalysisCallbacksProvider(
-    private val projectRoot: String,
-    private val getSymbolIndexService: () -> IProjectSymbolIndexService? = { null },
-    private val useEnhancedAnalysis: Boolean = true,
-    private val getRgPath: () -> String? = { null }
-) : ContextDataProvider {
-    override fun provideData(): Map<String, Any> {
-        val callbacks = if (useEnhancedAnalysis) {
-            EnhancedCodeAnalysisCallbacks(
-                projectRoot = projectRoot,
-                symbolIndexService = getSymbolIndexService(),
-                rgPath = getRgPath()
-            )
-        } else {
-            DefaultCodeAnalysisCallbacks(
-                projectRoot = projectRoot,
-                symbolIndexService = getSymbolIndexService()
-            )
-        }
-        return mapOf("codeAnalysisCallbacks" to callbacks)
-    }
-
-    override val priority: Int = 20
 }
 
 /**

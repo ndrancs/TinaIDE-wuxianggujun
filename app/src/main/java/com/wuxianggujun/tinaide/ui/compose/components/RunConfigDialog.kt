@@ -65,25 +65,18 @@ import java.io.File
 @Composable
 fun RunConfigDialog(
     config: RunConfiguration,
-    buildSystem: BuildSystem = BuildSystem.SINGLE_FILE,
-    availableTargets: List<TargetInfo> = emptyList(),
-    availableSourceFiles: List<String> = emptyList(),
     onSave: (RunConfiguration) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    buildSystem: BuildSystem = BuildSystem.SINGLE_FILE,
+    availableTargets: List<TargetInfo> = emptyList(),
+    availableSourceFiles: List<String> = emptyList()
 ) {
     var name by remember { mutableStateOf(config.name) }
     var args by remember { mutableStateOf(config.args) }
     var workDir by remember { mutableStateOf(config.workDir) }
     var buildType by remember { mutableStateOf(config.buildType) }
-    var outputMode by remember {
-        mutableStateOf(
-            when (config.outputMode) {
-                OutputMode.LOG -> OutputMode.TERMINAL
-                else -> config.outputMode.normalizedForPersistence()
-            }
-        )
-    }
+    var outputMode by remember { mutableStateOf(config.outputMode) }
     var targetName by remember { mutableStateOf(config.targetName) }
     var targetDropdownExpanded by remember { mutableStateOf(false) }
 
@@ -1000,8 +993,8 @@ private fun RunConfigActionButton(
 
 @Composable
 private fun RunConfigSectionCard(
-    title: String? = null,
     modifier: Modifier = Modifier,
+    title: String? = null,
     contentModifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
     contentPadding: PaddingValues = PaddingValues(12.dp),
@@ -1029,8 +1022,8 @@ private fun RunConfigSectionCard(
 @Composable
 private fun RunConfigInfoCard(
     message: String,
-    title: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    title: String? = null
 ) {
     RunConfigSectionCard(
         title = title,
@@ -1124,7 +1117,7 @@ fun VariableTextField(
     maxLines: Int = 1
 ) {
     var showSuggestions by remember { mutableStateOf(false) }
-    var cursorPosition by remember { mutableStateOf(0) }
+    var cursorPosition by remember { mutableIntStateOf(0) }
 
     // 检查是否应该显示变量建议
     // 当光标前面有 $ 且后面没有完整的变量时显示
@@ -1311,6 +1304,7 @@ fun RunConfigSelector(
     onEditConfig: () -> Unit,
     onDuplicateConfig: (String) -> Unit,
     onDeleteConfig: (String) -> Unit,
+    modifier: Modifier = Modifier,
     onBuild: (() -> Unit)? = null,
     onRun: () -> Unit = {},
     onRebuildAndRun: () -> Unit = {},
@@ -1324,8 +1318,7 @@ fun RunConfigSelector(
     runTint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF4CAF50),
     disabledTint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Gray,
     configSegmentMaxWidth: Dp = 84.dp,
-    showBuildButton: Boolean = true,
-    modifier: Modifier = Modifier
+    showBuildButton: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
     val currentConfig = configManager.selectedConfig

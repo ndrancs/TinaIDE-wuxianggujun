@@ -150,34 +150,3 @@ fun LspRenameDialog(
         }
     )
 }
-
-/**
- * 重命名结果提示
- */
-@Composable
-fun RenameResultSnackbar(
-    success: Boolean,
-    changedFiles: List<String>,
-    error: String?,
-    onDismiss: () -> Unit
-) {
-    val message = when {
-        success && changedFiles.isNotEmpty() -> {
-            stringResource(Strings.rename_success_with_files, changedFiles.size)
-        }
-        success -> stringResource(Strings.rename_success)
-        error != null -> stringResource(Strings.rename_failed_with_error, error)
-        else -> stringResource(Strings.rename_failed)
-    }
-
-    androidx.compose.material3.Snackbar(
-        action = {
-            TinaTextButton(
-                text = stringResource(Strings.btn_confirm),
-                onClick = onDismiss
-            )
-        }
-    ) {
-        Text(message)
-    }
-}

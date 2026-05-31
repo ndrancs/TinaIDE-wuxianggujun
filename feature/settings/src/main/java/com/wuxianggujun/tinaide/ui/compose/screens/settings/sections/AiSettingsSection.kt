@@ -152,7 +152,16 @@ internal fun AiSettingsSection() {
         if (config.accessMode == AiAccessMode.CUSTOM_BYOK) {
             SettingsClickableItem(
                 title = stringResource(Strings.settings_ai_channel_management),
-                subtitle = activeChannel?.let { "${it.provider.displayName} · ${it.model}" }
+                subtitle = activeChannel?.let { channel ->
+                    val providerName = stringResource(
+                        AiSettingsSectionSupport.resolveProviderDisplayNameRes(channel.provider)
+                    )
+                    stringResource(
+                        Strings.settings_ai_channel_provider_model,
+                        providerName,
+                        channel.model,
+                    )
+                }
                     ?: stringResource(Strings.settings_ai_channel_list_empty),
                 value = activeChannel?.name ?: stringResource(Strings.settings_ai_not_configured),
                 onClick = { activeDialog = AiSettingsDialog.ChannelManagement },

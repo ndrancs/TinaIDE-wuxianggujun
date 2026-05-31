@@ -92,15 +92,15 @@ internal fun DrawerContent(
     projectName: String,
     fileTreeState: FileTreeState,
     pluginManager: PluginManager,
-    hostCommandExecutor: HostCommandExecutor? = null,
     fileCallbacks: DrawerFileCallbacks,
     gitStatus: GitStatus,
     gitIsLoading: Boolean,
     gitStatusMap: Map<String, FileGitStatus>,
     gitCallbacks: DrawerGitCallbacks,
+    modifier: Modifier = Modifier,
+    hostCommandExecutor: HostCommandExecutor? = null,
     aiChatViewModel: AiChatViewModel? = null,
-    aiCallbacks: DrawerAiCallbacks = DrawerAiCallbacks(),
-    modifier: Modifier = Modifier
+    aiCallbacks: DrawerAiCallbacks = DrawerAiCallbacks()
 ) {
     var drawerTab by remember { mutableStateOf(DrawerTab.FILES) }
 

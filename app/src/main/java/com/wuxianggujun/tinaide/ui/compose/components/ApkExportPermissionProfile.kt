@@ -18,7 +18,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 internal data class ApkPermissionOption(
     val permission: String,
-    @StringRes val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     val maxSdkVersion: Int? = null,
     val isHighRisk: Boolean = false
 )
@@ -29,6 +29,13 @@ internal data class RememberedApkExportPermissions(
     val iconFilePath: String? = null,
     val additionalRuntimeLibraryPaths: List<String> = emptyList()
 )
+
+private const val PERMISSION_MANAGE_EXTERNAL_STORAGE = "android.permission.MANAGE_EXTERNAL_STORAGE"
+private const val PERMISSION_READ_MEDIA_IMAGES = "android.permission.READ_MEDIA_IMAGES"
+private const val PERMISSION_READ_MEDIA_VIDEO = "android.permission.READ_MEDIA_VIDEO"
+private const val PERMISSION_READ_MEDIA_AUDIO = "android.permission.READ_MEDIA_AUDIO"
+private const val PERMISSION_POST_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
+private const val PERMISSION_SCHEDULE_EXACT_ALARM = "android.permission.SCHEDULE_EXACT_ALARM"
 
 internal val apkPermissionOptions = listOf(
     ApkPermissionOption(
@@ -41,20 +48,20 @@ internal val apkPermissionOptions = listOf(
         maxSdkVersion = 29
     ),
     ApkPermissionOption(
-        permission = Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+        permission = PERMISSION_MANAGE_EXTERNAL_STORAGE,
         labelRes = Strings.apk_builder_permission_manage_external_storage,
         isHighRisk = true
     ),
     ApkPermissionOption(
-        permission = Manifest.permission.READ_MEDIA_IMAGES,
+        permission = PERMISSION_READ_MEDIA_IMAGES,
         labelRes = Strings.apk_builder_permission_read_media_images
     ),
     ApkPermissionOption(
-        permission = Manifest.permission.READ_MEDIA_VIDEO,
+        permission = PERMISSION_READ_MEDIA_VIDEO,
         labelRes = Strings.apk_builder_permission_read_media_video
     ),
     ApkPermissionOption(
-        permission = Manifest.permission.READ_MEDIA_AUDIO,
+        permission = PERMISSION_READ_MEDIA_AUDIO,
         labelRes = Strings.apk_builder_permission_read_media_audio
     ),
     ApkPermissionOption(
@@ -66,7 +73,7 @@ internal val apkPermissionOptions = listOf(
         labelRes = Strings.apk_builder_permission_record_audio
     ),
     ApkPermissionOption(
-        permission = Manifest.permission.POST_NOTIFICATIONS,
+        permission = PERMISSION_POST_NOTIFICATIONS,
         labelRes = Strings.apk_builder_permission_post_notifications
     ),
     ApkPermissionOption(
@@ -85,7 +92,7 @@ internal val apkPermissionOptions = listOf(
         isHighRisk = true
     ),
     ApkPermissionOption(
-        permission = Manifest.permission.SCHEDULE_EXACT_ALARM,
+        permission = PERMISSION_SCHEDULE_EXACT_ALARM,
         labelRes = Strings.apk_builder_permission_schedule_exact_alarm,
         isHighRisk = true
     ),

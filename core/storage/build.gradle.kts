@@ -14,7 +14,6 @@ android {
 dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:i18n"))
-    implementation(project(":core:model"))
     implementation(project(":core:project"))
     implementation(libs.timber)
     implementation(libs.kotlinx.coroutines)

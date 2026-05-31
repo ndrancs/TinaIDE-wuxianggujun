@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
  *
  * 专为解决 AndroidView（如 CodeEditor）与 Compose 手势冲突而设计。
  * 支持边缘滑动打开、拖拽关闭、点击遮罩关闭等交互。
- * 支持动态宽度（例如 AI 面板使用更大宽度）。
+ * 宽度在创建状态时确定，由调用方通过 `drawerWidth` 控制。
  */
 @Stable
 class SwipeableDrawerState(
@@ -55,8 +55,7 @@ class SwipeableDrawerState(
     /**
      * 当前侧滑栏宽度（像素）
      */
-    var drawerWidthPx by mutableFloatStateOf(initialDrawerWidthPx)
-        private set
+    val drawerWidthPx: Float = initialDrawerWidthPx
 
     /**
      * 侧滑栏偏移量（0 = 完全关闭，drawerWidthPx = 完全打开）
@@ -87,23 +86,6 @@ class SwipeableDrawerState(
      */
     val progress: Float
         get() = if (drawerWidthPx > 0f) (offsetX / drawerWidthPx).coerceIn(0f, 1f) else 0f
-
-    /**
-     * 更新侧滑栏宽度（带动画）
-     */
-    fun updateWidth(newWidthPx: Float) {
-        if (newWidthPx == drawerWidthPx) return
-
-        val wasOpen = isOpen
-        drawerWidthPx = newWidthPx
-
-        // 如果侧滑栏是打开状态，同步更新偏移量
-        if (wasOpen) {
-            coroutineScope.launch {
-                animateTo(newWidthPx)
-            }
-        }
-    }
 
     /**
      * 打开侧滑栏
@@ -211,9 +193,9 @@ fun rememberSwipeableDrawerState(
  * - 支持点击遮罩关闭
  * - 流畅的弹簧动画效果
  * - 自动适配状态栏
- * - 支持动态宽度（通过 state.updateWidth() 更新）
+ * - 支持由调用方配置初始宽度
  *
- * @param state 侧滑栏状态（包含动态宽度）
+ * @param state 侧滑栏状态
  * @param edgeWidth 边缘触摸区域宽度（用于打开手势）
  * @param scrimColor 遮罩颜色
  * @param drawerContent 侧滑栏内容
@@ -222,9 +204,9 @@ fun rememberSwipeableDrawerState(
 @Composable
 fun SwipeableDrawer(
     state: SwipeableDrawerState,
+    modifier: Modifier = Modifier,
     edgeWidth: Dp = 24.dp,
     scrimColor: Color = Color.Black.copy(alpha = 0.32f),
-    modifier: Modifier = Modifier,
     drawerContent: @Composable BoxScope.() -> Unit,
     content: @Composable BoxScope.() -> Unit
 ) {

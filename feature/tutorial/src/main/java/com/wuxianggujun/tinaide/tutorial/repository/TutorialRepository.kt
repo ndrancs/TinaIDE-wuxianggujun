@@ -12,8 +12,6 @@ import com.wuxianggujun.tinaide.tutorial.data.TutorialType
 import com.wuxianggujun.tinaide.tutorial.data.TutorialWithProgress
 import com.wuxianggujun.tinaide.tutorial.spotlight.SpotlightTargets
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
@@ -37,15 +35,6 @@ class TutorialRepository(
                     progress = progressMap[tutorial.id]
                 )
             }
-        }
-    }
-
-    /**
-     * 按分类获取教程
-     */
-    fun getTutorialsByCategory(category: TutorialCategory): Flow<List<TutorialWithProgress>> {
-        return getAllTutorialsWithProgress().map { tutorials ->
-            tutorials.filter { it.tutorial.category == category }
         }
     }
 

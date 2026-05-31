@@ -8,10 +8,6 @@ data class CodeSearchResult(
     val range: SearchRange
 ) : SearchResult
 
-data class JsonSearchResult(
-    val path: String
-) : SearchResult
-
 data class HexSearchResult(
     val offset: Long
 ) : SearchResult

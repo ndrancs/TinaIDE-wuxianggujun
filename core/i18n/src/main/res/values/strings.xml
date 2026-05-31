@@ -1,61 +1,26 @@
 <resources>
   <string name="app_name">TinaIDE</string>
-  <string name="title_project_manager">项目管理</string>
-  <string name="menu_new_project">新建项目</string>
-  <string name="menu_choose_dir">选择目录</string>
   <string name="menu_refresh">刷新</string>
   <string name="menu_settings">设置</string>
-  <string name="menu_debug">调试</string>
-  <string name="menu_run">运行</string>
-  <string name="menu_save">保存</string>
-  <string name="menu_generate_compile_commands">生成 compile_commands.json</string>
-  <string name="menu_close_project">关闭项目</string>
-  <string name="menu_clear_output">清空输出</string>
-  <string name="menu_allow_edit">允许编辑</string>
-  <string name="menu_more">更多操作</string>
-  <string name="btn_choose_directory">选择目录</string>
-  <string name="permission_not_all_granted">部分权限未授予，可能影响功能使用</string>
-  <string name="permission_denied_never_ask">权限被永久拒绝，请在设置中手动开启</string>
-  <string name="permission_denied">权限被拒绝</string>
-  <string name="permission_storage_title">需要存储权限</string>
-  <string name="permission_storage_message">TinaIDE 需要存储权限来访问和管理您的项目文件。</string>
-  <string name="permission_storage_rationale">为了正常使用编辑器功能，请授予存储权限。</string>
+<string name="permission_storage_title">需要存储权限</string>
   <string name="permission_storage_settings">请在系统设置中开启"所有文件访问权限"</string>
   <string name="project_public_projects_permission_hint">如果你之前把项目保存在公共目录（Documents/TinaIDE），请先授予文件管理权限。授权后项目列表会自动刷新，你就可以直接看到并打开这些项目。</string>
   <string name="permission_btn_grant">授予权限</string>
-  <string name="permission_btn_settings">去设置</string>
-  <string name="permission_btn_later">稍后</string>
-  <string name="empty_projects_hint">当前没有项目，请从右上角菜单新建或选择目录</string>
-  <string name="editor_empty_hint">从文件树中选择一个文件开始编辑</string>
-  <string name="empty_editor">空编辑器</string>
-  <string name="empty_editor_title">没有打开的文件</string>
   <string name="open_file_tree">打开文件树</string>
-  <string name="empty_editor_shortcut_hint">提示：从左侧边缘向右滑动可打开文件树</string>
+  <string name="empty_editor_title">没有打开的文件</string>
 
   <!-- New Project Dialog -->
-  <string name="dialog_title_new_project">新建项目</string>
-  <string name="dialog_title_open_project">打开项目</string>
-  <string name="hint_project_name">项目名称</string>
-  <string name="hint_project_path">项目路径</string>
-  <string name="hint_project_type">项目类型</string>
-  <string name="hint_project_description">项目描述（可选）</string>
   <string name="btn_create">创建</string>
   <string name="btn_cancel">取消</string>
-  <string name="btn_browse">浏览…</string>
   <string name="error_project_name_empty">项目名称不能为空</string>
   <string name="error_project_name_invalid_chars">项目名称只能包含英文字母、数字、下划线和连字符</string>
-  <string name="error_project_path_empty">项目路径不能为空</string>
   <string name="error_project_exists">项目已存在</string>
   <string name="error_create_project_dir">创建项目目录失败</string>
   <string name="error_template_failed">模板生成失败</string>
   <string name="success_project_created">项目创建成功</string>
   <string name="success_plugin_project_created">插件项目已创建：点击运行会校验并热安装，打包会生成 .tinaplug。</string>
-  <string name="no_projects">暂无项目</string>
 
   <!-- Project manager / main screen strings -->
-  <string name="project_manager_projects">项目</string>
-  <string name="project_manager_empty_title">还没有项目</string>
-  <string name="project_manager_empty_subtitle">点击右下角 + 按钮即可快速创建你的第一个项目</string>
 
   <!-- Settings root titles & descriptions（对齐 CodeAssist 风格） -->
   <string name="settings_title_editor">编辑器</string>
@@ -79,10 +44,6 @@
   <string name="settings_desc_ai">配置 API Key、服务商、模型</string>
   <string name="settings_title_git">Git 设置</string>
   <string name="settings_desc_git">HTTPS 认证与 SSH 密钥管理</string>
-  <string name="settings_title_git_auth">Git 认证</string>
-  <string name="settings_desc_git_auth">管理 HTTPS Token/用户名</string>
-  <string name="settings_title_git_ssh">Git SSH</string>
-  <string name="settings_desc_git_ssh">SSH 密钥与主机绑定</string>
 
   <!-- Git Settings Tabs -->
   <string name="git_settings_tab_https">HTTPS</string>
@@ -107,7 +68,6 @@
   <string name="settings_desc_developer">测试工具、调试功能</string>
 
   <!-- Developer Options -->
-  <string name="dev_options_title">开发者选项</string>
   <string name="dev_options_backend">后端服务</string>
   <string name="dev_options_tina_server_url">TinaServer 地址</string>
   <string name="dev_options_tina_server_url_desc">切换后端服务地址并测试连通性</string>
@@ -132,153 +92,17 @@
   <string name="dev_options_editor_scroll_touch_log_desc">输出滚动增量消费日志（delta/consumed/offset）</string>
   <string name="dev_options_editor_fling_touch_log">编辑器 fling 日志</string>
   <string name="dev_options_editor_fling_touch_log_desc">输出 fling 启动/结束日志（轴向、偏移、最大范围）</string>
-  <string name="dev_options_testing_tools">测试工具</string>
-  <string name="dev_options_testing_tools_desc">主题预览、语法高亮、LSP 等测试入口</string>
-  <string name="dev_editor_test_more_options">更多选项</string>
-  <string name="dev_editor_test_info">说明</string>
+  <string name="dev_options_runtime_tools">运行时工具</string>
   <string name="dev_options_reinstall_bundled_packages">重新安装内置包</string>
   <string name="dev_options_reinstall_bundled_packages_desc">强制重新解压 assets 中的预编译库（SDL3 等）</string>
   <string name="toast_reinstalling_bundled_packages">正在重新安装内置包...</string>
   <string name="toast_reinstall_bundled_packages_success">内置包重新安装成功</string>
   <string name="toast_reinstall_bundled_packages_failed">内置包重新安装失败: %1$s</string>
-  <string name="dev_options_theme_preview_test">主题预览测试</string>
-  <string name="dev_options_theme_preview_test_desc">对比不同主题的配色效果</string>
-  <string name="dev_options_tree_sitter_test">Tree-sitter 语法高亮测试</string>
-  <string name="dev_options_tree_sitter_test_desc">测试不同语言的语法高亮和性能</string>
   <string name="dev_options_editor_lsp_enabled">编辑器 LSP 总开关</string>
   <string name="dev_options_editor_lsp_enabled_desc">关闭后不再附加任何编辑器 LSP，可单独观察 Tree-sitter 高亮</string>
   <string name="dev_options_builtin_cmake_lsp_enabled">内置 CMake LSP</string>
   <string name="dev_options_builtin_cmake_lsp_enabled_desc">关闭后不附加内置 CMake 语义补全/语义高亮，便于单测 CMake 的 Tree-sitter 表现</string>
-  <string name="tree_sitter_test_preview_hint">下方编辑器就是高亮预览区：选择语言会加载对应示例文件，重新分析会重建文件并刷新高亮。</string>
-  <string name="tree_sitter_test_lsp_hint">这里用于隔离测试 Tree-sitter 高亮。关闭编辑器 LSP 总开关后，编辑器只保留 Tree-sitter 结果。</string>
-  <string name="tree_sitter_test_cmake_hint">如果只想验证 CMake 的内置 LSP 影响，可以保持总开关开启，仅关闭“内置 CMake LSP”。</string>
-  <string name="tree_sitter_test_recommended_files">推荐测试文件：CMakeLists.txt、*.cmake，以及包含变量、target、function、macro 的 CMake 脚本。</string>
-  <string name="dev_options_editor_scroll_test">编辑器滚动测试</string>
-  <string name="dev_options_editor_scroll_test_desc">测试不同滚动配置的效果</string>
-  <string name="dev_options_cpp_scroll_stress_test">C++ 高亮滚动压力测试</string>
-  <string name="dev_options_cpp_scroll_stress_test_desc">用超长 C++ 代码测试高亮/折叠/彩虹括号对滚动的影响</string>
-  <string name="dev_options_clangd_test">Clangd LSP 测试</string>
-  <string name="dev_options_clangd_test_desc">测试 LSP 通信协议和消息</string>
-  <string name="dev_options_plugin_db_test">插件数据库测试</string>
-  <string name="dev_options_plugin_db_test_desc">测试插件 SQLite 数据库 API</string>
-    <string name="dev_options_compiler_diagnostics_test">编译器诊断测试</string>
-    <string name="dev_options_compiler_diagnostics_test_desc">逐步测试编译链路各阶段，快速定位编译/链接问题</string>
-    <string name="compiler_diagnostics_test_back_content_description">返回</string>
-    <string name="compiler_diagnostics_test_heading">编译链路诊断工具</string>
-    <string name="dev_options_compiler_diagnostics_toolchain_variant_title">工具链变体</string>
-    <string name="compiler_diagnostics_toolchain_variant_patched">当前补丁工具链</string>
-    <string name="compiler_diagnostics_toolchain_variant_patched_desc">使用带 LLVM/CMake Android exec 补丁的稳定基线包，不额外启用 tina-exec。</string>
-    <string name="compiler_diagnostics_test_output_title">测试输出</string>
-    <string name="compiler_diagnostics_test_output_placeholder">点击上方按钮开始测试...</string>
-    <string name="compiler_diagnostics_test_report_failure_prefix">❌ 测试失败:</string>
-    <string name="compiler_diagnostics_test_report_working_directory">工作目录</string>
-    <string name="compiler_diagnostics_test_report_command">命令</string>
-    <string name="compiler_diagnostics_test_report_extra_environment">额外环境变量</string>
-    <string name="compiler_diagnostics_test_report_exit_code">退出码</string>
-    <string name="compiler_diagnostics_test_report_duration">耗时</string>
-    <string name="compiler_diagnostics_test_report_object_file">目标对象</string>
-    <string name="compiler_diagnostics_test_report_dependency_file">依赖文件</string>
-    <string name="compiler_diagnostics_test_report_stdout">标准输出</string>
-    <string name="compiler_diagnostics_test_report_stderr">标准错误</string>
-    <string name="compiler_diagnostics_test_report_lookup_ld_lld_title">测试1: 查询 ld.lld 路径</string>
-    <string name="compiler_diagnostics_test_report_lookup_lld_title">测试2: 查询 lld 路径</string>
-    <string name="compiler_diagnostics_test_report_resolved_path_check_title">测试3: 检查 clang++ 返回的 ld.lld 路径</string>
-    <string name="compiler_diagnostics_test_report_output">输出</string>
-    <string name="compiler_diagnostics_test_report_error">错误</string>
-    <string name="compiler_diagnostics_test_report_path">路径</string>
-    <string name="compiler_diagnostics_test_report_exists">存在</string>
-    <string name="compiler_diagnostics_test_report_size">大小</string>
-    <string name="compiler_diagnostics_test_report_executable">可执行</string>
-    <string name="compiler_diagnostics_test_report_resolved_linker">解析到的 linker</string>
-    <string name="compiler_diagnostics_test_report_unresolved_linker">&lt;未解析到&gt;</string>
-    <string name="compiler_diagnostics_test_report_critical_binaries">关键二进制文件</string>
-    <string name="compiler_diagnostics_test_report_runtime_libraries">Runtime 库文件</string>
-    <string name="compiler_diagnostics_test_report_preferred_builtins">优先 builtins</string>
-    <string name="compiler_diagnostics_test_report_preferred_unwind">优先 libunwind</string>
-    <string name="compiler_diagnostics_test_report_installed">已安装</string>
-    <string name="compiler_diagnostics_test_report_output_file">输出文件</string>
-    <string name="compiler_diagnostics_test_report_test_command">测试命令</string>
-    <string name="compiler_diagnostics_test_report_forced_linker_argument">强制链接器参数</string>
-    <string name="compiler_diagnostics_test_report_missing_compile_object">❌ 错误: 目标文件不存在，请先运行「仅编译测试」</string>
-    <string name="compiler_diagnostics_test_report_missing_critical_link_files">❌ 关键链接文件缺失，跳过执行</string>
-    <string name="compiler_diagnostics_test_report_missing_direct_execution_object">❌ 缺少 %1$s，请先运行「3. 仅编译测试」</string>
-    <string name="compiler_diagnostics_test_report_toolchain_directory">工具链目录</string>
-    <string name="compiler_diagnostics_test_report_bin_directory">Bin 目录</string>
-    <string name="compiler_diagnostics_test_report_runtime_linux_base_directory">Clang Runtime Linux Base 目录</string>
-    <string name="compiler_diagnostics_test_report_runtime_linux_arch_directory">Clang Runtime Linux Arch 目录</string>
-    <string name="compiler_diagnostics_test_report_runtime_triple_directory">Clang Runtime Triple 目录(api%1$d)</string>
-    <string name="compiler_diagnostics_test_report_sysroot_directory">Sysroot 目录</string>
-    <string name="compiler_diagnostics_test_report_linux_base_entries_title">Linux Base 目录内容:</string>
-    <string name="compiler_diagnostics_test_report_linux_arch_entries_title">Linux Arch 子目录内容:</string>
-    <string name="compiler_diagnostics_test_report_triple_entries_title">Triple 子目录内容:</string>
-    <string name="compiler_diagnostics_test_report_direct_execution_explanation">说明: 本测试会强制 direct exec clang++，不通过 NativeExecutableRunner 的 linker64 包装。</string>
-    <string name="compiler_diagnostics_test_report_direct_execution_test_a_title">测试A: 仅链接（直启 clang++）</string>
-    <string name="compiler_diagnostics_test_report_direct_execution_test_b_title">测试B: 完整编译+链接（直启 clang++）</string>
-    <string name="compiler_diagnostics_test_report_direct_execution_comparison_suggestion">对比建议: 将本测试的退出码/错误信息与第 4、5 项对照。</string>
-    <string name="compiler_diagnostics_test_report_resolution_mode_explanation">说明: 这里使用 -###，不会真正执行链接。</string>
-    <string name="compiler_diagnostics_test_report_conclusion_suggestions">结论建议</string>
-    <string name="compiler_diagnostics_test_report_baseline_matrix_section_title">基线 compile-only 对照（缓存目录 + 绝对路径）</string>
-    <string name="compiler_diagnostics_test_report_cmake_like_intro_title">CMake-like try_compile 对照（API 28 + Scratch 目录 + 相对 depfile）</string>
-    <string name="compiler_diagnostics_test_report_simulated_target_triple">模拟目标 triple</string>
-    <string name="compiler_diagnostics_test_report_simulated_scratch_directory">模拟 Scratch 目录</string>
-    <string name="compiler_diagnostics_test_report_simulated_object_relative_path">模拟对象相对路径</string>
-    <string name="compiler_diagnostics_test_report_simulated_depfile_relative_path">模拟 depfile 相对路径</string>
-    <string name="compiler_diagnostics_test_report_cmake_like_matrix_section_title">CMake-like try_compile launch matrix</string>
-    <string name="compiler_diagnostics_test_report_path_alias_skipped">路径别名检查: 非应用私有目录路径（跳过）</string>
-    <string name="compiler_diagnostics_test_report_path_alias_equivalent">路径别名检查: /data/user/0 与 /data/data 等价（dev+ino 一致）</string>
-    <string name="compiler_diagnostics_test_report_path_alias_different">路径别名检查: 当前路径与别名路径不等价（dev+ino 不一致）</string>
-    <string name="compiler_diagnostics_test_report_path_alias_unavailable">路径别名检查: 无法完成 dev+ino 校验（路径可能不存在或无权限）</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_1">Case1: baseline (-fuse-ld=lld)</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_2">Case2: +COMPILER_PATH + -fuse-ld=lld</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_3">Case3: +PATH前置bin + -fuse-ld=lld</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_4">Case4: + -B&lt;bin&gt; + -fuse-ld=lld</string>
-    <string name="compiler_diagnostics_test_report_linker_resolution_case_5">Case5: absolute -fuse-ld=&lt;ld.lld&gt;</string>
-    <string name="compiler_diagnostics_test_report_launcher_chain_case_1">Case1 current-native-runner</string>
-    <string name="compiler_diagnostics_test_report_launcher_chain_case_2">Case2 shell-shim-without-exec</string>
-    <string name="compiler_diagnostics_test_report_launcher_chain_case_3">Case3 shell-shim-with-linker-preload</string>
-    <string name="compiler_diagnostics_test_launcher_chain_recommendation_1">1. 若基线对照全通过，但 CMake-like current-native-runner 也失败，问题更像 CMake try_compile 形态本身，而不是 wrapper 独有问题。</string>
-    <string name="compiler_diagnostics_test_launcher_chain_recommendation_2">2. 若 CMake-like current-native-runner 成功，而 wrapper-direct 失败，说明主问题就在 wrapper 链，可考虑直接回退为 linker64 作为 CMake compiler launcher。</string>
-    <string name="compiler_diagnostics_test_launcher_chain_recommendation_3">3. 若只有 shell-shim 成功，而 current/wrapper 都失败，说明问题更像 exec/preload 与真实 clang 组合方式。</string>
-    <string name="compiler_diagnostics_test_launcher_chain_recommendation_4">4. 若所有 CMake-like case 都失败，说明问题更像 API28 flags、相对 depfile、Scratch 工作目录或 ROM 限制。</string>
-    <string name="compiler_diagnostics_test_check_toolchain_files">1. 检查工具链文件</string>
-    <string name="compiler_diagnostics_test_compiler_executable">2. 测试编译器可执行性</string>
-    <string name="compiler_diagnostics_test_compile_only">3. 仅编译测试（生成 .o）</string>
-    <string name="compiler_diagnostics_test_link_only">4. 仅链接测试（.o → 可执行文件）</string>
-    <string name="compiler_diagnostics_test_full_compile">5. 完整编译+链接测试</string>
-    <string name="compiler_diagnostics_test_check_library_dependencies">6. 检查库文件依赖</string>
-    <string name="compiler_diagnostics_test_linker_directly">7. 测试 lld 链接器</string>
-    <string name="compiler_diagnostics_test_linker_full_link">8. 直接测试 lld 完整链接</string>
-    <string name="compiler_diagnostics_test_clang_find_linker">9. 测试 clang++ 查找 lld 路径</string>
-    <string name="compiler_diagnostics_test_clang_direct_no_outer_linker">10. 直启 clang++（不走外层 linker64）</string>
-    <string name="compiler_diagnostics_test_clang_linker_resolution_modes">11. 链接器解析策略对照（ENV/-B/-fuse-ld）</string>
-    <string name="compiler_diagnostics_test_launcher_chain_compare">16. 启动链对照测速（current / wrapper / sh）</string>
-    <string name="compiler_diagnostics_test_single_file_project_smoke">12. Single-file 真实项目闭环（compile_commands + clangd）</string>
-    <string name="compiler_diagnostics_test_cmake_project_smoke">13. CMake 真实项目闭环（编译 + clangd）</string>
-  <string name="compiler_diagnostics_test_sdl3_project_smoke">14. SDL3 CMake 真实项目闭环（编译 + clangd）</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_all">15. 运行真实项目闭环对照（single-file / CMake / SDL3）</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_title">真实项目闭环对照</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_status_passed">通过</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_status_failed">失败</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_checks">检查项</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_total_duration">总耗时</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_stage_timings">阶段耗时</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_clangd_mode">clangd 模式</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_diagnostics_total">diagnostics 总数</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_diagnostics_error">error 数量</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_diagnostics_warning">warning 数量</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_completion_count">补全候选数量</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_hits">命中补全项</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_failed_stage">失败阶段</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_failure_reason">失败原因</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_fastest">最快</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_slowest">最慢</string>
-  <string name="compiler_diagnostics_test_project_smoke_compare_bottleneck">瓶颈阶段</string>
-  <string name="dev_options_ai_chat_test">AI 对话测试</string>
-  <string name="dev_options_ai_chat_test_desc">测试 AI 消息渲染、Markdown 格式、工具调用等功能</string>
   <string name="dev_options_ai_chat_message_count">%1$d 条消息</string>
-  <string name="dev_options_skip_email_verification">跳过邮箱验证码</string>
-  <string name="dev_options_skip_email_verification_desc">开启后注册时不需要输入验证码，直接使用邮箱和密码注册（仅在邮件服务不可用时使用）</string>
-
   <string name="dialog_title_tina_server_url">TinaServer 地址</string>
   <string name="label_tina_server_url">服务器基础 URL</string>
   <string name="btn_save_and_test">保存并测试</string>
@@ -287,113 +111,11 @@
   <string name="toast_tina_server_restored_default">已恢复默认地址</string>
 
   <!-- Plugin Database Test Screen -->
-  <string name="dev_options_plugin_db_quick_actions">快捷操作</string>
-  <string name="dev_options_plugin_db_create_table">创建表</string>
-  <string name="dev_options_plugin_db_insert">插入数据</string>
-  <string name="dev_options_plugin_db_query">查询</string>
-  <string name="dev_options_plugin_db_drop_table">删除表</string>
-  <string name="dev_options_plugin_db_transaction">事务测试</string>
-  <string name="dev_options_plugin_db_clear">清空数据</string>
-  <string name="dev_options_plugin_db_custom_sql">自定义 SQL</string>
-  <string name="dev_options_plugin_db_execute">执行</string>
-  <string name="dev_options_plugin_db_result">结果</string>
-  <string name="dev_options_plugin_db_log">日志</string>
-  <string name="dev_options_plugin_db_clear_log">清空</string>
-  <string name="dev_options_plugin_db_sql_label">SQL</string>
-  <string name="dev_options_plugin_db_initialized">数据库已初始化：%1$s</string>
-  <string name="dev_options_plugin_db_database_not_ready">数据库尚未就绪，请稍后重试</string>
-  <string name="dev_options_plugin_db_no_data">暂无数据</string>
-  <string name="dev_options_plugin_db_table_created_log">表 test_todos 已准备</string>
-  <string name="dev_options_plugin_db_table_created_result">表创建成功</string>
-  <string name="dev_options_plugin_db_task_title">任务 %1$d</string>
-  <string name="dev_options_plugin_db_batch_task_title">批量任务 %1$d</string>
-  <string name="dev_options_plugin_db_inserted">已插入：%1$s</string>
-  <string name="dev_options_plugin_db_query_rows">查询返回 %1$d 行</string>
-  <string name="dev_options_plugin_db_table_dropped_log">表 test_todos 已删除</string>
-  <string name="dev_options_plugin_db_table_dropped_result">表已删除</string>
-  <string name="dev_options_plugin_db_transaction_inserted_log">事务：已插入 5 行</string>
-  <string name="dev_options_plugin_db_transaction_inserted_result">事务成功：已插入 5 行</string>
-  <string name="dev_options_plugin_db_transaction_error">事务错误：%1$s</string>
-  <string name="dev_options_plugin_db_all_data_deleted">已清空全部数据</string>
-  <string name="dev_options_plugin_db_sql_executed">SQL 已执行：%1$s</string>
-  <string name="dev_options_plugin_db_sql_executed_success">SQL 执行成功</string>
-  <string name="dev_options_plugin_db_sql_error">SQL 错误：%1$s</string>
-  <string name="dev_options_plugin_db_error">错误：%1$s</string>
 
 
   <!-- Clangd Test Screen -->
-  <string name="clangd_test_title">Clangd LSP 测试</string>
-  <string name="clangd_test_scenario">测试场景</string>
-  <string name="clangd_test_scenario_init">初始化测试</string>
-  <string name="clangd_test_scenario_completion">代码补全测试</string>
-  <string name="clangd_test_scenario_definition">跳转定义测试</string>
-  <string name="clangd_test_scenario_hover">悬停提示测试</string>
-  <string name="clangd_test_scenario_custom">自定义消息</string>
-  <string name="clangd_test_params">参数配置</string>
-  <string name="clangd_test_file_uri">文件 URI</string>
-  <string name="clangd_test_line">行号</string>
-  <string name="clangd_test_column">列号</string>
-  <string name="clangd_test_trigger_char">触发字符</string>
-  <string name="clangd_test_send_request">发送请求</string>
-  <string name="clangd_test_clear_history">清空历史</string>
-  <string name="clangd_test_request">请求消息</string>
-  <string name="clangd_test_response">响应消息</string>
-  <string name="clangd_test_history">历史记录</string>
-  <string name="clangd_test_status_idle">就绪</string>
-  <string name="clangd_test_status_sending">发送中...</string>
-  <string name="clangd_test_status_success">成功</string>
-  <string name="clangd_test_status_error">错误</string>
-  <string name="clangd_test_not_connected">LSP 未连接</string>
-  <string name="clangd_test_real_lsp_requires_connection">真实 LSP 模式需要先在编辑器中建立 LSP 连接</string>
-  <string name="clangd_test_no_history">暂无历史记录</string>
-  <string name="clangd_test_validation_passed">JSON 验证通过</string>
-  <string name="clangd_test_validation_failed">JSON 验证失败: %1$s</string>
-  <string name="clangd_test_generate_json">生成 JSON</string>
 
   <!-- Clangd Test - New Features -->
-  <string name="clangd_test_tab_benchmark">性能基准</string>
-  <string name="clangd_test_tab_batch">批量测试</string>
-  <string name="clangd_test_tab_report">测试报告</string>
-  <string name="clangd_test_benchmark_title">性能基准测试</string>
-  <string name="clangd_test_benchmark_iterations">迭代次数</string>
-  <string name="clangd_test_benchmark_run">运行基准测试</string>
-  <string name="clangd_test_benchmark_running">正在运行基准测试...</string>
-  <string name="clangd_test_benchmark_results">基准测试结果</string>
-  <string name="clangd_test_benchmark_avg">平均耗时</string>
-  <string name="clangd_test_benchmark_min">最小耗时</string>
-  <string name="clangd_test_benchmark_max">最大耗时</string>
-  <string name="clangd_test_benchmark_p95">P95 耗时</string>
-  <string name="clangd_test_benchmark_success_rate">成功率</string>
-  <string name="clangd_test_batch_title">批量测试套件</string>
-  <string name="clangd_test_batch_select_suite">选择测试套件</string>
-  <string name="clangd_test_batch_run">运行测试套件</string>
-  <string name="clangd_test_batch_running">正在运行批量测试...</string>
-  <string name="clangd_test_batch_progress">进度: %1$d/%2$d</string>
-  <string name="clangd_test_batch_results">批量测试结果</string>
-  <string name="clangd_test_batch_total">总测试数</string>
-  <string name="clangd_test_batch_passed">通过</string>
-  <string name="clangd_test_batch_failed">失败</string>
-  <string name="clangd_test_batch_duration">总耗时</string>
-  <string name="clangd_test_report_title">测试报告</string>
-  <string name="clangd_test_report_export">导出报告</string>
-  <string name="clangd_test_report_export_json">导出 JSON</string>
-  <string name="clangd_test_report_export_text">导出文本</string>
-  <string name="clangd_test_report_exported">报告已导出: %1$s</string>
-  <string name="clangd_test_category_basic">基础测试</string>
-  <string name="clangd_test_category_navigation">跳转导航</string>
-  <string name="clangd_test_category_semantic">语义分析</string>
-  <string name="clangd_test_category_document_sync">文档同步</string>
-  <string name="clangd_test_category_benchmark">性能基准</string>
-  <string name="clangd_test_suite_basic">基础功能测试</string>
-  <string name="clangd_test_suite_navigation">跳转导航测试</string>
-  <string name="clangd_test_suite_semantic">语义分析测试</string>
-  <string name="clangd_test_suite_document_sync">文档同步测试</string>
-  <string name="clangd_test_suite_performance">性能基准测试</string>
-  <string name="clangd_test_suite_full">完整测试套件</string>
-  <string name="clangd_test_connection_status">连接状态</string>
-  <string name="clangd_test_server_info">服务器信息</string>
-  <string name="clangd_test_diagnostics">诊断信息</string>
-  <string name="clangd_test_no_diagnostics">暂无诊断信息</string>
 
   <!-- Git SSH -->
   <string name="settings_cat_git_ssh">Git SSH</string>
@@ -455,9 +177,7 @@
   <string name="git_ssh_passphrase_label">口令</string>
   <string name="git_ssh_passphrase_placeholder">请输入口令</string>
   <!-- 插件管理 -->
-  <string name="settings_cat_plugins">插件管理</string>
   <string name="settings_plugins_install_from_file">从文件安装插件</string>
-  <string name="settings_plugins_install_from_file_desc">选择 .tinaplug（zip）文件进行安装</string>
   <string name="settings_plugins_manage">管理插件</string>
   <string name="settings_plugins_selected_count">已选择 %1$d 个</string>
   <string name="dialog_title_plugins_batch_uninstall">批量卸载插件</string>
@@ -465,16 +185,10 @@
   <string name="settings_plugins_empty_title">暂无已安装插件</string>
   <string name="settings_plugins_empty_desc">前往主页"市场"浏览并安装插件，或点击上方菜单从文件安装</string>
   <string name="settings_plugins_details">插件详情</string>
-  <string name="settings_plugins_details_desc">查看插件信息与贡献</string>
   <string name="settings_plugins_uninstall">卸载插件</string>
   <string name="settings_plugins_uninstall_desc">从设备中移除此插件</string>
-  <string name="settings_plugins_uninstall_short">卸载</string>
-  <string name="settings_plugins_details_short">详情</string>
   <string name="settings_plugins_theme">选择主题</string>
   <string name="settings_plugins_theme_desc">该插件提供了编辑器主题</string>
-  <string name="settings_plugins_theme_short">主题</string>
-  <string name="settings_plugins_select_theme">选择编辑器主题</string>
-  <string name="settings_plugins_select_theme_desc">该插件提供了主题</string>
   <string name="settings_plugins_actions">操作</string>
   <string name="settings_plugins_enabled">启用插件</string>
   <string name="settings_plugins_reload">手动重载</string>
@@ -485,7 +199,6 @@
   <string name="settings_plugins_logs_desc">按当前插件筛选日志输出</string>
   <string name="settings_plugins_diagnostics">插件诊断</string>
   <string name="settings_plugins_diagnostics_empty">未发现已知问题</string>
-  <string name="settings_plugins_diagnostics_overview">诊断概览</string>
   <string name="settings_plugins_diagnostics_filtered_empty_title">当前来源下没有诊断项</string>
   <string name="settings_plugins_diagnostics_filtered_empty_desc">切换到其它来源，查看加载期、健康检查或运行期问题。</string>
   <string name="settings_plugins_load_issues">未加载插件</string>
@@ -496,8 +209,6 @@
   <string name="settings_plugins_filtered_empty_title">当前筛选下没有插件</string>
   <string name="settings_plugins_filtered_empty_desc">切换到其它诊断筛选项或来源，查看未加载插件的原因。</string>
   <string name="plugins_status_diagnostics_issue_count">%1$d 个问题</string>
-  <string name="plugins_status_lsp_diagnostics">LSP 问题</string>
-  <string name="plugins_lsp_diagnostics_list_hint">检测到 LSP 依赖异常，可直接修复。</string>
   <string name="plugins_status_disabled">已禁用</string>
   <string name="plugins_has_themes">主题</string>
   <string name="plugins_status_bundled">内置</string>
@@ -512,7 +223,6 @@
   <string name="plugins_details_author">作者：%1$s</string>
   <string name="plugins_details_repository">仓库：%1$s</string>
   <string name="plugins_details_license">许可证：%1$s</string>
-  <string name="plugins_details_description">描述：%1$s</string>
   <string name="plugins_details_permissions">声明权限：%1$s</string>
   <string name="plugins_details_granted_permissions">已授予权限：%1$s</string>
   <string name="plugins_details_runtime_state">运行时状态：%1$s</string>
@@ -596,7 +306,6 @@
   <string name="lsp_plugin_repair_deps_desc">重新安装失败或缺失的语言服务器工具链</string>
   <string name="lsp_plugin_install_deps_desc">安装语言服务器所需的工具链</string>
   <string name="lsp_plugin_deps_ready">依赖就绪</string>
-  <string name="lsp_plugin_deps_not_ready">需要安装依赖</string>
   <string name="lsp_plugin_dependency_status_title">LSP 依赖状态</string>
   <string name="lsp_plugin_dependency_status_label">当前状态</string>
   <string name="lsp_plugin_dependency_status_ready_desc">语言服务器依赖已通过检查，可直接启动。</string>
@@ -611,7 +320,6 @@
   <string name="lsp_plugin_open_error_logs">查看错误日志</string>
   <string name="lsp_plugin_status_ready">LSP 就绪</string>
   <string name="lsp_plugin_status_not_ready">LSP 未就绪</string>
-  <string name="lsp_plugin_installing_deps">正在安装依赖…</string>
   <string name="lsp_plugin_install_deps_title">安装 LSP 依赖</string>
   <string name="lsp_plugin_repair_deps_title">修复 LSP 依赖</string>
   <string name="lsp_plugin_install_deps_dialog_desc">"%1$s" 需要安装以下工具链才能提供代码补全功能：</string>
@@ -670,14 +378,11 @@
   <string name="lsp_toolchain_error_download_failed">下载失败：HTTP %1$d %2$s</string>
   <string name="lsp_toolchain_error_empty_download_body">下载响应为空</string>
   <string name="lsp_plugin_install_progress_title">安装工具链</string>
-  <string name="lsp_plugin_install_progress_phase">%1$s</string>
   <string name="lsp_plugin_install_success">工具链安装完成</string>
   <string name="lsp_plugin_install_failed">工具链安装失败：%1$s</string>
-  <string name="lsp_plugin_checking_deps">正在检查依赖…</string>
 
 
   <!-- Settings categories -->
-  <string name="settings_cat_editor_display">显示</string>
   <string name="settings_cat_editor_behavior">编辑行为</string>
   <string name="settings_cat_editor_performance">性能</string>
   <string name="settings_editor_theme">编辑器主题</string>
@@ -685,57 +390,18 @@
   <string name="settings_editor_hardware_acceleration">硬件加速</string>
   <string name="settings_editor_hardware_acceleration_summary">使用 GPU 渲染提升滚动性能。如遇到滚动卡顿或黑屏问题可尝试关闭（需重新打开文件）</string>
   <string name="settings_cat_compiler_options">编译选项</string>
-  <string name="settings_cat_compiler_debug_perf">调试与性能</string>
-  <string name="settings_cat_lsp">语言服务器</string>
-  <string name="settings_completion_limit_title">补全候选上限</string>
-  <string name="settings_completion_limit_summary">限制 clangd 每次返回的候选数量。值越大越耗资源，修改后需重新初始化 LSP 生效。</string>
-  <string name="settings_completion_limit_summary_with_value">当前上限：%1$d 项</string>
 
   <!-- Native LSP UI -->
-  <string name="native_definition_results">Native 定义列表</string>
-  <string name="native_references_results">Native 引用列表</string>
-  <string name="native_navigation_close">收起结果面板</string>
-  <string name="native_navigation_empty">没有可展示的跳转结果</string>
 
   <!-- Open Source Licenses -->
   <string name="about_licenses_title">开源组件与许可证</string>
-  <string name="license_view_project">项目主页</string>
-  <string name="license_view_license">查看许可</string>
 
-  <!-- Debug session -->
-  <string name="debug_session_not_ready">尚未创建调试会话。点击编辑器上方的"调试"按钮即可开始。</string>
-  <string name="debug_session_ready">调试会话 %1$s 已准备。</string>
-  <string name="debug_session_descriptor_prefix">描述文件：</string>
-  <string name="debug_session_copy_path">复制描述文件路径</string>
-  <string name="debug_session_copy_success">已复制描述文件路径</string>
-  <string name="debug_session_instructions_title">操作提示</string>
-  <string name="debug_session_instructions_empty">暂无可用提示。</string>
 
-  <!-- Debug controls -->
-  <string name="debug_continue">继续</string>
-  <string name="debug_step_over">单步</string>
-  <string name="debug_step_into">进入</string>
-  <string name="debug_stop">停止</string>
-  <string name="debug_call_stack">调用栈</string>
-  <string name="debug_variables">变量</string>
-  <string name="debug_state_idle">空闲</string>
-  <string name="debug_state_starting">启动中…</string>
-  <string name="debug_state_paused">已暂停</string>
-  <string name="debug_state_running">运行中</string>
-  <string name="debug_state_terminated">已终止</string>
-  <string name="debug_location_format">%1$s:%2$d</string>
-  <string name="debug_paused_at">暂停于 %1$s</string>
 
-  <string name="privacy_agreement_full">我已阅读并同意《用户协议》和《隐私政策》</string>
 
   <!-- Output Activity -->
-  <string name="output_activity_title">编译输出</string>
-  <string name="action_stop">停止</string>
   <string name="action_clear">清空</string>
-  <string name="action_scroll_to_bottom">滚动到底部</string>
-  <string name="action_scroll_to_top">滚动到顶部</string>
-  <string name="action_copy_all">复制全部</string>
-  <string name="action_select_all">全选</string>
+<string name="action_select_all">全选</string>
 
   <!-- Activity Titles -->
   <string name="crash_activity_title">应用崩溃</string>
@@ -743,9 +409,6 @@
   <string name="dependency_install_title">环境配置</string>
 
   <!-- Project Export -->
-  <string name="export_project">导出项目</string>
-  <string name="export_in_progress">正在导出项目...</string>
-  <string name="export_success">项目导出成功</string>
   <string name="export_failed">导出失败: %1$s</string>
   <string name="export_share_title">分享项目</string>
   <string name="export_share_subject">项目导出: %1$s</string>
@@ -755,7 +418,6 @@
 
   <!-- Project Manager UI -->
   <string name="dialog_title_delete_project">删除项目</string>
-  <string name="dialog_message_delete_project">确定要删除项目 \"%1$s\" 吗？\n\n此操作将永久删除项目文件夹及其所有内容，无法恢复。</string>
   <string name="btn_delete">删除</string>
   <string name="toast_project_deleted">项目已删除</string>
   <string name="toast_delete_failed">删除失败</string>
@@ -775,12 +437,9 @@
   <string name="app_update_action_download">下载更新</string>
   <string name="app_update_open_failed">无法打开更新链接</string>
   <string name="content_desc_add_project">添加项目</string>
-  <string name="title_project_list">项目列表</string>
   <string name="hint_search_project">搜索项目...</string>
   <string name="section_recent_projects">最近打开</string>
   <string name="section_other_projects">其他项目</string>
-  <string name="dialog_title_preparing_env">正在准备编译环境</string>
-  <string name="dialog_message_proot_failed">PRoot 环境安装失败：%1$s</string>
 
   <!-- Project List Components -->
   <string name="content_desc_settings">设置</string>
@@ -794,20 +453,14 @@
   <string name="empty_no_projects">暂无项目</string>
   <string name="empty_create_hint">点击右下角按钮创建新项目</string>
   <string name="empty_fab_hint">点击 + 开始创建</string>
-  <string name="hint_all_projects_shown">已显示全部项目</string>
   <string name="path_private_dir">私有目录</string>
   <string name="path_storage">存储</string>
-  <string name="path_cpp_stdlib">C++ 标准库</string>
-  <string name="path_system_headers">系统头文件</string>
-  <string name="path_local_headers">本地头文件</string>
-  <string name="path_workspace">工作区</string>
 
   <!-- Import from Local -->
   <string name="dialog_title_local_import">从本地导入</string>
   <string name="dialog_title_select_import_location">选择导入位置</string>
   <string name="dialog_title_select_clone_location">选择克隆位置</string>
   <string name="dialog_message_local_import">选择文件夹会复制到 %1$s；选择压缩包会解压到 %1$s。</string>
-  <string name="error_invalid_directory">无效的目录</string>
   <string name="error_import_directory_not_supported">当前目录无法直接作为项目打开，请选择本机存储中的真实文件夹</string>
   <string name="error_invalid_project_archive">不支持的项目压缩包</string>
   <string name="error_project_archive_empty">压缩包为空，无法导入项目</string>
@@ -816,7 +469,6 @@
   <string name="toast_import_failed">项目导入失败</string>
   <string name="toast_cloning">正在克隆仓库...</string>
   <string name="toast_clone_success">仓库克隆成功</string>
-  <string name="toast_clone_failed">仓库克隆失败：%1$s</string>
 
   <!-- Project List Card -->
   <string name="label_recently_updated">● 最近更新</string>
@@ -833,7 +485,6 @@
   <string name="placeholder_project_name">my-project</string>
   <string name="hint_project_name_example">MyProject</string>
   <string name="label_project_location">项目位置</string>
-  <string name="label_project_type">项目类型</string>
   <string name="label_project_tags">项目标签</string>
   <string name="dialog_title_git_import">从 Git 导入</string>
   <string name="label_git_url">Git 仓库地址</string>
@@ -851,8 +502,6 @@
   <string name="label_new_name">新名称</string>
   <string name="btn_confirm">确定</string>
   <string name="dialog_title_project_info">项目信息</string>
-  <string name="type_git_project">Git 项目</string>
-  <string name="type_local_project">本地项目</string>
   <string name="info_project_path">项目路径</string>
   <string name="info_project_size">项目大小</string>
   <string name="info_file_count">文件数量</string>
@@ -872,12 +521,10 @@
   <string name="template_cpp_single">C++ 单文件</string>
   <string name="template_cmake_exe">CMake 可执行程序</string>
   <string name="template_cmake_lib">CMake 静态库</string>
-  <string name="template_sdl3_cmake">SDL3 + CMake</string>
   <string name="template_make_exe">Makefile 可执行程序</string>
   <string name="template_desc_cpp_single">适合简单程序和学习</string>
   <string name="template_desc_cmake_exe">标准 CMake 项目结构</string>
   <string name="template_desc_cmake_lib">包含库和示例程序</string>
-  <string name="template_desc_sdl3_cmake">内置 SDL3 回调入口与窗口示例，可直接构建运行</string>
   <string name="template_desc_make_exe">经典 Makefile 项目结构</string>
   <string name="template_ndk_shared_lib">NDK 共享库</string>
   <string name="template_desc_ndk_shared_lib">Android NDK 共享库项目，可自定义 API 版本</string>
@@ -916,7 +563,6 @@
   <string name="wizard_plugin_templates_empty_body">请先确认 TinaIDE Plugin Starters 已安装并启用，然后重新打开插件教程入口。</string>
 
   <!-- Project Tags -->
-  <string name="tag_local">本地</string>
   <string name="tag_public_source">公有</string>
   <string name="tag_private_source">私有</string>
   <string name="tag_git">Git</string>
@@ -1046,7 +692,6 @@
   <string name="dialog_title_installing_zsh">正在安装 Zsh</string>
   <string name="toast_zsh_install_success">Zsh 安装成功</string>
   <string name="toast_guest_dev_packages_install_success">开发基础包安装成功</string>
-  <string name="toast_zsh_install_failed">Zsh 安装失败: %1$s</string>
   <string name="toast_zsh_unavailable_on_host">当前为系统环境，无法自动安装 Zsh；请先安装 PRoot Linux 环境或切换到 Bash/Sh</string>
 
   <!-- Git Auth Settings -->
@@ -1090,13 +735,6 @@
   <string name="settings_linux_health_missing_optional">可选项缺失：%1$s</string>
   <string name="settings_linux_health_check_failed">自检失败：%1$s</string>
   <string name="settings_linux_installing">正在安装 Linux 系统…</string>
-  <string name="settings_linux_install_phase_preparing">准备安装</string>
-  <string name="settings_linux_install_phase_downloading">下载中</string>
-  <string name="settings_linux_install_phase_verifying">校验中</string>
-  <string name="settings_linux_install_phase_extracting">解压中</string>
-  <string name="settings_linux_install_phase_inspecting">识别系统信息</string>
-  <string name="settings_linux_install_phase_completed">安装完成</string>
-  <string name="settings_linux_install_progress_format">%1$s（%2$d%%）</string>
   <string name="settings_linux_switching">正在切换 Linux 系统…</string>
   <string name="settings_linux_renaming">正在重命名 Linux 系统…</string>
   <string name="settings_linux_deleting">正在删除 Linux 系统…</string>
@@ -1142,32 +780,13 @@
   <string name="linux_distro_self_hosted_option_desc">官方 rootfs · 版本 %1$s · %2$s</string>
   <string name="linux_distro_package_runtime">Linux 发行版运行时</string>
   <string name="linux_package_rootfs">Linux 基础系统</string>
-  <string name="value_installed">已安装</string>
   <string name="value_not_installed">未安装</string>
   <string name="value_current">当前</string>
-  <string name="settings_cat_sync">同步设置</string>
-  <string name="sync_mode_external">同步到外部目录</string>
-  <string name="sync_mode_android_data">同步到 Android/data</string>
-  <string name="sync_mode_none">不同步</string>
-  <string name="settings_sync_mode">同步模式</string>
-  <string name="sync_desc_external">卸载后数据保留，可通过电脑访问</string>
-  <string name="sync_desc_android_data">无需权限，卸载后数据删除</string>
-  <string name="sync_desc_none">最佳性能，卸载后数据删除</string>
-  <string name="status_selected">已选择</string>
-  <string name="status_not_configured">未配置</string>
-  <string name="settings_external_sync_dir">外部同步目录</string>
-  <string name="settings_cat_auto_sync">自动同步</string>
-  <string name="settings_sync_on_startup">启动时同步</string>
-  <string name="settings_sync_startup_desc">从同步目标导入项目到私有工作目录</string>
-  <string name="settings_sync_on_exit">退出时同步</string>
-  <string name="settings_sync_exit_desc">从私有工作目录导出项目到同步目标</string>
   <string name="settings_cat_advanced">高级</string>
   <string name="settings_linux_rootfs_path">Rootfs 路径</string>
   <string name="value_default">默认</string>
-  <string name="value_custom">自定义</string>
   <string name="settings_mt_access">MT 管理器访问</string>
   <string name="settings_mt_access_desc">允许 MT 管理器访问应用私有目录（无需 ROOT）</string>
-  <string name="sync_option_external_recommended">同步到外部目录（推荐）</string>
 
   <!-- Storage Cleanup -->
   <string name="settings_title_storage_cleanup">存储清理</string>
@@ -1178,10 +797,7 @@
   <string name="storage_cleanup_clean_all">一键清理全部</string>
   <string name="storage_cleanup_scanning">正在扫描…</string>
   <string name="storage_cleanup_cleaning">正在清理…</string>
-  <string name="storage_cleanup_action">清理</string>
   <string name="storage_cleanup_refresh">重新扫描</string>
-  <string name="storage_cleanup_confirm_title">确认清理</string>
-  <string name="storage_cleanup_confirm_message">将删除此类别下的全部文件，此操作不可撤销。是否继续？</string>
   <string name="storage_cleanup_confirm_all_title">一键清理</string>
   <string name="storage_cleanup_confirm_all_message">将清理所有类别下的缓存、中间产物和日志，不影响用户源码、工程配置与字体。是否继续？</string>
   <string name="storage_cleanup_done">已释放 %1$s</string>
@@ -1238,8 +854,6 @@
   <string name="settings_project_apk_export_redetect">重新检测</string>
   <string name="settings_project_apk_export_redetect_desc">按当前项目内容重新判断导出 APK 能力</string>
   <string name="settings_project_native_paths_no_project_value">未打开项目</string>
-  <string name="settings_project_native_paths_unavailable_title">路径配置状态</string>
-  <string name="settings_project_native_paths_unavailable_value">请先打开项目后再配置 Include/Library/Runtime 路径</string>
   <string name="settings_project_native_include_dirs">Include 路径</string>
   <string name="settings_project_native_include_dirs_desc">编译时追加头文件搜索路径（-I）</string>
   <string name="settings_project_native_library_dirs">Library 路径</string>
@@ -1322,7 +936,6 @@
   <string name="settings_rainbow_brackets">彩虹括号</string>
   <string name="settings_rainbow_brackets_desc">根据嵌套深度为括号着色</string>
   <string name="settings_rainbow_brackets_max_lines">彩虹括号行数上限</string>
-  <string name="settings_rainbow_brackets_max_lines_desc">超过该行数时自动禁用彩虹括号（0 表示不限制）</string>
   <string name="settings_code_folding">代码折叠</string>
   <string name="settings_code_folding_desc">允许折叠/展开代码块（如函数、类等）</string>
   <string name="settings_render_whitespace">空白字符可视化</string>
@@ -1344,7 +957,6 @@
   <string name="settings_clangd_clang_tidy">Clang-Tidy 静态分析</string>
   <string name="settings_clangd_clang_tidy_desc">启用代码质量检查，显示警告和改进建议</string>
   <string name="settings_clangd_header_insertion">头文件自动插入</string>
-  <string name="settings_clangd_header_insertion_desc">使用符号时自动建议添加对应的 #include</string>
   <string name="settings_clangd_header_insertion_never">关闭</string>
   <string name="settings_clangd_header_insertion_iwyu">智能插入 (IWYU)</string>
   <string name="settings_clangd_completion_style">补全信息详细程度</string>
@@ -1367,7 +979,6 @@
   <string name="clang_format_style_microsoft_desc">Microsoft C++ 编码规范，4 空格缩进，Allman 大括号风格</string>
   <string name="clang_format_style_gnu_desc">GNU 编码规范，2 空格缩进，GNU 大括号风格</string>
   <string name="settings_format_style_hint">当项目中存在 .clang-format 文件时，将优先使用项目配置</string>
-  <string name="settings_cat_indent">缩进</string>
   <string name="settings_auto_indent">自动缩进</string>
   <string name="settings_auto_indent_desc">换行时自动添加缩进</string>
   <string name="settings_insert_spaces_for_tabs">Tab 转空格</string>
@@ -1376,8 +987,6 @@
   <string name="toast_tab_width_set">Tab 宽度已设置为 %1$d 空格</string>
   <string name="toast_font_restored">已恢复默认字体</string>
   <string name="dialog_title_font_size">字体大小</string>
-  <string name="label_font_size_range">范围：%1$d - %2$d sp</string>
-  <string name="font_preview_text">预览: AaBbCc 123</string>
   <string name="dialog_title_custom_font">自定义字体</string>
   <string name="label_select_font_source">选择字体来源：</string>
   <string name="btn_use_default_font">使用默认字体</string>
@@ -1391,17 +1000,13 @@
   <string name="opt_level_o2">O2 - 标准优化</string>
   <string name="opt_level_o3">O3 - 激进优化</string>
   <string name="settings_optimization_level">优化级别</string>
-  <string name="value_not_selected">未选择</string>
   <string name="settings_compiler_threads">编译线程数</string>
   <string name="settings_compiler_scope_hint">说明：这里是全局默认值。优化级别和线程数用于单文件/Make；CMake 构建类型、生成器、并行任务仅用于 CMake。编译器/工具链/输出模式请在运行配置里设置。</string>
   <string name="settings_cat_toolchain_management">工具链管理</string>
   <string name="settings_active_toolchain">当前工具链</string>
   <string name="toolchain_builtin_name">内置工具链</string>
   <string name="toolchain_builtin_patched_name">内置工具链（patched）</string>
-  <string name="settings_toolchain_status">工具链状态</string>
   <string name="settings_sysroot_status">Sysroot 状态</string>
-  <string name="toolchain_status_installed">已安装</string>
-  <string name="toolchain_status_installed_version">已安装 (版本 %1$s)</string>
   <string name="toolchain_status_not_installed">未安装</string>
   <string name="sysroot_status_installed">已安装</string>
   <string name="sysroot_status_not_installed">未安装</string>
@@ -1414,15 +1019,12 @@
   <string name="settings_import_toolchain_desc">从外部文件导入自定义工具链</string>
   <string name="settings_import_sysroot">导入 Sysroot</string>
   <string name="settings_import_sysroot_desc">从外部文件导入系统根目录</string>
-  <string name="toolchain_import_select_file">选择工具链压缩包</string>
   <string name="toolchain_import_in_progress">正在导入工具链...</string>
   <string name="toolchain_import_success">工具链导入成功</string>
   <string name="toolchain_import_failed">工具链导入失败: %1$s</string>
   <string name="toolchain_import_error_invalid_archive">无效的工具链压缩包，未找到 bin/clang</string>
   <string name="toolchain_import_error_missing_files">工具链文件不完整，缺少必需的文件</string>
   <string name="toolchain_import_title">导入工具链</string>
-  <string name="toolchain_import_success_title">导入成功</string>
-  <string name="toolchain_import_failed_title">导入失败</string>
   <string name="toolchain_import_toolchain_info">%1$s（%2$s）</string>
   <string name="toolchain_import_file_name">文件名</string>
   <string name="toolchain_import_file_size">文件大小</string>
@@ -1464,7 +1066,6 @@
   <string name="toolchain_import_log_finished">安装完成！工具链 ID: %1$s</string>
   <string name="toolchain_import_log_error">错误: %1$s</string>
   <string name="toolchain_unknown_name">未知</string>
-  <string name="sysroot_import_select_file">选择 Sysroot 压缩包</string>
   <string name="sysroot_import_in_progress">正在导入 Sysroot...</string>
   <string name="sysroot_import_success">Sysroot 导入成功</string>
   <string name="sysroot_import_failed">Sysroot 导入失败: %1$s</string>
@@ -1537,45 +1138,6 @@
   <string name="dialog_title_select_theme">选择主题</string>
   <string name="dialog_title_debug_toolbar">调试工具栏位置</string>
 
-  <string name="settings_cat_basic_info">基本信息</string>
-  <string name="settings_title_profile_edit">个人资料</string>
-  <string name="action_retry_sync_now">立即重试同步</string>
-
-
-  <string name="label_ai_balance">AI 余额</string>
-  <string name="label_ai_total_consumed">AI 累计消费</string>
-  <string name="label_ai_total_recharged">AI 累计充值</string>
-  <string name="label_ai_total_gifted">AI 累计赠送</string>
-  <string name="label_ai_frozen_balance">AI 冻结额度</string>
-  <string name="label_ai_account_overview">AI 账户概览</string>
-  <string name="status_loading">加载中</string>
-  <string name="status_load_failed">加载失败</string>
-  <string name="profile_ai_quota_refresh_failed_cached">刷新失败，当前显示上次成功数据</string>
-  <string name="status_bound">已绑定</string>
-  <string name="action_click_to_bind">点击绑定</string>
-  <string name="toast_bind_in_development">绑定功能开发中</string>
-  <string name="account_email">邮箱</string>
-  <string name="dialog_title_user_profile">用户资料</string>
-  <string name="dialog_title_edit_nickname">修改昵称</string>
-  <string name="label_nickname">昵称：</string>
-  <string name="label_id">ID：</string>
-  <string name="dialog_title_user_id">用户 ID</string>
-  <string name="dialog_message_copy_id">长按或点击按钮复制 ID</string>
-  <string name="action_copy_id">复制 ID</string>
-  <string name="toast_id_copied">ID 已复制到剪贴板</string>
-  <string name="label_email">邮箱：</string>
-  <string name="label_registered_at">注册时间：</string>
-  <string name="bound_with_nickname">已绑定：%1$s</string>
-  <string name="hint_click_to_change_avatar">点击更换头像</string>
-  <string name="toast_feature_in_development">功能开发中</string>
-  <string name="hint_uploading_avatar">上传中…</string>
-  <string name="toast_avatar_uploaded">头像已更新</string>
-  <string name="toast_avatar_upload_failed">头像上传失败：%1$s</string>
-  <string name="toast_avatar_process_failed">图片处理失败</string>
-  <string name="toast_avatar_crop_failed">裁剪失败，将使用原图</string>
-  <string name="toast_nickname_updated">昵称已更新</string>
-  <string name="toast_nickname_update_failed">昵称更新失败</string>
-
   <!-- About Settings -->
   <string name="error_get_version_failed">获取失败</string>
   <string name="settings_cat_about">关于</string>
@@ -1595,62 +1157,12 @@
   <!-- ==================== Workspace Setup Flow ==================== -->
 
   <!-- SyncModeSelectionActivity -->
-  <string name="setup_title_sync_mode">选择同步模式</string>
-  <string name="setup_subtitle_sync_mode">TinaIDE 支持三种同步模式，请根据您的使用习惯和需求进行选择。</string>
-  <string name="sync_option_external">同步到外部目录</string>
-  <string name="sync_option_external_desc">卸载后数据保留，可通过电脑访问</string>
-  <string name="sync_option_android_data">同步到 Android/data</string>
-  <string name="sync_option_android_data_desc">无需权限，系统文件管理器可见</string>
-  <string name="sync_option_none">不同步</string>
-  <string name="sync_option_none_desc">最佳性能，仅使用私有目录</string>
-  <string name="sync_feature_data_safe">数据安全：卸载后用户数据保留</string>
-  <string name="sync_feature_file_visible">文件可见：方便第三方应用访问</string>
-  <string name="sync_feature_cross_device">跨设备：可通过电脑访问项目文件</string>
-  <string name="sync_feature_no_permission">无需权限：兼容所有 Android 版本</string>
-  <string name="sync_feature_file_manager_visible">文件可见：系统文件管理器可访问</string>
-  <string name="sync_feature_performance">性能优先：无同步开销</string>
-  <string name="sync_feature_storage_small">存储占用小：只有一份数据</string>
-  <string name="sync_warning_permission">需要存储权限</string>
-  <string name="sync_warning_data_loss">注意：卸载后数据会丢失</string>
-  <string name="sync_warning_no_file_manager">无法通过文件管理器访问</string>
-  <string name="setup_btn_next_select_dir">下一步：选择同步目录</string>
-  <string name="setup_btn_confirm_continue">确认并继续</string>
-  <string name="setup_btn_select_sync_mode">请选择同步模式</string>
-  <string name="setup_hint_sync_mode_changeable">注意：同步模式可在设置中修改</string>
 
   <!-- SkipWorkspaceDialog -->
-  <string name="dialog_title_skip_workspace">确认跳过工作空间配置?</string>
-  <string name="dialog_skip_workspace_impact">跳过后将产生以下影响：</string>
-  <string name="skip_warning_no_external">无法使用外部工作空间\n(Documents/TinaIDE)</string>
-  <string name="skip_warning_internal_only">项目仅保存在应用内部目录</string>
-  <string name="skip_warning_data_loss">卸载应用后项目数据可能丢失</string>
-  <string name="skip_warning_no_file_access">无法通过文件管理器直接访问项目</string>
-  <string name="dialog_skip_workspace_suggestion">建议：返回选择工作空间目录以获得完整功能</string>
-  <string name="btn_back_to_config">返回配置</string>
-  <string name="btn_skip_anyway">仍然跳过</string>
 
   <!-- DependencyInstallActivity -->
   <string name="setup_title_env_config">环境配置</string>
-  <string name="label_error_message">错误详情</string>
-  <string name="status_installing">正在安装环境</string>
   <string name="status_paused">已暂停</string>
-  <string name="status_preparing">准备安装...</string>
-  <string name="status_install_complete">安装完成</string>
-  <string name="status_downloading">下载中...</string>
-  <string name="status_installing_package">正在安装:</string>
-  <string name="status_downloading_package">正在下载:</string>
-  <string name="status_extracting_rootfs">正在解压基础环境...</string>
-  <string name="status_installing_toolchain">正在安装编译工具链...</string>
-  <string name="status_installing_debugger">正在安装调试器...</string>
-  <string name="label_current_mirror">当前镜像源</string>
-  <string name="btn_switch_mirror">切换源</string>
-  <string name="label_install_steps">安装步骤</string>
-  <string name="step_extract_rootfs">解压基础环境</string>
-  <string name="step_extract_rootfs_desc">Ubuntu Linux rootfs</string>
-  <string name="step_install_toolchain">安装编译工具链</string>
-  <string name="step_install_toolchain_desc">Clang/LLVM 编译器</string>
-  <string name="step_install_debugger">安装调试器</string>
-  <string name="step_install_debugger_desc">LLDB 调试器</string>
   <string name="hint_paused_can_resume">安装已暂停，可随时继续。</string>
   <string name="hint_first_install_slow">首次安装需要下载并配置环境，可能较慢，请耐心等待。</string>
   <string name="hint_almost_done">即将完成，正在进行最后步骤。</string>
@@ -1670,7 +1182,6 @@
   <string name="desc_sandbox_mode">安全沙盒模式</string>
   <string name="desc_sandbox_mode_suffix">，确保开发安全。</string>
   <string name="config_runtime_env">运行时环境</string>
-  <string name="config_runtime_env_value">Linux 发行版 + Clang</string>
   <string name="config_workspace_path">工作空间路径</string>
   <string name="config_workspace_path_value">/workspace</string>
   <string name="config_security_policy">安全策略</string>
@@ -1695,10 +1206,7 @@
   <!-- Install Failed -->
   <string name="status_install_failed">安装失败</string>
   <string name="hint_check_network_storage">请检查网络连接或存储空间后重试</string>
-  <string name="hint_network_download_failed">下载失败可能是网络问题，建议尝试切换镜像源后重试。</string>
-  <string name="btn_retry_install">重试安装</string>
   <string name="btn_retry_install_now">立即重试安装</string>
-  <string name="btn_switch_mirror_source">切换镜像源</string>
   <string name="need_help_prefix">需要帮助？</string>
   <string name="contact_support">联系技术支持</string>
 
@@ -1733,42 +1241,18 @@
   <!-- ==================== Phase 4: Utility Classes ==================== -->
 
   <!-- FileUtils Error Messages -->
-  <string name="error_parent_dir_not_exist">父目录不存在或不是目录</string>
-  <string name="error_file_exists">文件已存在: %1$s</string>
-  <string name="error_create_file_failed">创建文件失败: %1$s</string>
-  <string name="error_dir_exists">目录已存在: %1$s</string>
-  <string name="error_create_dir_failed">创建目录失败: %1$s</string>
-  <string name="error_file_not_exist">文件不存在: %1$s</string>
-  <string name="error_new_name_empty">新名称不能为空</string>
-  <string name="error_target_exists">目标文件已存在: %1$s</string>
-  <string name="error_rename_failed">重命名失败: %1$s -> %2$s</string>
-  <string name="error_source_not_exist">源文件不存在或不是文件</string>
-  <string name="error_target_file_exists">目标文件已存在</string>
-  <string name="error_source_dir_not_exist">源目录不存在或不是目录</string>
-  <string name="error_target_dir_exists">目标目录已存在</string>
-  <string name="error_file_not_exist_or_not_file">文件不存在或不是文件</string>
-  <string name="error_not_a_file">不是文件</string>
 
   <!-- ErrorHandler Messages -->
-  <string name="error_io_operation">文件操作失败: %1$s</string>
-  <string name="error_permission_denied">权限不足: %1$s</string>
-  <string name="error_invalid_argument">参数错误: %1$s</string>
-  <string name="error_invalid_state">状态错误: %1$s</string>
   <string name="error_null_pointer">数据异常: 空指针错误</string>
   <string name="error_out_of_memory">内存不足，请关闭其他应用后重试</string>
   <string name="error_unknown_with_message">未知错误</string>
 
-  <string name="error_wechat_unsupported">微信版本不支持此功能</string>
 
   <!-- TerminalViewModel -->
-  <string name="error_proot_not_installed">PRoot 环境未安装/未就绪，请先在设置中部署开发环境</string>
-  <string name="error_terminal_start_failed">启动终端失败: %1$s</string>
-  <string name="error_terminal_exited">终端已退出（exitCode=%1$d）</string>
 
   <!-- TerminalActivity -->
   <string name="title_terminal">终端</string>
   <string name="title_run_output">运行输出</string>
-  <string name="content_desc_terminal_back">返回</string>
   <string name="content_desc_terminal_settings">终端设置</string>
   <string name="status_terminal_starting">正在启动终端...</string>
   <string name="status_terminal_init_failed">终端初始化失败</string>
@@ -1778,13 +1262,11 @@
   <string name="project_not_opened">未打开项目</string>
 
   <!-- ProjectManagerViewModel -->
-  <string name="error_delete_project_failed">删除失败</string>
 
   <!-- LogView -->
   <string name="toast_copied">已复制</string>
   <string name="toast_cut">已剪切</string>
   <string name="toast_pasted">已粘贴</string>
-  <string name="toast_all_logs_copied">已复制全部日志</string>
   <string name="toast_no_matches">未找到匹配项</string>
   <string name="toast_replaced">已替换 %1$d 处</string>
   <string name="toast_duplicate_failed">复制失败</string>
@@ -1798,23 +1280,9 @@
   <string name="label_replace_with">替换为</string>
   <string name="btn_replace_all">全部替换</string>
 
-  <!-- MarkdownViewerScreen -->
-  <string name="error_read_file_failed">无法读取文件: %1$s</string>
-  <string name="content_desc_view_source">查看源码</string>
-  <string name="content_desc_preview">预览</string>
-
-  <!-- JsonViewerScreen -->
-  <string name="error_json_parse_failed">JSON 解析失败: %1$s</string>
-  <string name="error_read_json_failed">读取文件失败: %1$s</string>
-  <string name="json_view_tree">树形</string>
-  <string name="json_view_source">源码</string>
+  <!-- Outline Controls -->
   <string name="content_desc_expand_all">全部展开</string>
   <string name="content_desc_collapse_all">全部折叠</string>
-  <string name="json_object_items">Object (%1$d items)</string>
-  <string name="json_array_items">Array (%1$d items)</string>
-  <string name="json_stats_keys">%1$d 个键</string>
-  <string name="json_stats_depth">深度: %1$d</string>
-  <string name="json_stats_size">大小: %1$s</string>
 
   <!-- ImagePreviewScreen -->
   <string name="error_load_image_failed">无法加载图片</string>
@@ -1834,26 +1302,10 @@
   <string name="error_offset_out_of_range">偏移超出范围 (0 - %1$d)</string>
 
   <!-- SettingsScreen -->
-  <string name="content_desc_settings_back">返回</string>
 
   <!-- ==================== Phase 5: UI Components Hardcoded Strings ==================== -->
 
   <!-- SyncStatusDialog -->
-  <string name="sync_status_complete">同步完成</string>
-  <string name="sync_status_failed">同步失败</string>
-  <string name="sync_status_syncing">正在同步</string>
-  <string name="sync_phase_scanning">扫描文件...</string>
-  <string name="sync_phase_copying">复制文件...</string>
-  <string name="sync_phase_cleaning">清理文件...</string>
-  <string name="sync_current_file">当前: %1$s</string>
-  <string name="sync_stat_files_scanned">扫描文件</string>
-  <string name="sync_stat_files_synced">同步文件</string>
-  <string name="sync_stat_sync_size">同步大小</string>
-  <string name="sync_stat_files_deleted">删除文件</string>
-  <string name="sync_stat_duration">耗时</string>
-  <string name="sync_stat_count_unit">%1$d 个</string>
-  <string name="sync_stat_duration_seconds">%1$.1f 秒</string>
-  <string name="sync_preparing">准备同步...</string>
 
   <!-- DebugContentWithHorizontalTabs -->
   <string name="debug_tab_breakpoints">断点 (%1$d)</string>
@@ -1874,8 +1326,6 @@
   <!-- EditorToolBar -->
   <string name="content_desc_undo">撤销</string>
   <string name="content_desc_redo">重做</string>
-  <string name="content_desc_find">查找</string>
-  <string name="content_desc_goto_line">跳转行</string>
   <string name="content_desc_toggle_bookmark">切换书签</string>
   <string name="content_desc_prev_bookmark">上一个书签</string>
   <string name="content_desc_next_bookmark">下一个书签</string>
@@ -1893,9 +1343,6 @@
   <string name="git_commit_author">作者</string>
   <string name="git_commit_date">日期</string>
   <string name="git_commit_message">提交信息</string>
-  <string name="git_init_title">初始化 Git 仓库</string>
-  <string name="git_init_message">当前项目不是 Git 仓库。是否要初始化？</string>
-  <string name="git_initializing">正在初始化...</string>
   <string name="git_init">初始化</string>
 
   <!-- UnsavedFileDialog -->
@@ -1910,13 +1357,10 @@
   <string name="btn_save_all_and_exit">全部保存并退出</string>
   <string name="btn_discard_and_exit">不保存退出</string>
 
-  <!-- TerminalToolbar / TerminalInput -->
+  <!-- TerminalToolbar -->
     <string name="content_desc_stop">停止</string>
     <string name="content_desc_start">启动</string>
-    <string name="content_desc_send">发送</string>
     <string name="terminal_shortcut_ctrl_c">Ctrl+C</string>
-    <string name="terminal_not_started">终端未启动</string>
-    <string name="btn_start_shell">启动 Shell</string>
 
   <!-- TabContextMenu -->
   <string name="action_close_current_tab">关闭</string>
@@ -1939,8 +1383,6 @@
 
   <!-- RunConfigDialog -->
   <string name="run_config_output_mode">输出模式</string>
-  <string name="run_config_output_build_log">构建日志</string>
-  <string name="run_config_output_build_log_desc">输出显示在底部面板的构建日志中</string>
   <string name="run_config_output_terminal">终端</string>
   <string name="run_config_output_terminal_desc">在独立终端中运行，支持交互输入</string>
   <string name="run_config_output_sdl">SDL 图形运行</string>
@@ -1957,7 +1399,6 @@
   <string name="run_config_sdl_orientation_portrait_desc">强制竖屏显示</string>
   <string name="run_config_sdl_floating_log">悬浮日志窗口</string>
   <string name="run_config_sdl_floating_log_desc">在 SDL 图形全屏运行时显示可拖拽的实时日志窗口，方便查看 stdout/stderr 输出</string>
-  <string name="run_config_sdl_floating_log_not_ready">悬浮日志功能开发中，敬请期待</string>
 
   <!-- 悬浮覆盖层 -->
   <string name="floating_overlay_exit">退出</string>
@@ -1986,17 +1427,14 @@
   <string name="sdl_runtime_error_sdl_library_invalid">SDL 运行库不存在或不可读：%1$s</string>
   <string name="sdl_runtime_error_invalid_required_major">SDL 主版本参数无效：%1$d（仅支持 2 或 3）</string>
   <string name="sdl_runtime_error_launch_failed">启动 SDL 运行界面失败：%1$s</string>
-  <string name="run_config_args_prefix">参数: %1$s</string>
   <string name="run_config_toolchain">工具链</string>
   <string name="run_config_toolchain_default">默认（使用全局激活的工具链）</string>
   <string name="run_config_toolchain_desc">选择此配置使用的工具链版本</string>
 
   <!-- LogPanelView -->
-  <string name="toast_all_logs_copied_full">已复制全部日志</string>
 
   <!-- NewFileDialog -->
   <string name="new_file_title">新建文件</string>
-  <string name="new_file_location">位置: %1$s/</string>
   <string name="new_file_type">文件类型</string>
   <string name="label_target_directory">目标目录</string>
   <string name="label_target_path">目标路径</string>
@@ -2010,8 +1448,6 @@
   <string name="new_file_example_header">例如: utils</string>
   <string name="new_file_example_plain">例如: config.json</string>
   <string name="new_file_example_text">例如: notes</string>
-  <string name="new_file_will_create_pair">将创建: %1$s.h 和 %2$s.cpp</string>
-  <string name="new_file_will_create">将创建: %1$s.%2$s</string>
   <string name="error_name_empty">名称不能为空</string>
   <string name="error_name_invalid_chars">名称只能包含字母、数字和下划线，且不能以数字开头</string>
   <string name="error_filename_invalid_chars">文件名包含非法字符</string>
@@ -2030,14 +1466,10 @@
   <string name="hint_replacement_text">替换为...</string>
   <string name="btn_toggle_replace">切换替换模式</string>
   <string name="btn_replace_selected">替换选中</string>
-  <string name="btn_preview_replace">预览替换</string>
   <string name="btn_select_all">全选</string>
   <string name="btn_deselect_all">取消全选</string>
   <string name="selected_count">已选中 %1$d 项</string>
-  <string name="replace_preview_title">替换预览</string>
   <string name="replace_progress">正在替换: %1$d/%2$d</string>
-  <string name="replace_success">成功替换 %1$d 处，共 %2$d 个文件</string>
-  <string name="replace_failed">替换失败: %1$s</string>
   <string name="search_history_title">搜索历史</string>
   <string name="search_history_clear">清空历史</string>
   <string name="search_history_empty">暂无搜索历史</string>
@@ -2046,18 +1478,8 @@
   <string name="search_history_favorite">收藏</string>
   <string name="search_history_unfavorite">取消收藏</string>
   <string name="search_history_delete">删除</string>
-  <string name="search_scope_project">整个项目</string>
-  <string name="search_scope_current_file">当前文件</string>
-  <string name="search_scope_open_files">打开的文件</string>
-  <string name="search_scope_custom">自定义目录</string>
-  <string name="search_include_pattern">包含文件</string>
-  <string name="search_exclude_pattern">排除文件</string>
-
-  <!-- GitStatusPanel / GitLogPanel -->
-  <string name="git_section_staged">暂存的更改</string>
+  <!-- Git panels / GitLogPanel -->
   <string name="git_section_changes">更改</string>
-  <string name="git_section_untracked">未跟踪</string>
-  <string name="content_desc_stage_all">暂存全部</string>
   <string name="content_desc_unstage">取消暂存</string>
   <string name="content_desc_stage">暂存</string>
   <string name="git_not_a_repo">当前项目不是 Git 仓库</string>
@@ -2090,9 +1512,6 @@
   <string name="error_folder_exists">同名文件夹已存在</string>
   <string name="toast_folder_created">文件夹 %1$s 已创建</string>
   <string name="error_create_folder">创建文件夹失败</string>
-  <string name="error_file_name_empty">文件名不能为空</string>
-  <string name="error_file_name_invalid">文件名包含非法字符</string>
-  <string name="toast_file_created">文件 %1$s 已创建</string>
   <string name="error_name_same_exists">同名文件或文件夹已存在</string>
   <string name="toast_renamed">已重命名为 %1$s</string>
   <string name="delete_folder_title">删除文件夹</string>
@@ -2107,7 +1526,6 @@
   <string name="editor_hint_line1">从侧边栏选择一个文件开始编辑，或者点击下</string>
   <string name="editor_hint_line2">方按钮浏览您的项目文件树。</string>
   <string name="editor_view_recent">查看最近打开的项目</string>
-  <string name="editor_loading_file">正在加载文件内容…</string>
   <string name="editor_load_failed">加载失败</string>
 
   <!-- DrawerGitPanel / DrawerContent -->
@@ -2161,8 +1579,6 @@
   <string name="git_status_untracked">未跟踪</string>
   <string name="git_status_ignored">已忽略</string>
   <string name="git_use_init_hint">使用 git init 初始化</string>
-  <string name="drawer_tab_files">文件</string>
-  <string name="drawer_tab_git">Git</string>
   <string name="drawer_title_source_control">源代码管理</string>
   <string name="content_desc_add_file">添加文件</string>
 
@@ -2245,7 +1661,6 @@
   <string name="bottom_panel_outline">大纲</string>
   <string name="bottom_panel_symbols">符号</string>
   <string name="bottom_panel_bookmarks">书签</string>
-  <string name="bottom_panel_terminal">终端</string>
   <string name="bottom_panel_git">Git</string>
 
   <!-- BookmarksContent -->
@@ -2266,10 +1681,7 @@
   <string name="content_desc_restore_panel">还原面板高度</string>
   <string name="content_desc_expand_fullscreen">展开为全屏</string>
   <string name="content_desc_close_panel">关闭底部面板</string>
-
-  <string name="action_go_install">去安装</string>
-
-  <!-- CrashActivity -->
+<!-- CrashActivity -->
   <string name="crash_no_info">无崩溃信息</string>
   <string name="crash_copied">已复制到剪贴板</string>
   <string name="crash_copy_failed">复制失败: %1$s</string>
@@ -2294,11 +1706,6 @@
   <string name="crash_btn_copy">复制</string>
   <string name="crash_btn_restart">重启应用</string>
   <string name="crash_log_title">崩溃日志</string>
-
-  <!-- TinaComponents -->
-  <string name="btn_confirm_default">确认</string>
-  <string name="btn_cancel_default">取消</string>
-
 
   <!-- TerminalToolbar -->
   <string name="terminal_shell_running">Shell 运行中</string>
@@ -2326,7 +1733,6 @@
   <string name="ai_image_pick_failed">图片处理失败（请换一张或缩小图片）</string>
   <string name="ai_image_load_failed">图片加载失败</string>
   <string name="ai_image_content_description">图片</string>
-  <string name="ai_attach_error">附加错误信息</string>
   <string name="ai_copy_code">复制代码</string>
   <string name="ai_insert_code">插入到编辑器</string>
   <string name="ai_code_lines">行</string>
@@ -2337,7 +1743,6 @@
   <string name="ai_code_hide">收起高亮</string>
   <string name="ai_thinking">AI 正在思考...</string>
   <string name="ai_error_no_config">请先配置 AI 设置</string>
-  <string name="ai_error_network">网络请求失败</string>
   <string name="ai_code_copied">代码已复制</string>
   <string name="ai_code_inserted">代码已插入</string>
   <string name="ai_close">关闭</string>
@@ -2425,7 +1830,6 @@
   <string name="ai_search_label_content">内容：</string>
   <string name="ai_search_content_truncated_note">内容已截断，文件共 %1$d 行。</string>
   <string name="ai_search_content_truncated_hint">可提高 max_lines 查看更多内容，或访问：</string>
-  <string name="ai_search_github_branch_default">默认</string>
   <string name="ai_diag_error">错误</string>
   <string name="ai_diag_warning">警告</string>
   <string name="ai_diag_info">信息</string>
@@ -2490,32 +1894,7 @@
   <string name="ai_rename">重命名</string>
   <string name="ai_rename_conversation">重命名对话</string>
   <string name="ai_conversation_title">对话标题</string>
-  <string name="ai_manual_action_prompt">工具已执行，点击继续获取 AI 回复</string>
-  <string name="ai_continue">继续</string>
-  <string name="ai_continue_response">继续回复</string>
-  <string name="ai_tool_result">工具结果</string>
-  <string name="ai_view_result">查看结果</string>
-  <string name="ai_show_params">查看参数</string>
-  <string name="ai_hide_params">隐藏参数</string>
-  <string name="ai_tool_result_success">%s - 执行成功</string>
-  <string name="ai_tool_result_failed">%s - 执行失败</string>
-  <string name="ai_no_result">无结果</string>
   <string name="ai_copy">复制</string>
-  <string name="ai_tool_already_executed">工具已执行，不能重复执行</string>
-  <string name="ai_tool_executed_failed">工具 %s 执行失败</string>
-  <string name="ai_status_user_sent">用户已发送</string>
-  <string name="ai_status_responding">AI 正在回复</string>
-  <string name="ai_status_tool_pending">等待工具执行</string>
-  <string name="ai_status_tool_executing">工具执行中</string>
-  <string name="ai_status_continuing">AI 继续回复</string>
-  <string name="ai_status_completed">已完成</string>
-  <string name="ai_execute_action">执行动作</string>
-  <string name="ai_action_pending">待执行</string>
-  <string name="ai_action_executing">执行中</string>
-  <string name="ai_action_completed">已完成</string>
-  <string name="ai_action_failed">失败</string>
-  <string name="ai_action_cancelled">已取消</string>
-  <string name="ai_status_error">出错</string>
 
   <!-- AI 设置 -->
   <string name="settings_cat_ai">AI 助手</string>
@@ -2526,14 +1905,12 @@
   <string name="settings_ai_access_mode_cloud">官方统一网关</string>
   <string name="settings_ai_access_mode_custom">自定义渠道</string>
   <string name="settings_ai_access_mode_cloud_subtitle">开源版未内置官方 AI 网关</string>
-  <string name="settings_ai_access_mode_cloud_need_login">开源版未内置官方 AI 网关</string>
   <string name="settings_ai_access_mode_custom_subtitle">使用你自己的 API Key（BYOK）</string>
   <string name="settings_ai_image_detail">图片细节</string>
   <string name="settings_ai_image_detail_auto">自动</string>
   <string name="settings_ai_image_detail_low">低（更省 Token）</string>
   <string name="settings_ai_image_detail_high">高（更清晰）</string>
   <string name="settings_ai_not_configured">未配置</string>
-  <string name="settings_ai_configured">已配置</string>
   <string name="settings_ai_channel_management">渠道管理</string>
   <string name="settings_ai_channel_list_empty">暂无自定义渠道，点击下方添加</string>
   <string name="settings_ai_channel_add">添加渠道</string>
@@ -2545,6 +1922,7 @@
   <string name="settings_ai_channel_active">当前使用</string>
   <string name="settings_ai_channel_apikey_keep">留空表示保持原有 Key</string>
   <string name="settings_ai_channel_apikey_required">必填</string>
+  <string name="settings_ai_channel_provider_model">%1$s · %2$s</string>
   <string name="settings_ai_channel_error_name_blank">渠道名称不能为空</string>
   <string name="settings_ai_channel_error_url_blank">API 地址不能为空</string>
   <string name="settings_ai_channel_error_url_invalid">API 地址必须以 http:// 或 https:// 开头</string>
@@ -2553,11 +1931,6 @@
   <string name="ai_error_no_active_channel">请在设置 → 渠道管理中选择或添加渠道。</string>
   <string name="ai_error_gateway_unavailable">开源版未内置官方 AI 网关，请在设置中添加自定义渠道。</string>
   <string name="settings_ai_advanced">高级设置</string>
-  <string name="settings_ai_advanced_desc">温度、Token 限制、系统提示词</string>
-  <string name="settings_ai_test_connection">测试连接</string>
-  <string name="settings_ai_test_success">连接成功！模型: %s</string>
-  <string name="settings_ai_test_failed">连接失败: %s</string>
-  <string name="settings_ai_api_key_help">API Key 将加密存储在本地，不会上传到任何服务器。\n\n获取 API Key：\n• DeepSeek: platform.deepseek.com\n• OpenAI: platform.openai.com\n• 通义千问: dashscope.console.aliyun.com</string>
   <string name="settings_ai_base_url">API 地址</string>
   <string name="settings_ai_max_tokens">最大输出 Token</string>
   <string name="settings_ai_temperature">温度</string>
@@ -2581,12 +1954,9 @@
   <string name="settings_ai_retry_count">自动重试次数</string>
   <string name="settings_ai_retry_delay">重试间隔（秒）</string>
   <string name="settings_ai_summary_prompt">总结提示词</string>
-  <string name="settings_ai_summary_prompt_subtitle">用于总结对话的提示词</string>
   <string name="settings_ai_manage_tools">管理工具</string>
   <string name="settings_ai_manage_tools_subtitle">查看和管理 AI 工具启用状态</string>
   <string name="settings_ai_tools_dialog_title">AI 工具管理</string>
-  <string name="settings_ai_tool_enabled">已启用</string>
-  <string name="settings_ai_tool_disabled">已禁用</string>
   <string name="settings_ai_save">保存</string>
   <string name="settings_ai_loading_models">正在加载模型列表...</string>
   <string name="settings_ai_provider_openai">OpenAI</string>
@@ -2618,11 +1988,6 @@
   <string name="terminal_backend_proot_desc">在 PRoot 虚拟 Linux 环境中运行</string>
 
   <!-- Terminal Context Menu -->
-  <string name="terminal_select_all">全选</string>
-  <string name="terminal_copy">复制</string>
-  <string name="terminal_paste">粘贴</string>
-  <string name="terminal_copied">已复制</string>
-  <string name="terminal_cannot_open_link">无法打开链接: %1$s</string>
 
   <!-- RunConfigDialog -->
 
@@ -2630,15 +1995,11 @@
   <string name="toast_please_open_project">请先打开项目</string>
   <string name="toast_commit_success">提交成功</string>
   <string name="content_desc_open_file_tree">打开文件树</string>
-  <string name="toast_config_copied">配置已复制</string>
-  <string name="toast_config_deleted">配置已删除</string>
-  <string name="content_desc_run">运行</string>
   <string name="content_desc_debug">调试</string>
   <string name="content_desc_more">更多</string>
   <string name="menu_section_file">文件</string>
   <string name="menu_section_code">代码</string>
-  <string name="menu_new_file">新建文件</string>
-  <string name="menu_save_all">全部保存</string>
+<string name="menu_save_all">全部保存</string>
   <string name="menu_format_code">格式化代码</string>
   <string name="menu_goto_line">跳转到行</string>
   <string name="menu_section_view">视图</string>
@@ -2659,22 +2020,18 @@
   <string name="menu_exit_workspace">退出工作区</string>
   <string name="toast_saved">已保存</string>
   <string name="toast_save_failed">保存失败: %1$s</string>
-  <string name="toast_file_not_support_search">当前文件不支持搜索</string>
   <string name="toast_git_branch_switched">已切换到分支: %1$s</string>
-  <string name="toast_commit_info">提交: %1$s - %2$s</string>
   <string name="dialog_close_project_title">关闭项目</string>
   <string name="dialog_close_project_message">关闭后可以在项目主页重新打开，默认保留当前会话状态。</string>
   <string name="btn_close_project">关闭</string>
   <string name="btn_close_and_forget">关闭并忘记</string>
   <string name="toast_run_config_saved">运行配置已保存</string>
   <string name="toast_git_init_success">Git 仓库初始化成功</string>
-  <string name="toast_created">已创建: %1$s</string>
   <string name="toast_debug_start_failed">调试启动失败：未获取到可执行文件路径</string>
   <string name="toast_compile_done_starting_debug">编译完成，正在启动调试...</string>
   <string name="toast_terminal_run_failed">终端运行失败：未获取到运行命令</string>
   <string name="toast_compile_done_opening_terminal">编译完成，正在打开终端...</string>
   <string name="toast_compile_done_opening_sdl">编译完成，正在打开 SDL 图形运行...</string>
-  <string name="toast_project_config_migrated">检测到旧版配置，已自动迁移（project.json %1$d 项，run_configs.json %2$d 项）</string>
   <string name="toast_compile_done_artifact_exported">编译完成，已导出构建产物</string>
   <string name="toast_compile_done_no_runnable_output">构建完成：当前项目没有可直接运行的产物，已导出到构建产物</string>
   <string name="toast_compile_done_non_runnable_artifact">构建完成：当前项目产物为%1$s，不能直接运行</string>
@@ -2708,12 +2065,10 @@
   <string name="toast_compiling">正在编译...</string>
 
   <!-- LargeTextViewerScreen -->
-  <string name="large_file_viewer_title">大文件查看器</string>
   <string name="large_file_viewer_info">大文件查看器  •  %1$s  •  %2$d KB</string>
   <string name="large_file_open_editor">用编辑器打开</string>
   <string name="large_file_hex">十六进制</string>
   <string name="large_file_load_failed">加载失败</string>
-  <string name="large_file_open_failed">打开文件失败</string>
   <string name="large_file_retry">重试</string>
   <string name="large_file_reached_limit">已达到显示上限（%1$d 行），建议使用十六进制或用编辑器打开。</string>
   <string name="large_file_end_of_file">已到文件末尾</string>
@@ -2723,10 +2078,8 @@
   <string name="content_desc_drag">拖动</string>
 
   <!-- ThemeSelectionDialog -->
-  <string name="dialog_title_select_terminal_theme">选择主题</string>
 
   <!-- EditorTab -->
-  <string name="content_desc_close_tab">关闭</string>
 
   <!-- OpenSourceLicensesActivity -->
   <string name="license_load_error">无法加载开源许可数据：%1$s</string>
@@ -2738,18 +2091,8 @@
 
 如需核对更底层的源码级或原生级子模块，请同时参考仓库随附的 LICENSE / NOTICE 文件。</string>
   <string name="license_bundled_termux_desc">应用内终端使用的终端仿真与视图模块（随应用一起分发）。</string>
-  <string name="license_bundled_json_desc">应用内原生代码使用的 JSON 单头文件库。</string>
 
   <!-- Captcha -->
-  <string name="captcha_title_default">请输入验证码</string>
-  <string name="captcha_label">验证码</string>
-  <string name="captcha_placeholder">请输入验证码</string>
-  <string name="captcha_load">加载验证码</string>
-  <string name="captcha_click_to_load">点击加载验证码</string>
-  <string name="captcha_load_failed">加载失败</string>
-  <string name="captcha_load_failed_retry">加载失败，点击重试</string>
-  <string name="captcha_content_desc">验证码</string>
-
   <!-- EditorKeepAliveService -->
   <string name="service_editor_keep_alive_channel_name">编辑器后台运行</string>
   <string name="service_editor_keep_alive_channel_desc">保持编辑器在后台运行，防止被系统杀死</string>
@@ -2792,19 +2135,7 @@ kept=%3$d bytes
   <string name="apk_builder_debug_keystore_unavailable">默认签名不可用，请在 assets/apk_templates/ 放置 debug.keystore</string>
 
   <!-- OutputActivity -->
-  <string name="output_title">输出</string>
-  <string name="output_title_starting">输出 - 启动中...</string>
-  <string name="output_title_running">输出 - 运行中</string>
-  <string name="output_title_stopping">输出 - 停止中...</string>
-  <string name="output_title_terminated">输出 - 已终止</string>
-  <string name="output_title_error">输出 - 错误</string>
-  <string name="output_title_completed">输出 - 已完成</string>
-  <string name="output_title_exited">输出 - 已结束 (%1$d)</string>
-  <string name="output_title_stopped">输出 - 已停止</string>
-
-  <!-- OutputView -->
-  <string name="toast_copied_content">已复制</string>
-  <string name="toast_copied_all_content">已复制全部内容</string>
+<!-- OutputView -->
 
   <!-- ==================== Phase 6: Core Layer Hardcoded Strings ==================== -->
 
@@ -2828,12 +2159,10 @@ kept=%3$d bytes
   <string name="git_error_pull_failed">Pull 失败</string>
   <string name="git_error_push_failed">Push 失败</string>
   <string name="git_error_clone_failed">克隆失败</string>
-  <string name="git_error_clone_timeout">克隆超时：仓库较大或网络较慢，请稍后重试。</string>
   <string name="git_error_get_conflict_files_failed">获取冲突文件失败</string>
   <string name="git_error_get_conflict_status_failed">获取冲突状态失败</string>
   <string name="git_error_merge_conflicts_need_resolution">发生合并冲突，以下文件需要处理：</string>
   <string name="git_error_rebase_continue_failed">继续变基失败</string>
-  <string name="git_error_merge_continue_failed">完成合并失败</string>
   <string name="git_error_no_in_progress_merge_or_rebase">当前没有进行中的合并/变基</string>
   <string name="git_error_continue_operation_failed">继续操作失败</string>
   <string name="git_error_rebase_skip_failed">跳过变基失败</string>
@@ -2842,16 +2171,7 @@ kept=%3$d bytes
   <string name="git_error_file_path_empty">文件路径为空</string>
   <string name="git_error_checkout_ours_failed">使用本地版本失败</string>
   <string name="git_error_checkout_theirs_failed">使用远程版本失败</string>
-
-  <string name="git_remote_error_auth_failed">认证失败：请检查用户名/Token。\n\n%1$s</string>
-  <string name="git_remote_error_permission_denied">权限不足：请检查仓库权限或 SSH/Token 配置。\n\n%1$s</string>
-  <string name="git_remote_error_network_failed">网络连接失败：请检查网络或代理设置。\n\n%1$s</string>
-  <string name="git_remote_error_non_fast_forward">推送被拒绝（non-fast-forward）：请先 Pull 或确认是否需要强制推送。\n\n%1$s</string>
-  <string name="git_remote_error_conflict">发生合并冲突：请解决冲突后继续。\n\n%1$s</string>
-  <string name="git_remote_error_repo_not_found">仓库不存在或无权限访问。\n\n%1$s</string>
-  <string name="git_remote_error_https_credentials_needed">需要 HTTPS 凭据：请为该域名配置 Token/密码后重试。\n\n%1$s</string>
-
-  <!-- BuildVariables -->
+<!-- BuildVariables -->
   <string name="build_var_desc_project_dir">项目根目录的绝对路径</string>
   <string name="build_var_desc_project_name">项目名称</string>
   <string name="build_var_desc_current_file">当前编辑文件的绝对路径</string>
@@ -2904,7 +2224,6 @@ kept=%3$d bytes
 
   <!-- Remote LSP Test Connection -->
   <string name="settings_remote_lsp_test">测试连接</string>
-  <string name="settings_remote_lsp_testing">正在测试连接...</string>
 
   <!-- Remote LSP Connection Status -->
   <string name="settings_remote_lsp_status">连接状态</string>
@@ -2914,18 +2233,12 @@ kept=%3$d bytes
   <string name="settings_remote_lsp_status_error">连接错误</string>
 
   <!-- Remote LSP Test Result -->
-  <string name="settings_remote_lsp_test_success">连接成功！延迟：%1$d ms</string>
-  <string name="settings_remote_lsp_test_failed">连接失败：%1$s</string>
-  <string name="settings_remote_lsp_test_timeout">连接超时</string>
 
   <!-- Remote LSP Sync Mode -->
   <string name="settings_remote_lsp_sync_mode">同步模式</string>
   <string name="settings_remote_lsp_sync_mode_auto">自动（推荐）</string>
   <string name="settings_remote_lsp_sync_mode_lightweight">轻量模式</string>
   <string name="settings_remote_lsp_sync_mode_project">项目模式</string>
-  <string name="settings_remote_lsp_sync_mode_auto_desc">根据项目大小自动选择</string>
-  <string name="settings_remote_lsp_sync_mode_lightweight_desc">仅传输打开的文件</string>
-  <string name="settings_remote_lsp_sync_mode_project_desc">同步整个项目目录</string>
   <string name="settings_remote_lsp_detected_mode">当前检测结果</string>
 
   <!-- Remote LSP Dialog -->
@@ -2939,36 +2252,16 @@ kept=%3$d bytes
   <string name="settings_remote_lsp_config_invalid">请先配置服务器地址</string>
 
   <!-- Project Sync -->
-  <string name="sync_state_idle">空闲</string>
-  <string name="sync_state_scanning">正在扫描项目...</string>
-  <string name="sync_state_compressing">正在压缩文件...</string>
-  <string name="sync_state_uploading">正在上传...</string>
-  <string name="sync_state_synced">已同步</string>
-  <string name="sync_state_error">同步错误</string>
 
-  <string name="sync_progress_scanning">扫描中：%1$s</string>
-  <string name="sync_progress_compressing">压缩中：%1$d / %2$d 文件</string>
-  <string name="sync_progress_uploading">上传中：%1$s / %2$s</string>
-  <string name="sync_progress_complete">同步完成：%1$d 文件</string>
 
-  <string name="sync_mode_detected">检测结果：%1$s</string>
-  <string name="sync_mode_reason">原因：%1$s</string>
 
-  <string name="sync_button_start">开始同步</string>
-  <string name="sync_button_cancel">取消同步</string>
-  <string name="sync_button_resync">重新同步</string>
 
-  <string name="sync_dialog_title">项目同步</string>
-  <string name="sync_dialog_message">是否将项目同步到远程服务器？\n\n项目：%1$s\n文件数：%2$d\n总大小：%3$s</string>
 
   <!-- Rsync Sync -->
   <string name="settings_remote_lsp_sync_method">同步方案</string>
   <string name="settings_remote_lsp_sync_method_builtin">内置同步（WebSocket）</string>
   <string name="settings_remote_lsp_sync_method_rsync">rsync 增量同步</string>
   <string name="settings_remote_lsp_sync_method_manual">手动同步</string>
-  <string name="settings_remote_lsp_sync_method_builtin_desc">零配置，适合小中型项目</string>
-  <string name="settings_remote_lsp_sync_method_rsync_desc">增量传输，适合大型项目</string>
-  <string name="settings_remote_lsp_sync_method_manual_desc">使用外部工具同步文件</string>
 
   <string name="settings_remote_lsp_rsync_module">rsync 模块</string>
   <string name="settings_remote_lsp_rsync_module_hint">例如：tina-workspace</string>
@@ -2978,17 +2271,9 @@ kept=%3$d bytes
   <string name="dialog_title_remote_lsp_sync_method">同步方案</string>
   <string name="dialog_title_rsync_module">rsync 模块</string>
   <string name="dialog_title_rsync_port">rsync 端口</string>
-  <string name="dialog_title_remote_lsp_rsync_port">rsync 端口</string>
 
-  <string name="rsync_state_idle">空闲</string>
-  <string name="rsync_state_syncing">同步中...</string>
-  <string name="rsync_state_success">同步成功</string>
-  <string name="rsync_state_error">同步错误</string>
   <string name="rsync_error_exit_code">rsync 执行失败，退出码：%1$d</string>
 
-  <string name="rsync_progress">%1$s / %2$s (%3$s)</string>
-  <string name="rsync_not_available">rsync 不可用</string>
-  <string name="rsync_version">rsync 版本：%1$s</string>
 
   <!-- ==================== Help Center ==================== -->
 
@@ -3354,15 +2639,9 @@ kept=%3$d bytes
 
   <!-- DependencyInstallActivity -->
   <string name="package_list_title">正在安装的软件包</string>
-  <string name="install_stage_extract_ndk_sysroot">解压 NDK</string>
-  <string name="install_stage_extract_system">解压系统</string>
-  <string name="install_stage_update_index">更新索引</string>
   <string name="install_stage_downloading">下载中</string>
-  <string name="install_stage_installing">安装中</string>
-  <string name="install_stage_install_debugger">安装调试器</string>
   <string name="install_stage_verifying">验证中</string>
   <string name="install_stage_configuring">配置环境</string>
-  <string name="install_stage_clean_cache">清理缓存</string>
   <string name="install_stage_completed">已完成</string>
   <string name="package_status_completed">已完成</string>
   <string name="package_status_installing">安装中</string>
@@ -3448,80 +2727,22 @@ kept=%3$d bytes
 
 
   <!-- License Status -->
-  <string name="license_expired_at">过期时间: %1$s</string>
 
 
   <!-- License Validation -->
-  <string name="license_valid">许可证有效</string>
 
   <!-- License Status Card -->
 
   <!-- Premium Feature Dialog -->
 
   <!-- Premium Feature Names -->
-  <string name="feature_name_cloud_sync">云同步</string>
-  <string name="feature_name_deps_download">依赖包下载</string>
-  <string name="feature_name_code_completion">代码补全</string>
-  <string name="feature_name_git_integration">Git 集成</string>
-  <string name="feature_name_terminal">终端</string>
-  <string name="feature_name_multi_file_edit">多文件编辑</string>
-  <string name="feature_name_theme_customization">主题自定义</string>
-  <string name="feature_name_plugins">插件系统</string>
 
   <!-- Premium Feature Descriptions -->
-  <string name="feature_desc_cloud_sync">将您的项目和设置同步到云端，随时随地访问您的代码。</string>
-  <string name="feature_desc_deps_download">自动下载和管理项目依赖，支持多种包管理器。</string>
-  <string name="feature_desc_code_completion">智能代码补全，提高编码效率。</string>
-  <string name="feature_desc_git_integration">内置 Git 支持，轻松管理版本控制。</string>
-  <string name="feature_desc_terminal">集成终端，直接在 IDE 中执行命令。</string>
-  <string name="feature_desc_multi_file_edit">同时编辑多个文件，提高工作效率。</string>
-  <string name="feature_desc_theme_customization">自定义编辑器主题和配色方案。</string>
-  <string name="feature_desc_plugins">安装和管理插件，扩展 IDE 功能。</string>
 
   <!-- License Debug -->
 
   <!-- Toolchain Configuration -->
-  <string name="toolchain_config_title">工具链配置</string>
-  <string name="env_deploy_title">环境部署</string>
-  <string name="toolchain_config_main_title">工具链配置</string>
-  <string name="toolchain_config_description">为了确保代码的高效编译与调试，我们需要为您配置底层工具链。系统将根据您的硬件架构自动匹配最佳版本。</string>
-  <string name="toolchain_select_mode">选择安装方式</string>
-  <string name="toolchain_select_mode_desc">您可以随时在设置中修改工具链配置</string>
-  <string name="recommended_install">推荐配置</string>
-  <string name="recommended_install_desc">包含 Clang 编译器和完整工具链，适合大多数开发场景</string>
-  <string name="quick_install">快速安装</string>
-  <string name="quick_install_desc">推荐新手使用，一键安装 Clang 完整开发环境</string>
-  <string name="lightweight_install">轻量安装</string>
-  <string name="lightweight_install_desc">使用 GCC 节省空间，适合存储空间有限的设备</string>
-  <string name="custom_install">自定义安装</string>
-  <string name="custom_install_desc">自由选择编译器、链接器、调试器</string>
-  <string name="standard_dev_kit">标准开发包</string>
-  <string name="standard_dev_kit_subtitle">Clang 16.0 + LLVM Runtime</string>
-  <string name="badge_recommended_choice">推荐选择</string>
-  <string name="feature_cpp20_stdlib">全套 C++20 标准库支持</string>
-  <string name="feature_hardware_accel">硬件加速编译优化</string>
-  <string name="estimated_size_value">预计占用 %1$s</string>
-  <string name="custom_expert_mode">自定义专家模式</string>
-  <string name="custom_expert_mode_desc">手动指定编译器路径与参数</string>
-  <string name="agree_by_clicking_prefix">点击开始即代表您同意 </string>
-  <string name="service_agreement">服务协议</string>
   <string name="and_word">与</string>
-  <string name="custom_config_title">自定义工具链组件</string>
-  <string name="compiler_selection">编译器</string>
-  <string name="compiler_selection_desc">至少选择一个编译器</string>
-  <string name="linker_selection">链接器</string>
-  <string name="linker_selection_desc">可选择一个或多个链接器</string>
-  <string name="debugger_selection">调试器（可选）</string>
-  <string name="debugger_selection_desc">调试器可在以后需要时再安装</string>
-  <string name="llvm_version_selection">LLVM 版本</string>
-  <string name="llvm_version_selection_desc">优先安装指定版本的 Ubuntu 版本化包（如 clang-19），失败会自动降级</string>
-  <string name="llvm_version_auto_recommended">自动（推荐：优先 19）</string>
-  <string name="required_components">必装组件</string>
-  <string name="required_components_list">Clangd（LSP）、LLVM、C++ 标准库、CMake、Ninja、Make、Git</string>
-  <string name="total_install_size">预计安装大小</string>
-  <string name="available_space">可用存储空间</string>
-  <string name="btn_start_install">开始安装</string>
-  <string name="btn_back_to_presets">返回预设选项</string>
 
   <!-- 插件命令字符串（HostCommands） -->
   <!-- 文件操作扩展 -->
@@ -3573,11 +2794,6 @@ kept=%3$d bytes
 
   <!-- Toolchain Config -->
   <string name="badge_recommended">推荐</string>
-  <string name="toolchain_clang_desc">现代 C/C++ 编译器，诊断信息更友好</string>
-  <string name="toolchain_gcc_desc">GNU 编译器集合，兼容性好</string>
-  <string name="toolchain_lld_desc">LLVM 链接器，链接速度更快</string>
-  <string name="toolchain_gnu_ld_desc">传统链接器，兼容性最好</string>
-  <string name="toolchain_total_size">约 %1$dMB</string>
 
   <!-- Installation Status -->
   <string name="install_status_preparing">准备中...</string>
@@ -3613,8 +2829,7 @@ kept=%3$d bytes
   <string name="exception_link_suggestion">请检查是否缺少库文件或存在符号冲突</string>
   <string name="exception_proot_error">PRoot 环境异常: %1$s</string>
   <string name="exception_proot_not_installed">PRoot 环境未安装</string>
-  <string name="compile_error_output">编译异常: %1$s\n%2$s</string>
-  <string name="exception_proot_not_installed_suggestion">请先打开应用并等待首次启动时的自动安装完成后再编译</string>
+<string name="exception_proot_not_installed_suggestion">请先打开应用并等待首次启动时的自动安装完成后再编译</string>
   <string name="exception_proot_installing">PRoot 环境正在初始化中</string>
   <string name="exception_proot_installing_suggestion">请稍后重试（首次启动/更新时会自动安装）</string>
   <string name="exception_proot_needs_update">PRoot 环境需要更新</string>
@@ -3638,24 +2853,11 @@ kept=%3$d bytes
   <string name="exception_timeout_suggestion">请检查网络连接，或稍后重试</string>
   <string name="exception_process_failed">进程执行失败: %1$s</string>
 
-  <string name="toast_code_sent">验证码已发送</string>
-  <string name="label_verification_code">验证码</string>
-  <string name="hint_verification_code">6 位验证码</string>
-  <string name="btn_get_code">获取验证码</string>
-  <string name="btn_get_code_countdown">%1$ds</string>
-  <string name="hint_password_register">8位以上，包含字母和数字</string>
-  <string name="label_confirm_password">确认密码</string>
-  <string name="hint_confirm_password">再次输入密码</string>
-  <string name="privacy_user_agreement">《用户协议》</string>
-  <string name="privacy_and">和</string>
-  <string name="privacy_policy">《隐私政策》</string>
-  <string name="disclaimer_as_is">现状</string>
 
   <!-- Command Executor -->
   <string name="error_no_directory_selected">无法新建：未选择目录</string>
 
   <!-- Git Panel -->
-  <string name="hint_commit_message">填写提交信息...</string>
 
   <!-- Editor Status Bar -->
   <string name="status_scanning">扫描</string>
@@ -3852,22 +3054,6 @@ kept=%3$d bytes
 
   <!-- Ubuntu Toolchain Installer -->
   <string name="toolchain_error_proot_not_installed">PRoot 环境未安装，请先调用 initialize()</string>
-  <string name="toolchain_detected_installed">检测到工具链包已安装 (%1$s)，验证中...</string>
-  <string name="toolchain_preparing">准备安装工具链...</string>
-  <string name="toolchain_error_update_index">更新软件包索引失败: %1$s</string>
-  <string name="toolchain_checking_versions">检查可用的 Ubuntu 版本化包（失败将自动降级）...</string>
-  <string name="toolchain_no_supported_version">当前软件源不支持可用的 clang/llvm 版本化包，已尝试: %1$s</string>
-  <string name="toolchain_error_no_plan">未找到可用的安装方案</string>
-  <string name="toolchain_selected_plan">选择安装方案: %1$s</string>
-  <string name="toolchain_error_download_network">下载包失败（网络错误）: %1$s</string>
-  <string name="toolchain_installing">正在安装编译工具链...</string>
-  <string name="toolchain_installed_package">已安装: %1$s</string>
-  <string name="toolchain_error_install_failed">安装工具链失败: %1$s</string>
-  <string name="toolchain_verifying">正在验证安装...</string>
-  <string name="toolchain_configuring_symlinks">配置软链接...</string>
-  <string name="toolchain_install_complete">安装完成</string>
-  <string name="toolchain_error_verify_failed">工具链安装后无法验证 clang 版本</string>
-  <string name="toolchain_error_exception">安装过程出错: %1$s</string>
 
   <!-- Terminal Shell Resolver -->
   <string name="shell_not_found_proot">PRoot 环境中找不到可用的 Shell</string>
@@ -3890,46 +3076,8 @@ kept=%3$d bytes
   <string name="zsh_error_exception">安装出错: %1$s</string>
 
   <!-- Ubuntu Debugger Installer -->
-  <string name="debugger_error_proot_not_installed">PRoot 环境未安装，请先调用 initialize()</string>
-  <string name="debugger_already_installed">LLDB 已安装 (%1$s)，验证中...</string>
-  <string name="debugger_ready">LLDB 已就绪</string>
-  <string name="debugger_preparing">准备安装 LLDB...</string>
-  <string name="debugger_error_update_index">更新软件包索引失败: %1$s</string>
-  <string name="debugger_checking_versions">检查可用的 LLDB 版本化包（失败将自动降级）...</string>
-  <string name="debugger_error_no_supported_version">当前软件源不支持可用的 LLDB 版本化包，已尝试: %1$s</string>
-  <string name="debugger_error_no_plan">未找到可用的安装方案</string>
-  <string name="debugger_selected_plan">选择安装方案: %1$s</string>
-  <string name="debugger_downloading">下载: %1$s</string>
-  <string name="debugger_error_download_network">下载 LLDB 失败（网络错误）: %1$s</string>
-  <string name="debugger_installing">正在安装 LLDB 调试器...</string>
-  <string name="debugger_configuring">配置: %1$s</string>
-  <string name="debugger_unpacking">解包: %1$s</string>
-  <string name="debugger_error_install_failed">安装 LLDB 失败: %1$s</string>
-  <string name="debugger_verifying">正在验证安装...</string>
-  <string name="debugger_error_verify_failed">LLDB 安装后验证失败（可能缺少 Python 绑定）</string>
-  <string name="debugger_install_complete">LLDB 安装完成</string>
-  <string name="debugger_error_exception">安装出错: %1$s</string>
-  <string name="debugger_not_available_installing">检测到 LLDB 不可用，正在安装...</string>
 
   <!-- Git SSH Manager -->
-  <string name="git_ssh_error_agent_start_failed">启动 ssh-agent 失败</string>
-  <string name="git_ssh_error_parse_agent_output">无法解析 ssh-agent 输出（SSH_AUTH_SOCK/SSH_AGENT_PID）</string>
-  <string name="git_ssh_error_agent_not_started">ssh-agent 未启动</string>
-  <string name="git_ssh_error_agent_not_running">ssh-agent 未运行（请先启动）</string>
-  <string name="git_ssh_error_key_not_found">未找到 SSH 密钥文件：%1$s</string>
-  <string name="git_ssh_error_passphrase_incorrect">口令错误</string>
-  <string name="git_ssh_error_ssh_add_failed">ssh-add 失败</string>
-  <string name="git_ssh_error_host_empty">Host 不能为空</string>
-  <string name="git_ssh_error_keygen_failed">ssh-keygen 执行失败</string>
-  <string name="git_ssh_error_not_private_key">看起来不是 SSH 私钥内容（缺少 PRIVATE KEY 头）</string>
-  <string name="git_ssh_error_write_key_failed">写入私钥失败</string>
-  <string name="git_ssh_error_proot_not_installed">PRoot 环境未安装：请先在 设置 → 编译器 中安装/初始化 Linux 发行版环境</string>
-  <string name="git_ssh_error_openssh_install_failed">安装 openssh-client 失败：%1$s</string>
-  <string name="git_ssh_error_key_name_empty">密钥名不能为空</string>
-  <string name="git_ssh_error_key_name_invalid">密钥名仅支持字母/数字/._-（且不能包含路径）</string>
-  <string name="git_ssh_error_parse_url_failed">无法解析 SSH URL：%1$s</string>
-  <string name="git_ssh_error_key_not_found_for_host">未找到 SSH 密钥：%1$s（请在 设置 → Git SSH 中生成/导入并设为默认或绑定到 %2$s）</string>
-  <string name="git_ssh_error_passphrase_required">该 SSH 私钥需要口令：%1$s</string>
 
   <!-- Locale Installer -->
   <string name="locale_error_proot_not_installed">PRoot 环境未安装</string>
@@ -4043,24 +3191,6 @@ kept=%3$d bytes
   <string name="editor_encoding_binary">二进制</string>
 
   <!-- Ubuntu Mirror Sources -->
-  <string name="mirror_aliyun_name">阿里云</string>
-  <string name="mirror_aliyun_desc">阿里云镜像，国内推荐</string>
-  <string name="mirror_tsinghua_name">清华大学</string>
-  <string name="mirror_tsinghua_desc">清华大学开源镜像站</string>
-  <string name="mirror_ustc_name">中科大</string>
-  <string name="mirror_ustc_desc">中国科学技术大学镜像</string>
-  <string name="mirror_huawei_name">华为云</string>
-  <string name="mirror_huawei_desc">华为云镜像</string>
-  <string name="mirror_tencent_name">腾讯云</string>
-  <string name="mirror_tencent_desc">腾讯云镜像</string>
-  <string name="mirror_netease_name">网易</string>
-  <string name="mirror_netease_desc">网易镜像</string>
-  <string name="mirror_sjtu_name">上海交大</string>
-  <string name="mirror_sjtu_desc">上海交通大学镜像</string>
-  <string name="mirror_official_name">官方源</string>
-  <string name="mirror_official_desc">Ubuntu 官方源（不推荐，易被 DNS 劫持）</string>
-  <string name="mirror_error_write_failed">写入 sources.list/apt 配置失败</string>
-  <string name="mirror_error_all_unavailable">所有镜像源均不可用</string>
 
   <!-- Terminal Preferences -->
   <string name="terminal_locale_c_utf8">英文 (C.UTF-8)</string>
@@ -4086,14 +3216,11 @@ kept=%3$d bytes
   <string name="error_request_failed_with_code">请求失败 (%1$d)</string>
 
   <!-- Header Navigation -->
-  <string name="header_nav_jump_to_header">跳转到头文件</string>
-  <string name="header_nav_not_found">找不到头文件: %1$s</string>
 
   <!-- Terminal Session -->
   <string name="terminal_session_start_failed">启动终端失败: %1$s</string>
 
   <!-- Open Source Licenses -->
-  <string name="licenses_error_missing_field">缺少字段：libraries</string>
 
   <!-- LSP Editor -->
   <string name="lsp_error_connection_failed">连接失败</string>
@@ -4101,7 +3228,6 @@ kept=%3$d bytes
   <string name="lsp_error_not_connected">LSP 未连接</string>
 
   <!-- Project List -->
-  <string name="project_type_local">本地</string>
 
   <!-- Git Settings -->
   <string name="git_error_load_failed">加载失败</string>
@@ -4112,9 +3238,6 @@ kept=%3$d bytes
   <string name="project_autosave_interval_seconds">%1$d 秒</string>
 
   <!-- Toolchain Config -->
-  <string name="debugger_llvm_desc">LLVM 调试器，与 Clang 配合最佳</string>
-  <string name="debugger_gdb_desc">GNU 调试器，经典稳定</string>
-  <string name="storage_available_gb">/ %.1f GB 可用</string>
 
   <!-- Install Components -->
   <string name="error_keyword_abi_mismatch">架构不匹配</string>
@@ -4130,83 +3253,17 @@ kept=%3$d bytes
   <string name="build_log_level_warning">警告</string>
   <string name="build_log_level_info">信息</string>
   <string name="build_log_level_progress">进度</string>
-  <string name="build_log_project_metadata_migrated">project.json 自动迁移：schema %1$d → %2$d</string>
-  <string name="build_log_run_config_migrated">run_configs.json 自动迁移：schema %1$d → %2$d，修正配置 %3$d 条</string>
-  <string name="build_log_run_config_invalid_filtered">run_configs.json 已过滤无效配置：%1$d 条</string>
-  <string name="build_log_run_config_selected_reset">run_configs.json 当前选中配置无效，已重置为首个配置</string>
 
   <!-- Debug Toolbar Position -->
   <string name="debug_toolbar_top">顶部</string>
   <string name="debug_toolbar_bottom">底部</string>
-  <string name="debug_toolbar_floating">浮动</string>
   <string name="debug_toolbar_both">顶部和底部</string>
 
-  <!-- LSP Test Scenarios -->
-  <string name="lsp_test_initialize">初始化测试</string>
-  <string name="lsp_test_completion">代码补全测试</string>
-  <string name="lsp_test_definition">跳转定义测试</string>
-  <string name="lsp_test_hover">悬停提示测试</string>
-  <string name="lsp_test_implementation">实现跳转测试</string>
-  <string name="lsp_test_declaration">声明跳转测试</string>
-  <string name="lsp_test_type_definition">类型定义跳转</string>
-  <string name="lsp_test_semantic_tokens_full">语义令牌(全量)</string>
-  <string name="lsp_test_semantic_tokens_range">语义令牌(范围)</string>
-  <string name="lsp_test_inlay_hint">内联提示测试</string>
-  <string name="lsp_test_selection_range">选择范围测试</string>
-  <string name="lsp_test_did_open">文档打开测试</string>
-  <string name="lsp_test_did_change">文档变更测试</string>
-  <string name="lsp_test_did_close">文档关闭测试</string>
-  <string name="lsp_test_benchmark_completion">补全性能基准</string>
-  <string name="lsp_test_benchmark_hover">悬停性能基准</string>
-  <string name="lsp_test_custom">自定义消息</string>
 
-  <!-- LSP Test Report -->
-  <string name="lsp_test_report_title">       TinaIDE LSP 测试报告</string>
-  <string name="lsp_test_report_generated_at">生成时间: %1$s</string>
-  <string name="lsp_test_report_section_connection_status">【连接状态】</string>
-  <string name="lsp_test_report_status_line">状态: %1$s</string>
-  <string name="lsp_test_report_server_line">服务器: %1$s %2$s</string>
-  <string name="lsp_test_report_capabilities_line">支持的功能: %1$d 项</string>
-  <string name="lsp_test_report_section_history">【测试历史统计】</string>
-  <string name="lsp_test_report_section_benchmark">【性能基准测试】</string>
-  <string name="lsp_test_report_section_batch">【批量测试结果】</string>
 
-  <!-- LSP JSON Validation -->
-  <string name="lsp_validation_invalid_json_with_message">JSON 格式无效: %1$s</string>
-  <string name="lsp_validation_missing_jsonrpc">缺少 jsonrpc 字段</string>
-  <string name="lsp_validation_jsonrpc_should_be_2_0">jsonrpc 值应为 &quot;2.0&quot;</string>
-  <string name="lsp_validation_missing_id">缺少 id 字段</string>
-  <string name="lsp_validation_missing_method">缺少 method 字段</string>
-  <string name="lsp_validation_method_mismatch">method 值不匹配</string>
 
-  <!-- Test Categories -->
-  <string name="test_category_basic">基础测试</string>
-  <string name="test_category_navigation">跳转导航</string>
-  <string name="test_category_semantic">语义分析</string>
-  <string name="test_category_document_sync">文档同步</string>
-  <string name="test_category_benchmark">性能基准</string>
-  <string name="test_category_custom">自定义</string>
 
-  <!-- Test Results -->
-  <string name="test_result_success">成功 (%1$dms)</string>
-  <string name="test_result_failed">失败</string>
-  <string name="test_scenario">测试场景: %1$s</string>
-  <string name="test_iterations">迭代次数: %1$d</string>
-  <string name="test_min_time">最小耗时: %1$dms</string>
-  <string name="test_max_time">最大耗时: %1$dms</string>
-  <string name="test_avg_time">平均耗时: %1$sms</string>
-  <string name="test_median_time">中位数: %1$dms</string>
-  <string name="test_p95_time">P95: %1$dms</string>
-  <string name="test_success_rate">成功率: %1$s%%</string>
 
-  <!-- Batch Test Report -->
-  <string name="batch_test_report_header">========== 批量测试报告 ==========</string>
-  <string name="batch_test_report_footer">================================</string>
-  <string name="batch_test_total">总测试数: %1$d</string>
-  <string name="batch_test_passed">通过: %1$d</string>
-  <string name="batch_test_failed">失败: %1$d</string>
-  <string name="batch_test_skipped">跳过: %1$d</string>
-  <string name="batch_test_duration">总耗时: %1$dms</string>
 
   <!-- Diagnostic Severity -->
   <string name="diagnostic_error">错误</string>
@@ -4214,191 +3271,33 @@ kept=%3$d bytes
   <string name="diagnostic_information">信息</string>
   <string name="diagnostic_hint">提示</string>
 
-  <!-- Connection Status -->
-  <string name="connection_status_disconnected">未连接</string>
-  <string name="connection_status_connecting">连接中</string>
-  <string name="connection_status_connected">已连接</string>
-  <string name="connection_status_error">连接错误</string>
-  <string name="connection_status_reconnecting">重连中</string>
 
-  <!-- LSP JSON Templates -->
-  <string name="lsp_template_references">查找引用</string>
-  <string name="lsp_template_references_desc">查找符号的所有引用位置</string>
-  <string name="lsp_template_formatting">格式化文档</string>
-  <string name="lsp_template_formatting_desc">格式化整个文档</string>
-  <string name="lsp_template_range_formatting">格式化选区</string>
-  <string name="lsp_template_range_formatting_desc">格式化选中的代码范围</string>
   <string name="lsp_template_rename">重命名符号</string>
-  <string name="lsp_template_rename_desc">重命名变量、函数等符号</string>
-  <string name="lsp_template_prepare_rename">准备重命名</string>
-  <string name="lsp_template_prepare_rename_desc">检查符号是否可以重命名</string>
-  <string name="lsp_template_code_action">代码操作</string>
-  <string name="lsp_template_code_action_desc">获取可用的代码操作（快速修复等）</string>
-  <string name="lsp_template_code_lens">代码透镜</string>
-  <string name="lsp_template_code_lens_desc">获取代码透镜信息</string>
-  <string name="lsp_template_document_symbol">文档符号</string>
-  <string name="lsp_template_document_symbol_desc">获取文档中的所有符号</string>
-  <string name="lsp_template_workspace_symbol">工作区符号</string>
-  <string name="lsp_template_workspace_symbol_desc">在工作区中搜索符号</string>
-  <string name="lsp_template_document_highlight">文档高亮</string>
-  <string name="lsp_template_document_highlight_desc">高亮显示相同符号</string>
-  <string name="lsp_template_signature_help">签名帮助</string>
-  <string name="lsp_template_signature_help_desc">获取函数签名信息</string>
-  <string name="lsp_template_type_hierarchy">类型层次</string>
-  <string name="lsp_template_type_hierarchy_desc">准备类型层次结构</string>
-  <string name="lsp_template_call_hierarchy">调用层次</string>
-  <string name="lsp_template_call_hierarchy_desc">准备调用层次结构</string>
-  <string name="lsp_template_folding_range">折叠范围</string>
-  <string name="lsp_template_folding_range_desc">获取代码折叠范围</string>
-  <string name="lsp_template_document_link">文档链接</string>
-  <string name="lsp_template_document_link_desc">获取文档中的链接</string>
-  <string name="lsp_template_implementation">实现跳转</string>
-  <string name="lsp_template_implementation_desc">跳转到接口/抽象方法的实现</string>
-  <string name="lsp_template_declaration">声明跳转</string>
-  <string name="lsp_template_declaration_desc">跳转到符号的声明位置</string>
-  <string name="lsp_template_type_definition">类型定义跳转</string>
-  <string name="lsp_template_type_definition_desc">跳转到变量的类型定义</string>
-  <string name="lsp_template_semantic_tokens_full">语义令牌(全量)</string>
-  <string name="lsp_template_semantic_tokens_full_desc">获取整个文档的语义令牌</string>
-  <string name="lsp_template_semantic_tokens_range">语义令牌(范围)</string>
-  <string name="lsp_template_semantic_tokens_range_desc">获取指定范围的语义令牌</string>
-  <string name="lsp_template_inlay_hint">内联提示</string>
-  <string name="lsp_template_inlay_hint_desc">获取参数名、类型等内联提示</string>
-  <string name="lsp_template_selection_range">选择范围</string>
-  <string name="lsp_template_selection_range_desc">获取智能选择范围</string>
-  <string name="lsp_template_did_open">文档打开</string>
-  <string name="lsp_template_did_open_desc">通知服务器文档已打开</string>
-  <string name="lsp_template_did_change">文档变更</string>
-  <string name="lsp_template_did_change_desc">通知服务器文档内容变更</string>
-  <string name="lsp_template_did_close">文档关闭</string>
-  <string name="lsp_template_did_close_desc">通知服务器文档已关闭</string>
-  <string name="lsp_template_did_save">文档保存</string>
-  <string name="lsp_template_did_save_desc">通知服务器文档已保存</string>
-  <string name="lsp_template_switch_source_header">切换头文件/源文件</string>
-  <string name="lsp_template_switch_source_header_desc">在 .h 和 .cpp 之间切换（Clangd 特有）</string>
-  <string name="lsp_template_ast">AST 树</string>
-  <string name="lsp_template_ast_desc">获取 AST 语法树（Clangd 特有）</string>
-  <string name="lsp_template_memory_usage">内存使用</string>
-  <string name="lsp_template_memory_usage_desc">获取 Clangd 内存使用情况</string>
-  <string name="lsp_template_symbol_info">符号信息</string>
-  <string name="lsp_template_symbol_info_desc">获取符号详细信息（Clangd 特有）</string>
 
-  <!-- Template Categories -->
-  <string name="template_category_document">文档操作</string>
-  <string name="template_category_code_action">代码操作</string>
-  <string name="template_category_symbol">符号查询</string>
-  <string name="template_category_semantic">语义分析</string>
-  <string name="template_category_hierarchy">层次结构</string>
-  <string name="template_category_navigation">跳转导航</string>
-  <string name="template_category_document_sync">文档同步</string>
-  <string name="template_category_clangd">Clangd 特有</string>
-  <string name="template_category_other">其他</string>
 
-  <!-- Test Suite Names -->
-  <string name="test_suite_default">默认测试套件</string>
-  <string name="test_suite_basic">基础功能测试</string>
-  <string name="test_suite_navigation">跳转导航测试</string>
-  <string name="test_suite_semantic">语义分析测试</string>
-  <string name="test_suite_document_sync">文档同步测试</string>
-  <string name="test_suite_performance">性能基准测试</string>
-  <string name="test_suite_full">完整测试套件</string>
 
   <!-- PRoot Bootstrap -->
-  <string name="proot_command_execute">执行命令: %1$s</string>
   <string name="proot_restarting">正在重启安装…</string>
-  <string name="proot_install_start">准备安装 Linux 环境…</string>
-  <string name="proot_runtime_ready">PRoot 运行时就绪</string>
-  <string name="proot_prepare_install_dir">准备安装目录…</string>
-  <string name="proot_verifying_install">验证安装...</string>
-  <string name="proot_verify_missing_dirs">缺少关键目录: %1$s</string>
-  <string name="proot_verify_missing_files">缺少关键文件: %1$s</string>
-  <string name="proot_verify_ca_cert_missing">ca-certificates.crt 缺失或为空</string>
-  <string name="proot_verify_ok">所有关键文件和目录都存在</string>
-  <string name="proot_toolchain_repair_start">开始修复工具链…</string>
-  <string name="proot_toolchain_repair_complete">工具链修复完成</string>
   <string name="proot_install_already_running">安装已在进行中，跳过重复请求</string>
   <string name="proot_environment_ready">Linux 环境已安装</string>
-  <string name="proot_toolchain_incomplete">检测到工具链不完整，需要修复安装</string>
   <string name="proot_install_begin">========== Linux 环境安装开始 ==========</string>
-  <string name="proot_toolchain_config">工具链配置: %1$s</string>
-  <string name="proot_step_install_compiler">步骤 3/4: 安装编译工具链 (apk)</string>
-  <string name="proot_step_install_debugger">步骤 4/4: 安装调试器 (LLDB)</string>
-  <string name="proot_updating_index">正在更新软件包索引…</string>
-  <string name="proot_packages_parsed">已解析依赖包清单（共 %1$d 个）</string>
-  <string name="proot_debugger_packages_parsed">已解析调试器依赖包清单（共 %1$d 个）</string>
   <string name="proot_install_complete">安装完成</string>
   <string name="proot_install_success">========== Linux 环境安装完成 ==========</string>
-  <string name="proot_abi_mismatch_error">架构不匹配错误: %1$s</string>
   <string name="proot_install_failed">Linux 环境安装失败: %1$s</string>
-  <string name="proot_toolchain_ready_filesystem">工具链状态: 通过清单快速确认就绪 (clangd=%1$s)</string>
-  <string name="proot_manifest_outdated">工具链清单已过期或不完整，回退到扫描</string>
-  <string name="proot_clang_resource_dir_missing">工具链不完整: clang resource directory 缺失 (已检查版本: %1$s)</string>
-  <string name="proot_cpp_headers_missing">工具链不完整: C++ 标准库头文件缺失 (%1$s)</string>
-  <string name="proot_clang_missing">工具链不完整: clang 缺失</string>
-  <string name="proot_clangd_missing">工具链不完整: clangd 缺失</string>
-  <string name="proot_manifest_written">已写入工具链清单: clangd=%1$s, resource-dir=%2$s</string>
-  <string name="proot_toolchain_ready_skip_network">通过文件系统检测到工具链文件齐全，跳过所有网络安装</string>
-  <string name="proot_toolchain_ready">工具链已就绪</string>
-  <string name="proot_toolchain_files_missing">工具链关键文件缺失，尝试从网络安装/修复</string>
-  <string name="proot_toolchain_status">检测工具链状态: 编译器=%1$s, 调试器=%2$s</string>
-  <string name="proot_compiler_installed_incomplete">已安装但不完整</string>
-  <string name="proot_not_installed">未安装</string>
-  <string name="proot_installed">已安装</string>
-  <string name="proot_installing_debugger">正在安装调试器...</string>
-  <string name="proot_compiler_install_success">编译工具链安装成功: %1$s</string>
-  <string name="proot_compiler_install_failed">编译工具链安装失败: %1$s</string>
-  <string name="proot_compiler_install_failed_proot_error">工具链安装失败：PRoot 运行时异常（proot 未能正确启动）。\n%1$s</string>
-  <string name="proot_compiler_install_failed_network">工具链安装失败: %1$s\n\n建议：检查网络连接，或在设置中切换软件源后重试。</string>
-  <string name="proot_debugger_install_success">调试工具链安装成功</string>
-  <string name="proot_debugger_install_failed">调试工具链安装失败: %1$s</string>
-  <string name="proot_debugger_retry_on_first_debug">调试器将在首次调试时再次尝试安装</string>
-  <string name="proot_toolchain_files_still_missing">工具链安装完成但关键文件仍缺失，判定为失败</string>
-  <string name="proot_toolchain_install_exception">工具链安装异常: %1$s</string>
-  <string name="proot_manifest_write_failed">写入工具链清单失败: %1$s</string>
   <string name="proot_restart_request">收到重启安装请求%1$s</string>
   <string name="proot_restart_reason">: %1$s</string>
-  <string name="proot_toolchain_repair_not_needed">startToolchainRepair called but state is not NeedsToolchainRepair</string>
-  <string name="proot_toolchain_repair_running">工具链修复已在进行中</string>
-  <string name="proot_toolchain_repair_begin">========== Ubuntu 工具链修复开始 ==========</string>
-  <string name="proot_toolchain_repair_failed">工具链修复失败</string>
-  <string name="proot_toolchain_repair_failed_network">工具链修复失败，LSP 功能将不可用。请检查网络连接后重试。</string>
-  <string name="proot_toolchain_install_failed_files_missing">工具链安装完成但关键文件缺失，LSP 功能将不可用。请检查网络连接后重试。</string>
-  <string name="proot_compiler_progress">编译工具链: %1$s (%2$d%%)</string>
-  <string name="proot_debugger_progress">调试工具链: %1$s (%2$d%%)</string>
   <string name="proot_package_already_done">已安装</string>
-  <string name="proot_package_already_latest">已是最新</string>
 
   <!-- PRoot Package Names -->
-  <string name="proot_package_proot_runtime">PRoot 运行时环境</string>
-  <string name="proot_package_clang">Clang 编译器</string>
-  <string name="proot_package_clangd">Clang 语言服务器</string>
-  <string name="proot_package_lld">LLVM 链接器</string>
-  <string name="proot_package_llvm">LLVM 核心工具</string>
-  <string name="proot_package_libcpp_dev">C++ 标准库头文件</string>
-  <string name="proot_package_libcppabi_dev">C++ ABI 库</string>
-  <string name="proot_package_cmake">CMake 构建系统</string>
-  <string name="proot_package_ninja_build">Ninja 构建系统</string>
-  <string name="proot_package_make">Make 构建工具</string>
-  <string name="proot_package_git">Git 版本控制</string>
-  <string name="proot_package_lldb">LLDB 调试器</string>
-  <string name="proot_package_python3_lldb">LLDB Python 绑定</string>
   <string name="proot_package_android_sysroot">Android 系统库</string>
   <string name="proot_package_native_toolchain">Clang 编译工具链</string>
   <string name="proot_package_guest_toolchain">PRoot Linux 工具链</string>
   <string name="proot_toolchain_error_unavailable">PRoot 工具包不可用：%1$s</string>
   <string name="proot_toolchain_error_not_installed">PRoot guest 工具链未安装完整</string>
-  <string name="proot_package_apt_update">更新软件包索引</string>
 
   <!-- NDK Sysroot Installation -->
-  <string name="proot_step_install_ndk_sysroot">步骤 1/4: 安装 Android NDK Sysroot</string>
-  <string name="proot_extracting_ndk_sysroot">正在解压 Android NDK Sysroot…</string>
-  <string name="proot_extracting_ndk_sysroot_progress">正在解压 Android NDK Sysroot (%1$d%%)</string>
-  <string name="proot_ndk_sysroot_complete">Android NDK Sysroot 安装完成</string>
-  <string name="proot_ndk_sysroot_failed">Android NDK Sysroot 安装失败: %1$s</string>
-  <string name="proot_ndk_sysroot_already_installed">Android NDK Sysroot 已安装，跳过</string>
 
   <!-- PRoot Manifest -->
-  <string name="proot_manifest_write_success">已写入工具链清单: clangd=%1$s, resource-dir=%2$s</string>
 
   <!-- Compile Project Use Case -->
   <string name="compile_start">===编译开始 ===</string>
@@ -4411,19 +3310,13 @@ kept=%3$d bytes
   <string name="compile_error_empty_dir">项目目录为空，请添加源文件（.c, .cpp 等）</string>
   <string name="compile_error_no_source_files">未检测到支持的源文件。目录内容: %1$s\n支持的文件类型: .c, .cc, .cpp, .cxx, CMakeLists.txt</string>
   <string name="compile_error_unsupported_build_system">不支持的构建系统: %1$s</string>
-  <string name="compile_project_path">项目路径: %1$s</string>
-  <string name="compile_source_file_mode">源文件模式: %1$s</string>
+<string name="compile_source_file_mode">源文件模式: %1$s</string>
   <string name="compile_file">编译文件: %1$s</string>
-  <string name="compile_single_file_no_config">单文件项目无需配置</string>
-  <string name="compile_single_file_no_source_files">未找到 C/C++ 源文件</string>
   <string name="compile_single_file_source_not_exist">源文件不存在: %1$s</string>
   <string name="compile_single_file_invalid_source">不是有效的 C/C++ 源文件: %1$s</string>
   <string name="compile_single_file_compiling">编译: %1$s</string>
   <string name="compile_single_file_compile_success">编译成功: %1$s</string>
-  <string name="compile_single_file_clean_failed">清理失败</string>
-
-  <!-- Make 构建 -->
-  <string name="make_no_configure_needed">Makefile 项目无需配置步骤</string>
+<!-- Make 构建 -->
   <string name="make_building">正在执行 make...</string>
   <string name="make_build_success">Make 构建成功</string>
   <string name="make_clean_failed">make clean 失败</string>
@@ -4431,36 +3324,20 @@ kept=%3$d bytes
   <string name="compile_warning_no_file_open">警告：未打开任何文件，使用自动检测模式</string>
   <string name="compile_warning_not_source_file">警告：当前文件不是 C/C++ 源文件，使用自动检测模式</string>
   <string name="compile_warning_specified_file_invalid">警告：指定的源文件不存在或无效，使用自动检测模式</string>
-  <string name="compile_build_output_dir">构建输出目录: %1$s</string>
-  <string name="compile_compiler_type">编译器类型: %1$s</string>
-  <string name="compile_building">构建中...</string>
-  <string name="compile_build_failed">构建失败:\n%1$s</string>
-  <string name="compile_build_success">构建成功: %1$s</string>
-  <string name="compile_build_success_no_output">构建成功</string>
-  <string name="compile_build_output_resolved">构建产物: %1$s</string>
-  <string name="compile_build_artifact_kind">构建产物类型: %1$s</string>
-  <string name="compile_artifact_exported">已导出构建产物到项目目录: %1$s</string>
-  <string name="compile_artifact_export_failed">导出构建产物失败: %1$s</string>
   <string name="compile_artifact_kind_executable">可执行文件</string>
   <string name="compile_artifact_kind_shared_library">共享库</string>
   <string name="compile_artifact_kind_static_library">静态库</string>
   <string name="compile_artifact_kind_plugin_package">插件包</string>
   <string name="compile_artifact_kind_unknown">未知产物</string>
-  <string name="compile_warning_no_output">警告：未找到构建输出</string>
-  <string name="compile_warning_no_runnable_output">警告：未找到可运行的构建输出</string>
   <string name="compile_complete">=== 构建完成 ===</string>
   <string name="compile_result_build_complete">构建完成</string>
-  <string name="compile_result_build_complete_with_artifact_kind">构建完成（%1$s）</string>
-  <!-- 新 Pipeline 细粒度阶段文案(对应 BuildEvent.Planning / Build.Skipped / AutoFallback) -->
+<!-- 新 Pipeline 细粒度阶段文案(对应 BuildEvent.Planning / Build.Skipped / AutoFallback) -->
   <string name="compile_checking_artifact">正在检查构建状态…</string>
   <string name="compile_reusing_artifact">命中缓存，正在启动…</string>
   <string name="compile_rebuilding">源文件已变更，正在重新编译…</string>
   <string name="compile_rebuild_reason">为什么要重建：%1$s</string>
   <string name="compile_autofallback_triggered">缓存产物启动失败（%1$s），正在重新构建…</string>
-  <string name="compile_autofallback_success">重建后成功运行</string>
-  <string name="compile_autofallback_failed">重建后仍然失败，请检查源码或环境</string>
-  <string name="compile_error_no_executable">未找到可执行文件</string>
-  <string name="compile_debug_ready">===调试准备完成 ===</string>
+<string name="compile_debug_ready">===调试准备完成 ===</string>
   <string name="compile_result_debug_ready">编译完成，准备调试</string>
   <string name="compile_terminal_ready">===终端运行准备完成 ===</string>
   <string name="compile_result_terminal_ready">编译完成，准备在终端运行</string>
@@ -4480,79 +3357,22 @@ kept=%3$d bytes
   <string name="compile_plugin_project_diagnostic_warning">警告: %1$s</string>
   <string name="compile_plugin_project_diagnostic_info">提示: %1$s</string>
   <string name="compile_plugin_project_diagnostic_fix">修复建议: %1$s</string>
-  <string name="compile_terminal_no_executable">echo \'未找到可执行文件\'</string>
-  <string name="compile_sdl_error_no_output">SDL 图形运行未找到可运行的共享库产物（.so），请检查目标类型与构建配置。</string>
-  <string name="compile_sdl_error_invalid_output">SDL 图形运行要求输出为 .so，当前产物：%1$s</string>
-  <string name="compile_sdl_ready">===SDL 图形运行准备完成：%1$s===</string>
-  <string name="compile_exception">编译异常: %1$s</string>
-  <string name="compile_error_exception">编译异常: %1$s</string>
 
   <!-- PRoot Environment Check -->
-  <string name="compile_check_proot">检查 PRoot 环境...</string>
-  <string name="compile_proot_installing">PRoot 环境正在初始化中，请稍后重试</string>
-  <string name="compile_error_proot_installing">PRoot 环境正在初始化中，请稍后重试（首次启动/更新时会自动安装）。</string>
-  <string name="compile_proot_needs_update">PRoot 环境需要更新，请重启应用等待后台更新完成</string>
-  <string name="compile_error_proot_needs_update">PRoot 环境需要更新。请重启应用，等待首次进入时的后台更新完成后再编译。</string>
-  <string name="compile_proot_not_installed">PRoot 环境未安装，请先打开应用等待自动安装完成</string>
-  <string name="compile_error_proot_not_installed">PRoot 环境未安装。请先打开应用并等待首次启动时的自动安装完成后再编译。</string>
-
-  <!-- Compiler Check -->
-  <string name="compile_check_compiler">检查编译器: %1$s...</string>
-  <string name="compile_error_custom_compiler_incomplete">已选择自定义编译器，但未填写完整的 C/C++ 编译器路径。</string>
-  <string name="compile_clang_unavailable_installing">Clang 不可用，正在尝试自动安装 LLVM 工具链...</string>
-  <string name="compile_toolchain_install_success">工具链安装成功</string>
-  <string name="compile_toolchain_install_failed">工具链自动安装失败</string>
-  <string name="compile_toolchain_install_hint">提示：请检查网络连接，或在设置中手动安装工具链</string>
-  <string name="compile_proot_shell_probe">PRoot shell 探测: exit=%1$d, timedOut=%2$s</string>
-  <string name="compile_proot_shell_output">PRoot shell 输出: %1$s</string>
-  <string name="compile_clang_probe">clang 探测: exit=%1$d, timedOut=%2$s</string>
-  <string name="compile_clang_output">clang 输出: %1$s</string>
-  <string name="compile_diagnostic_probe_exception">诊断探测异常: %1$s</string>
-  <string name="compile_error_clang_unavailable">Clang 不可用且自动安装失败。请检查网络连接后重试，或在设置中手动安装 LLVM 工具链。</string>
+<!-- Compiler Check -->
+<string name="compile_error_clang_unavailable">Clang 不可用且自动安装失败。请检查网络连接后重试，或在设置中手动安装 LLVM 工具链。</string>
   <string name="compile_error_gcc_unavailable">GCC 未安装或不可用。请在设置中安装 GCC（gcc/g++）工具链后重试。</string>
   <string name="compile_error_custom_compiler_unavailable">自定义编译器不可用：\nC: %1$s\nC++: %2$s\n请确认路径在 PRoot 环境中存在且可执行。</string>
-  <string name="compile_compiler_version">编译器版本: %1$s</string>
-  <string name="compile_compiler_version_unknown">未知</string>
 
   <!-- Debugger Check -->
-  <string name="compile_check_debugger">检查调试器（LLDB）...</string>
-  <string name="compile_lldb_unavailable_installing">LLDB 不可用（未安装或 Python 绑定缺失），正在尝试安装/修复...</string>
-  <string name="compile_error_lldb_unavailable">LLDB 未安装且自动安装失败，请在设置中重新部署开发环境或稍后重试。</string>
-
-  <!-- Run Program -->
-  <string name="compile_run_start">===运行程序 ===</string>
-  <string name="compile_run_args">参数: %1$s</string>
-  <string name="compile_run_working_dir">工作目录: %1$s</string>
-  <string name="compile_run_host_executable">Host 可执行文件: %1$s</string>
-  <string name="compile_run_host_working_dir">Host 工作目录: %1$s</string>
-  <string name="compile_run_guest_executable">Guest 可执行文件: %1$s</string>
-  <string name="compile_run_guest_working_dir">Guest 工作目录: %1$s</string>
-  <string name="compile_run_normal_exit">\n[程序正常退出]\n</string>
-  <string name="compile_run_success">运行成功</string>
-  <string name="compile_run_terminated">\n[程序已终止]\n</string>
-  <string name="compile_run_result_terminated">程序已终止</string>
-  <string name="compile_run_exit_code">\n[程序退出，退出码: %1$d]\n</string>
-  <string name="compile_run_error_exit">程序异常退出，退出码: %1$d</string>
-  <string name="compile_run_press_enter_to_close">\n[程序已退出，退出码: %1$d]\n按 Enter 键关闭当前界面...</string>
-  <string name="compile_pty_no_output_warning">PTY produced no output bytes (exitCode=%1$d, command=%2$s)</string>
-  <string name="compile_get_current_file_failed">获取当前编辑文件失败: %1$s</string>
+<!-- Run Program -->
+<string name="compile_run_press_enter_to_close">\n[程序已退出，退出码: %1$d]\n按 Enter 键关闭当前界面...</string>
+<string name="compile_get_current_file_failed">获取当前编辑文件失败: %1$s</string>
 
   <!-- Common Buttons (extra) -->
   <string name="btn_apply">应用</string>
 
   <!-- Clangd Test Screen (extra) -->
-  <string name="clangd_test_custom_json_title">自定义 JSON 消息</string>
-  <string name="clangd_test_select_template">选择模板</string>
-  <string name="clangd_test_template_params">模板参数</string>
-  <string name="clangd_test_custom_json_label">LSP JSON 消息（可直接编辑）</string>
-  <string name="clangd_test_click_send_hint">点击"发送请求"开始测试</string>
-  <string name="clangd_test_select_template_dialog_title">选择 LSP 消息模板</string>
-  <string name="clangd_test_toast_benchmark_done">基准测试完成</string>
-  <string name="clangd_test_toast_batch_done">批量测试完成</string>
-  <string name="clangd_test_toast_failed">测试失败：%1$s</string>
-  <string name="clangd_test_suite_test_count">%1$d 个测试</string>
-  <string name="clangd_test_current_test">当前：%1$s</string>
-  <string name="clangd_test_success_rate_label">成功率：%1$s%%</string>
 
   <!-- CMake Build -->
   <string name="cmake_error_custom_compiler_path_invalid">自定义编译器路径无效</string>
@@ -4590,7 +3410,6 @@ kept=%3$d bytes
   <string name="lsp_goto_type_definition">跳转到类型定义</string>
   <string name="lsp_goto_implementation">查找实现</string>
   <string name="lsp_call_hierarchy_incoming">调用层次：谁调用了它</string>
-  <string name="lsp_switch_header_source">切换头文件/源文件</string>
   <string name="lsp_location_dialog_title_definition">定义</string>
   <string name="lsp_location_dialog_title_peek_definition">定义预览</string>
   <string name="lsp_location_dialog_title_references">引用 (%1$d)</string>
@@ -4606,7 +3425,6 @@ kept=%3$d bytes
 
   <!-- Feedback -->
   <string name="feedback_title">反馈</string>
-  <string name="feedback_desc">提交问题反馈或功能建议</string>
   <string name="feedback_category_label">反馈类型</string>
   <string name="feedback_category_bug">问题反馈</string>
   <string name="feedback_category_feature">功能需求</string>
@@ -4621,7 +3439,6 @@ kept=%3$d bytes
   <string name="feedback_submit_success">提交成功！</string>
   <string name="feedback_hint">我们会认真阅读每一条反馈,感谢您的支持!</string>
   <string name="feedback_min_chars_hint">还需 %1$d 个字符</string>
-  <string name="feedback_error_submit_failed">提交失败,请稍后重试</string>
   <string name="feedback_error_too_frequent">提交过于频繁,请 %1$d 秒后再试</string>
   <string name="feedback_error_title_too_short">标题至少需要 %1$d 个字符</string>
   <string name="feedback_error_title_too_long">标题不能超过 %1$d 个字符</string>
@@ -4634,21 +3451,15 @@ kept=%3$d bytes
   <!-- Plugin Marketplace -->
   <string name="error_download_failed">下载失败</string>
   <string name="error_file_hash_mismatch">文件校验失败</string>
-  <string name="error_parse_response">解析响应失败</string>
   <string name="plugin_marketplace_title">插件市场</string>
   <string name="plugin_marketplace_search">搜索插件</string>
   <string name="plugin_marketplace_empty">暂无插件</string>
   <string name="plugin_marketplace_loading">加载中...</string>
-  <string name="plugin_marketplace_load_more">加载更多</string>
   <string name="plugin_marketplace_load_failed">加载失败</string>
   <string name="plugin_marketplace_retry">重试</string>
   <string name="plugin_marketplace_install">安装</string>
-  <string name="plugin_marketplace_installing">安装中...</string>
   <string name="plugin_marketplace_installed">已安装</string>
   <string name="plugin_marketplace_update">更新</string>
-  <string name="plugin_marketplace_update_available">有更新</string>
-  <string name="plugin_marketplace_downloads">下载量</string>
-  <string name="plugin_marketplace_rating">评分</string>
   <string name="plugin_marketplace_version">版本</string>
   <string name="plugin_marketplace_versions">版本列表</string>
   <string name="plugin_marketplace_publisher">发布者</string>
@@ -4671,8 +3482,6 @@ kept=%3$d bytes
   <string name="plugin_marketplace_description">描述</string>
   <string name="plugin_marketplace_info">插件信息</string>
   <string name="plugin_marketplace_tags">标签</string>
-  <string name="action_add_favorite">添加收藏</string>
-  <string name="action_remove_favorite">取消收藏</string>
   <string name="market_favorite_failed">收藏失败</string>
   <string name="market_unfavorite_failed">取消收藏失败</string>
   <string name="market_open_source_interaction_unavailable">开源版未内置服务端互动能力，评分、评论和举报暂不可用。</string>
@@ -4690,12 +3499,10 @@ kept=%3$d bytes
   <string name="plugin_marketplace_comment_submit">提交评论</string>
   <string name="plugin_marketplace_comments_empty">还没有评论，来写第一条吧。</string>
   <string name="plugin_marketplace_comment_required">评论内容不能为空</string>
-  <string name="plugin_marketplace_comment_submit_success">评论已提交</string>
   <string name="plugin_marketplace_comment_report">举报</string>
   <string name="plugin_marketplace_comment_report_title">举报评论</string>
   <string name="plugin_marketplace_comment_report_details">补充说明（可选）</string>
   <string name="plugin_marketplace_comment_report_submit">提交举报</string>
-  <string name="plugin_marketplace_comment_report_success">举报已提交，我们会尽快处理</string>
   <string name="plugin_marketplace_report_reason_sexual">色情</string>
   <string name="plugin_marketplace_report_reason_violence">暴力</string>
   <string name="plugin_marketplace_report_reason_vulgar">低俗</string>
@@ -4733,7 +3540,6 @@ kept=%3$d bytes
   <string name="plugin_log_copy">复制</string>
   <string name="plugin_log_repair_lsp_dependencies">查看并修复依赖</string>
   <string name="plugin_log_copied">已复制到剪贴板</string>
-  <string name="plugin_log_count">%1$d 条日志</string>
   <string name="plugin_log_latest_error">最近错误</string>
 
   <!-- Package Manager -->
@@ -4741,10 +3547,7 @@ kept=%3$d bytes
   <string name="pkg_manager_selected">已选择 %1$d 项</string>
   <string name="pkg_manager_bundled">内置</string>
   <string name="pkg_manager_search_hint">搜索包…</string>
-  <string name="pkg_manager_all">全部</string>
-  <string name="pkg_manager_no_packages">未找到包</string>
   <string name="pkg_manager_no_installed_packages">暂无已安装的包</string>
-  <string name="pkg_manager_no_installed_hint">前往主页"市场"浏览并安装包</string>
   <string name="pkg_manager_error_unknown">未知错误</string>
   <string name="pkg_manager_error_package_not_found">未找到包：%1$s</string>
   <string name="pkg_manager_error_package_versions_not_found">未找到包版本：%1$s</string>
@@ -4754,11 +3557,6 @@ kept=%3$d bytes
   <string name="pkg_manager_check_updates">检查更新</string>
   <string name="pkg_manager_refresh">刷新</string>
   <string name="pkg_manager_select">选择</string>
-  <string name="pkg_manager_history">历史</string>
-  <string name="pkg_manager_installed">已安装</string>
-  <string name="pkg_manager_not_installed">未安装</string>
-  <string name="pkg_manager_install_linux">安装 Linux</string>
-  <string name="pkg_manager_install_android">安装 Android</string>
   <string name="pkg_manager_uninstall_linux">卸载 Linux</string>
   <string name="pkg_manager_uninstall_android">卸载 Android</string>
   <string name="pkg_manager_batch_complete_title">批量安装完成</string>
@@ -4804,11 +3602,6 @@ kept=%3$d bytes
   <string name="pkg_manager_progress_failed_simple">失败：%1$s</string>
 
   <!-- Install History -->
-  <string name="pkg_history_title">安装历史</string>
-  <string name="pkg_history_empty">暂无安装历史</string>
-  <string name="pkg_history_clear_title">清空历史</string>
-  <string name="pkg_history_clear_msg">确定要清空所有安装历史吗？</string>
-  <string name="pkg_history_clear_btn">清空</string>
 
   <!-- Package Detail -->
   <string name="pkg_detail_info">基本信息</string>
@@ -4841,88 +3634,33 @@ kept=%3$d bytes
   <string name="pkg_detail_update">更新</string>
   <string name="pkg_detail_installing">正在安装… %1$d%%</string>
   <string name="pkg_detail_update_available">有可用更新：%1$s → %2$s</string>
-  <string name="pkg_detail_downloading">正在下载：%1$d%% - %2$s/s</string>
   <string name="pkg_detail_extracting">正在解压…</string>
   <string name="pkg_detail_installed">已安装</string>
   <string name="pkg_detail_installing_status">安装中…</string>
 
   <!-- Clangd Settings -->
-  <string name="clangd_header_insertion_never">关闭</string>
-  <string name="clangd_header_insertion_iwyu">智能插入 (IWYU)</string>
-  <string name="clangd_completion_style_detailed">详细</string>
-  <string name="clangd_completion_style_bundled">简洁</string>
 
   <!-- Editor Scroll Test Screen -->
-  <string name="editor_scroll_test_status_format">单向惯性: %1$s | 内容: %2$s</string>
-  <string name="editor_scroll_test_enabled">启用</string>
-  <string name="editor_scroll_test_disabled">禁用</string>
-  <string name="editor_scroll_test_back">返回</string>
   <string name="editor_scroll_test_config">配置</string>
   <string name="editor_scroll_test_content_size">内容大小</string>
   <string name="editor_scroll_test_scroll_config">滚动配置</string>
   <string name="editor_scroll_test_single_direction_fling">单方向惯性</string>
   <string name="editor_scroll_test_single_direction_dragging">单方向拖动锁定</string>
   <string name="editor_scroll_test_enable_fling">启用惯性滚动</string>
-  <string name="editor_scroll_test_overscroll">过度滚动</string>
-  <string name="editor_scroll_test_performance_config">性能配置</string>
-  <string name="editor_scroll_test_hardware_acceleration">硬件加速</string>
-  <string name="editor_scroll_test_debug_tools">调试工具</string>
+<string name="editor_scroll_test_debug_tools">调试工具</string>
   <string name="editor_scroll_test_touch_diagnostics">触摸诊断日志</string>
   <string name="editor_scroll_test_content_size_small">小 (100行)</string>
   <string name="editor_scroll_test_content_size_medium">中 (500行)</string>
   <string name="editor_scroll_test_content_size_large">大 (1000行)</string>
   <string name="editor_scroll_test_content_size_xlarge">超大 (3000行)</string>
   <string name="editor_scroll_test_content_size_xxlarge">巨大 (5000行)</string>
-  <string name="editor_scroll_test_content_header">编辑器滚动测试内容 - %1$s</string>
-  <string name="editor_scroll_test_content_hint1">尝试快速滑动测试惯性效果</string>
-  <string name="editor_scroll_test_content_hint2">特别注意斜向快速滑动时是否感觉\"卡顿\"或只在一个方向滚动</string>
-  <string name="editor_scroll_test_content_progress">========== 第 %1$d 行 ========== 进度: %2$d%%</string>
-  <string name="editor_scroll_test_content_complete">测试完成 - 共 %1$d 行</string>
-
-  <!-- Theme Preview Test Screen -->
-  <string name="theme_preview_test_title">主题预览</string>
-  <string name="theme_preview_test_status_format">%1$s | %2$d 个主题</string>
-  <string name="theme_preview_test_back">返回</string>
-  <string name="theme_preview_test_menu">菜单</string>
-  <string name="theme_preview_test_layout_mode">布局模式</string>
-  <string name="theme_preview_test_select_themes">选择主题...</string>
-  <string name="theme_preview_test_dialog_title">选择主题</string>
-  <string name="theme_preview_test_builtin_themes">内置主题</string>
+<!-- Theme Preview Test Screen -->
+<string name="theme_preview_test_menu">菜单</string>
   <string name="theme_preview_test_plugin_themes">插件主题</string>
-  <string name="theme_preview_test_confirm">确定</string>
-  <string name="theme_preview_test_cancel">取消</string>
-  <string name="theme_preview_test_layout_single">单个主题</string>
-  <string name="theme_preview_test_layout_horizontal_2">水平分屏 (2)</string>
-  <string name="theme_preview_test_layout_vertical_2">垂直分屏 (2)</string>
-  <string name="theme_preview_test_layout_grid_2x2">网格 2x2</string>
-  <string name="theme_preview_test_layout_grid_3x2">网格 3x2</string>
-  <string name="theme_preview_test_layout_list">列表模式</string>
-  <string name="theme_preview_test_theme_gray">TinaGray (默认)</string>
-  <string name="theme_preview_test_theme_dark">TinaDark (黑色)</string>
-  <string name="theme_preview_test_theme_light">TinaLight (浅色)</string>
-  <string name="theme_preview_test_theme_auto">Auto (跟随系统)</string>
 
   <!-- Tree-sitter Test Screen -->
-  <string name="tree_sitter_test_title">Tree-sitter 测试</string>
-  <string name="tree_sitter_test_back">返回</string>
-  <string name="tree_sitter_test_no_languages">未发现任何 Tree-sitter 语言依赖</string>
-  <string name="tree_sitter_test_no_languages_hint">请在 app 的 dependencies 中添加 implementation(\"com.itsaky.androidide.treesitter:tree-sitter-xxx\")，然后重新 Sync/Build。</string>
-  <string name="tree_sitter_test_analyzing">分析中...</string>
-  <string name="tree_sitter_test_status_format">%1$s | 解析: %2$dms | 节点: ~%3$d</string>
-  <string name="tree_sitter_test_menu">菜单</string>
-  <string name="tree_sitter_test_select_language">选择语言</string>
-  <string name="tree_sitter_test_feature_config">功能配置</string>
-  <string name="tree_sitter_test_rainbow_brackets">彩虹括号</string>
-  <string name="tree_sitter_test_code_folding">代码折叠</string>
-  <string name="tree_sitter_test_show_line_numbers">显示行号</string>
-  <string name="tree_sitter_test_actions">操作</string>
-  <string name="tree_sitter_test_reanalyze">重新分析</string>
 
   <!-- C++ Scroll Stress Test Screen -->
-  <string name="cpp_scroll_stress_test_title">C++ 滚动压力测试</string>
-  <string name="cpp_scroll_stress_test_syntax_highlighting">语法高亮</string>
-  <string name="cpp_scroll_stress_test_profile">压力等级</string>
-  <string name="cpp_scroll_stress_test_status_format">%1$s | 高亮:%2$s | 折叠:%3$s | 彩虹:%4$s</string>
 
   <!-- Bottom Navigation -->
   <string name="nav_project">项目</string>
@@ -4935,7 +3673,6 @@ kept=%3$d bytes
   <string name="market_tab_plugins">插件</string>
   <string name="market_tab_packages">包管理</string>
   <string name="market_search_hint">搜索...</string>
-  <string name="market_empty">暂无内容</string>
   <string name="market_empty_plugins_title">插件市场正在建设中</string>
   <string name="market_empty_plugins_desc">精彩插件即将上线，敬请期待</string>
   <string name="market_empty_packages_title">包管理正在建设中</string>
@@ -4944,7 +3681,6 @@ kept=%3$d bytes
   <string name="market_error_retry">重试</string>
   <string name="market_installed">已安装</string>
   <string name="market_install">安装</string>
-  <string name="market_update">更新</string>
   <string name="market_downloads">下载</string>
   <string name="market_rating">评分 %1$.1f</string>
 
@@ -4987,6 +3723,20 @@ kept=%3$d bytes
   <string name="tutorial_related_destination_tutorial_action">继续教程</string>
   <string name="tutorial_related_destination_help_action">查看帮助</string>
   <string name="tutorial_related_destination_external_action">打开链接</string>
+  <string-array name="tutorial_related_section_titles">
+    <item>相关文档</item>
+    <item>建议下一步</item>
+    <item>相关阅读</item>
+    <item>相关教程</item>
+    <item>继续学习</item>
+    <item>下一步</item>
+    <item>related docs</item>
+    <item>related documents</item>
+    <item>related tutorials</item>
+    <item>next steps</item>
+    <item>suggested next steps</item>
+    <item>continue learning</item>
+  </string-array>
   <string name="tutorial_skip">跳过</string>
   <string name="tutorial_next">下一步</string>
   <string name="tutorial_previous">上一步</string>
@@ -5045,10 +3795,8 @@ kept=%3$d bytes
   <string name="onboarding_complete_dismiss">知道了</string>
 
   <!-- Profile Screen -->
-  <string name="profile_title">我的</string>
   <string name="profile_open_source_title">TinaIDE 开源版</string>
   <string name="profile_open_source_desc">私有身份与商业功能已迁出；反馈、日志、插件、包下载、收藏和下载历史保留。</string>
-  <string name="profile_open_source_badge">开源版</string>
   <string name="profile_version_format">版本 %1$s</string>
   <string name="profile_settings">设置</string>
   <string name="profile_feedback">反馈</string>
@@ -5057,7 +3805,6 @@ kept=%3$d bytes
   <string name="profile_my_packages">我的包</string>
   <string name="profile_download_history">下载历史</string>
   <string name="profile_favorites">收藏</string>
-  <string name="profile_unknown_user">未知用户</string>
   <string name="profile_section_my_content">我的内容</string>
   <string name="profile_section_settings_help">设置与帮助</string>
   <string name="profile_my_plugins_desc">已安装的插件</string>
@@ -5070,36 +3817,12 @@ kept=%3$d bytes
   <string name="app_slogan">让移动开发更简单</string>
 
   <!-- NDK Configuration -->
-  <string name="ndk_platform_native">本机</string>
-  <string name="ndk_platform_native_desc">直接在设备上运行</string>
-  <string name="ndk_platform_android">Android NDK</string>
-  <string name="ndk_platform_android_desc">使用 NDK sysroot 交叉编译</string>
-  <string name="ndk_enable_label">启用 Android NDK 支持</string>
-  <string name="ndk_enable_desc">使用 NDK sysroot 编译，可使用 Android API</string>
   <string name="ndk_api_level_label">API Level</string>
   <string name="ndk_api_level_display_name">API %1$d（%2$s）</string>
-  <string name="ndk_link_dynamic">动态链接</string>
-  <string name="ndk_link_dynamic_desc">体积更小，需要依赖库</string>
 
-  <string name="cmake_select_target_title">选择构建目标</string>
-  <string name="cmake_no_targets">未发现构建目标</string>
-  <string name="cmake_rebuilding">正在重新构建...</string>
 
   <!-- Text Action Menu Groups -->
-  <string name="text_action_group_text">文本</string>
-  <string name="text_action_group_edit">编辑</string>
   <string name="text_action_group_navigation">导航</string>
-  <string name="text_action_select_all">全选</string>
-  <string name="text_action_copy">复制</string>
-  <string name="text_action_paste">粘贴</string>
-  <string name="text_action_cut">剪切</string>
-  <string name="text_action_long_select">长选</string>
-  <string name="text_action_undo">撤销</string>
-  <string name="text_action_redo">重做</string>
-  <string name="text_action_delete_line">删除行</string>
-  <string name="text_action_duplicate_line">复制行</string>
-  <string name="text_action_move_line_up">上移</string>
-  <string name="text_action_move_line_down">下移</string>
 
   <!-- Developer Options: Server Config Dialog -->
   <string name="dev_options_view_server_config">查看服务器配置</string>
@@ -5109,9 +3832,6 @@ kept=%3$d bytes
   <string name="dev_options_config_updated_at">更新时间: %1$s</string>
   <string name="dev_options_config_refresh_interval">刷新间隔: %1$d秒</string>
   <string name="dev_options_config_unknown">未知</string>
-  <string name="dev_options_config_email_verification">• 需要邮箱验证码: %1$s</string>
-  <string name="dev_options_config_email_code_expires">• 验证码有效期: %1$d秒</string>
-  <string name="dev_options_config_registration">• 允许注册: %1$s</string>
   <string name="dev_options_config_features">功能开关:</string>
   <string name="dev_options_config_feedback">• 反馈功能: %1$s</string>
   <string name="dev_options_config_plugin_market">• 插件市场: %1$s</string>
@@ -5145,7 +3865,6 @@ kept=%3$d bytes
   <string name="ai_context_current_file">当前文件: %1$s</string>
   <string name="ai_context_selected_code">选中代码 (%1$s:%2$d-%3$d):</string>
   <string name="ai_context_error_info">错误信息:</string>
-  <string name="ai_tool_call_label">（工具调用）</string>
   <string name="ai_toggle_tool_calls_show">展开剩余 %1$d 个工具</string>
   <string name="ai_toggle_tool_calls_hide">收起工具调用</string>
   <string name="ai_execute">执行</string>
@@ -5162,10 +3881,8 @@ kept=%3$d bytes
   <string name="ai_tool_cancelled_label">取消原因</string>
   <string name="ai_expand">展开</string>
   <string name="ai_collapse">收起</string>
-  <string name="ai_no_params">（无参数）</string>
   <string name="ai_toggle_reasoning_show">显示思考过程</string>
   <string name="ai_toggle_reasoning_hide">隐藏思考过程</string>
-  <string name="ai_tool_call_missing_id">工具调用缺少 id，无法执行</string>
   <string name="ai_tool_call_missing_name">工具调用缺少 name，无法执行</string>
   <string name="ai_tool_not_found">未找到工具：%1$s</string>
   <string name="ai_tool_execution_failed">工具执行失败：%1$s</string>
@@ -5384,10 +4101,8 @@ kept=%3$d bytes
   <string name="ai_tool_success_execution_stopped">执行已成功停止：%1$s</string>
   <string name="ai_tool_success_navigated_run_output">已跳转到运行输出面板，运行输出标签页现在已显示并获得焦点。</string>
   <string name="ai_tool_success_navigated_build_log">已跳转到构建日志面板，构建日志标签页现在已显示并获得焦点。</string>
-  <string name="ai_tool_executed">已执行工具：%1$s</string>
   <string name="ai_new_conversation_count">新对话 %1$d</string>
   <string name="ai_summarize_and_continue">总结并继续</string>
-  <string name="ai_summarizing">正在总结对话...</string>
   <string name="ai_summary_prompt">请总结以上对话的关键内容，包括：\n1. 讨论的主要问题\n2. 已经完成的工作\n3. 遇到的问题和解决方案\n4. 待完成的任务\n\n请用简洁的语言总结，保留技术细节。</string>
 
   <!-- AI Tool Categories -->
@@ -5448,19 +4163,9 @@ kept=%3$d bytes
   <string name="ai_tool_add_doc_comment">添加文档注释</string>
 
   <!-- AI Provider -->
-  <string name="ai_provider_qwen">通义千问</string>
-  <string name="ai_provider_zhipu">智谱 AI</string>
-  <string name="ai_provider_ollama">Ollama (本地)</string>
-  <string name="ai_provider_custom">自定义</string>
 
 
   <!-- Diff -->
-  <string name="diff_label_original">原始文件</string>
-  <string name="diff_label_modified">修改后</string>
-  <string name="diff_label_file">文件</string>
-  <string name="diff_label_editor">编辑器</string>
-  <string name="diff_label_left">左侧</string>
-  <string name="diff_label_right">右侧</string>
   <string name="diff_error_left_not_found">左侧文件不存在: %1$s</string>
   <string name="diff_error_right_not_found">右侧文件不存在: %1$s</string>
   <string name="diff_error_file_too_large">文件过大，最大支持 5MB</string>
@@ -5480,7 +4185,6 @@ kept=%3$d bytes
   <string name="market_category_language">语言支持</string>
   <string name="market_download_count">%1$d 下载</string>
   <string name="market_version">版本: %1$s</string>
-  <string name="market_error_read_file">无法读取文件</string>
 
   <!-- Plugin Log -->
   <string name="plugin_log_time">时间: %1$s</string>
@@ -5494,24 +4198,14 @@ kept=%3$d bytes
   <string name="proot_profile_missing_shell">Linux 系统“%1$s”缺少关键 shell：%2$s</string>
 
   <!-- Favorites & Download History -->
-  <string name="favorites_empty">暂无收藏</string>
-  <string name="favorites_title">我的收藏</string>
+<string name="favorites_title">我的收藏</string>
   <string name="favorites_refresh">刷新</string>
   <string name="favorites_remove">移除收藏</string>
   <string name="favorites_remove_confirm">确定要取消收藏「%1$s」吗？</string>
   <string name="favorites_remove_confirm_title">取消收藏</string>
   <string name="favorites_sync_failed">同步失败，请检查网络</string>
-  <string name="favorites_syncing">正在同步...</string>
-  <string name="favorites_sync_success">同步成功</string>
   <string name="favorites_not_synced">未同步</string>
-  <string name="favorites_detail_title">收藏详情</string>
-  <string name="favorites_plugin_name">插件名称</string>
-  <string name="favorites_plugin_id">插件 ID</string>
-  <string name="favorites_description">描述</string>
-  <string name="favorites_category">分类</string>
-  <string name="favorites_latest_version">最新版本</string>
-  <string name="favorites_tags">标签</string>
-  <string name="favorites_empty_hint">还没有收藏任何插件</string>
+<string name="favorites_empty_hint">还没有收藏任何插件</string>
   <string name="favorites_go_to_market">去市场逛逛</string>
   <string name="download_history_empty">暂无下载记录</string>
   <string name="download_history_detail_title">下载详情</string>
@@ -5520,20 +4214,15 @@ kept=%3$d bytes
   <string name="download_history_detail_version">版本</string>
   <string name="download_history_detail_size">大小</string>
   <string name="download_history_detail_time">下载时间</string>
-  <string name="dialog_title_remove_favorite">取消收藏</string>
-  <string name="dialog_message_remove_favorite">确定要取消收藏「%1$s」吗？</string>
   <string name="filter_all">全部</string>
   <string name="filter_plugins">插件</string>
   <string name="filter_packages">包</string>
   <string name="filter_snippets">代码片段</string>
   <string name="action_retry">重试</string>
-  <string name="action_remove">移除</string>
-  <string name="action_close">关闭</string>
+<string name="action_close">关闭</string>
   <string name="action_ok">确定</string>
 
   <!-- Mirror Settings -->
-  <string name="settings_cat_tips">提示</string>
-  <string name="progress_updating_index">正在更新软件包索引…</string>
 
   <!-- APK Builder -->
   <string name="menu_section_build">构建</string>
@@ -5561,7 +4250,6 @@ kept=%3$d bytes
   <string name="file_provider_config_invalid">文件分享 Provider 配置异常，请重新安装 TinaIDE 或导出日志排查</string>
   <string name="apk_builder_share">分享</string>
   <string name="apk_builder_share_failed">分享 APK 失败：%1$s</string>
-  <string name="apk_builder_no_so_files">未找到 .so 文件，请先编译项目</string>
   <string name="apk_builder_no_entry_library">未找到 libmain.so，请先编译项目</string>
   <string name="apk_builder_no_executable_file">未找到可执行文件，请先编译项目</string>
   <string name="apk_builder_template_unavailable">模板 APK 不可用</string>
@@ -5605,7 +4293,6 @@ kept=%3$d bytes
   <string name="apk_builder_permissions_summary_with_risk">已选 %1$d 项内置权限（含 %2$d 项高风险）</string>
   <string name="apk_builder_permissions_manage">管理权限</string>
   <string name="apk_builder_permissions_sheet_title">选择打包权限</string>
-  <string name="apk_builder_permissions_sheet_done">完成</string>
   <string name="apk_builder_permission_max_sdk">仅在 Android %1$d 及以下声明</string>
   <string name="apk_builder_permission_high_risk_tag">高风险</string>
   <string name="apk_builder_permission_high_risk_warning_title">高风险权限提醒</string>
@@ -5643,12 +4330,6 @@ kept=%3$d bytes
   <string name="apk_builder_runtime_libraries_import_failed">导入运行库失败：%1$s</string>
   <string name="apk_builder_runtime_libraries_invalid_selection">未选择任何共享库文件（.so）</string>
 
-  <!-- TinaStateContainer -->
-  <string name="tina_state_empty_title">暂无内容</string>
-  <string name="tina_state_empty_subtitle">这里还没有任何数据</string>
-  <string name="tina_state_error_title">加载失败</string>
-  <string name="tina_state_error_subtitle">请检查网络连接后重试</string>
-
   <string name="plugin_error_project_template_path_invalid">project template 路径不合法：%1$s</string>
   <string name="plugin_error_project_template_file_not_exist">project template 文件不存在：%1$s</string>
   <string name="plugin_error_project_template_build_system_invalid">project template 构建系统不合法：%1$s</string>
@@ -5677,14 +4358,11 @@ kept=%3$d bytes
   <string name="toast_cmake_clean_and_reconfiguring">正在清理并重新配置 CMake...</string>
   <string name="toast_cmake_clearing_build_dir">正在清理 CMake 构建目录...</string>
   <string name="compile_error_not_cmake_project">当前项目不是 CMake 项目</string>
-  <string name="compile_cmake_reconfigure_started">正在重新配置 CMake 缓存...</string>
-  <string name="compile_cmake_reconfigure_finished">CMake 缓存已重新配置</string>
+<string name="compile_cmake_reconfigure_finished">CMake 缓存已重新配置</string>
   <string name="compile_cmake_reconfigure_failed">重新配置 CMake 缓存失败</string>
-  <string name="compile_cmake_clean_and_reconfigure_started">正在清理构建目录并重新配置 CMake 缓存...</string>
-  <string name="compile_cmake_clean_and_reconfigure_finished">已清理构建目录并重新配置 CMake 缓存</string>
+<string name="compile_cmake_clean_and_reconfigure_finished">已清理构建目录并重新配置 CMake 缓存</string>
   <string name="compile_cmake_clean_and_reconfigure_failed">清理并重新配置 CMake 缓存失败</string>
-  <string name="compile_cmake_clear_build_dir_started">正在清理构建目录...</string>
-  <string name="compile_cmake_clear_build_dir_finished">构建目录已清理</string>
+<string name="compile_cmake_clear_build_dir_finished">构建目录已清理</string>
   <string name="compile_cmake_clear_build_dir_failed">清理构建目录失败</string>
   <string name="editor_status_remote_lsp">远程 LSP</string>
   <string name="editor_status_lsp_ready">LSP 就绪</string>
@@ -5817,6 +4495,4 @@ kept=%3$d bytes
   <string name="ai_tool_doc_property_description">%1$s 参数</string>
   <string name="ai_tool_doc_param_description">%1$s 的说明</string>
   <string name="ai_tool_doc_return_description">返回值说明</string>
-  <string name="clangd_test_real_lsp_request_finished">真实 LSP 请求已完成</string>
-  <string name="clangd_test_real_lsp_request_failed">真实 LSP 请求失败：%1$s</string>
 </resources>

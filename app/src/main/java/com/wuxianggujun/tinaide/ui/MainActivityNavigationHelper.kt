@@ -1,5 +1,6 @@
 package com.wuxianggujun.tinaide.ui
 
+import androidx.core.net.toUri
 import com.wuxianggujun.tinaide.core.lsp.Diagnostic
 import com.wuxianggujun.tinaide.core.lsp.LocationItem
 import com.wuxianggujun.tinaide.ui.compose.state.editor.EditorContainerState
@@ -32,7 +33,7 @@ object MainActivityNavigationHelper {
         scope: CoroutineScope
     ) {
         val filePath = try {
-            android.net.Uri.parse(diagnostic.fileUri).path ?: diagnostic.fileUri
+            diagnostic.fileUri.toUri().path ?: diagnostic.fileUri
         } catch (e: Exception) {
             if (diagnostic.fileUri.startsWith("file://")) {
                 diagnostic.fileUri.substring(7)

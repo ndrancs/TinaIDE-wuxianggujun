@@ -2,24 +2,13 @@ package com.wuxianggujun.tinaide.ui.projectlist
 
 import com.wuxianggujun.tinaide.core.common.simplifyPath
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogProperties
 import com.wuxianggujun.tinaide.project.ProjectBuildSystem
 import com.wuxianggujun.tinaide.project.ProjectListItem
 import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
@@ -186,7 +175,6 @@ fun GitCloneDialog(
         }
     )
 }
-
 /**
  * 重命名项目对话框
  */
@@ -242,7 +230,6 @@ fun RenameProjectDialog(
         }
     )
 }
-
 /**
  * 项目信息对话框
  */
@@ -332,7 +319,6 @@ fun ProjectInfoDialog(
         }
     )
 }
-
 /**
  * 删除确认对话框
  */
@@ -368,118 +354,6 @@ fun DeleteConfirmDialog(
             TinaTextButton(
                 text = stringResource(Strings.btn_cancel),
                 onClick = onDismiss
-            )
-        }
-    )
-}
-
-/**
- * PRoot 安装进度对话框
- */
-@Composable
-fun PRootInstallProgressDialog(
-    title: String,
-    message: String,
-    progress: Float,
-    onRunInBackground: () -> Unit,
-    onOpenTerminal: (() -> Unit)? = null
-) {
-    val percent = (progress * 100).toInt().coerceIn(0, 100)
-    TinaAlertDialog(
-        onDismissRequest = { /* 通过按钮显式关闭 */ },
-        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
-        title = { TinaDialogTitleText(title) },
-        text = {
-            TinaDialogContentColumn {
-                TinaDialogMessageCard(message = message)
-                TinaDialogCard(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(
-                        text = "$percent%",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(Strings.dialog_install_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (onOpenTerminal != null) {
-                    TinaOutlinedButton(
-                        text = stringResource(Strings.btn_open_terminal),
-                        onClick = onOpenTerminal
-                    )
-                }
-                TinaTextButton(
-                    text = stringResource(Strings.btn_run_background),
-                    onClick = onRunInBackground
-                )
-            }
-        }
-    )
-}
-
-/**
- * PRoot 安装失败对话框
- */
-@Composable
-fun PRootInstallFailedDialog(
-    message: String,
-    isNetworkRelated: Boolean = false,
-    onRetry: () -> Unit,
-    onChangeMirror: () -> Unit = {},
-    onOpenTerminal: () -> Unit = {},
-    onClose: () -> Unit
-) {
-    TinaAlertDialog(
-        onDismissRequest = onClose,
-        title = { TinaDialogTitleText(stringResource(Strings.dialog_title_env_init_failed)) },
-        text = {
-            TinaDialogContentColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TinaDialogMessageCard(
-                    message = message,
-                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.36f),
-                    textColor = MaterialTheme.colorScheme.onErrorContainer
-                )
-                if (isNetworkRelated) {
-                    TinaDialogMessageCard(
-                        message = stringResource(Strings.hint_network_issue),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.36f),
-                        textColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TinaOutlinedButton(
-                    text = stringResource(Strings.btn_open_terminal),
-                    onClick = onOpenTerminal
-                )
-                if (isNetworkRelated) {
-                    TinaOutlinedButton(
-                        text = stringResource(Strings.btn_change_mirror),
-                        onClick = onChangeMirror
-                    )
-                }
-                TinaPrimaryButton(
-                    text = stringResource(Strings.btn_retry),
-                    onClick = onRetry
-                )
-            }
-        },
-        dismissButton = {
-            TinaTextButton(
-                text = stringResource(Strings.btn_close),
-                onClick = onClose
             )
         }
     )

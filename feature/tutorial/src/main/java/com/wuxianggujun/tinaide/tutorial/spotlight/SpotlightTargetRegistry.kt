@@ -63,13 +63,6 @@ class SpotlightTargetRegistry {
     }
 
     /**
-     * 检查目标是否已注册
-     */
-    fun hasTarget(id: String): Boolean {
-        return _targets.containsKey(id)
-    }
-
-    /**
      * 清除所有注册的目标
      */
     fun clear() {

@@ -24,9 +24,6 @@ data class ClangdSettings(
 ) {
     /**
      * 头文件插入模式
-     *
-     * 注意：displayNameResId 已移除（避免 config 模块依赖 app 的 R 资源）。
-     * UI 层应通过 [value] 映射到对应的字符串资源。
      */
     enum class HeaderInsertionMode(val value: String) {
         /** 永不自动插入头文件 */
@@ -45,9 +42,6 @@ data class ClangdSettings(
 
     /**
      * 补全样式
-     *
-     * 注意：displayNameResId 已移除（避免 config 模块依赖 app 的 R 资源）。
-     * UI 层应通过 [value] 映射到对应的字符串资源。
      */
     enum class CompletionStyle(val value: String) {
         /** 详细模式 - 显示完整的类型信息和文档 */

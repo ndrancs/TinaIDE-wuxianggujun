@@ -50,9 +50,6 @@ object ProjectDirStructure {
     private const val APK_PERMISSIONS_FILE = "permissions.json"
     private const val APK_SIGNING_FILE = "signing.properties"
 
-    // 旧版遗留路径（仅用于迁移）
-    private const val LEGACY_APK_SIGNING_FILE = "apk-signing.properties"
-    
     /**
      * 获取 .tinaide 根目录
      */
@@ -187,46 +184,6 @@ object ProjectDirStructure {
             true
         }.getOrElse { e ->
             Timber.tag(TAG).e(e, "Failed to clear cache directory: ${dir.absolutePath}")
-            false
-        }
-    }
-
-    /**
-     * 把旧版遗留的 `.tinaide/apk-signing.properties` 迁到 `.tinaide/apk-export/signing.properties`。
-     *
-     * 返回：
-     * - true  发生过一次迁移
-     * - false 新路径已存在、旧路径不存在、或迁移失败（降级保留旧文件供下次重试）
-     *
-     * 安全保证：copy 先于 delete；若 copy 失败则旧文件保留不变，用户下次打包仍能读到。
-     */
-    fun migrateLegacyApkSigningPropertiesIfNeeded(projectPath: String): Boolean {
-        val newFile = getApkSigningPropertiesFile(projectPath)
-        if (newFile.exists()) return false
-
-        val legacyFile = File(getTinaideDir(projectPath), LEGACY_APK_SIGNING_FILE)
-        if (!legacyFile.isFile) return false
-
-        return runCatching {
-            newFile.parentFile?.let { parent ->
-                if (!parent.exists() && !parent.mkdirs() && !parent.isDirectory) {
-                    error("Failed to create parent directory: ${parent.absolutePath}")
-                }
-            }
-            legacyFile.copyTo(newFile, overwrite = false)
-            if (!legacyFile.delete()) {
-                Timber.tag(TAG).w(
-                    "Migrated apk-signing.properties but failed to delete legacy file: %s",
-                    legacyFile.absolutePath
-                )
-            }
-            Timber.tag(TAG).i(
-                "Migrated legacy apk-signing.properties -> %s",
-                newFile.absolutePath
-            )
-            true
-        }.getOrElse { e ->
-            Timber.tag(TAG).w(e, "Failed to migrate legacy apk-signing.properties; leaving legacy file in place")
             false
         }
     }

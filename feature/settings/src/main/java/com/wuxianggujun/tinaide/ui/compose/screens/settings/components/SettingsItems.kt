@@ -64,7 +64,6 @@ private object SettingsSizes {
     /** 展示项值文本最大宽度 */
     val displayValueMaxWidth = 160.dp
 }
-
 /**
  * 设置分组卡片容器
  *
@@ -84,7 +83,6 @@ fun SettingsCard(
         content()
     }
 }
-
 /**
  * 带图标的设置菜单项（用于主设置页面）
  */
@@ -174,61 +172,6 @@ fun SettingsMenuItemWithIcon(
         }
     }
 }
-
-/**
- * 简单的设置菜单项（用于子页面）
- */
-@Composable
-fun SettingsMenuItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String? = null,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = TinaSpacing.xl, vertical = TinaSpacing.lg),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(SettingsSizes.iconSize)
-        )
-
-        Spacer(modifier = Modifier.width(TinaSpacing.xl))
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (subtitle != null) {
-                Spacer(modifier = Modifier.height(TinaSpacing.xxs))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = SettingsSizes.ARROW_ALPHA),
-            modifier = Modifier.size(SettingsSizes.arrowSize)
-        )
-    }
-}
-
 /**
  * 可点击的设置项
  */
@@ -295,7 +238,6 @@ fun SettingsClickableItem(
         }
     }
 }
-
 /**
  * 纯展示设置项（不可点击，无箭头）
  */
@@ -318,8 +260,7 @@ fun SettingsDisplayItem(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
-            )
-
+)
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
@@ -338,7 +279,6 @@ fun SettingsDisplayItem(
         }
     }
 }
-
 /**
  * 开关设置项
  */
@@ -417,16 +357,5 @@ fun SettingsCategoryTitle(title: String) {
             bottom = TinaSpacing.md,
             end = TinaSpacing.xl
         )
-    )
-}
-
-/**
- * 设置项分隔线
- */
-@Composable
-fun SettingsDivider() {
-    TinaDivider(
-        modifier = Modifier.padding(start = TinaSpacing.xl),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = SettingsSizes.DIVIDER_ALPHA)
     )
 }

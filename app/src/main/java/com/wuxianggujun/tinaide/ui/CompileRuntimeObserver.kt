@@ -1,8 +1,6 @@
 package com.wuxianggujun.tinaide.ui
 
 import com.wuxianggujun.tinaide.core.compile.ProcessManager
-import com.wuxianggujun.tinaide.ui.compose.components.FileTreeState
-import java.io.File
 
 /**
  * 编译运行时观察器
@@ -41,20 +39,5 @@ class CompileRuntimeObserver(
         ProcessManager.ProcessState.RUNNING -> CompileActionsHelper.ExecutionProcessState.RUNNING
         ProcessManager.ProcessState.STOPPING -> CompileActionsHelper.ExecutionProcessState.STOPPING
         ProcessManager.ProcessState.STOPPED -> CompileActionsHelper.ExecutionProcessState.STOPPED
-    }
-}
-
-class FileTreeStateCompileFileTreeSynchronizer(
-    private val fileTreeStateProvider: () -> FileTreeState?,
-) : CompileRuntimeObserver.FileTreeSynchronizer {
-    override suspend fun refreshAndRevealExportedArtifact(exportedArtifactPath: String?) {
-        val fileTreeState = fileTreeStateProvider() ?: return
-        exportedArtifactPath
-            ?.takeIf { it.isNotBlank() }
-            ?.let(::File)
-            ?.takeIf(File::exists)
-            ?.let { exportedArtifact ->
-                fileTreeState.reveal(exportedArtifact, selectTarget = false)
-            }
     }
 }

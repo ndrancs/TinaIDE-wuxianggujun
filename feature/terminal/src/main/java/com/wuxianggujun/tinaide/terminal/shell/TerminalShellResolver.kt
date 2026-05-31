@@ -55,8 +55,8 @@ class TerminalShellResolver(
     /**
      * 根据用户配置和系统状态决定使用的后端
      *
-     * 仅用于向后兼容（无显式 backend 参数的旧调用路径）。
-     * 新的 per-session 流程应直接传入 TerminalBackend，不经过此方法。
+     * 设置页的可用性探测仍使用全局偏好来选择探测后端。
+     * 终端会话启动流程直接传入 TerminalBackend，不经过此方法。
      */
     private fun resolveBackend(): TerminalBackend {
         return when (terminalPrefs.terminalBackendMode) {
@@ -103,20 +103,6 @@ class TerminalShellResolver(
             val backend = resolveBackend()
             isShellAvailable(backend, shellType)
         }
-
-    /**
-     * 使用全局偏好设置解析 Shell（向后兼容）
-     */
-    suspend fun resolveForSession(
-        workDir: String,
-        rows: Int,
-        cols: Int,
-    ): ShellResolveResult = resolveForSession(
-        backend = resolveBackend(),
-        workDir = workDir,
-        rows = rows,
-        cols = cols
-    )
 
     /**
      * 使用指定后端解析 Shell（per-session backend）

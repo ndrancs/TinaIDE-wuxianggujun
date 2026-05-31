@@ -4,15 +4,6 @@ import androidx.annotation.StringRes
 import com.wuxianggujun.tinaide.core.i18n.Strings
 
 /**
- * 底部面板的状态
- */
-enum class BottomPanelState {
-    COLLAPSED, // 收起（只显示拖拽手柄）
-    PEEK, // 半展开（显示工具栏）
-    EXPANDED // 完全展开
-}
-
-/**
  * 底部面板 Tab 枚举
  */
 enum class BottomPanelTab(@param:StringRes @get:StringRes val titleRes: Int) {
@@ -23,7 +14,6 @@ enum class BottomPanelTab(@param:StringRes @get:StringRes val titleRes: Int) {
     OUTLINE(Strings.bottom_panel_outline),
     SYMBOLS(Strings.bottom_panel_symbols),
     BOOKMARKS(Strings.bottom_panel_bookmarks),
-    TERMINAL(Strings.bottom_panel_terminal),
     GIT(Strings.bottom_panel_git)
 }
 

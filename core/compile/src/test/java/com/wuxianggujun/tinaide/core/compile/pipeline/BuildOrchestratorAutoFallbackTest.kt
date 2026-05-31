@@ -23,7 +23,6 @@ import com.wuxianggujun.tinaide.core.compile.strategy.ExecutionOutcome
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -95,7 +94,15 @@ class BuildOrchestratorAutoFallbackTest {
         coEvery { dispatcher.dispatch(any(), cached, true, any(), any()) } returns
             BuildReport.LaunchFailed("artifact corrupted", cached, artifactWasCached = true)
         coEvery { dispatcher.dispatch(any(), rebuilt, false, any(), any()) } returns
-            BuildReport.Success(rebuilt, LaunchDescriptor.Native(rebuilt, rebuilt.absolutePath), "launched freshly built artifact")
+            BuildReport.Success(
+                rebuilt,
+                LaunchDescriptor.Terminal(
+                    artifact = rebuilt,
+                    runnablePath = rebuilt.absolutePath,
+                    workingDir = File(rebuilt.absolutePath).parentFile ?: ctx.buildDir,
+                ),
+                "launched freshly built artifact"
+            )
 
         val captured = captureEvents()
         val orchestrator = newOrchestrator()

@@ -11,10 +11,6 @@ sealed class ConfigKey<T>(val key: String, val default: T) {
         key = "ui.debug.toolbar.position",
         default = "bottom"
     )
-    object DebugToolbarPositionMigrated : ConfigKey<Boolean>(
-        key = "ui.debug.toolbar.position.migrated",
-        default = false
-    )
 
     // 面板可见性：ui.panel.<PANEL_NAME> -> Boolean
     class PanelVisible(panelName: String, defaultVisible: Boolean) :
@@ -188,7 +184,6 @@ sealed class ConfigKey<T>(val key: String, val default: T) {
 object ConfigKeys {
     val Theme = ConfigKey.Theme
     val DebugToolbarPosition = ConfigKey.DebugToolbarPositionMode
-    val DebugToolbarPositionMigrated = ConfigKey.DebugToolbarPositionMigrated
     fun panelVisible(panelName: String, defaultVisible: Boolean) =
         ConfigKey.PanelVisible(panelName, defaultVisible)
 

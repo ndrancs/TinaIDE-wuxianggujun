@@ -37,10 +37,6 @@
 - [UI 组件样式指南](UI-Components-Style-Guide.md)
 - [TinaIDE 设计系统](TinaIDE-Design-System.md)
 
-### 开发流程
-
-- [跨仓库发布工作流](Cross-Repo-Release-Workflow.md)
-
 ## 相关文档
 
 - [插件开发者指南](../plugins/README.md)

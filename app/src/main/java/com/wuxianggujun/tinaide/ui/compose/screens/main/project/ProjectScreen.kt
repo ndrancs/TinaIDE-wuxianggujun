@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wuxianggujun.tinaide.core.config.NewProjectSourceLocation
 import com.wuxianggujun.tinaide.core.config.Prefs
@@ -194,7 +195,7 @@ fun ProjectScreen(
         recent to other
     }
 
-    // FAB 展开状态（复用旧版可展开 FAB 菜单）
+    // FAB 展开状态
     var isFabExpanded by remember { mutableStateOf(false) }
     val fabRotation by animateFloatAsState(
         targetValue = if (isFabExpanded) 45f else 0f,
@@ -540,7 +541,7 @@ fun ProjectScreen(
         TinaSingleChoiceDialog(
             title = stringResource(resolveManagedProjectActionTitleRes(actionType)),
             options = NewProjectSourceLocation.entries.map { location ->
-                location.value to context.getString(resolveProjectSourceLocationLabelRes(location))
+                location.value to resolveProjectSourceLocationLabelRes(location).strOr(context)
             },
             selectedValue = Prefs.projectDefaultSourceLocation.value,
             onSelected = { value ->
@@ -626,7 +627,7 @@ fun ProjectScreen(
                         .onSuccess { context.toastSuccess(Strings.toast_project_renamed.strOr(context)) }
                         .onFailure { e ->
                             when (e) {
-                                is UiMessageException -> context.toastError(context.getString(e.messageResId))
+                                is UiMessageException -> context.toastError(e.messageResId.strOr(context))
                                 else -> context.handleErrorWithToast(e, Strings.toast_rename_failed.strOr(context))
                             }
                         }
@@ -653,7 +654,7 @@ fun ProjectScreen(
                 showDeleteConfirmDialog = null
                 viewModel.deleteProject(project) { result ->
                     result
-                        .onSuccess { messageResId -> context.toastSuccess(context.getString(messageResId)) }
+                        .onSuccess { messageResId -> context.toastSuccess(messageResId.strOr(context)) }
                         .onFailure { e -> context.handleErrorWithToast(e, Strings.toast_delete_failed.strOr(context)) }
                 }
             }
@@ -666,7 +667,7 @@ private fun openAppUpdateUrl(
     updateInfo: AppUpdateInfo,
 ) {
     val url = updateInfo.downloadUrl.takeIf(String::isNotBlank) ?: updateInfo.releasePageUrl
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
     runCatching {
         context.startActivity(intent)
     }.onFailure {
@@ -705,11 +706,11 @@ private fun PublicProjectsPermissionCard(
 }
 
 private suspend fun importDirectoryFromLocal(
-    context: android.content.Context,
+    context: Context,
     viewModel: ProjectManagerViewModel,
-    uri: android.net.Uri,
+    uri: Uri,
     projectsRoot: File,
-    projectLocationManager: com.wuxianggujun.tinaide.storage.ProjectLocationManager,
+    projectLocationManager: ProjectLocationManager,
     storageManager: StorageManager
 ) {
     context.toastInfo(Strings.toast_importing.strOr(context))
@@ -730,11 +731,11 @@ private suspend fun importDirectoryFromLocal(
 }
 
 private suspend fun importArchiveFromLocal(
-    context: android.content.Context,
+    context: Context,
     viewModel: ProjectManagerViewModel,
-    uri: android.net.Uri,
+    uri: Uri,
     projectsRoot: File,
-    projectLocationManager: com.wuxianggujun.tinaide.storage.ProjectLocationManager
+    projectLocationManager: ProjectLocationManager
 ) {
     context.toastInfo(Strings.toast_importing.strOr(context))
     ProjectImporter.importArchive(
@@ -751,7 +752,7 @@ private suspend fun importArchiveFromLocal(
 }
 
 private suspend fun cloneFromGit(
-    context: android.content.Context,
+    context: Context,
     viewModel: ProjectManagerViewModel,
     gitService: GitService,
     storageManager: StorageManager,
@@ -810,7 +811,7 @@ private suspend fun cloneFromGit(
 }
 
 private fun resolveManagedProjectsRoot(
-    context: android.content.Context,
+    context: Context,
     sourceLocation: NewProjectSourceLocation
 ): File = when (sourceLocation) {
     NewProjectSourceLocation.PUBLIC -> ProjectPaths.getPublicProjectsRoot(context)
@@ -828,7 +829,7 @@ private fun resolveProjectSourceLocationLabelRes(location: NewProjectSourceLocat
 }
 
 private fun hasPublicSourceAccess(
-    context: android.content.Context,
+    context: Context,
     storageManager: StorageManager,
     targetDir: File
 ): Boolean {

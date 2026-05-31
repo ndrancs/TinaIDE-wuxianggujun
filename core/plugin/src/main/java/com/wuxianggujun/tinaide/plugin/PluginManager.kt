@@ -2,10 +2,7 @@ package com.wuxianggujun.tinaide.plugin
 
 import android.content.Context
 import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import com.wuxianggujun.tinaide.core.ServiceLifecycle
-import com.wuxianggujun.tinaide.project.ProjectBuildSystem
 import com.wuxianggujun.tinaide.project.ProjectApkExportType
 import com.wuxianggujun.tinaide.project.ProjectLanguage
 import com.wuxianggujun.tinaide.project.ProjectTemplateOption
@@ -37,7 +34,6 @@ class PluginManager(
 
         private const val PREFS_NAME = "tinaide_plugins"
         private const val PREF_ENABLED_PREFIX = "enabled_"
-        private const val PREF_SYSTEM_DEFAULT_MIGRATION_DONE = "system_default_disabled_migrated_v1"
 
         private val PLUGIN_ID_PATTERN = Regex("^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
 
@@ -103,7 +99,6 @@ class PluginManager(
         )
         logHostInfo("onCreate instance=$instanceId filesDir=${context.filesDir.absolutePath}")
         pluginsDir.mkdirs()
-        migrateSystemPluginsToDisabledDefaultIfNeeded()
         scope.launchSafe("refresh-onCreate") {
             refreshInstalledPlugins()
         }
@@ -246,25 +241,6 @@ class PluginManager(
 
     private fun setPluginEnabledInternal(pluginId: String, enabled: Boolean) {
         prefs.edit().putBoolean(PREF_ENABLED_PREFIX + pluginId, enabled).apply()
-    }
-
-    private fun migrateSystemPluginsToDisabledDefaultIfNeeded() {
-        if (prefs.getBoolean(PREF_SYSTEM_DEFAULT_MIGRATION_DONE, false)) return
-
-        val editor = prefs.edit()
-        pluginsDir.listFiles()
-            ?.asSequence()
-            ?.filter { it.isDirectory }
-            ?.forEach { dir ->
-                val manifestFile = File(dir, MANIFEST_FILE_NAME)
-                if (!manifestFile.exists()) return@forEach
-                val manifest = JsonSerializer.decodeFromFileOrNull<PluginManifest>(manifestFile) ?: return@forEach
-                if (manifest.type.equals(PluginTypes.SYSTEM, ignoreCase = true)) {
-                    editor.putBoolean(PREF_ENABLED_PREFIX + manifest.id, false)
-                }
-            }
-
-        editor.putBoolean(PREF_SYSTEM_DEFAULT_MIGRATION_DONE, true).apply()
     }
 
     private fun resolvePluginEnabled(manifest: PluginManifest): Boolean {

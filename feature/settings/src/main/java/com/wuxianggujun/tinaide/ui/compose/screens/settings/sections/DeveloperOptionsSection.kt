@@ -54,8 +54,7 @@ private val TestIconColor = Color(0xFF2196F3)
  */
 @Composable
 internal fun DeveloperOptionsSection(
-    onNavigateBack: () -> Unit,
-    onNavigateToDevTest: (String?) -> Unit = {}
+    onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -85,9 +84,6 @@ internal fun DeveloperOptionsSection(
             diagnosticsEnabled = diagnosticsEnabled,
             editorTouchDiagnosticsEnabled = editorTouchDiagnosticsEnabled
         )
-    }
-    val testingToolsState = remember {
-        DeveloperOptionsSectionSupport.resolveTestingToolsState()
     }
     val serverUrlStatusText = DeveloperOptionsSectionSupport
         .resolveServerUrlFeedbackMessage(serverUrlFeedback)
@@ -342,7 +338,7 @@ internal fun DeveloperOptionsSection(
     Spacer(modifier = Modifier.height(16.dp))
 
     // 测试工具（统一入口）
-    SettingsCategoryTitle(stringResource(Strings.dev_options_testing_tools))
+    SettingsCategoryTitle(stringResource(Strings.dev_options_runtime_tools))
     SettingsCard {
         SettingsSwitchItem(
             title = stringResource(Strings.dev_options_editor_lsp_enabled),
@@ -358,25 +354,8 @@ internal fun DeveloperOptionsSection(
             title = stringResource(Strings.dev_options_builtin_cmake_lsp_enabled),
             subtitle = stringResource(Strings.dev_options_builtin_cmake_lsp_enabled_desc),
             checked = builtinCmakeLspEnabled,
-            enabled = testingToolsState.builtinCmakeLspControlEnabled,
             onCheckedChange = {
                 Prefs.devBuiltinCmakeLspEnabled = it
-            },
-            showDivider = true
-        )
-
-        SettingsMenuItemWithIcon(
-            iconRes = Drawables.ic_settings_developer,
-            iconBackgroundColor = TestIconColor,
-            title = stringResource(Strings.dev_options_testing_tools),
-            subtitle = stringResource(Strings.dev_options_testing_tools_desc),
-            onClick = {
-                val effect = DeveloperOptionsSectionSupport.resolveActionEffect(
-                    DeveloperOptionsAction.OpenTestingTools
-                )
-                if (effect.openTestingTools) {
-                    onNavigateToDevTest(effect.targetDevTestId)
-                }
             },
             showDivider = true
         )

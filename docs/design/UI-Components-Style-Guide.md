@@ -49,7 +49,7 @@ TinaSecondaryButton(
 ### 3. 轮廓按钮 (Outlined Button)
 - **用途**: 中等强调的操作，如"取消"、"返回"
 - **样式**: 轮廓样式
-- **组件**: `TinaOutlinedButton` / `TinaOutlinedButtonLarge`
+- **组件**: `TinaOutlinedButton`
 
 ```kotlin
 TinaOutlinedButton(
@@ -113,18 +113,6 @@ TinaCard(
 }
 ```
 
-### 2. 轮廓卡片
-- **圆角**: 16dp
-- **组件**: `TinaOutlinedCard`
-
-```kotlin
-TinaOutlinedCard(
-    onClick = { /* 可选 */ }
-) {
-    // 内容
-}
-```
-
 ## 对话框
 
 ### 统一对话框
@@ -150,15 +138,6 @@ TinaConfirmDialog(
 TinaRecommendedBadge()
 ```
 
-### 自定义徽章
-```kotlin
-TinaBadge(
-    text = "即将推出",
-    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-)
-```
-
 ## 迁移指南
 
 ### 从旧样式迁移
@@ -177,7 +156,7 @@ TinaBadge(
 
 ## 文件位置
 
-- 统一组件库: `app/src/main/java/com/wuxianggujun/tinaide/ui/compose/components/TinaComponents.kt`
+- 统一组件库: `core/designsystem/src/main/java/com/wuxianggujun/tinaide/ui/compose/components/`
 - 主题定义: `core/designsystem/src/main/java/com/wuxianggujun/tinaide/ui/theme/TinaIDETheme.kt`
 - XML 主题: `app/src/main/res/values/themes.xml`
 
@@ -223,7 +202,7 @@ MaterialTheme.colorScheme.error             // 错误色
 
 ## 注意事项
 
-1. **新代码**: 优先使用 `TinaComponents.kt` 中的统一组件
+1. **新代码**: 优先使用 `core/designsystem` 中的统一组件和设计 Token
 2. **旧代码**: 逐步迁移到统一组件，或至少使用 `TinaShapes` 常量
 3. **对话框按钮**: 对话框内的按钮通常使用 `TextButton`，这是 Material 3 的标准做法
 4. **颜色**: 始终使用 `MaterialTheme.colorScheme` 中的语义化颜色，避免硬编码颜色值

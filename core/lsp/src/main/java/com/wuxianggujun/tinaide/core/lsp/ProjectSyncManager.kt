@@ -63,18 +63,6 @@ data class ProjectFileInfo(
 )
 
 /**
- * 项目同步结果
- */
-data class ProjectSyncResult(
-    val success: Boolean,
-    val projectName: String,
-    val fileCount: Int,
-    val totalSize: Long,
-    val compressedSize: Long,
-    val errorMessage: String? = null
-)
-
-/**
  * 分块同步配置
  */
 data class ChunkConfig(

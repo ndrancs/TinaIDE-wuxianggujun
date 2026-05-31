@@ -85,7 +85,7 @@ class CrashActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // 禁用返回键：必须选择"重启"或"退出"（避免覆盖已废弃的 onBackPressed）
+        // 禁用系统返回键：必须选择"重启"或"退出"
         onBackPressedDispatcher.addCallback(this) { }
 
         // xCrash 已提供完整的崩溃报告，直接使用

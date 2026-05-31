@@ -10,10 +10,9 @@ import timber.log.Timber
 import java.io.File
 
 /**
- * PRoot Makefile 构建策略
+ * PRoot Makefile 构建引擎。
  *
- * 实现 BuildStrategy 接口，支持 Makefile 项目的构建。
- * 使用 PRoot 环境中的 make 工具执行构建。
+ * 使用 PRoot 环境中的 make 工具执行构建，由 MakeStrategy 负责调度。
  *
  * @param context Android 应用上下文
  * @param prootEnv PRoot 环境管理器

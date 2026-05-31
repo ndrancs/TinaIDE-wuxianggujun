@@ -81,8 +81,6 @@ object Prefs {
         AppPreferences.get(appContext)
     }
 
-    private const val LEGACY_DEBUG_TOOLBAR_POSITION_KEY = "debug_toolbar_position"
-
     // ========== PRoot / Rootfs 配置 ==========
 
     var rootfsPath: String
@@ -758,7 +756,6 @@ object Prefs {
         get() = debugToolbarPositionState.asStateFlow()
 
     private val debugToolbarPositionState: MutableStateFlow<DebugToolbarPosition> by lazy {
-        migrateDebugToolbarPositionIfNeeded()
         val state = MutableStateFlow(readDebugToolbarPositionFromConfig())
         configManager.addListener(ConfigKeys.DebugToolbarPosition.key, object : ConfigChangeListener {
             override fun onConfigChanged(key: String, newValue: Any?) {
@@ -1027,28 +1024,12 @@ object Prefs {
     // ========== 调试配置写入 ==========
 
     fun setDebugToolbarPosition(position: DebugToolbarPosition) {
-        migrateDebugToolbarPositionIfNeeded()
         configManager.set(ConfigKeys.DebugToolbarPosition, position.value)
     }
 
     private fun readDebugToolbarPositionFromConfig(): DebugToolbarPosition {
         val value = configManager.get(ConfigKeys.DebugToolbarPosition)
         return DebugToolbarPosition.fromString(value)
-    }
-
-    private fun migrateDebugToolbarPositionIfNeeded() {
-        if (configManager.get(ConfigKeys.DebugToolbarPositionMigrated)) return
-
-        if (sharedPrefs.contains(LEGACY_DEBUG_TOOLBAR_POSITION_KEY)) {
-            val legacy = sharedPrefs.getString(
-                LEGACY_DEBUG_TOOLBAR_POSITION_KEY,
-                DebugToolbarPosition.DEFAULT.value
-            ) ?: DebugToolbarPosition.DEFAULT.value
-            configManager.set(ConfigKeys.DebugToolbarPosition, legacy)
-            sharedPrefs.edit().remove(LEGACY_DEBUG_TOOLBAR_POSITION_KEY).apply()
-        }
-
-        configManager.set(ConfigKeys.DebugToolbarPositionMigrated, true)
     }
 
 }

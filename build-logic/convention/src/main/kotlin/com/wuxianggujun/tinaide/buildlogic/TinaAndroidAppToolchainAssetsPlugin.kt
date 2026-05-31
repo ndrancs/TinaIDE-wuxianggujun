@@ -7,10 +7,8 @@ import org.gradle.api.Project
  * Registers the `verifyTinaToolchainAssets` task and wires it into the
  * standard packaging lifecycle tasks (`assemble*`, `bundle*`, `install*`).
  *
- * The plugin intentionally keeps the task name and semantics identical to
- * the legacy inline implementation that lived in `app/build.gradle.kts`,
- * so it can be swapped in without any behavioural change for downstream
- * tooling or CI pipelines.
+ * The plugin intentionally keeps the task name and semantics stable for
+ * downstream tooling and CI pipelines.
  */
 class TinaAndroidAppToolchainAssetsPlugin : Plugin<Project> {
     override fun apply(target: Project) {

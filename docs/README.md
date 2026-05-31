@@ -45,7 +45,6 @@
 
 - [架构概览](架构概览.md)
 - [模块功能说明](模块功能说明.md)
-- [架构整改计划](架构整改计划.md)
 - [设计文档索引](design/README.md)
 
 ### 功能与实现
@@ -56,6 +55,7 @@
 - [Toolchain 构建与同步指南](toolchain-build-guide.md)
 - [ProGuard / R8 规则参考](proguard-rules-reference.md)
 - [自研 Linux 发行版运行时](linux-distro-self-hosted-runtime.md)
+- [游戏引擎插件 SDL 图形运行](game-engine-plugin-sdl.md)
 
 ### 使用指南
 
@@ -74,6 +74,8 @@
 ### 插件与规划
 
 - [插件文档索引](plugins/README.md)
+- [插件 API 契约](plugin-api-contract.md)
+- [GitHub Registry](registry/GitHub-Registry.md)
 - [规划文档索引](planning/README.md)
 
 ## 当前文档口径
@@ -84,17 +86,6 @@
 - PRoot 是可选 Linux 环境，主要服务终端、Linux 工具和插件 / 调试扩展能力。
 - 编辑器语言服务不是单一路径：C/C++ 走 `clangd`，CMake / Make 走内建语言服务，其他语言可走插件 LSP。
 - App 首次启动默认只安装内置运行资产；只有显式进入 Linux 环境相关流程时，才会通过自研 Linux 发行版管理器安装 rootfs 与 guest toolchain。
-
-## 本轮清理说明
-
-- 已删除空占位文档 `TinaEditor性能优化指南-高级技术.md`，避免继续作为“高级指南”被误读。
-- 已删除 `TinaEditor-Audit-2026-04-18` 的 R2 / R3 / R4-LSP 阶段性审计草稿，仅保留最终汇总与当前索引文档。
-- 已进一步清空 `docs/design/` 中未纳入索引的旧设计稿，避免历史方案继续干扰当前实现口径。
-- 已删除一组一次性问题分析、修复提示词、阶段性审查与调试复盘文档，包括旧 TinaEditor 分析稿、缩放偏移调试稿、一次性 smoke 记录和若干重构任务单。
-- 已删除旧 SDL3 快速开始、vcpkg 移植方案、代码统计指南及若干一次性测试说明，继续收缩非核心专题文档。
-- 已删除后端 API/许可证专题文档、通用 Material Design 指南，以及两份辅助测试手册，主文档集继续聚焦当前 IDE 的核心协作资料。
-- 已删除维护者专用的 SDL3 长篇打包指南和 `docs/plugins/sample-*` 示例资产，避免 `docs/` 继续承担样例仓库角色。
-- 仍保留的设计文档以 `docs/design/README.md` 中列出的索引为准。
 
 ## 说明
 

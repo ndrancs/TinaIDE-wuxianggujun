@@ -2,6 +2,7 @@ package com.wuxianggujun.tinaide.update
 
 import android.content.Context
 import android.os.Build
+import androidx.core.content.edit
 import com.wuxianggujun.tinaide.core.common.AppVersionInfoReader
 import com.wuxianggujun.tinaide.core.config.AppPreferences
 import com.wuxianggujun.tinaide.core.network.OkHttpClientProvider
@@ -62,7 +63,7 @@ class AppUpdateChecker(
     }
 
     fun markDismissed(tagName: String) {
-        prefs.edit().putString(PREF_KEY_DISMISSED_TAG, tagName).apply()
+        prefs.edit { putString(PREF_KEY_DISMISSED_TAG, tagName) }
     }
 
     private fun dismissedTagName(): String? = prefs.getString(PREF_KEY_DISMISSED_TAG, null)

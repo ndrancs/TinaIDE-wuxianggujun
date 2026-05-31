@@ -3,15 +3,7 @@ package com.wuxianggujun.tinaide.core.compile
 import com.wuxianggujun.tinaide.core.linux.LinuxRunModePolicy
 import java.io.File
 
-// ============================================================================
-// 历史说明 (Phase D.2 收口):
-// 旧 `interface BuildStrategy` 已删除 —— 它被
-// `com.wuxianggujun.tinaide.core.compile.strategy.BuildStrategy` 彻底取代。
-// 本文件仅保留构建流水线共用的数据类型(BuildOptions / ConfigureResult /
-// BuildResult / CleanResult / TargetInfo / 各种选项枚举),避免一次性拆到
-// 多个小文件造成 rename 风暴。未来若愿意进一步整理,可考虑把它们按
-// 类别散到独立文件(如 build_options.kt / build_results.kt)。
-// ============================================================================
+// 构建流水线共用模型。实际构建策略接口位于 strategy/BuildStrategy.kt。
 
 /**
  * 构建选项

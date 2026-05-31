@@ -7,7 +7,6 @@ import com.wuxianggujun.tinaide.core.packages.backend.ApkPackageBackend
 import com.wuxianggujun.tinaide.core.packages.backend.DownloadPackageBackend
 import com.wuxianggujun.tinaide.core.packages.cache.PackageCacheManager
 import com.wuxianggujun.tinaide.core.packages.model.*
-import com.wuxianggujun.tinaide.core.packages.store.InstallHistoryStore
 import com.wuxianggujun.tinaide.core.packages.store.LocalInstallStateStore
 import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
 import timber.log.Timber
@@ -17,7 +16,6 @@ class PackageManagerImpl(
     private val apiClient: PackageApiClient,
     private val installStateStore: LocalInstallStateStore,
     private val cacheManager: PackageCacheManager = PackageCacheManager(context),
-    private val historyStore: InstallHistoryStore = InstallHistoryStore(context),
     private val prootEnv: PRootEnvironment? = null
 ) : PackageManager {
 
@@ -204,14 +202,6 @@ class PackageManagerImpl(
                     packageName = pkg.name,
                     installType = platformPkg.installType
                 )
-                historyStore.recordInstall(
-                    packageId = packageId,
-                    packageName = pkg.name,
-                    platform = platform,
-                    version = platformPkg.version,
-                    installType = platformPkg.installType,
-                    success = true
-                )
                 PackageDependencyEvents.notifyChanged(
                     PackageDependencyEvents.DependencyChangedEvent(
                         packageId = packageId,
@@ -221,17 +211,7 @@ class PackageManagerImpl(
                     )
                 )
             }
-            is InstallResult.Failure -> {
-                historyStore.recordInstall(
-                    packageId = packageId,
-                    packageName = pkg.name,
-                    platform = platform,
-                    version = platformPkg.version,
-                    installType = platformPkg.installType,
-                    success = false,
-                    errorMessage = result.error.toDisplayMessage()
-                )
-            }
+            is InstallResult.Failure -> Unit
         }
 
         return result
@@ -428,7 +408,6 @@ class PackageManagerImpl(
             }
         }
 
-        val packageName = pkg?.name ?: packageId
         val uninstalledVersion = when (platformState) {
             is PlatformInstallState.Installed -> platformState.version
             is PlatformInstallState.UpdateAvailable -> platformState.currentVersion
@@ -437,12 +416,6 @@ class PackageManagerImpl(
         when (result) {
             is UninstallResult.Success -> {
                 installStateStore.setUninstalled(packageId, platform)
-                historyStore.recordUninstall(
-                    packageId = packageId,
-                    packageName = packageName,
-                    platform = platform,
-                    success = true
-                )
                 PackageDependencyEvents.notifyChanged(
                     PackageDependencyEvents.DependencyChangedEvent(
                         packageId = packageId,
@@ -452,15 +425,7 @@ class PackageManagerImpl(
                     )
                 )
             }
-            is UninstallResult.Failure -> {
-                historyStore.recordUninstall(
-                    packageId = packageId,
-                    packageName = packageName,
-                    platform = platform,
-                    success = false,
-                    errorMessage = result.error.toDisplayMessage()
-                )
-            }
+            is UninstallResult.Failure -> Unit
         }
 
         return result
@@ -556,14 +521,6 @@ class PackageManagerImpl(
         }
         
         return updates
-    }
-
-    override fun getInstallHistory(): List<com.wuxianggujun.tinaide.core.packages.store.HistoryEntry> {
-        return historyStore.getHistory()
-    }
-
-    override fun clearInstallHistory() {
-        historyStore.clearHistory()
     }
 
     private fun isNewerVersion(remote: String, local: String): Boolean {

@@ -49,7 +49,6 @@ internal fun installMainActivityContent(
     editorActionBridge: MainActivityEditorActionBridge,
     dialogCoordinator: MainActivityDialogCoordinator,
     workspaceActions: MainActivityWorkspaceActionsDelegate,
-    onProjectLoaded: (String) -> Unit,
     onOpenWithExternalApp: (File) -> Unit,
     onShareFileOrDirectory: (File) -> Unit,
 ) {
@@ -79,7 +78,6 @@ internal fun installMainActivityContent(
                 editorActionBridge = editorActionBridge,
                 dialogCoordinator = dialogCoordinator,
                 workspaceActions = workspaceActions,
-                onProjectLoaded = onProjectLoaded,
                 onOpenWithExternalApp = onOpenWithExternalApp,
                 onShareFileOrDirectory = onShareFileOrDirectory,
             )

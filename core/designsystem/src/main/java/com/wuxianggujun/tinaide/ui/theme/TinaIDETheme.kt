@@ -15,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -239,7 +238,7 @@ private object DarkColors {
 
 /**
  * 灰色主题颜色常量（深灰背景 #2D2D2D，减少视觉疲劳）
- * 对应 res/values/colors.xml 中的 gray_theme_* 颜色
+ * 灰色主题颜色常量。
  */
 private object GrayColors {
     val primary = Color(0xFF03DAC6)
@@ -328,32 +327,13 @@ private object GrayColors {
 // ----- Typography & Shapes -----
 
 /**
- * TinaIDE 等宽字体族
- *
- * 用于代码编辑器、终端、日志等需要等宽显示的场景。
- * 使用系统内置 Monospace 字体，无需额外字体文件。
- *
- * 使用方式：
- * ```kotlin
- * Text(
- *     text = "code",
- *     fontFamily = TinaIDEFonts.code
- * )
- * ```
- */
-object TinaIDEFonts {
-    /** 等宽字体 - 用于代码、终端、日志 */
-    val code: FontFamily = FontFamily.Monospace
-}
-
-/**
  * TinaIDE 自定义排版
  *
  * 基于 Material 3 默认排版，针对 IDE 场景做了以下调整：
  * - bodySmall/bodyMedium/bodyLarge: 适当调整行高，提升代码阅读体验
  * - labelSmall: 用于状态栏、标签等紧凑场景
  */
-val TinaIDETypography: Typography = Typography(
+private val TinaIDETypography: Typography = Typography(
     displayLarge = TextStyle(
         fontWeight = FontWeight.Normal,
         fontSize = 57.sp,
@@ -444,7 +424,7 @@ val TinaIDETypography: Typography = Typography(
  * - large (16dp): 卡片
  * - extraLarge (24dp): 对话框、底部弹窗
  */
-val TinaIDEShapes: Shapes = Shapes(
+private val TinaIDEShapes: Shapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
     small = RoundedCornerShape(8.dp),
     medium = RoundedCornerShape(12.dp),

@@ -60,7 +60,7 @@ R8 对代码执行三项操作：
 
 | 文件 | 职责 |
 |------|------|
-| `app/proguard-rules.pro` | 全局基础规则（@Keep、Android 组件、JNI、Kotlin/Coroutines/Serialization）+ 无 consumer-rules 的第三方 SDK（SDL、SnakeYAML、Joni/Jcodings） |
+| `app/proguard-rules.pro` | 全局基础规则（@Keep、Android 组件、JNI、Kotlin/Coroutines/Serialization）+ 无 consumer-rules 的第三方 SDK（SDL、JLatexMath、Jsoup） |
 
 ### 2.2 Core 模块 consumer-rules.pro
 
@@ -106,9 +106,6 @@ R8 对代码执行三项操作：
 | **zstd-jni** | 1.5.5-11 | JNI native 加载（`Zstd` 类名已由 R8 保留） | 无需额外（JNI 全局规则覆盖） | — |
 | **xcrash** | — | JNI 崩溃回调 (`crashCallback`/`traceCallback`) | `external/xcrash/proguard-rules.pro` | `-keep class` NativeHandler |
 | **SDL3** | — | JNI 从 native 侧通过硬编码类名反射调用 Java 层 | `app/proguard-rules.pro` | `-keep class org.libsdl.app.** { *; }` |
-| **SnakeYAML Engine** | 2.10 | 反射构造 YAML 节点对象 | `app/proguard-rules.pro` | `-keepclassmembers` 字段 + 构造函数 |
-| **Joni** | 2.2.6 | 编码表数据通过反射加载 | `app/proguard-rules.pro` | `-keepclassmembers` 字段 |
-| **Jcodings** | 1.0.63 | 编码表数据通过反射加载 | `app/proguard-rules.pro` | `-keepclassmembers` 字段 |
 | **Termux Terminal** | — | JNI + View XML 构造函数 | `feature:terminal/consumer-rules.pro` | `-keep class` JNI + View 构造 |
 | **JLatexMath** | 1.3 | 反射加载字体资源和符号映射配置文件 | `app/proguard-rules.pro` | `-keep class ru.noties.jlatexmath.** { *; }` |
 | **Jsoup** | 1.22.1 | 安全网（自带 consumer-rules，但保险起见保留核心类；其可选 `re2j` 依赖在 Android 未引入时需抑制 R8 告警） | `app/proguard-rules.pro` | `-keep class org.jsoup.** { *; }` + `-dontwarn com.google.re2j.**` |
@@ -135,7 +132,6 @@ R8 对代码执行三项操作：
 | **ImmersionBar** | View 构造函数由全局规则覆盖 |
 | **JetBrains Markdown** | AST 解析器，纯 Kotlin，无反射 |
 | **Timber** | 纯日志库，无反射 |
-| **LeakCanary** | 仅 debug 构建 |
 | **ARSCLib** | 纯 Java IO 解析 resources.arsc / AndroidManifest（仅抑制告警，保留 `-dontwarn com.reandroid.**` 作为安全网） |
 | **Parcelize** | Kotlin 编译器插件在编译时生成 CREATOR，无运行时反射 |
 

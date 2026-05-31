@@ -5,28 +5,20 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gyf.immersionbar.ktx.immersionBar
 import com.wuxianggujun.tinaide.core.i18n.Drawables
 import com.wuxianggujun.tinaide.core.IAppNavigator
-import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.core.proot.ToolchainConfig
 import com.wuxianggujun.tinaide.ui.compose.components.TinaConfirmDialog
-import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
 import com.wuxianggujun.tinaide.ui.theme.TinaIDETheme
 import com.wuxianggujun.tinaide.ui.workspace.components.*
 import com.wuxianggujun.tinaide.ui.workspace.model.*
@@ -50,7 +42,6 @@ private const val PACKAGE_LINUX_ROOTFS = "linux-rootfs"
 class DependencyInstallActivity : ComponentActivity(), KoinComponent {
 
     companion object {
-        const val EXTRA_REPAIR_MODE = "repair_mode"
         const val EXTRA_TOOLCHAIN_CONFIG = "toolchain_config"
         const val EXTRA_PREFERRED_LLVM_MAJOR_VERSION = "preferred_llvm_major_version"
         const val EXTRA_INSTALL_LINUX_ENVIRONMENT = "install_linux_environment"
@@ -75,23 +66,6 @@ class DependencyInstallActivity : ComponentActivity(), KoinComponent {
                 putExtra(EXTRA_INSTALL_LINUX_ENVIRONMENT, installLinuxEnvironment)
             }
         }
-
-        /**
-         * 创建修复模式的启动 Intent
-         *
-         * @param context 上下文
-         */
-        fun createRepairIntent(context: Context, preferredLlvmMajorVersion: Int? = null): Intent {
-            return Intent(context, DependencyInstallActivity::class.java).apply {
-                putExtra(EXTRA_REPAIR_MODE, true)
-                putExtra(EXTRA_PREFERRED_LLVM_MAJOR_VERSION, preferredLlvmMajorVersion ?: LLVM_MAJOR_VERSION_AUTO)
-                putExtra(EXTRA_INSTALL_LINUX_ENVIRONMENT, true)
-            }
-        }
-    }
-
-    private val isRepairMode: Boolean by lazy {
-        intent.getBooleanExtra(EXTRA_REPAIR_MODE, false)
     }
 
     private val toolchainConfig: ToolchainConfig by lazy {
@@ -116,7 +90,6 @@ class DependencyInstallActivity : ComponentActivity(), KoinComponent {
         org.koin.core.parameter.parametersOf(
             toolchainConfig,
             preferredLlvmMajorVersion,
-            isRepairMode,
             installLinuxEnvironment
         )
     }
@@ -255,7 +228,6 @@ fun DependencyInstallScreen(
                         installStage = uiState.installStage,
                         packageList = uiState.packageList,
                         currentPackage = uiState.currentPackage,
-                        isRepairMode = uiState.isRepairMode,
                         onBack = onBack,
                         onPauseToggle = { viewModel.togglePause() },
                         onCancel = { showCancelDialog = true },
@@ -265,9 +237,7 @@ fun DependencyInstallScreen(
                     InstallCompletedContent(
                         installedComponents = installedComponents,
                         rootfsHealth = uiState.rootfsHealth,
-                        isRepairMode = uiState.isRepairMode,
                         onEnterWorkspace = { viewModel.onInstallComplete() },
-                        onBack = onBack,
                         onRefreshRootfsHealth = viewModel::refreshRootfsHealth,
                         onOpenLog = onOpenInstallLog,
                         onOpenTerminal = onOpenTerminal,
@@ -277,7 +247,6 @@ fun DependencyInstallScreen(
                     InstallFailedContent(
                         errorMessage = uiState.failedMessage,
                         isNetworkRelated = uiState.isNetworkRelated,
-                        isRepairMode = uiState.isRepairMode,
                         onRetry = { viewModel.retry() },
                         onOpenTerminal = onOpenTerminal,
                         onOpenLog = onOpenInstallLog,

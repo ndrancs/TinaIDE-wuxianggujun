@@ -62,13 +62,11 @@ data class MyPluginsState(
     val plugins: List<MyPluginSummary> = emptyList(),
     val error: String? = null
 )
-
 data class UploadState(
     val isUploading: Boolean = false,
     val progress: Float = 0f,
     val error: String? = null
 )
-
 @Serializable
 data class MyPluginSummary(
     val id: String,
@@ -84,20 +82,4 @@ data class MyPluginSummary(
     val createdAt: String,
     @SerialName("updated_at")
     val updatedAt: String
-)
-
-@Serializable
-data class MyPluginsData(
-    val plugins: List<MyPluginSummary>
-)
-
-@Serializable
-data class UploadPluginResponse(
-    val id: String,
-    @SerialName("plugin_id")
-    val pluginId: String,
-    val name: String,
-    val version: String,
-    val status: String,
-    val message: String
 )

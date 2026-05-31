@@ -13,7 +13,4 @@ dependencies {
     implementation(project(":core:i18n"))
     implementation(libs.timber)
     implementation(libs.kotlinx.serialization.json)
-    testImplementation(libs.junit)
-    testImplementation(libs.tests.mockk)
-    testImplementation(libs.tests.google.truth)
 }

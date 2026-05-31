@@ -34,10 +34,10 @@ internal fun FileContextMenu(
     isDirectory: Boolean,
     expanded: Boolean,
     pluginMenuItems: List<ResolvedHostMenuItem>,
-    hostCommandExecutor: HostCommandExecutor? = null,
     onDismiss: () -> Unit,
     onAction: (FileContextAction) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    hostCommandExecutor: HostCommandExecutor? = null
 ) {
     TinaDropdownMenu(
         expanded = expanded,

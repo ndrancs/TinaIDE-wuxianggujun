@@ -29,24 +29,14 @@ import timber.log.Timber
 import java.io.File
 
 /**
- * 编译项目用例(Phase C 大重构版)。
+ * 编译项目用例。
  *
- * 从前是 1381 行的上帝类,现在退化为 BuildOrchestrator 的适配 Facade:
- * - 对外:保留完整 public API(execute / executeCMakeMaintenance / getAvailableTargets)
- *   与所有嵌套类型(ExecutionMode / Action / Result / Report / LaunchSpec /
- *   BuildArtifact / BuildArtifactKind / CompileProgress),callers 零改动
- * - 对内:构建 BuildContext + CompileRequest,委托 BuildOrchestrator 执行,
- *   把 BuildReport + LaunchDescriptor 映射回旧 Result / LaunchSpec
+ * 作为 BuildOrchestrator 的适配 Facade:
+ * - 对外:保留 execute / executeCMakeMaintenance / getAvailableTargets 等 public API
+ * - 对内:构建 BuildContext + CompileRequest,委托 BuildOrchestrator 执行
+ * - 结果:把 BuildReport + LaunchDescriptor 映射回 Result / LaunchSpec
  *
- * 删除的内部实现(约 800 行):
- * - 旧 strategies 列表 + BuildStrategy 老接口消费
- * - 所有 output path 回退解析、artifact export 变体、buildResultSummary 定制
- * - reconfigureCMakeProject / clearAndReconfigureCMakeProject / clearCMakeBuildDirectory(
- *   → CompileRequest(BuildIntent.Clean(reconfigure=true/false), LaunchIntent.None))
- * - applyResolvedRunMode(新 Strategy 已经透过 ctx.options.resolvedRunMode 自管)
- * - 各类 resolveOutputPath / findSharedLibraryOutput / shouldFallbackResolveOutputPath 助手
- *
- * 保留的少量能力:
+ * 本类只保留调用编排能力:
  * - `log()` 继续把关键步骤写到 OutputManager(UI 的构建日志面板)
  * - 订阅 [SharedFlowBuildEventEmitter].events 把 CompileProgress 写到 log
  * - getCurrentEditingFile / getSourceFile 用于 SingleFile 源文件选择
@@ -56,8 +46,6 @@ class CompileProjectUseCase(
     private val projectContext: IProjectContext,
     private val outputManager: IOutputManager,
     private val editorManagerProvider: () -> IEditorTabProvider? = { null },
-    @Suppress("unused")
-    private val processManager: ProcessManager? = null,
     private val linuxEnvironmentProvider: LinuxEnvironmentProvider = UnavailableLinuxEnvironmentProvider,
     private val orchestratorProvider: () -> BuildOrchestrator,
     private val strategyRegistry: BuildStrategyRegistry,
@@ -248,10 +236,7 @@ class CompileProjectUseCase(
         }
 
         val config = runConfig ?: getRunConfiguration()
-        val runOutputMode = when (config.outputMode) {
-            OutputMode.LOG -> OutputMode.TERMINAL
-            else -> config.outputMode
-        }
+        val runOutputMode = config.outputMode
         val preferSharedLibraryForRun = mode == ExecutionMode.RUN && runOutputMode.isSdlGraphical()
         val activeOutputMode = if (mode == ExecutionMode.RUN) runOutputMode else OutputMode.TERMINAL
         val request = operation.resolveRequest(activeOutputMode)
@@ -665,19 +650,6 @@ class CompileProjectUseCase(
         config: RunConfiguration,
         launchEnvironment: Map<String, String>,
     ): LaunchSpec = when (descriptor) {
-        is LaunchDescriptor.Native -> {
-            // LOG 输出模式:也走终端启动,保持旧行为
-            val workingDir = config.getAbsoluteWorkDir(projectRoot.absolutePath, buildContext)
-            val args = config.getArgsList(buildContext)
-            val command = terminalCommandBuilder.build(
-                workingDir = workingDir,
-                outputPath = descriptor.outputPath,
-                args = args,
-                projectRoot = projectRoot,
-                extraEnvironment = launchEnvironment,
-            )
-            LaunchSpec.Terminal(command, descriptor.outputPath)
-        }
         is LaunchDescriptor.Sdl -> LaunchSpec.Sdl(
             libraryPath = descriptor.libraryPath,
             environment = launchEnvironment,

@@ -16,13 +16,4 @@ class DependencyInstallModelsTest {
         assertThat(state.envReady).isFalse()
         assertThat(state.rootfsHealth.status).isEqualTo(DependencyRootfsHealthStatus.UNKNOWN)
     }
-
-    @Test
-    fun dependencyItem_shouldDefaultToPendingWithNoProgress() {
-        val item = DependencyItem(name = "clang", version = "18", size = "42 MB")
-
-        assertThat(item.status).isEqualTo(DependencyStatus.PENDING)
-        assertThat(item.progress).isEqualTo(0f)
-        assertThat(item.statusText).isEmpty()
-    }
 }

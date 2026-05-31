@@ -1,7 +1,5 @@
 package com.wuxianggujun.tinaide.ai.config
 
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.config.ai.AiAccessMode
 import com.wuxianggujun.tinaide.core.config.ai.AiConfig
@@ -39,20 +37,6 @@ class AiPreferencesTest {
         assertThat(rawPrefs().getString("access_mode", null))
             .isEqualTo(AiAccessMode.CUSTOM_BYOK.name)
         assertThat(rawPrefs().contains("active_channel_id")).isFalse()
-    }
-
-    @Test
-    fun `legacy api key migration clears encrypted key and persists byok mode`() {
-        encryptedPrefs().edit()
-            .putString("api_key", "legacy-secret")
-            .commit()
-
-        val preferences = AiPreferences(context)
-
-        assertThat(preferences.getCurrentConfig().accessMode).isEqualTo(AiAccessMode.CUSTOM_BYOK)
-        assertThat(encryptedPrefs().getString("api_key", null)).isNull()
-        assertThat(rawPrefs().getString("access_mode", null))
-            .isEqualTo(AiAccessMode.CUSTOM_BYOK.name)
     }
 
     @Test
@@ -108,21 +92,7 @@ class AiPreferencesTest {
 
     private fun rawPrefs() = context.getSharedPreferences("ai_config_prefs", android.content.Context.MODE_PRIVATE)
 
-    private fun encryptedPrefs() = EncryptedSharedPreferences.create(
-        context,
-        "ai_secure_prefs",
-        MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build(),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
-
     private fun clearPrefs() {
         rawPrefs().edit().clear().commit()
-        context.getSharedPreferences("ai_secure_prefs", android.content.Context.MODE_PRIVATE)
-            .edit()
-            .clear()
-            .commit()
     }
 }

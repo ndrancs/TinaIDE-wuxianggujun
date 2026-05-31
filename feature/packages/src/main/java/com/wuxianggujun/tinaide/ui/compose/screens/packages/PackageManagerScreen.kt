@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -86,7 +84,7 @@ fun PackageManagerScreen(
                             Icon(Icons.Default.SelectAll, contentDescription = stringResource(Strings.pkg_manager_select))
                         }
                         IconButton(onClick = viewModel::clearSelection) {
-                            Icon(Icons.Default.Deselect, contentDescription = stringResource(Strings.pkg_history_clear_btn))
+                            Icon(Icons.Default.Deselect, contentDescription = stringResource(Strings.btn_deselect_all))
                         }
                     }
                 )

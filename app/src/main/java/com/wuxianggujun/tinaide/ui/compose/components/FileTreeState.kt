@@ -178,10 +178,6 @@ class FileTreeState(
         }
     }
 
-    suspend fun handleFileChange(file: File, changeKind: FileChangeKind) {
-        handleFileChanges(listOf(PendingFileChange(file.absolutePath, changeKind)))
-    }
-
     suspend fun handleFileChanges(changes: List<PendingFileChange>) {
         if (changes.isEmpty()) return
 

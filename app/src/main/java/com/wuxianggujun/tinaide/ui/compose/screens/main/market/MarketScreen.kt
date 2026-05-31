@@ -85,6 +85,7 @@ import com.wuxianggujun.tinaide.ui.compose.components.TinaPullToRefreshBox
 import com.wuxianggujun.tinaide.ui.compose.components.TinaTextButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
 import com.wuxianggujun.tinaide.ui.compose.components.tinaBackAction
+import java.util.Locale
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -252,7 +253,7 @@ private fun PluginsMarketContent(
     onRefresh: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(0) }
+    var selectedCategory by remember { mutableIntStateOf(0) }
     val categories = listOf(
         stringResource(Strings.market_category_all),
         stringResource(Strings.market_category_theme),
@@ -651,7 +652,7 @@ private fun PluginDetailScreen(
                                 )
                                 Spacer(Modifier.height(4.dp))
                                 Text(
-                                    String.format("%.1f", plugin.ratingAvg),
+                                    String.format(Locale.ROOT, "%.1f", plugin.ratingAvg),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold
                                 )

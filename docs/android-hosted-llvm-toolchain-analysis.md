@@ -271,23 +271,20 @@ TINA_EXEC__PROC_SELF_EXE
 - 保留 Ninja patcher 作为故障兜底，不作为主路径。
 - 把 try_compile cache hints 归档为明确兼容策略，限定触发条件。
 
-### P1：patched 与 upstream-exechook 命名容易误导
+### P1：历史双包实验口径已收敛
 
-现有双包方案里，`upstream-exechook` 已经不是 100% upstream，因为仍可能包含：
-
-- `Path.inc` 自定位修复
-- `Program.inc` execwrap
-- 小范围 Android 兼容修复
+当前仓库里的内置工具链资产已经不再保留 `upstream-exechook` 包位。
+arm64 只保留 `patched` v0.2.4，x86_64 仍是单包资产。
 
 风险：
 
-- 后续维护者误以为它是纯上游对照包。
-- 回归测试时把“带小修实验包”当作“无补丁基线”。
+- 继续保留旧双包实验日志会让维护者误以为仓库仍有 `patched` / `upstream-exechook` 双包矩阵。
+- 旧热补丁待办已经无法直接对应当前资产布局，继续引用会干扰后续 toolchain 排障。
 
 建议：
 
-- 文档口径继续明确：`upstream-exechook` 是历史包位名，不表示零补丁。
-- 如果后续 UI 允许，可改名为 `minimal-patched` 或 `exechook-minimal`。
+- 后续若重新引入第二包，必须重新写设计文档并同步更新资产 spec。
+- 当前文档只保留执行链路分析，不再维护旧双包实验日志。
 
 ### P1：构建脚本承担过多职责
 
@@ -412,7 +409,6 @@ PRoot 内部 Linux 工具         PRoot guest env      无
 相关文档：
 
 - `docs/clang-android-exec-fix.md`
-- `docs/native-toolchain-dual-package-experiment.md`
 - `docs/toolchain-build-guide.md`
 
 ## 外部参考

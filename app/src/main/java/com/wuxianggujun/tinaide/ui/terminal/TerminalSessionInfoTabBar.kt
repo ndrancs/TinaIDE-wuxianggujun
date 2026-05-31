@@ -19,10 +19,10 @@ fun TerminalSessionInfoTabBar(
     activeSessionId: String?,
     onTabClick: (String) -> Unit,
     onTabClose: (String) -> Unit,
-    onTabRename: ((String, String) -> Unit)? = null,
     onNewTab: () -> Unit,
+    modifier: Modifier = Modifier,
+    onTabRename: ((String, String) -> Unit)? = null,
     onNewTabLongClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
 ) {
     // 转换 TerminalSessionInfo 到 TerminalSessionState
     val sessionStates = sessions.map { info ->

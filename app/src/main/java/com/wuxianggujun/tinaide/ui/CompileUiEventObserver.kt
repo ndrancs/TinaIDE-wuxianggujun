@@ -6,7 +6,6 @@ import com.wuxianggujun.tinaide.core.compile.RunConfiguration
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.terminal.TerminalBackend
-import com.wuxianggujun.tinaide.ui.compose.components.FileTreeState
 import com.wuxianggujun.tinaide.ui.runtime.SdlRuntimeLibraryStager
 import com.wuxianggujun.tinaide.ui.sdl.ExternalSdlActivity
 import com.wuxianggujun.tinaide.ui.sdl.SdlRuntimeResolver
@@ -54,7 +53,6 @@ class CompileUiEventObserver(
         }
     }
 }
-
 class LambdaCompileToastPresenter(
     private val onSuccess: (String) -> Unit,
     private val onError: (String) -> Unit,
@@ -68,7 +66,6 @@ class LambdaCompileToastPresenter(
         }
     }
 }
-
 class ContextCompileTerminalLauncher(
     private val context: Context,
     private val activityStarter: (Intent) -> Unit = { intent -> context.startActivity(intent) },
@@ -87,7 +84,6 @@ class ContextCompileTerminalLauncher(
         activityStarter(intent)
     }
 }
-
 class ContextCompileSdlLauncher(
     private val context: Context,
     private val runConfigurationProvider: () -> RunConfiguration,
@@ -171,14 +167,5 @@ class ContextCompileSdlLauncher(
                     }
             }
         }
-    }
-}
-
-class FileTreeStateCompileProjectTreeRevealer(
-    private val fileTreeStateProvider: () -> FileTreeState?,
-) : CompileUiEventObserver.ProjectTreeRevealer {
-    override suspend fun reveal(file: File, selectTarget: Boolean) {
-        val state = fileTreeStateProvider() ?: return
-        state.reveal(file, selectTarget = selectTarget)
     }
 }

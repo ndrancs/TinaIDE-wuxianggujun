@@ -7,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -18,8 +17,6 @@ import com.wuxianggujun.tinaide.core.i18n.Strings
  *
  * 顶部栏类型：
  * - TinaTopBar: 标准顶部栏
- * - TinaCenterAlignedTopBar: 居中标题顶部栏
- * - TinaLargeTopBar: 大标题顶部栏
  *
  * 设计规范：
  * - 高度：56dp（系统默认）
@@ -126,144 +123,4 @@ fun TinaTopBar(
             containerColor = containerColor
         )
     )
-}
-
-/**
- * 居中标题顶部栏
- *
- * @param title 标题文本
- * @param modifier Modifier
- * @param onNavigateBack 返回按钮点击回调
- * @param navigationIcon 自定义导航图标
- * @param actions 右侧操作按钮
- * @param containerColor 背景色
- * @param titleContentColor 标题颜色
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TinaCenterAlignedTopBar(
-    title: String,
-    modifier: Modifier = Modifier,
-    onNavigateBack: (() -> Unit)? = null,
-    navigationIcon: @Composable (() -> Unit)? = null,
-    actions: @Composable RowScope.() -> Unit = {},
-    containerColor: Color = MaterialTheme.colorScheme.surface,
-    titleContentColor: Color = MaterialTheme.colorScheme.onSurface
-) {
-    CenterAlignedTopAppBar(
-        title = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        modifier = modifier,
-        navigationIcon = {
-            when {
-                navigationIcon != null -> navigationIcon()
-                onNavigateBack != null -> {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Strings.content_desc_navigate_back)
-                        )
-                    }
-                }
-            }
-        },
-        actions = actions,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            titleContentColor = titleContentColor,
-            navigationIconContentColor = titleContentColor,
-            actionIconContentColor = titleContentColor
-        )
-    )
-}
-
-/**
- * 大标题顶部栏（可折叠）
- *
- * @param title 标题文本
- * @param modifier Modifier
- * @param onNavigateBack 返回按钮点击回调
- * @param navigationIcon 自定义导航图标
- * @param actions 右侧操作按钮
- * @param scrollBehavior 滚动行为
- * @param containerColor 背景色
- * @param titleContentColor 标题颜色
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TinaLargeTopBar(
-    title: String,
-    modifier: Modifier = Modifier,
-    onNavigateBack: (() -> Unit)? = null,
-    navigationIcon: @Composable (() -> Unit)? = null,
-    actions: @Composable RowScope.() -> Unit = {},
-    scrollBehavior: TopAppBarScrollBehavior? = null,
-    containerColor: Color = MaterialTheme.colorScheme.surface,
-    titleContentColor: Color = MaterialTheme.colorScheme.onSurface
-) {
-    LargeTopAppBar(
-        title = {
-            Text(
-                text = title,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        modifier = modifier,
-        navigationIcon = {
-            when {
-                navigationIcon != null -> navigationIcon()
-                onNavigateBack != null -> {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Strings.content_desc_navigate_back)
-                        )
-                    }
-                }
-            }
-        },
-        actions = actions,
-        scrollBehavior = scrollBehavior,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = containerColor,
-            titleContentColor = titleContentColor,
-            navigationIconContentColor = titleContentColor,
-            actionIconContentColor = titleContentColor
-        )
-    )
-}
-
-/**
- * 顶部栏操作按钮
- *
- * @param icon 图标
- * @param onClick 点击回调
- * @param contentDescription 无障碍描述
- * @param enabled 是否启用
- */
-@Composable
-fun TinaTopBarAction(
-    icon: ImageVector,
-    onClick: () -> Unit,
-    contentDescription: String? = null,
-    enabled: Boolean = true
-) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription
-        )
-    }
 }

@@ -76,21 +76,4 @@ class ConversationTurnTest {
         assertThat(partial.isAllToolsCompleted()).isFalse()
         assertThat(complete.isAllToolsCompleted()).isTrue()
     }
-
-    @Test
-    fun `conversation metadata stores title mode and timestamps`() {
-        val metadata = ConversationMetadata(
-            id = "conversation-1",
-            title = "Chat",
-            toolExecutionMode = ToolExecutionMode.MANUAL,
-            createdAt = 100L,
-            updatedAt = 200L,
-        )
-
-        assertThat(metadata.id).isEqualTo("conversation-1")
-        assertThat(metadata.title).isEqualTo("Chat")
-        assertThat(metadata.toolExecutionMode).isEqualTo(ToolExecutionMode.MANUAL)
-        assertThat(metadata.createdAt).isEqualTo(100L)
-        assertThat(metadata.updatedAt).isEqualTo(200L)
-    }
 }

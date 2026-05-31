@@ -33,7 +33,6 @@ import com.wuxianggujun.tinaide.ui.createMainActivityNavigationHost
 import com.wuxianggujun.tinaide.ui.createMainActivityWorkspaceHost
 import com.wuxianggujun.tinaide.ui.installMainActivityCleanup
 import com.wuxianggujun.tinaide.ui.installMainActivityStartup
-import com.wuxianggujun.tinaide.ui.reportMainActivityConfigurationMigrationNotices
 import java.io.File
 import org.koin.androidx.viewmodel.ext.android.viewModel as koinViewModel
 import org.koin.core.component.KoinComponent
@@ -157,14 +156,6 @@ class MainActivity :
                 editorActionBridge = editorActionBridge,
                 dialogCoordinator = currentWorkspaceHost.dialogCoordinator,
                 workspaceActions = currentWorkspaceHost.workspaceActions,
-                onProjectLoaded = { projectRootPath ->
-                    reportMainActivityConfigurationMigrationNotices(
-                        context = this,
-                        projectRootPath = projectRootPath,
-                        outputManager = outputManager,
-                        toastInfo = ::toastInfo,
-                    )
-                },
                 onOpenWithExternalApp = ::openWithExternalApp,
                 onShareFileOrDirectory = ::shareFileOrDirectory,
             )

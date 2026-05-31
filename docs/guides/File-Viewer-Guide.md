@@ -1,8 +1,8 @@
 # 文件预览指南
 
-> 更新日期：2026-01-18
+> 更新日期：2026-05-30
 
-TinaIDE 内置了一组“文件预览器”，用于在不打开编辑器的情况下快速查看常见文件格式（例如 Markdown、JSON、图片与二进制文件）。
+TinaIDE 的文件打开逻辑由编辑器容器统一分发：普通文本、源码、Markdown 与 JSON 默认进入代码编辑器；大文本、图片与二进制文件会进入只读查看器，避免把不适合编辑的内容直接加载到代码编辑器。
 
 ## 如何打开
 
@@ -13,19 +13,13 @@ TinaIDE 内置了一组“文件预览器”，用于在不打开编辑器的情
 
 如果你希望交给系统应用处理，可以在文件树的上下文菜单中选择“用其他应用打开/分享”。
 
-## 支持的预览类型
+## 支持的查看类型
 
-### Markdown
+### 大文本
 
-- 用途：快速阅读 `README.md`、说明文档等。
-- 常见扩展名：`.md`
-- 相关实现：`feature/viewer/src/main/java/.../ui/compose/viewer/MarkdownViewerScreen.kt`
-
-### JSON
-
-- 用途：格式化查看 JSON 内容。
-- 常见扩展名：`.json`
-- 相关实现：`feature/viewer/src/main/java/.../ui/compose/viewer/JsonViewerScreen.kt`
+- 用途：分段查看超大文本文件，减少一次性加载造成的卡顿。
+- 常见扩展名：任意文本文件，按文件大小自动判定。
+- 相关实现：`feature/viewer/src/main/java/.../ui/compose/viewer/LargeTextViewerScreen.kt`
 
 ### 图片
 
@@ -41,5 +35,6 @@ TinaIDE 内置了一组“文件预览器”，用于在不打开编辑器的情
 
 ## 注意事项
 
-- 大文件预览可能较慢；建议优先在编辑器中按需打开与搜索。
+- Markdown 与 JSON 不再维护独立文件查看器页面；它们按可编辑文本进入代码编辑器。
+- `MarkdownViewer.kt` 是复用型 Markdown 渲染组件，用于帮助页、公告、Hover 等只读内容，不是文件树入口。
 - 二进制文件默认只适合“查看”，不建议直接编辑。

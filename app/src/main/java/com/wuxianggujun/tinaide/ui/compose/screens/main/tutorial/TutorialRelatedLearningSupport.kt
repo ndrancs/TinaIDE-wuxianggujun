@@ -24,13 +24,13 @@ internal data class TutorialArticlePresentation(
 
 internal object TutorialRelatedLearningSupport {
 
-    private val relatedSectionTitles = setOf(
-        "相关文档",
-        "建议下一步",
-        "相关阅读",
-        "相关教程",
-        "继续学习",
-        "下一步",
+    val defaultRelatedSectionTitles = setOf(
+        "\u76f8\u5173\u6587\u6863",
+        "\u5efa\u8bae\u4e0b\u4e00\u6b65",
+        "\u76f8\u5173\u9605\u8bfb",
+        "\u76f8\u5173\u6559\u7a0b",
+        "\u7ee7\u7eed\u5b66\u4e60",
+        "\u4e0b\u4e00\u6b65",
         "related docs",
         "related documents",
         "related tutorials",
@@ -47,8 +47,9 @@ internal object TutorialRelatedLearningSupport {
         currentTutorialId: String,
         resolveTutorial: (String) -> Tutorial?,
         resolveHelpDocument: (String) -> HelpDocument?,
+        relatedSectionTitles: Set<String> = defaultRelatedSectionTitles,
     ): TutorialArticlePresentation {
-        val extraction = extractRelatedSections(markdown)
+        val extraction = extractRelatedSections(markdown, relatedSectionTitles)
         val seenKeys = mutableSetOf<String>()
         val relatedDestinations = extraction.links.mapNotNull { link ->
             val target = link.target
@@ -104,7 +105,10 @@ internal object TutorialRelatedLearningSupport {
         )
     }
 
-    private fun extractRelatedSections(markdown: String): ExtractedRelatedSections {
+    private fun extractRelatedSections(
+        markdown: String,
+        relatedSectionTitles: Set<String>
+    ): ExtractedRelatedSections {
         val lines = markdown.lines()
         val remainingLines = mutableListOf<String>()
         val links = mutableListOf<RelatedLink>()
@@ -112,7 +116,7 @@ internal object TutorialRelatedLearningSupport {
 
         while (index < lines.size) {
             val heading = parseHeading(lines[index])
-            if (heading != null && isRelatedSectionTitle(heading.title)) {
+            if (heading != null && isRelatedSectionTitle(heading.title, relatedSectionTitles)) {
                 while (remainingLines.isNotEmpty() && remainingLines.last().isBlank()) {
                     remainingLines.removeAt(remainingLines.lastIndex)
                 }
@@ -162,9 +166,12 @@ internal object TutorialRelatedLearningSupport {
         )
     }
 
-    private fun isRelatedSectionTitle(title: String): Boolean = normalizeSectionTitle(title) in relatedSectionTitles
+    private fun isRelatedSectionTitle(
+        title: String,
+        relatedSectionTitles: Set<String>
+    ): Boolean = normalizeSectionTitle(title) in relatedSectionTitles
 
-    private fun normalizeSectionTitle(title: String): String = title
+    fun normalizeSectionTitle(title: String): String = title
         .trim()
         .removeSuffix(":")
         .removeSuffix("：")

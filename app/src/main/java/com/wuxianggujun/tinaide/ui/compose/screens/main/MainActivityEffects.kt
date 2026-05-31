@@ -32,7 +32,7 @@ internal fun rememberMainActivityAiChatViewModel(): AiChatViewModel = remember {
 }
 
 @Composable
-internal fun MainActivityHostEffects(
+internal fun mainActivityHostEffects(
     context: Context,
     lifecycleScope: CoroutineScope,
     projectContext: IProjectContext,
@@ -46,7 +46,6 @@ internal fun MainActivityHostEffects(
     editorManager: IEditorManager,
     outputManager: IOutputManager,
     bottomPanelController: BottomPanelController,
-    onProjectLoaded: (String) -> Unit,
 ): AiChatViewModel {
     val currentAiChatViewModel = rememberMainActivityAiChatViewModel()
 
@@ -69,7 +68,6 @@ internal fun MainActivityHostEffects(
         fileTreeState = fileTreeState,
         gitViewModel = gitViewModel,
         uiScope = uiScope,
-        onProjectLoaded = onProjectLoaded,
     )
 
     return currentAiChatViewModel
@@ -124,14 +122,12 @@ internal fun MainActivityProjectEffects(
     fileTreeState: FileTreeState,
     gitViewModel: GitViewModel,
     uiScope: CoroutineScope,
-    onProjectLoaded: (String) -> Unit,
 ) {
     val projectRoot = projectContext.getCurrentProject()?.rootPath
     LaunchedEffect(projectRoot) {
         val rootPath = projectRoot ?: return@LaunchedEffect
         fileTreeState.loadRoot(rootPath)
         gitViewModel.setProjectPath(rootPath)
-        onProjectLoaded(rootPath)
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current

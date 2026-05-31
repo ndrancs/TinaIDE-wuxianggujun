@@ -17,10 +17,6 @@ import java.io.File
  * - sysroot `libc++_shared.so` 存在时的 `LD_LIBRARY_PATH` 注入
  * - 产物 staged copy 到 app 私有 run-bin(规避公有目录 noexec)
  * - 运行结束后"按 Enter 键关闭"交互(靠 OSC 777;tina-run-end 通知 Activity)
- *
- * 历史:这段逻辑原来以私有方法的形式嵌在 `CompileProjectUseCase.buildTerminalCommand`;
- * Phase C.1 抽成独立 class 以便新 Facade / UI 层(CompileActionsHelper) 直接复用,
- * 同时保留旧 UseCase 的旧路径继续工作到 Phase D 删除为止。
  */
 class TerminalCommandBuilder(context: Context) {
 
@@ -33,7 +29,7 @@ class TerminalCommandBuilder(context: Context) {
      * @param outputPath 产物绝对路径,会被 staged 到 run-bin 再启动
      * @param args 命令行参数(已经过变量替换)
      * @param projectRoot 项目根目录,用于解析已安装包的 runtime lib 目录
-     * @param extraEnvironment 额外注入到运行 shell 的环境变量（仅终端/LOG 启动路径使用）
+     * @param extraEnvironment 额外注入到运行 shell 的环境变量
      */
     fun build(
         workingDir: String,

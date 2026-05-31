@@ -30,10 +30,9 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size
 # 源文件列表
 # ============================================================================
 #
-# PRoot 迁移后，编译/链接/运行功能已移至 PRoot 容器化执行。
-# 默认从 external/termux-proot 直接编译 PRoot；需要预编译产物时可关闭 TINA_BUILD_PROOT_FROM_SOURCE。
-# Tree-sitter 已完全迁移到 external/tina-android-tree-sitter 模块。
-# 此 native 库仅保留 Utils 工具函数。
+# PRoot 默认从 external/termux-proot 直接编译；需要预编译产物时可关闭 TINA_BUILD_PROOT_FROM_SOURCE。
+# Tree-sitter 由 external/tina-android-tree-sitter 模块提供。
+# 此 native 库只包含 App 侧 JNI 工具函数。
 # ============================================================================
 
 if(TINA_BUILD_PROOT_FROM_SOURCE)

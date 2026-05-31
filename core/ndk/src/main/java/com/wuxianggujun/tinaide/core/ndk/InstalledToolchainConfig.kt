@@ -45,7 +45,6 @@ class ToolchainConfigManager(private val context: Context) {
         private const val TAG = "ToolchainConfigManager"
         private const val CONFIG_FILE = "toolchain-config.json"
         private const val TOOLCHAINS_DIR = "toolchains"
-        private const val ACTIVE_LINK = "tina-toolchain"
     }
 
     private val json = JsonSerializer.pretty
@@ -55,9 +54,6 @@ class ToolchainConfigManager(private val context: Context) {
 
     private val toolchainsDir: File
         get() = File(context.filesDir, TOOLCHAINS_DIR)
-
-    private val activeLinkFile: File
-        get() = File(context.filesDir, ACTIVE_LINK)
 
     /**
      * 读取配置
@@ -123,9 +119,6 @@ class ToolchainConfigManager(private val context: Context) {
             // 更新配置
             val newConfig = config.copy(activeToolchain = id)
             saveConfig(newConfig)
-
-            // 更新符号链接（如果支持）或复制目录
-            updateActiveLink(toolchainDir)
 
             Timber.tag(TAG).i("Switched to toolchain: $id")
             Result.success(Unit)
@@ -195,16 +188,4 @@ class ToolchainConfigManager(private val context: Context) {
         }
     }
 
-    /**
-     * 更新激活工具链的链接
-     */
-    private fun updateActiveLink(targetDir: File) {
-        try {
-            // Android 不支持符号链接，所以我们使用配置文件来记录
-            // getActiveToolchainDir() 会读取配置返回正确的目录
-            Timber.tag(TAG).d("Active toolchain updated to: ${targetDir.absolutePath}")
-        } catch (e: Exception) {
-            Timber.tag(TAG).w(e, "Failed to update active link")
-        }
-    }
 }

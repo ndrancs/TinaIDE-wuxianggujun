@@ -8,15 +8,12 @@ import com.wuxianggujun.tinaide.core.compile.event.BuildEventEmitter
 import java.io.File
 
 /**
- * 新构建策略接口(P2 重写版)。
+ * 构建策略接口。
  *
- * 与 [com.wuxianggujun.tinaide.core.compile.BuildStrategy] 的差异:
  * - 引入 [describeOutput]:纯查询(允许只读 IO),告诉 Planner 产物长什么样,不得 spawn 构建
  * - [execute] 返回 [ExecutionOutcome],Success 携带完整 [com.wuxianggujun.tinaide.core.compile.artifact.Artifact]
  * - 事件经由 [BuildEventEmitter] 下发,而不是回调 `onProgress`
  * - [clean] 带 reconfigure 开关(CMake 用)
- *
- * 旧接口在 P4/P5 调用面迁移完成后删除,本接口替换。
  */
 interface BuildStrategy {
 

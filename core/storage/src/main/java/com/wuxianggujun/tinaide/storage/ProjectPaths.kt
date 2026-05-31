@@ -167,7 +167,7 @@ object ProjectPaths {
      * 典型路径：/data/data/<package>/files/ubuntu
      * 特性：
      * - App 私有存储
-     * - 可独立重置/迁移
+     * - 可独立重置
      * - 卸载时自动清理
      */
     fun getUbuntuRoot(context: Context): File {

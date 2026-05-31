@@ -12,7 +12,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:common"))
+    api(project(":core:common"))
     implementation(project(":core:i18n"))
     implementation(project(":core:lsp"))
     implementation(project(":core:network"))

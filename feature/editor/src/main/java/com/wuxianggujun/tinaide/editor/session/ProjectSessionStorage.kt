@@ -25,11 +25,6 @@ data class ProjectSessionSnapshot(
     val files: List<ProjectSessionFileSnapshot> = emptyList(),
     val updatedAt: Long = 0L
 ) {
-    fun activeFileSnapshot(): ProjectSessionFileSnapshot? {
-        val normalizedActive = activeFile?.takeIf { it.isNotBlank() }
-        return files.firstOrNull { it.path == normalizedActive }
-    }
-
     fun normalized(currentTime: Long = System.currentTimeMillis()): ProjectSessionSnapshot {
         val sanitizedFiles = files.filter { it.path.isNotBlank() }
         val sanitizedActive = activeFile?.takeIf { it.isNotBlank() }

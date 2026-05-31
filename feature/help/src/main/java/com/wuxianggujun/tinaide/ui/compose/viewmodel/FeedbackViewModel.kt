@@ -2,7 +2,6 @@ package com.wuxianggujun.tinaide.ui.compose.viewmodel
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.wuxianggujun.tinaide.data.model.FeedbackCategory
 import com.wuxianggujun.tinaide.data.repository.FeedbackRepository

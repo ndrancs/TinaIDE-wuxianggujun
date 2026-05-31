@@ -11,7 +11,6 @@ internal fun rememberMainActivityWorkspaceCallbacksHost(
     mainScreenState: MainActivityMainScreenState,
     workspaceActions: MainActivityWorkspaceActionsDelegate,
     dialogCoordinator: MainActivityDialogCoordinator,
-    onProjectLoaded: (String) -> Unit,
     toastInfo: (String) -> Unit,
     toastError: (String) -> Unit,
     onOpenWithExternalApp: (File) -> Unit,
@@ -19,7 +18,6 @@ internal fun rememberMainActivityWorkspaceCallbacksHost(
     onPersistRunConfigManager: (RunConfigurationManager) -> Unit,
     onGitRefresh: () -> Unit,
 ): MainActivityWorkspaceCallbacks = rememberMainActivityWorkspaceCallbacks(
-    onProjectLoaded = onProjectLoaded,
     onOpenSettings = workspaceActions::openSettings,
     toastInfo = toastInfo,
     toastError = toastError,

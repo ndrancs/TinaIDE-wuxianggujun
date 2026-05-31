@@ -1,39 +1,24 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!--
-        TinaIDE 主题定义
-
-        使用 Material 3 DayNight 主题，支持浅色/深色模式自动切换
-        颜色引用使用语义化名称，实际颜色值定义在：
-        - values/colors.xml（浅色模式）
-        - values-night/colors.xml（深色模式）
-    -->
-
-    <!-- Base application theme - DayNight for automatic theme switching -->
+<resources>
     <style name="Base.Theme.TinaIDE" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color -->
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorPrimaryVariant">@color/md_theme_primaryContainer</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
         <item name="colorOnPrimaryContainer">@color/md_theme_onPrimaryContainer</item>
 
-        <!-- Secondary brand color -->
         <item name="colorSecondary">@color/md_theme_secondary</item>
         <item name="colorOnSecondary">@color/md_theme_onSecondary</item>
         <item name="colorSecondaryContainer">@color/md_theme_secondaryContainer</item>
         <item name="colorOnSecondaryContainer">@color/md_theme_onSecondaryContainer</item>
 
-        <!-- Tertiary color -->
         <item name="colorTertiary">@color/md_theme_tertiary</item>
         <item name="colorOnTertiary">@color/md_theme_onTertiary</item>
         <item name="colorTertiaryContainer">@color/md_theme_tertiaryContainer</item>
         <item name="colorOnTertiaryContainer">@color/md_theme_onTertiaryContainer</item>
 
-        <!-- Background colors -->
         <item name="android:colorBackground">@color/md_theme_background</item>
         <item name="colorOnBackground">@color/md_theme_onBackground</item>
 
-        <!-- Surface colors -->
         <item name="colorSurface">@color/md_theme_surface</item>
         <item name="colorOnSurface">@color/md_theme_onSurface</item>
         <item name="colorSurfaceVariant">@color/md_theme_surfaceVariant</item>
@@ -44,144 +29,41 @@
         <item name="colorSurfaceContainerLow">@color/md_theme_surfaceContainerLow</item>
         <item name="colorSurfaceContainerLowest">@color/md_theme_surfaceContainerLowest</item>
 
-        <!-- Error color -->
         <item name="colorError">@color/md_theme_error</item>
         <item name="colorOnError">@color/md_theme_onError</item>
         <item name="colorErrorContainer">@color/md_theme_errorContainer</item>
         <item name="colorOnErrorContainer">@color/md_theme_onErrorContainer</item>
 
-        <!-- Outline -->
         <item name="colorOutline">@color/md_theme_outline</item>
         <item name="colorOutlineVariant">@color/md_theme_outlineVariant</item>
 
-        <!-- Status bar and navigation bar -->
         <item name="android:statusBarColor">@color/statusBarColor</item>
         <item name="android:navigationBarColor">@color/navigationBarColor</item>
-        <!--
-            明确指定系统栏图标颜色（部分机型/ROM 在 DayNight + 自定义 statusBarColor 场景下会出现深色模式仍为黑色图标）
-            - true  => 深色图标（适配浅色系统栏）
-            - false => 浅色图标（适配深色系统栏）
-            由 bool 资源在 values / values-night 中分别提供。
-        -->
         <item name="android:windowLightStatusBar">@bool/window_light_status_bar</item>
         <item name="android:windowLightNavigationBar">@bool/window_light_navigation_bar</item>
-
-        <!-- Window background -->
         <item name="android:windowBackground">@color/md_theme_background</item>
 
-        <!-- Toolbar 图标颜色 -->
         <item name="colorControlNormal">@color/md_theme_onSurface</item>
-
-        <!-- 控制光标、选择手柄等颜色 -->
         <item name="colorControlActivated">@color/md_theme_primary</item>
         <item name="android:textColorHighlight">@color/textHighlight</item>
         <item name="android:textCursorDrawable">@drawable/cursor_drawable</item>
-
-        <!-- 文本选择句柄颜色 -->
         <item name="android:textSelectHandle">@drawable/text_select_handle_middle</item>
         <item name="android:textSelectHandleLeft">@drawable/text_select_handle_left</item>
         <item name="android:textSelectHandleRight">@drawable/text_select_handle_right</item>
 
-        <!-- TextInputLayout 样式 -->
         <item name="textInputStyle">@style/Widget.App.TextInputLayout</item>
-
-        <!-- EditText 统一样式 -->
         <item name="editTextStyle">@style/Widget.App.EditText</item>
         <item name="android:editTextStyle">@style/Widget.App.EditText</item>
     </style>
 
-    <style name="Theme.TinaIDE" parent="Base.Theme.TinaIDE">
-        <!-- 让 Preference 使用 Material 风格覆盖 -->
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay.Tina</item>
-    </style>
+    <style name="Theme.TinaIDE" parent="Base.Theme.TinaIDE" />
 
-    <!--
-        启动页主题（SplashScreen API）
-        - 通过 AndroidX SplashScreen 统一兼容 Android 12 以下的启动体验
-        - postSplashScreenTheme 会在启动页退出后自动切回正常主题
-        
-        注意：Android 12+ SplashScreen 会将图标裁剪为圆形，只显示中心 2/3 区域
-        - windowSplashScreenAnimatedIcon: 使用专门的 splash 图标（内容在安全区域内）
-        - windowSplashScreenIconBackgroundColor: 图标背景色（Android 12+）
-     -->
     <style name="Theme.TinaIDE.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/md_theme_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.TinaIDE</item>
     </style>
 
-    <!-- Material Design 风格的 Preference 主题覆盖 -->
-    <style name="PreferenceThemeOverlay.Tina" parent="@style/PreferenceThemeOverlay.v14.Material">
-        <!-- 标题 / 摘要使用主题的前景色 -->
-        <item name="preferenceCategoryStyle">@style/Preference.Category.Tina</item>
-        <item name="preferenceStyle">@style/Preference.Tina</item>
-        <item name="switchPreferenceCompatStyle">@style/Preference.SwitchPreferenceCompat.Tina</item>
-    </style>
-
-    <!-- SwitchPreferenceCompat 样式 -->
-    <style name="Preference.SwitchPreferenceCompat.Tina" parent="@style/Preference.SwitchPreferenceCompat.Material">
-        <item name="android:widgetLayout">@layout/preference_widget_material_switch</item>
-    </style>
-
-    <style name="Preference.Category.Tina" parent="@style/Preference.Category.Material">
-        <item name="android:textAllCaps">false</item>
-        <item name="android:textColor">?colorOnSurface</item>
-    </style>
-
-    <style name="Preference.Tina" parent="@style/Preference.Material">
-        <item name="android:textColor">?colorOnSurface</item>
-        <item name="android:singleLineTitle">false</item>
-    </style>
-
-    <!-- Material 3 风格的 Toolbar 弹出菜单 -->
-    <style name="ThemeOverlay.Tina.Toolbar" parent="ThemeOverlay.Material3.ActionBar">
-        <item name="popupMenuStyle">@style/Widget.Tina.PopupMenu</item>
-        <item name="android:popupMenuStyle">@style/Widget.Tina.PopupMenu</item>
-    </style>
-
-    <style name="Widget.Tina.PopupMenu" parent="Widget.Material3.PopupMenu">
-        <item name="android:popupBackground">?colorSurfaceContainer</item>
-    </style>
-
-    <style name="TextAppearance.Tina.PopupMenuItem" parent="TextAppearance.Material3.BodyLarge">
-        <item name="android:textColor">?colorOnSurface</item>
-    </style>
-
-    <!-- Material AlertDialog 主题 -->
-    <style name="ThemeOverlay.App.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorPrimary">@color/md_theme_primary</item>
-        <item name="colorSecondary">@color/md_theme_secondary</item>
-        <item name="colorSurface">@color/md_theme_surface</item>
-        <item name="colorOnSurface">@color/md_theme_onSurface</item>
-        <item name="android:background">@color/md_theme_surfaceContainerHigh</item>
-        <item name="colorControlActivated">@color/md_theme_primary</item>
-        <item name="android:textColorHighlight">@color/textHighlight</item>
-        <item name="android:textCursorDrawable">@drawable/cursor_drawable</item>
-        <!-- 文本选择句柄颜色 -->
-        <item name="android:textSelectHandle">@drawable/text_select_handle_middle</item>
-        <item name="android:textSelectHandleLeft">@drawable/text_select_handle_left</item>
-        <item name="android:textSelectHandleRight">@drawable/text_select_handle_right</item>
-        <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.App.Title.Text</item>
-        <item name="materialAlertDialogBodyTextStyle">@style/MaterialAlertDialog.App.Body.Text</item>
-        <item name="buttonBarPositiveButtonStyle">@style/Widget.App.Button</item>
-        <item name="buttonBarNegativeButtonStyle">@style/Widget.App.Button</item>
-    </style>
-
-    <style name="MaterialAlertDialog.App.Title.Text" parent="MaterialAlertDialog.Material3.Title.Text">
-        <item name="android:textColor">?colorOnSurface</item>
-        <item name="android:textSize">20sp</item>
-    </style>
-
-    <style name="MaterialAlertDialog.App.Body.Text" parent="MaterialAlertDialog.Material3.Body.Text">
-        <item name="android:textColor">?colorOnSurface</item>
-        <item name="android:textSize">14sp</item>
-    </style>
-
-    <style name="Widget.App.Button" parent="Widget.Material3.Button.TextButton.Dialog">
-        <item name="android:textColor">@color/md_theme_primary</item>
-    </style>
-
-    <!-- TextInputLayout 样式 -->
     <style name="Widget.App.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="boxStrokeColor">@color/md_theme_primary</item>
         <item name="boxStrokeWidth">2dp</item>
@@ -190,55 +72,6 @@
         <item name="errorTextColor">@color/md_theme_error</item>
     </style>
 
-    <!-- ========== 统一按钮样式 ========== -->
-
-    <!-- 主要操作按钮（填充样式） -->
-    <style name="Widget.App.Button.Primary" parent="Widget.Material3.Button">
-        <item name="backgroundTint">@color/md_theme_primary</item>
-        <item name="android:textColor">@color/md_theme_onPrimary</item>
-    </style>
-
-    <!-- 次要操作按钮（色调样式） -->
-    <style name="Widget.App.Button.Secondary" parent="Widget.Material3.Button.TonalButton">
-        <item name="backgroundTint">@color/buttonTonalBackground</item>
-        <item name="android:textColor">@color/md_theme_onSecondaryContainer</item>
-    </style>
-
-    <!-- 文本按钮（低强调） -->
-    <style name="Widget.App.Button.Text" parent="Widget.Material3.Button.TextButton">
-        <item name="android:textColor">@color/md_theme_primary</item>
-    </style>
-
-    <!-- 危险操作按钮 -->
-    <style name="Widget.App.Button.Danger" parent="Widget.Material3.Button">
-        <item name="backgroundTint">@color/md_theme_error</item>
-        <item name="android:textColor">@color/md_theme_onError</item>
-    </style>
-
-    <!-- 图标按钮 -->
-    <style name="Widget.App.Button.Icon" parent="Widget.Material3.Button.IconButton">
-        <item name="iconTint">@color/md_theme_onSurface</item>
-    </style>
-
-    <!-- ========== 统一输入框样式 ========== -->
-
-    <!--
-        统一的 TextInputEditText 样式（Material 3）
-        用于 TextInputLayout 内部的 EditText
-    -->
-    <style name="Widget.App.TextInputEditText" parent="Widget.Material3.TextInputEditText.OutlinedBox">
-        <item name="android:textColor">?colorOnSurface</item>
-        <item name="android:textColorHint">?colorOnSurfaceVariant</item>
-        <item name="android:textCursorDrawable">@drawable/cursor_drawable</item>
-        <item name="android:textSelectHandle">@drawable/text_select_handle_middle</item>
-        <item name="android:textSelectHandleLeft">@drawable/text_select_handle_left</item>
-        <item name="android:textSelectHandleRight">@drawable/text_select_handle_right</item>
-    </style>
-
-    <!--
-        统一的 EditText 样式（Material 3）
-        用于独立的 EditText 控件
-    -->
     <style name="Widget.App.EditText" parent="Widget.Material3.TextInputEditText.OutlinedBox">
         <item name="android:textColor">?colorOnSurface</item>
         <item name="android:textColorHint">?colorOnSurfaceVariant</item>
@@ -246,107 +79,5 @@
         <item name="android:textSelectHandle">@drawable/text_select_handle_middle</item>
         <item name="android:textSelectHandleLeft">@drawable/text_select_handle_left</item>
         <item name="android:textSelectHandleRight">@drawable/text_select_handle_right</item>
-    </style>
-
-    <!-- ========== TabLayout 样式 ========== -->
-
-    <!-- 自定义 TabLayout 样式，确保背景跟随主题 -->
-    <style name="Widget.App.TabLayout" parent="Widget.Material3.TabLayout">
-        <item name="android:background">@android:color/transparent</item>
-        <item name="tabBackground">@android:color/transparent</item>
-        <item name="backgroundTint">@null</item>
-        <item name="tabRippleColor">@null</item>
-    </style>
-
-    <!-- ========== 灰色主题定义 ========== -->
-    <!--
-        灰色主题 - 使用深灰色背景，比纯黑更柔和，减少视觉疲劳
-        不依赖 DayNight，直接使用固定的灰色配色
-    -->
-    <style name="Theme.TinaIDE.Gray" parent="Theme.Material3.Dark.NoActionBar">
-        <!-- Primary brand color - 青绿色 -->
-        <item name="colorPrimary">@color/gray_theme_primary</item>
-        <item name="colorPrimaryVariant">@color/gray_theme_primaryContainer</item>
-        <item name="colorOnPrimary">@color/gray_theme_onPrimary</item>
-        <item name="colorPrimaryContainer">@color/gray_theme_primaryContainer</item>
-        <item name="colorOnPrimaryContainer">@color/gray_theme_onPrimaryContainer</item>
-
-        <!-- Secondary brand color -->
-        <item name="colorSecondary">@color/gray_theme_secondary</item>
-        <item name="colorOnSecondary">@color/gray_theme_onSecondary</item>
-        <item name="colorSecondaryContainer">@color/gray_theme_secondaryContainer</item>
-        <item name="colorOnSecondaryContainer">@color/gray_theme_onSecondaryContainer</item>
-
-        <!-- Tertiary color -->
-        <item name="colorTertiary">@color/gray_theme_tertiary</item>
-        <item name="colorOnTertiary">@color/gray_theme_onTertiary</item>
-        <item name="colorTertiaryContainer">@color/gray_theme_tertiaryContainer</item>
-        <item name="colorOnTertiaryContainer">@color/gray_theme_onTertiaryContainer</item>
-
-        <!-- Background colors - 灰色背景核心 -->
-        <item name="android:colorBackground">@color/gray_theme_background</item>
-        <item name="colorOnBackground">@color/gray_theme_onBackground</item>
-
-        <!-- Surface colors -->
-        <item name="colorSurface">@color/gray_theme_surface</item>
-        <item name="colorOnSurface">@color/gray_theme_onSurface</item>
-        <item name="colorSurfaceVariant">@color/gray_theme_surfaceVariant</item>
-        <item name="colorOnSurfaceVariant">@color/gray_theme_onSurfaceVariant</item>
-        <item name="colorSurfaceContainer">@color/gray_theme_surfaceContainer</item>
-        <item name="colorSurfaceContainerHigh">@color/gray_theme_surfaceContainerHigh</item>
-        <item name="colorSurfaceContainerHighest">@color/gray_theme_surfaceContainerHighest</item>
-        <item name="colorSurfaceContainerLow">@color/gray_theme_surfaceContainerLow</item>
-        <item name="colorSurfaceContainerLowest">@color/gray_theme_surfaceContainerLowest</item>
-
-        <!-- Error color -->
-        <item name="colorError">@color/gray_theme_error</item>
-        <item name="colorOnError">@color/gray_theme_onError</item>
-        <item name="colorErrorContainer">@color/gray_theme_errorContainer</item>
-        <item name="colorOnErrorContainer">@color/gray_theme_onErrorContainer</item>
-
-        <!-- Outline -->
-        <item name="colorOutline">@color/gray_theme_outline</item>
-        <item name="colorOutlineVariant">@color/gray_theme_outlineVariant</item>
-
-        <!-- Status bar and navigation bar -->
-        <item name="android:statusBarColor">@color/gray_statusBarColor</item>
-        <item name="android:navigationBarColor">@color/gray_navigationBarColor</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
-
-        <!-- Window background -->
-        <item name="android:windowBackground">@color/gray_theme_background</item>
-
-        <!-- Toolbar 图标颜色 -->
-        <item name="colorControlNormal">@color/gray_theme_onSurface</item>
-
-        <!-- 控制光标、选择手柄等颜色 -->
-        <item name="colorControlActivated">@color/gray_theme_primary</item>
-        <item name="android:textColorHighlight">@color/gray_textHighlight</item>
-        <item name="android:textCursorDrawable">@drawable/cursor_drawable</item>
-
-        <!-- 文本选择句柄颜色 -->
-        <item name="android:textSelectHandle">@drawable/text_select_handle_middle</item>
-        <item name="android:textSelectHandleLeft">@drawable/text_select_handle_left</item>
-        <item name="android:textSelectHandleRight">@drawable/text_select_handle_right</item>
-
-        <!-- TextInputLayout 样式 -->
-        <item name="textInputStyle">@style/Widget.App.TextInputLayout.Gray</item>
-
-        <!-- EditText 统一样式 -->
-        <item name="editTextStyle">@style/Widget.App.EditText</item>
-        <item name="android:editTextStyle">@style/Widget.App.EditText</item>
-
-        <!-- 让 Preference 使用 Material 风格覆盖 -->
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay.Tina</item>
-    </style>
-
-    <!-- 灰色主题 TextInputLayout 样式 -->
-    <style name="Widget.App.TextInputLayout.Gray" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">@color/gray_theme_primary</item>
-        <item name="boxStrokeWidth">2dp</item>
-        <item name="hintTextColor">@color/gray_theme_primary</item>
-        <item name="android:textColorHint">@color/gray_theme_onSurfaceVariant</item>
-        <item name="errorTextColor">@color/gray_theme_error</item>
     </style>
 </resources>

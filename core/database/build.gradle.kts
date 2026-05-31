@@ -28,6 +28,4 @@ dependencies {
 
     // WorkManager（后台同步）
     implementation(libs.work.runtime)
-
-    // Gson（用于 JSON 序列化）
 }

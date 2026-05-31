@@ -32,16 +32,13 @@ import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 /**
- * 单文件构建策略(P2 重写版,Phase A 自给自足化)。
+ * 单文件构建策略。
  *
  * 设计要点:
  * - [describeOutput] 纯查询:只读 FS 预测产物路径与 kind,不 spawn 编译
  * - [execute] 自带完整 clang/gcc 驱动 + sysroot 校验 + 诊断追踪,
  *   结束后产出带 hash 的 [Artifact]
  * - 事件经 [BuildEventEmitter] 细粒度下发(CompileProgress 等)
- *
- * 历史:Phase A 之前通过 `legacyImpl = SingleFileBuildStrategy(...)` 组合调用,
- * 现在把编译实现内联进来,P5 删除旧 `SingleFileBuildStrategy.kt` 不再连带崩溃。
  */
 class SingleFileStrategy(
     context: Context,
@@ -361,7 +358,7 @@ class SingleFileStrategy(
         }
     }
 
-    // ---------- 编译 / 诊断助手 (P5 删除旧 SingleFileBuildStrategy 后此处为单一事实源) ----------
+    // ---------- 编译 / 诊断助手 ----------
 
     private suspend fun executeNativeCommand(
         command: List<String>,

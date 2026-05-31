@@ -29,6 +29,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+    </queries>
+
     <application
         android:name=".TinaApplication"
         android:allowNativeHeapPointerTagging="false"
@@ -42,7 +49,8 @@
         android:theme="@style/Theme.TinaIDE"
         android:largeHeap="true"
         android:networkSecurityConfig="@xml/network_security_config"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        tools:targetApi="r">
 
         <meta-data
             android:name="com.wuxianggujun.tinaide.BASE_VERSION_CODE"
@@ -75,35 +83,6 @@
             android:name=".settings.OpenSourceLicensesActivity"
             android:exported="false"
             android:label="@string/about_licenses_title"
-            android:parentActivityName=".settings.SettingsActivity" />
-        <activity
-            android:name=".ui.compose.screens.testing.ThemePreviewTestActivity"
-            android:exported="false"
-            android:label="@string/dev_options_theme_preview_test"
-            android:theme="@style/Theme.TinaIDE"
-            android:parentActivityName=".settings.SettingsActivity" />
-        <activity
-            android:name=".ui.compose.screens.testing.TreeSitterTestActivity"
-            android:exported="false"
-            android:label="@string/dev_options_tree_sitter_test"
-            android:theme="@style/Theme.TinaIDE"
-            android:parentActivityName=".settings.SettingsActivity" />
-        <activity
-            android:name=".ui.compose.screens.testing.EditorScrollTestActivity"
-            android:exported="false"
-            android:label="@string/dev_options_editor_scroll_test"
-            android:theme="@style/Theme.TinaIDE"
-            android:parentActivityName=".settings.SettingsActivity" />
-        <activity
-            android:name=".ui.compose.screens.testing.ClangdTestActivity"
-            android:exported="false"
-            android:label="@string/clangd_test_title"
-            android:parentActivityName=".settings.SettingsActivity" />
-        <activity
-            android:name=".ui.compose.screens.testing.DevTestActivity"
-            android:exported="false"
-            android:label="@string/dev_options_testing_tools"
-            android:theme="@style/Theme.TinaIDE"
             android:parentActivityName=".settings.SettingsActivity" />
         <!-- 终端 Activity（基于 Termux 的 terminal-view 和 terminal-emulator） -->
         <activity
@@ -153,13 +132,6 @@
             android:name=".ui.wizard.NewProjectWizardActivity"
             android:exported="false"
             android:label="@string/wizard_title_new_project"
-            android:theme="@style/Theme.TinaIDE" />
-
-        <!-- 工具链配置 -->
-        <activity
-            android:name=".ui.workspace.ToolchainConfigActivity"
-            android:exported="false"
-            android:label="@string/toolchain_config_title"
             android:theme="@style/Theme.TinaIDE" />
 
         <!-- 依赖库安装（Ubuntu） -->

@@ -37,10 +37,6 @@ interface PackageManager {
     suspend fun clearCache()
 
     suspend fun checkForUpdates(): Map<String, UpdateInfo>
-
-    fun getInstallHistory(): List<com.wuxianggujun.tinaide.core.packages.store.HistoryEntry>
-
-    fun clearInstallHistory()
 }
 
 data class InstalledPackageInfo(

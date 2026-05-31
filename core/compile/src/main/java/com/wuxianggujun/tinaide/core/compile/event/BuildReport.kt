@@ -21,7 +21,7 @@ sealed interface BuildReport {
     /**
      * 构建 + 启动描述符准备均成功。
      *
-     * [descriptor] 由 Launcher 产出,UI 层据此真正拉起终端/GUI/调试(见 Phase B 设计)。
+     * [descriptor] 由 Launcher 产出,UI 层据此真正拉起终端/SDL/调试(见 Phase B 设计)。
      */
     data class Success(
         val artifact: Artifact,

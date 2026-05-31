@@ -22,9 +22,9 @@ import org.gradle.api.Project
  *
  * ABI flavor declarations themselves (Android DSL `productFlavors`,
  * `beforeVariants` filters, per-ABI `versionCodeOverride` / output file
- * naming) are intentionally **not** migrated into this plugin: those are
- * business-level declarations of what ABIs the app supports and belong in
- * `app/build.gradle.kts` for visibility.
+ * naming) intentionally stay in `app/build.gradle.kts`: those are
+ * business-level declarations of what ABIs the app supports and should
+ * remain visible next to the Android app configuration.
  */
 class TinaAndroidAppAbiAggregationPlugin : Plugin<Project> {
 

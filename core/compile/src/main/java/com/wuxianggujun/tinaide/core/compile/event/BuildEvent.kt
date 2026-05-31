@@ -56,7 +56,6 @@ sealed interface BuildEvent {
     /** Launch 阶段事件 */
     sealed interface Launch : BuildEvent {
         data class Started(val artifact: Artifact) : Launch
-        data class ProcessSpawned(val pid: Int) : Launch
         data object Completed : Launch
         data class Failed(val reason: String, val wasArtifactCached: Boolean) : Launch
     }

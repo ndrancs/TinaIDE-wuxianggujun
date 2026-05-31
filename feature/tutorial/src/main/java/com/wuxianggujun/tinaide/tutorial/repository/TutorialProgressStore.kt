@@ -5,8 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.wuxianggujun.tinaide.tutorial.data.ProgressStatus
@@ -40,13 +38,6 @@ class TutorialProgressStore(private val context: Context) {
     val allProgressFlow: Flow<Map<String, TutorialProgress>> = dataStore.data.map { preferences ->
         val json = preferences[KEY_ALL_PROGRESS] ?: return@map emptyMap()
         parseProgressMap(json)
-    }
-
-    /**
-     * 观察特定教程的进度
-     */
-    fun getProgressFlow(tutorialId: String): Flow<TutorialProgress?> {
-        return allProgressFlow.map { it[tutorialId] }
     }
 
     /**

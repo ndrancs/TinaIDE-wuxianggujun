@@ -32,7 +32,6 @@ val appViewModelModule = module {
             projectContext = get(),
             outputManager = get(),
             editorManagerProvider = { get<IEditorManager>() },
-            processManager = get(),
             linuxEnvironmentProvider = get(),
             orchestratorProvider = { get() },
             strategyRegistry = get(),

@@ -8,18 +8,11 @@ import com.wuxianggujun.tinaide.project.CppStandard
 import com.wuxianggujun.tinaide.project.ProjectApkExportType
 import com.wuxianggujun.tinaide.project.ProjectMetadataStore
 import java.io.File
-import java.util.ArrayDeque
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.JsonNames
 import timber.log.Timber
 
-private const val RUN_CONFIG_SCHEMA_LEGACY = 1
-private const val RUN_CONFIG_SCHEMA_V2 = 2
 private const val RUN_CONFIG_SCHEMA_CURRENT = 3
 
 /**
@@ -118,8 +111,6 @@ data class RunConfiguration(
     /**
      * SDL 图形运行的屏幕方向（仅 outputMode == SDL 时生效）。
      */
-    @OptIn(ExperimentalSerializationApi::class)
-    @JsonNames("guiOrientation")
     val sdlOrientation: SdlOrientation = SdlOrientation.AUTO,
 
     /**
@@ -131,7 +122,6 @@ data class RunConfiguration(
 ) {
     fun normalized(): RunConfiguration {
         return copy(
-            outputMode = outputMode.normalizedForPersistence(),
             toolchainId = toolchainId?.trim()?.takeIf { it.isNotEmpty() },
             customCCompiler = normalizeCompilerPath(customCCompiler),
             customCppCompiler = normalizeCompilerPath(customCppCompiler),
@@ -247,10 +237,8 @@ data class RunConfiguration(
      */
     fun outputModeDisplayName(): String {
         return when (outputMode) {
-            OutputMode.LOG -> Strings.run_config_output_build_log.str()
             OutputMode.TERMINAL -> Strings.run_config_output_terminal.str()
             OutputMode.SDL -> Strings.run_config_output_sdl.str()
-            OutputMode.GUI -> Strings.run_config_output_sdl.str()
         }
     }
     
@@ -302,10 +290,7 @@ data class RunConfiguration(
 @Serializable
 data class RunConfigurationManager(
     /**
-     * run_configs.json schema 版本。
-     *
-     * - 新项目始终写入 [RUN_CONFIG_SCHEMA_CURRENT]
-     * - 旧项目在 [load] 时自动迁移并回写到最新版本
+     * run_configs.json schema 版本，新写入始终使用 [RUN_CONFIG_SCHEMA_CURRENT]。
      */
     val schemaVersion: Int = RUN_CONFIG_SCHEMA_CURRENT,
     val configurations: List<RunConfiguration> = listOf(RunConfiguration()),
@@ -314,19 +299,6 @@ data class RunConfigurationManager(
     companion object {
         private const val TAG = "RunConfigManager"
         private const val CONFIG_FILE = ".tinaide/run_configs.json"
-        private val SCHEMA_VERSION_FIELD_REGEX = Regex("\"schemaVersion\"\\s*:")
-        private val LEGACY_GUI_ORIENTATION_FIELD_REGEX = Regex("\"guiOrientation\"\\s*:")
-        private const val MAX_PENDING_MIGRATION_NOTICES_PER_PROJECT = 16
-        private val migrationNoticeBuffer =
-            ConcurrentHashMap<String, ArrayDeque<MigrationNotice>>()
-
-        data class MigrationNotice(
-            val fromSchemaVersion: Int,
-            val toSchemaVersion: Int,
-            val normalizedConfigCount: Int,
-            val filteredInvalidCount: Int,
-            val selectedIdAdjusted: Boolean
-        )
 
         private val json = JsonSerializer.pretty
 
@@ -340,9 +312,7 @@ data class RunConfigurationManager(
             return try {
                 if (configFile.exists()) {
                     val rawJson = configFile.readText()
-                    val hasLegacyGuiOrientationField =
-                        LEGACY_GUI_ORIENTATION_FIELD_REGEX.containsMatchIn(rawJson)
-                    val rawManager = decodeManagerWithSchemaCompatibility(rawJson)
+                    val rawManager = json.decodeFromString<RunConfigurationManager>(rawJson)
 
                     val validConfigs = rawManager.configurations.filter { config ->
                         config.id.isNotBlank() && config.name.isNotBlank()
@@ -351,9 +321,11 @@ data class RunConfigurationManager(
                         Timber.tag(TAG).w("Run configs has no valid entries, creating default")
                         createDefault(projectPath)
                     } else {
-                        val sanitizedManager = rawManager.copy(configurations = validConfigs)
-                        val migratedManager = migrateManagerToLatest(sanitizedManager)
-                        val normalizedConfigManager = normalizeManager(migratedManager)
+                        val sanitizedManager = rawManager.copy(
+                            schemaVersion = RUN_CONFIG_SCHEMA_CURRENT,
+                            configurations = validConfigs
+                        )
+                        val normalizedConfigManager = normalizeManager(sanitizedManager)
                         val normalizedSelectedId = normalizedConfigManager.selectedId
                             ?.takeIf { selected ->
                                 normalizedConfigManager.configurations.any { it.id == selected }
@@ -364,21 +336,16 @@ data class RunConfigurationManager(
 
                         val filteredInvalidConfigs =
                             validConfigs.size != rawManager.configurations.size
-                        val schemaMigrated =
-                            migratedManager.schemaVersion != sanitizedManager.schemaVersion
-                        val configMigrated =
+                        val configNormalized =
                             normalizedConfigManager.configurations != sanitizedManager.configurations
                         val normalizedConfigCount = sanitizedManager.configurations.zip(
                             normalizedConfigManager.configurations
                         ).count { (before, after) -> before != after }
                         val selectedIdAdjusted =
                             normalizedSelectedId != normalizedConfigManager.selectedId
-                        val filteredInvalidCount =
-                            rawManager.configurations.size - validConfigs.size
                         val changed = filteredInvalidConfigs ||
-                            schemaMigrated ||
-                            configMigrated ||
-                            hasLegacyGuiOrientationField ||
+                            rawManager.schemaVersion != RUN_CONFIG_SCHEMA_CURRENT ||
+                            configNormalized ||
                             selectedIdAdjusted
                         if (changed) {
                             if (filteredInvalidConfigs) {
@@ -386,27 +353,15 @@ data class RunConfigurationManager(
                                     "Filtered ${rawManager.configurations.size - validConfigs.size} invalid configs"
                                 )
                             }
-                            if (schemaMigrated || configMigrated) {
+                            if (configNormalized || rawManager.schemaVersion != RUN_CONFIG_SCHEMA_CURRENT) {
                                 Timber.tag(TAG).i(
-                                    "Migrated run config schema ${sanitizedManager.schemaVersion} -> " +
-                                        "${migratedManager.schemaVersion}"
+                                    "Normalized run configs: schema=${rawManager.schemaVersion}, " +
+                                        "normalized=$normalizedConfigCount"
                                 )
                             }
                             if (selectedIdAdjusted) {
                                 Timber.tag(TAG).w(
                                     "Selected run config id was invalid, reset to first config"
-                                )
-                            }
-                            if (schemaMigrated || configMigrated) {
-                                recordMigrationNotice(
-                                    projectPath = projectPath,
-                                    notice = MigrationNotice(
-                                        fromSchemaVersion = sanitizedManager.schemaVersion,
-                                        toSchemaVersion = normalizedConfigManager.schemaVersion,
-                                        normalizedConfigCount = normalizedConfigCount,
-                                        filteredInvalidCount = filteredInvalidCount,
-                                        selectedIdAdjusted = selectedIdAdjusted
-                                    )
                                 )
                             }
                             save(projectPath, normalizedManager)
@@ -429,11 +384,7 @@ data class RunConfigurationManager(
         fun save(projectPath: String, manager: RunConfigurationManager): Boolean {
             val configFile = configFile(projectPath)
             val managerToPersist = normalizeManager(
-                if (manager.schemaVersion < RUN_CONFIG_SCHEMA_CURRENT) {
-                    migrateManagerToLatest(manager)
-                } else {
-                    manager
-                }
+                manager.copy(schemaVersion = RUN_CONFIG_SCHEMA_CURRENT)
             )
             return try {
                 configFile.parentFile?.mkdirs()
@@ -479,92 +430,12 @@ data class RunConfigurationManager(
             }
         }
 
-        private fun decodeManagerWithSchemaCompatibility(rawJson: String): RunConfigurationManager {
-            val hasSchemaVersion = SCHEMA_VERSION_FIELD_REGEX.containsMatchIn(rawJson)
-
-            val decoded = json.decodeFromString<RunConfigurationManager>(rawJson)
-            return if (hasSchemaVersion) {
-                decoded
-            } else {
-                decoded.copy(schemaVersion = RUN_CONFIG_SCHEMA_LEGACY)
-            }
-        }
-
-        private fun migrateManagerToLatest(manager: RunConfigurationManager): RunConfigurationManager {
-            if (manager.schemaVersion >= RUN_CONFIG_SCHEMA_CURRENT) {
-                return manager
-            }
-
-            var migrated = manager
-            while (migrated.schemaVersion < RUN_CONFIG_SCHEMA_CURRENT) {
-                migrated = when {
-                    migrated.schemaVersion <= RUN_CONFIG_SCHEMA_LEGACY -> migrateFromV1ToV2(migrated)
-                    migrated.schemaVersion == RUN_CONFIG_SCHEMA_V2 -> migrateFromV2ToV3(migrated)
-                    else -> {
-                        Timber.tag(TAG).w(
-                            "Unknown run config schema ${migrated.schemaVersion}, " +
-                                "force marking as latest"
-                        )
-                        migrated.copy(schemaVersion = RUN_CONFIG_SCHEMA_CURRENT)
-                    }
-                }
-                // TODO(config-migration): schemaVersion 升级到 4+ 时，在这里追加 v3->v4 等迁移步骤。
-            }
-            return migrated
-        }
-
-        private fun migrateFromV1ToV2(manager: RunConfigurationManager): RunConfigurationManager {
-            val migratedConfigs = manager.configurations.map { config ->
-                config.copy(
-                    singleFileCppStandard = RunConfiguration.normalizeSingleFileCppStandard(
-                        config.singleFileCppStandard
-                    )
-                )
-            }
-            return manager.copy(
-                schemaVersion = RUN_CONFIG_SCHEMA_V2,
-                configurations = migratedConfigs
-            )
-        }
-
-        private fun migrateFromV2ToV3(manager: RunConfigurationManager): RunConfigurationManager {
-            val migratedConfigs = manager.configurations.map { config ->
-                config.copy(outputMode = config.outputMode.normalizedForPersistence())
-            }
-            return manager.copy(
-                schemaVersion = RUN_CONFIG_SCHEMA_CURRENT,
-                configurations = migratedConfigs
-            )
-        }
-
         private fun normalizeManager(manager: RunConfigurationManager): RunConfigurationManager {
             val normalizedConfigs = manager.configurations.map { it.normalized() }
             return if (normalizedConfigs == manager.configurations) {
                 manager
             } else {
                 manager.copy(configurations = normalizedConfigs)
-            }
-        }
-
-        private fun recordMigrationNotice(projectPath: String, notice: MigrationNotice) {
-            val key = projectPath.trim()
-            if (key.isEmpty()) return
-            val queue = migrationNoticeBuffer.computeIfAbsent(key) { ArrayDeque() }
-            synchronized(queue) {
-                if (queue.size >= MAX_PENDING_MIGRATION_NOTICES_PER_PROJECT) {
-                    queue.removeFirst()
-                }
-                queue.addLast(notice)
-            }
-        }
-
-        fun consumeMigrationNotices(projectPath: String): List<MigrationNotice> {
-            val key = projectPath.trim()
-            if (key.isEmpty()) return emptyList()
-            val queue = migrationNoticeBuffer.remove(key) ?: return emptyList()
-            synchronized(queue) {
-                if (queue.isEmpty()) return emptyList()
-                return queue.toList()
             }
         }
     }
@@ -644,13 +515,6 @@ data class RunConfigurationManager(
 @Serializable
 enum class OutputMode {
     /**
-     * 历史模式（兼容旧配置）
-     *
-     * 当前实现中会按 TERMINAL 处理。
-     */
-    LOG,
-
-    /**
      * 在终端中运行
      */
     TERMINAL,
@@ -658,23 +522,9 @@ enum class OutputMode {
     /**
      * 在 SDL 图形运行时中运行（加载共享库）
      */
-    SDL,
+    SDL;
 
-    /**
-     * 旧配置值，仅用于读取历史 run_configs.json。
-     *
-     * 新配置统一写入 [SDL]。
-     */
-    GUI;
-
-    fun normalizedForPersistence(): OutputMode {
-        return when (this) {
-            GUI -> SDL
-            else -> this
-        }
-    }
-
-    fun isSdlGraphical(): Boolean = this == SDL || this == GUI
+    fun isSdlGraphical(): Boolean = this == SDL
 }
 
 /**

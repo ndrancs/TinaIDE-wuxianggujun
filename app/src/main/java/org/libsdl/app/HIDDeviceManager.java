@@ -1,30 +1,23 @@
 package org.libsdl.app;
 
-import android.app.Activity;
-import android.app.AlertDialog;
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.os.Build;
 import android.util.Log;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.hardware.usb.*;
-import android.os.Handler;
-import android.os.Looper;
+import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 
+// SDL Java glue keeps upstream static/native callback shape at this vendor boundary.
+@SuppressLint({"LogNotTimber", "StaticFieldLeak"})
 public class HIDDeviceManager {
     private static final String TAG = "hidapi";
     private static final String ACTION_USB_PERMISSION = "org.libsdl.app.USB_PERMISSION";
@@ -52,14 +45,9 @@ public class HIDDeviceManager {
 
     private Context mContext;
     private HashMap<Integer, HIDDevice> mDevicesById = new HashMap<Integer, HIDDevice>();
-    private HashMap<BluetoothDevice, HIDDeviceBLESteamController> mBluetoothDevices = new HashMap<BluetoothDevice, HIDDeviceBLESteamController>();
     private int mNextDeviceId = 0;
     private SharedPreferences mSharedPreferences = null;
-    private boolean mIsChromebook = false;
     private UsbManager mUsbManager;
-    private Handler mHandler;
-    private BluetoothManager mBluetoothManager;
-    private List<BluetoothDevice> mLastBluetoothDevices;
 
     private final BroadcastReceiver mUsbBroadcast = new BroadcastReceiver() {
         @Override
@@ -78,37 +66,12 @@ public class HIDDeviceManager {
         }
     };
 
-    private final BroadcastReceiver mBluetoothBroadcast = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            // Bluetooth device was connected. If it was a Steam Controller, handle it
-            if (action.equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                Log.d(TAG, "Bluetooth device connected: " + device);
-
-                if (isSteamController(device)) {
-                    connectBluetoothDevice(device);
-                }
-            }
-
-            // Bluetooth device was disconnected, remove from controller manager (if any)
-            if (action.equals(BluetoothDevice.ACTION_ACL_DISCONNECTED)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                Log.d(TAG, "Bluetooth device disconnected: " + device);
-
-                disconnectBluetoothDevice(device);
-            }
-        }
-    };
-
     private HIDDeviceManager(final Context context) {
         mContext = context;
 
         HIDDeviceRegisterCallback();
 
         mSharedPreferences = mContext.getSharedPreferences("hidapi", Context.MODE_PRIVATE);
-        mIsChromebook = SDLActivity.isChromebook();
 
 //        if (shouldClear) {
 //            SharedPreferences.Editor spedit = mSharedPreferences.edit();
@@ -193,11 +156,12 @@ public class HIDDeviceManager {
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         filter.addAction(HIDDeviceManager.ACTION_USB_PERMISSION);
-        if (Build.VERSION.SDK_INT >= 33) { /* Android 13.0 (TIRAMISU) */
-            mContext.registerReceiver(mUsbBroadcast, filter, Context.RECEIVER_EXPORTED);
-        } else {
-            mContext.registerReceiver(mUsbBroadcast, filter);
-        }
+        ContextCompat.registerReceiver(
+            mContext,
+            mUsbBroadcast,
+            filter,
+            ContextCompat.RECEIVER_EXPORTED
+        );
 
         for (UsbDevice usbDevice : mUsbManager.getDeviceList().values()) {
             handleUsbDeviceAttached(usbDevice);
@@ -366,187 +330,13 @@ public class HIDDeviceManager {
         }
     }
 
-    private void initializeBluetooth() {
-        Log.d(TAG, "Initializing Bluetooth");
-
-        if (Build.VERSION.SDK_INT >= 31 /* Android 12  */ &&
-            mContext.getPackageManager().checkPermission(android.Manifest.permission.BLUETOOTH_CONNECT, mContext.getPackageName()) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Couldn't initialize Bluetooth, missing android.permission.BLUETOOTH_CONNECT");
-            return;
-        }
-
-        if (Build.VERSION.SDK_INT <= 30 /* Android 11.0 (R) */ &&
-            mContext.getPackageManager().checkPermission(android.Manifest.permission.BLUETOOTH, mContext.getPackageName()) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Couldn't initialize Bluetooth, missing android.permission.BLUETOOTH");
-            return;
-        }
-
-        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Log.d(TAG, "Couldn't initialize Bluetooth, this version of Android does not support Bluetooth LE");
-            return;
-        }
-
-        // Find bonded bluetooth controllers and create SteamControllers for them
-        mBluetoothManager = (BluetoothManager)mContext.getSystemService(Context.BLUETOOTH_SERVICE);
-        if (mBluetoothManager == null) {
-            // This device doesn't support Bluetooth.
-            return;
-        }
-
-        BluetoothAdapter btAdapter = mBluetoothManager.getAdapter();
-        if (btAdapter == null) {
-            // This device has Bluetooth support in the codebase, but has no available adapters.
-            return;
-        }
-
-        // Get our bonded devices.
-        for (BluetoothDevice device : btAdapter.getBondedDevices()) {
-
-            Log.d(TAG, "Bluetooth device available: " + device);
-            if (isSteamController(device)) {
-                connectBluetoothDevice(device);
-            }
-
-        }
-
-        // NOTE: These don't work on Chromebooks, to my undying dismay.
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
-        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
-        if (Build.VERSION.SDK_INT >= 33) { /* Android 13.0 (TIRAMISU) */
-            mContext.registerReceiver(mBluetoothBroadcast, filter, Context.RECEIVER_EXPORTED);
-        } else {
-            mContext.registerReceiver(mBluetoothBroadcast, filter);
-        }
-
-        if (mIsChromebook) {
-            mHandler = new Handler(Looper.getMainLooper());
-            mLastBluetoothDevices = new ArrayList<BluetoothDevice>();
-
-            // final HIDDeviceManager finalThis = this;
-            // mHandler.postDelayed(new Runnable() {
-            //     @Override
-            //     public void run() {
-            //         finalThis.chromebookConnectionHandler();
-            //     }
-            // }, 5000);
-        }
-    }
-
-    private void shutdownBluetooth() {
-        try {
-            mContext.unregisterReceiver(mBluetoothBroadcast);
-        } catch (Exception e) {
-            // We may not have registered, that's okay
-        }
-    }
-
-    // Chromebooks do not pass along ACTION_ACL_CONNECTED / ACTION_ACL_DISCONNECTED properly.
-    // This function provides a sort of dummy version of that, watching for changes in the
-    // connected devices and attempting to add controllers as things change.
-    void chromebookConnectionHandler() {
-        if (!mIsChromebook) {
-            return;
-        }
-
-        ArrayList<BluetoothDevice> disconnected = new ArrayList<BluetoothDevice>();
-        ArrayList<BluetoothDevice> connected = new ArrayList<BluetoothDevice>();
-
-        List<BluetoothDevice> currentConnected = mBluetoothManager.getConnectedDevices(BluetoothProfile.GATT);
-
-        for (BluetoothDevice bluetoothDevice : currentConnected) {
-            if (!mLastBluetoothDevices.contains(bluetoothDevice)) {
-                connected.add(bluetoothDevice);
-            }
-        }
-        for (BluetoothDevice bluetoothDevice : mLastBluetoothDevices) {
-            if (!currentConnected.contains(bluetoothDevice)) {
-                disconnected.add(bluetoothDevice);
-            }
-        }
-
-        mLastBluetoothDevices = currentConnected;
-
-        for (BluetoothDevice bluetoothDevice : disconnected) {
-            disconnectBluetoothDevice(bluetoothDevice);
-        }
-        for (BluetoothDevice bluetoothDevice : connected) {
-            connectBluetoothDevice(bluetoothDevice);
-        }
-
-        final HIDDeviceManager finalThis = this;
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                finalThis.chromebookConnectionHandler();
-            }
-        }, 10000);
-    }
-
-    boolean connectBluetoothDevice(BluetoothDevice bluetoothDevice) {
-        Log.v(TAG, "connectBluetoothDevice device=" + bluetoothDevice);
-        synchronized (this) {
-            if (mBluetoothDevices.containsKey(bluetoothDevice)) {
-                Log.v(TAG, "Steam controller with address " + bluetoothDevice + " already exists, attempting reconnect");
-
-                HIDDeviceBLESteamController device = mBluetoothDevices.get(bluetoothDevice);
-                device.reconnect();
-
-                return false;
-            }
-            HIDDeviceBLESteamController device = new HIDDeviceBLESteamController(this, bluetoothDevice);
-            int id = device.getId();
-            mBluetoothDevices.put(bluetoothDevice, device);
-            mDevicesById.put(id, device);
-
-            // The Steam Controller will mark itself connected once initialization is complete
-        }
-        return true;
-    }
-
-    void disconnectBluetoothDevice(BluetoothDevice bluetoothDevice) {
-        synchronized (this) {
-            HIDDeviceBLESteamController device = mBluetoothDevices.get(bluetoothDevice);
-            if (device == null)
-                return;
-
-            int id = device.getId();
-            mBluetoothDevices.remove(bluetoothDevice);
-            mDevicesById.remove(id);
-            device.shutdown();
-            HIDDeviceDisconnected(id);
-        }
-    }
-
-    boolean isSteamController(BluetoothDevice bluetoothDevice) {
-        // Sanity check.  If you pass in a null device, by definition it is never a Steam Controller.
-        if (bluetoothDevice == null) {
-            return false;
-        }
-
-        // If the device has no local name, we really don't want to try an equality check against it.
-        if (bluetoothDevice.getName() == null) {
-            return false;
-        }
-
-        // Steam Controllers will always support Bluetooth Low Energy
-        if ((bluetoothDevice.getType() & BluetoothDevice.DEVICE_TYPE_LE) == 0) {
-            return false;
-        }
-
-        // Match on the name either the original Steam Controller or the new second-generation one advertise with.
-        return bluetoothDevice.getName().equals("SteamController") || bluetoothDevice.getName().startsWith("Steam Ctrl");
-    }
-
     private void close() {
         shutdownUSB();
-        shutdownBluetooth();
         synchronized (this) {
             for (HIDDevice device : mDevicesById.values()) {
                 device.shutdown();
             }
             mDevicesById.clear();
-            mBluetoothDevices.clear();
             HIDDeviceReleaseCallback();
         }
     }
@@ -585,7 +375,7 @@ public class HIDDeviceManager {
             initializeUSB();
         }
         if (bluetooth) {
-            initializeBluetooth();
+            Log.v(TAG, "Bluetooth HID is disabled in this build");
         }
         return true;
     }

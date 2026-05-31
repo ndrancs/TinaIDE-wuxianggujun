@@ -14,7 +14,7 @@ import java.io.File
  *
  * 使用 Room 数据库持久化书签数据。
  *
- * 支持版本迁移，确保旧版本数据能正确加载。
+ * 支持数据库版本升级，确保已保存的书签数据能正确加载。
  */
 class BookmarkStateStorage(context: Context) {
     private val database = BookmarkDatabase.getInstance(context)
@@ -60,7 +60,7 @@ class BookmarkStateStorage(context: Context) {
     /**
      * 加载书签状态
      *
-     * 自动处理版本迁移和旧路径迁移。
+     * 自动处理数据库升级后的实体读取和相对路径还原。
      */
     suspend fun load(projectPath: String): ProjectBookmarkState? = withContext(Dispatchers.IO) {
         return@withContext runCatching {

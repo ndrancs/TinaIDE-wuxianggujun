@@ -60,6 +60,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wuxianggujun.tinaide.R
 import com.wuxianggujun.tinaide.core.help.HelpDocument
 import com.wuxianggujun.tinaide.core.help.HelpRepository
+import com.wuxianggujun.tinaide.core.i18n.Arrays
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.settings.SettingsActivity
 import com.wuxianggujun.tinaide.tutorial.TutorialViewModel
@@ -231,14 +232,21 @@ private fun TutorialArticleContent(
 ) {
     val context = LocalContext.current
     val contentUrl = tutorial.contentUrl
+    val helpLoadFailedMessage = stringResource(Strings.help_load_failed)
+    val relatedSectionTitles = remember(context) {
+        context.resources
+            .getStringArray(Arrays.tutorial_related_section_titles)
+            .map(TutorialRelatedLearningSupport::normalizeSectionTitle)
+            .toSet()
+    }
 
     var isLoading by remember(contentUrl) { mutableStateOf(false) }
     var errorMessage by remember(contentUrl) { mutableStateOf<String?>(null) }
     var markdown by remember(contentUrl) { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(contentUrl) {
+    LaunchedEffect(contentUrl, helpLoadFailedMessage) {
         if (contentUrl.isNullOrBlank()) {
-            errorMessage = context.getString(Strings.help_load_failed)
+            errorMessage = helpLoadFailedMessage
             markdown = null
             isLoading = false
             return@LaunchedEffect
@@ -256,7 +264,7 @@ private fun TutorialArticleContent(
             markdown = sanitizeTutorialMarkdown(raw)
             isLoading = false
         }.onFailure {
-            errorMessage = context.getString(Strings.help_load_failed)
+            errorMessage = helpLoadFailedMessage
             isLoading = false
         }
     }
@@ -280,6 +288,7 @@ private fun TutorialArticleContent(
                     currentTutorialId = tutorial.id,
                     resolveTutorial = resolveTutorialByLinkTarget,
                     resolveHelpDocument = resolveHelpDocumentByLinkTarget,
+                    relatedSectionTitles = relatedSectionTitles,
                 )
 
                 Column(

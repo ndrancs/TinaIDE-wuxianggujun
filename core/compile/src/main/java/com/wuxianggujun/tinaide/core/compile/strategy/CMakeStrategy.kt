@@ -38,7 +38,7 @@ import java.io.File
 import java.security.MessageDigest
 
 /**
- * CMake 构建策略(P2 重写版,Phase A.2 自给自足化)。
+ * CMake 构建策略。
  *
  * 设计要点:
  * - [describeOutput] 用 CMakeAnalyzer 解析 CMakeLists.txt,选定 target + 预测路径/kind,不 spawn 构建
@@ -46,9 +46,6 @@ import java.security.MessageDigest
  * - 产物定位靠 [CMakeBuildExecutor] / [NativeCMakeBuildExecutor] 返回的 outputPath
  *   作为权威值,`spec.expectedPath` 仅用于首次构建前的 Planner 粗判
  * - 事件经 [BuildEventEmitter] 下发
- *
- * 历史:Phase A.2 之前通过 `legacyImpl = CMakeBuildStrategy(...)` 组合调用;
- * 此次把 dispatch 逻辑内联,P5 删除旧 `CMakeBuildStrategy.kt` 不会连带崩溃。
  */
 class CMakeStrategy(
     private val context: Context,

@@ -56,7 +56,7 @@ class ApkExportRuntimeLibrariesResolverTest {
     }
 
     @Test
-    fun `resolveDependencyClosure skips legacy GLES alias as system library`() {
+    fun `resolveDependencyClosure skips GLES compatibility alias as system library`() {
         val tempDir = Files.createTempDirectory("apk-export-runtime-system-lib-test").toFile()
         val main = File(tempDir, "libmain.so").apply { writeText("main") }
 

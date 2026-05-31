@@ -51,6 +51,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -243,8 +244,8 @@ private fun TerminalScreen(
         }
     }
 
-    var lastRows by remember { mutableStateOf(24) }
-    var lastCols by remember { mutableStateOf(80) }
+    var lastRows by remember { mutableIntStateOf(24) }
+    var lastCols by remember { mutableIntStateOf(80) }
 
     // 首次进入页面时创建会话（仅在没有通过 restoreState 恢复的情况下）
     // restoreState 会自动处理会话创建，所以这里只在没有会话且不是恢复状态时创建

@@ -21,7 +21,6 @@ class AndroidNativeToolchainManager(private val context: Context) {
         private const val ASSET_DIR = "tina-toolchain"
         private const val ASSET_SPEC_PATH = "$ASSET_DIR/current.properties"
         private const val ASSET_VARIANTS_DIR = "$ASSET_DIR/variants"
-        private const val LEGACY_INSTALL_DIR_NAME = "tina-toolchain"
         private const val BUILTIN_ID_PREFIX = "builtin-"
 
         private const val INSTALL_METADATA_FILE = "install-metadata.properties"
@@ -123,9 +122,6 @@ class AndroidNativeToolchainManager(private val context: Context) {
      */
     fun getConfigManager(): ToolchainConfigManager = configManager
 
-    // getSysrootDir() 已移除：sysroot 统一由 AndroidSysrootManager 管理，
-    // 不再存储在 toolchain 目录内。
-
     fun isInstalled(expectedVersion: String? = null): Boolean {
         return isInstalledInternal(expectedVersion = expectedVersion, expectedFingerprint = null)
     }
@@ -223,7 +219,7 @@ class AndroidNativeToolchainManager(private val context: Context) {
             return false
         }
 
-        // 兼容旧版本安装（或某些机型/文件系统）导致的可执行位丢失：
+        // 部分机型/文件系统可能导致可执行位丢失：
         // 如果二进制存在但不可执行，尝试就地修复权限；仍不可执行则视为未安装，触发重新解压。
         if (!clang.canExecute() || !clangxx.canExecute()) {
             Timber.tag(TAG).w(
@@ -670,8 +666,7 @@ class AndroidNativeToolchainManager(private val context: Context) {
             .firstOrNull { it.isDirectory }
         if (bestFromConfig != null) return bestFromConfig
 
-        // 兼容旧版本单目录安装布局。
-        return File(context.filesDir, LEGACY_INSTALL_DIR_NAME).takeIf { it.isDirectory }
+        return null
     }
 
     private fun shouldActivateInstalledBuiltin(toolchainId: String): Boolean {

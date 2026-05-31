@@ -68,25 +68,6 @@ function Move-StaleFile {
     Write-Host ("  ARCHIVE {0} -> {1}" -f $File.Name, $destination) -ForegroundColor Yellow
 }
 
-function Move-LegacyArchiveFiles {
-    param(
-        [string]$LegacyRoot,
-        [string]$ArchiveDir
-    )
-
-    if (-not (Test-Path -LiteralPath $LegacyRoot)) { return }
-    Get-ChildItem -LiteralPath $LegacyRoot -File -Recurse | ForEach-Object {
-        $relativePath = [System.IO.Path]::GetRelativePath($LegacyRoot, $_.FullName)
-        $relativeDir = Split-Path -Parent $relativePath
-        $targetDir = if ([string]::IsNullOrWhiteSpace($relativeDir) -or $relativeDir -eq ".") {
-            $ArchiveDir
-        } else {
-            Join-Path $ArchiveDir $relativeDir
-        }
-        Move-StaleFile -File $_ -ArchiveDir $targetDir
-    }
-}
-
 $repoRoot = Resolve-RepoRoot
 $releaseRoot = (Resolve-InputPath -RepoRoot $repoRoot -InputPath $ReleaseDir)
 if (-not $releaseRoot) { $releaseRoot = Join-Path $repoRoot "build/tina-toolchain/release" }
@@ -108,7 +89,6 @@ $sysrootAssetsRoot = Join-Path $repoRoot "app/src/$Abi/assets/android-sysroot"
 $specPath = Join-Path $assetsRoot "current.properties"
 $toolchainArchiveRoot = Join-Path $archiveRoot "tina-toolchain"
 $sysrootArchiveRoot = Join-Path $archiveRoot "android-sysroot"
-$legacyArchiveRoot = Join-Path $assetsRoot "archive"
 $sysrootFileName = switch ($Abi) {
     "arm64" { "android-sysroot-arm64-all.tar.xz" }
     "x86_64" { "android-sysroot-x86_64-all.tar.xz" }
@@ -202,9 +182,6 @@ if (-not $SkipSysroot) {
 
 if ($Clean) {
     Write-Step "Archive stale assets"
-    # Legacy path guard: historical archives under assets would be packaged into APK.
-    Move-LegacyArchiveFiles -LegacyRoot $legacyArchiveRoot -ArchiveDir $toolchainArchiveRoot
-
     Get-ChildItem -LiteralPath $assetsRoot -File |
         Where-Object { $_.Name -ne "current.properties" -and ($needed -notcontains $_.Name) } |
         ForEach-Object { Move-StaleFile -File $_ -ArchiveDir $toolchainArchiveRoot }

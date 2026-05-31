@@ -142,33 +142,6 @@ fun TinaOutlinedButton(
 }
 
 /**
- * 大号轮廓按钮
- */
-@Composable
-fun TinaOutlinedButtonLarge(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    icon: Painter? = null
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        enabled = enabled,
-        shape = RoundedCornerShape(TinaShapes.ButtonCorner)
-    ) {
-        ButtonContent(
-            text = text,
-            icon = icon,
-            textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
-        )
-    }
-}
-
-/**
  * 文本按钮（低强调）
  * 
  * 用于低优先级操作，如"跳过"、"稍后"等

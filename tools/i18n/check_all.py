@@ -62,12 +62,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--base",
-        default="app/src/main/res/values/strings.xml",
+        default="core/i18n/src/main/res/values/strings.xml",
         help="Base strings.xml path",
     )
     parser.add_argument(
         "--en",
-        default="app/src/main/res/values-en/strings.xml",
+        default="core/i18n/src/main/res/values-en/strings.xml",
         help="English strings.xml path",
     )
     return parser.parse_args(argv)

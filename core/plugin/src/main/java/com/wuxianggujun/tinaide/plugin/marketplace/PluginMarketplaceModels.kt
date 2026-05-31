@@ -77,12 +77,6 @@ data class PluginComment(
 )
 
 @Serializable
-data class ReportPluginCommentRequest(
-    val reason: String,
-    val details: String? = null
-)
-
-@Serializable
 data class ReportPluginCommentResponse(
     @SerialName("report_id")
     val reportId: String,
@@ -155,11 +149,6 @@ data class CheckUpdateItem(
 )
 
 @Serializable
-data class CheckUpdateRequest(
-    val plugins: List<CheckUpdateItem>
-)
-
-@Serializable
 data class PluginUpdateInfo(
     @SerialName("plugin_id")
     val pluginId: String,
@@ -180,16 +169,6 @@ data class CheckUpdateData(
 )
 
 @Serializable
-data class RatePluginRequest(
-    val rating: Int
-)
-
-@Serializable
-data class CreatePluginCommentRequest(
-    val content: String
-)
-
-@Serializable
 data class RatePluginResponse(
     @SerialName("my_rating")
     val myRating: Int,
@@ -205,12 +184,4 @@ enum class PluginSortType(val value: String) {
     RATING("rating"),
     NEWEST("newest"),
     UPDATED("updated")
-}
-
-@Serializable
-enum class PluginCategory(val value: String) {
-    THEME("theme"),
-    SNIPPET("snippet"),
-    TOOL("tool"),
-    LANGUAGE("language")
 }

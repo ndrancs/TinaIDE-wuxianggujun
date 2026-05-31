@@ -203,31 +203,6 @@ data class ToolFunction(
     val arguments: String? = null
 )
 
-/**
- * 流式响应
- */
-@Serializable
-data class ChatStreamChunk(
-    val id: String,
-    val choices: List<ChatStreamChoice> = emptyList(),
-    val usage: ChatUsage? = null
-)
-
-@Serializable
-data class ChatStreamChoice(
-    val index: Int,
-    val delta: ChatDelta,
-    @SerialName("finish_reason") val finishReason: String? = null
-)
-
-@Serializable
-data class ChatDelta(
-    val role: String? = null,
-    val content: String? = null,
-    @SerialName("reasoning_content") val reasoningContent: String? = null,
-    @SerialName("tool_calls") val toolCalls: List<ToolCallDelta>? = null
-)
-
 @Serializable
 data class ToolCallDelta(
     val index: Int? = null,
@@ -253,20 +228,3 @@ class ApiException(
     message: String,
     val retryAfterMillis: Long? = null,
 ) : Exception(message)
-
-/**
- * 模型列表响应
- */
-@Serializable
-data class ModelsListResponse(
-    val `object`: String? = null,
-    val data: List<ModelInfo> = emptyList()
-)
-
-@Serializable
-data class ModelInfo(
-    val id: String,
-    val `object`: String? = null,
-    val created: Long? = null,
-    @SerialName("owned_by") val ownedBy: String? = null
-)

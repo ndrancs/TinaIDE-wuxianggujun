@@ -7,7 +7,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:common"))
     implementation(project(":core:i18n"))
     implementation(libs.timber)
     implementation(libs.kotlinx.coroutines)

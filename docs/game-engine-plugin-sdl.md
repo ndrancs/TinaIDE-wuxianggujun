@@ -67,7 +67,7 @@ friend-engine-sdl3.zip
 
 ## SDL 图形运行链路
 
-运行配置使用 `OutputMode.SDL` 表示 SDL 图形运行。旧配置中的 `OutputMode.GUI` 会在加载时自动迁移为 `OutputMode.SDL`。
+运行配置使用 `OutputMode.SDL` 表示 SDL 图形运行。
 
 关键实现：
 

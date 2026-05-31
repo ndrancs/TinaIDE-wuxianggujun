@@ -26,21 +26,15 @@ import java.io.File
 import java.security.MessageDigest
 
 /**
- * Make 构建策略(P2 重写版,Phase A.3 自给自足化)。
+ * Make 构建策略。
  *
  * 设计要点:
  * - [describeOutput] 从 Makefile targets 选定 target + 启发式路径预测
  *   (Make 没有 File API 机制,target 名依赖 PRoot/Native make 各自的解析)
  * - [execute] native/proot 双路径分派,直接调用 [NativeMakeBuildStrategy] /
- *   [PRootMakeBuildStrategy] 作为"编译引擎"(Phase D.2 已从 BuildStrategy 接口解耦)
+ *   [PRootMakeBuildStrategy] 作为编译引擎
  * - sources 收集为项目内 C/C++ 源与头文件(深度 3 以内),
  *   Planner 用 mtime 作增量二级校验
- *
- * 历史:Phase A.3 之前通过 `legacyImpl = MakeBuildStrategy(...)` 组合调用
- * (MakeBuildStrategy 再二次 dispatch 到 native/proot)。
- * 此次去掉中间层,直接持 native/proot 引擎,P5 删除 `MakeBuildStrategy.kt`
- * dispatcher 后不会连带崩溃。Phase D.2 完成后 native/proot 引擎本身已去掉
- * `: BuildStrategy` 声明, 纯作为 make 执行引擎由本 Strategy 使用。
  */
 class MakeStrategy(
     private val context: Context,

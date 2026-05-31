@@ -528,7 +528,7 @@ val segments = wrapLayout.segmentCount
   ┌──────────────────┐
   │ LspEditorManager  │ cursorOffset → Position → LSP (line, character)
   │ LspSemanticTokenD.│ LSP (line, char) → offset → 存入 semanticTokens
-  │ DiagnosticsManager│ LSP (line, char) → offset → 存入 diagnostics
+  │ LspDiagnosticsBridge / TinaCodeEditorPage │ LSP (line, char) → editor diagnostics
   └──────────────────┘
 ```
 

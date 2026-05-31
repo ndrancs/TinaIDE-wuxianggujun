@@ -2,16 +2,11 @@ package com.wuxianggujun.tinaide.ui.compose.screens.packages
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.wuxianggujun.tinaide.core.packages.InstalledPackageMetadata
 import com.wuxianggujun.tinaide.core.packages.InstalledPackageMetadataReader
 import com.wuxianggujun.tinaide.core.packages.PackageManager
-import com.wuxianggujun.tinaide.core.packages.PackageManagerImpl
-import com.wuxianggujun.tinaide.core.packages.api.PackageApiClient
 import com.wuxianggujun.tinaide.core.packages.model.*
-import com.wuxianggujun.tinaide.core.packages.store.LocalInstallStateStore
-import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -10,7 +10,7 @@ android {
 
 dependencies {
     implementation(libs.kotlinx.serialization.json)
-    implementation(project(":core:common"))
+    api(project(":core:common"))
     implementation(project(":core:config"))
     implementation(project(":core:i18n"))
     implementation(project(":core:linux-distro"))

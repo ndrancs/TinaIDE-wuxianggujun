@@ -3,8 +3,6 @@ package com.wuxianggujun.tinaide.core.proot
 import android.content.Context
 import com.wuxianggujun.tinaide.core.compile.CompilerType
 import com.wuxianggujun.tinaide.core.config.IConfigManager
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.linux.LinuxEnvironment
 import com.wuxianggujun.tinaide.core.linux.LinuxExecutionResult
 import com.wuxianggujun.tinaide.core.linux.LinuxInteractiveProcess
@@ -169,8 +167,8 @@ class PRootEnvironment(
         timeout: Long = 30_000,
         workDir: String = "/workspace",
     ): RunResult {
-        return PRootRunner(getPRootManager()).runShell(
-            shellCommand = command,
+        return getPRootManager().execute(
+            command = listOf("/bin/sh", "-c", command),
             workDir = workDir,
             timeout = timeout,
         )
@@ -272,63 +270,6 @@ class PRootEnvironment(
         )
     }
 
-    suspend fun healthCheck(): HealthCheckResult {
-        val report = checkLinuxDistroHealth()
-        val results = report.checks.map { check ->
-            TestResult(
-                name = check.probe.toDisplayName(),
-                success = check.usable,
-                output = check.toLegacyOutput(),
-            )
-        }
-        return HealthCheckResult(
-            allPassed = report.isUsable,
-            results = results,
-            recommendation = report.toRecommendation(),
-        )
-    }
-
-
-    private fun LinuxDistroRootfsHealthReport.toRecommendation(): String? {
-        if (isUsable) return null
-        val rootfsUnavailable = requiredFailures.any { check ->
-            check.probe == LinuxDistroRootfsHealthProbe.ROOTFS_AVAILABLE
-        }
-        return if (rootfsUnavailable) {
-            Strings.toolchain_error_proot_not_installed.strOr(this@PRootEnvironment.context)
-        } else {
-            Strings.linux_distro_health_recommend_reinstall.strOr(this@PRootEnvironment.context)
-        }
-    }
-
-    private fun LinuxDistroRootfsHealthCheck.toLegacyOutput(): String {
-        return when {
-            output.isNotBlank() -> output
-            missingItems.isNotEmpty() -> missingItems.joinToString()
-            checkedItems.isNotEmpty() -> checkedItems.joinToString()
-            else -> ""
-        }
-    }
-
-    private fun LinuxDistroRootfsHealthProbe.toDisplayName(): String {
-        return when (this) {
-            LinuxDistroRootfsHealthProbe.ROOTFS_AVAILABLE ->
-                Strings.linux_distro_health_probe_rootfs_available.strOr(this@PRootEnvironment.context)
-            LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_COMMANDS ->
-                Strings.linux_distro_health_probe_package_manager_commands.strOr(this@PRootEnvironment.context)
-            LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_VERSION ->
-                Strings.linux_distro_health_probe_package_manager_version.strOr(this@PRootEnvironment.context)
-            LinuxDistroRootfsHealthProbe.REQUIRED_BOOTSTRAP_COMMANDS ->
-                Strings.linux_distro_health_probe_required_commands.strOr(this@PRootEnvironment.context)
-            LinuxDistroRootfsHealthProbe.OPTIONAL_BOOTSTRAP_COMMANDS ->
-                Strings.linux_distro_health_probe_optional_commands.strOr(this@PRootEnvironment.context)
-            LinuxDistroRootfsHealthProbe.ARCHITECTURE ->
-                Strings.linux_distro_health_probe_architecture.strOr(this@PRootEnvironment.context)
-            LinuxDistroRootfsHealthProbe.OS_RELEASE ->
-                Strings.linux_distro_health_probe_os_release.strOr(this@PRootEnvironment.context)
-        }
-    }
-
     private suspend fun readVersion(command: String): String? {
         val result = probeVersion(command)
         if (!result.isSuccess) return null
@@ -356,15 +297,3 @@ internal class PRootInteractiveAdapter(
 
     override fun destroy() = delegate.destroy()
 }
-
-data class HealthCheckResult(
-    val allPassed: Boolean,
-    val results: List<TestResult>,
-    val recommendation: String?,
-)
-
-data class TestResult(
-    val name: String,
-    val success: Boolean,
-    val output: String,
-)

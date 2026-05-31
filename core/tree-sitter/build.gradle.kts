@@ -21,7 +21,7 @@ dependencies {
     api("com.itsaky.androidide.treesitter:tree-sitter-c:4.3.2")
     api("com.itsaky.androidide.treesitter:tree-sitter-cmake:4.3.2")
     api("com.itsaky.androidide.treesitter:tree-sitter-cpp:4.3.2")
-    api("com.itsaky.androidide.treesitter:tree-sitter-java:4.3.2")
+    api(libs.tree.sitter.java)
     api("com.itsaky.androidide.treesitter:tree-sitter-json:4.3.2")
     api("com.itsaky.androidide.treesitter:tree-sitter-kotlin:4.3.2")
     api("com.itsaky.androidide.treesitter:tree-sitter-log:4.3.2")

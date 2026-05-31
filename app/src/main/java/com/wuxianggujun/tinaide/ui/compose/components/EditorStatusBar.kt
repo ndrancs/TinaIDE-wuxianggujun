@@ -51,13 +51,13 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun EditorStatusBar(
+    modifier: Modifier = Modifier,
     status: EditorStatus = EditorStatus.Ready,
     encoding: String = "",
     line: Int = 1,
     column: Int = 1,
     bottomPanelState: BottomPanelDragState? = null,
-    onCursorPositionClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onCursorPositionClick: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     val velocityTracker = remember { VelocityTracker() }

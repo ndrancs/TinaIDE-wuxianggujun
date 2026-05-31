@@ -52,13 +52,6 @@ data class TerminalSessionState(
     }
 
     /**
-     * 更新 TerminalSession
-     */
-    fun withSession(newSession: TerminalSession?): TerminalSessionState {
-        return copy(session = newSession)
-    }
-
-    /**
      * 标记为已退出
      */
     fun withExited(code: Int): TerminalSessionState {

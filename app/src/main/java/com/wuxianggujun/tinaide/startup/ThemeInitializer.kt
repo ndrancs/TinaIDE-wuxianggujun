@@ -8,7 +8,7 @@ import timber.log.Timber
 /**
  * 主题初始化器
  *
- * 从 SharedPreferences 读取主题配置并初始化 ThemeManager + AppCompatDelegate。
+ * 从 SharedPreferences 读取主题配置并初始化 ThemeManager。
  * 直接读取 SharedPreferences（确保 :crash 进程也能正确显示主题）。
  */
 class ThemeInitializer(private val context: Context) {

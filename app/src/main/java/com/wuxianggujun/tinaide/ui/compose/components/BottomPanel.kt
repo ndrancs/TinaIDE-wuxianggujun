@@ -1,5 +1,6 @@
 package com.wuxianggujun.tinaide.ui.compose.components
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +58,7 @@ fun BottomPanel(
     onSymbolClick: (String) -> Unit,
     onBookmarkNavigate: (filePath: String, line: Int) -> Unit,
     onDiagnosticClick: (Diagnostic) -> Unit,
+    modifier: Modifier = Modifier,
     // Git 相关参数
     gitCurrentBranch: String? = null,
     gitBranches: List<GitBranch> = emptyList(),
@@ -69,8 +71,7 @@ fun BottomPanel(
     cursorLine: Int = 1,
     cursorColumn: Int = 1,
     fileEncoding: String = "",
-    onCursorPositionClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onCursorPositionClick: (() -> Unit)? = null
 ) {
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
@@ -292,8 +293,6 @@ fun BottomPanel(
                                         onBranchSelect = onGitBranchSelect,
                                         onCommitClick = onGitCommitClick
                                     )
-                                    // 终端已移至独立 Activity，不再在底部面板中显示
-                                    BottomPanelTab.TERMINAL -> { /* 不再处理 */ }
                                 }
                             }
                         }
@@ -316,6 +315,7 @@ fun BottomPanel(
 }
 
 @Composable
+@SuppressLint("StateFlowValueCalledInComposition")
 private fun <T> StateFlow<T>.collectAsStateWithLifecycleWhen(shouldCollect: Boolean): T = if (shouldCollect) {
     val collectedValue by collectAsStateWithLifecycle()
     collectedValue

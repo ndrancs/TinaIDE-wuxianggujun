@@ -8,8 +8,7 @@ import androidx.security.crypto.MasterKey
 /**
  * 渠道 API Key 加密存储。
  *
- * 采用与 [com.wuxianggujun.tinaide.ai.config.AiPreferences] 相同的 MasterKey + AES256-GCM 方案，
- * 每个渠道的 key 存入 "ai_channel_api_keys" 下的独立条目。
+ * 每个渠道的 key 都存入 "ai_channel_api_keys" 下的独立加密条目。
  */
 class AiChannelApiKeyStore(context: Context) {
 

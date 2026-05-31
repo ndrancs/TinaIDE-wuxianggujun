@@ -54,7 +54,7 @@ import com.wuxianggujun.tinaide.ai.tools.DangerousToolConfirmation
 import com.wuxianggujun.tinaide.ai.tools.ToolRegistry
 import com.wuxianggujun.tinaide.ai.viewmodel.AiChatViewModel
 import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.ui.compose.components.markdown.MarkdownBlock
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -129,7 +129,7 @@ fun DrawerAiPanel(
                 if (failed > 0) {
                     Toast.makeText(
                         context,
-                        context.getString(Strings.ai_image_pick_failed),
+                        Strings.ai_image_pick_failed.strOr(context),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -660,105 +660,6 @@ private fun StreamingMessageCard(
                     usage = message.usage!!,
                     color = textColor
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun GroupedAiMessageCard(
-    messages: List<ChatMessage>,
-    showTokenUsage: Boolean,
-    onCopyCode: (String) -> Unit,
-    onInsertCode: (String) -> Unit,
-    onExecuteToolCall: ((ToolCall) -> Unit)?,
-    onCancelToolCall: ((ToolCall) -> Unit)?,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start
-    ) {
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = 4.dp,
-                bottomEnd = 16.dp
-            ),
-            modifier = Modifier
-                .widthIn(min = 48.dp, max = 360.dp)
-                .wrapContentWidth()
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                val textColor = MaterialTheme.colorScheme.onSurfaceVariant
-
-                messages.forEach { message ->
-                    // 使用 key 来稳定组件，避免不必要的重组
-                    key(message.id) {
-                        when (message.role) {
-                            ChatRole.ASSISTANT -> {
-                                // AI 回复内容
-                                if (message.content.isNotBlank()) {
-                                    MarkdownBlock(
-                                        content = message.content,
-                                        onCodeCopy = { code -> onCopyCode(code) },
-                                        onCodeInsert = { code -> onInsertCode(code) },
-                                    )
-                                }
-
-                                // 工具调用
-                                message.toolCalls?.let { toolCalls ->
-                                    if (toolCalls.isNotEmpty()) {
-                                        if (message.content.isNotBlank()) {
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                        }
-                                        ToolCallsSection(
-                                            messageId = message.id,
-                                            toolCalls = toolCalls,
-                                            onCopyCode = onCopyCode,
-                                            onInsertCode = onInsertCode,
-                                            onExecuteToolCall = onExecuteToolCall,
-                                            onCancelToolCall = onCancelToolCall,
-                                            color = textColor,
-                                            isStreaming = false
-                                        )
-                                    }
-                                }
-
-                                // Reasoning
-                                message.reasoningContent?.let { reasoning ->
-                                    if (reasoning.isNotBlank()) {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        ReasoningSection(
-                                            messageId = message.id,
-                                            reasoning = reasoning,
-                                            onCopyCode = onCopyCode,
-                                            onInsertCode = onInsertCode,
-                                            color = textColor
-                                        )
-                                    }
-                                }
-
-                                // Token usage (只在最后一条 assistant 消息显示)
-                                if (message == messages.lastOrNull { it.role == ChatRole.ASSISTANT } &&
-                                    message.usage != null &&
-                                    showTokenUsage
-                                ) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    UsageRow(
-                                        usage = message.usage!!,
-                                        color = textColor
-                                    )
-                                }
-                            }
-                            else -> {
-                                // 其他类型消息（不应该出现在这里，因为已经过滤）
-                            }
-                        }
-                    }
-                }
             }
         }
     }

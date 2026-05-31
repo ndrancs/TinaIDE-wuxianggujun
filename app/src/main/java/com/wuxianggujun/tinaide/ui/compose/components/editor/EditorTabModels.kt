@@ -33,19 +33,6 @@ data class EditorTabState(
             ContentType.LARGE_TEXT -> "${file.name} [Large]"
             else -> file.name
         }
-
-    /**
-     * 获取带路径的显示名称（用于区分同名文件）
-     * @param disambiguationPath 用于区分的路径部分，如果为空则只显示文件名
-     */
-    fun getDisplayNameWithPath(disambiguationPath: String?): String {
-        val baseName = displayName
-        return if (disambiguationPath.isNullOrEmpty()) {
-            baseName
-        } else {
-            "$baseName ($disambiguationPath)"
-        }
-    }
 }
 
 /**

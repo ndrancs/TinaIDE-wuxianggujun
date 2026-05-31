@@ -9,7 +9,11 @@ import java.io.File
 
 internal sealed interface FileTreeIconSource {
     @Immutable
-    data class AppDrawable(@DrawableRes val resId: Int) : FileTreeIconSource
+    data class AppDrawable(
+        @param:DrawableRes
+        @get:DrawableRes
+        val resId: Int
+    ) : FileTreeIconSource
 
     @Immutable
     data class PluginAsset(val file: File) : FileTreeIconSource

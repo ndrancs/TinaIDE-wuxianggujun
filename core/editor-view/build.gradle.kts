@@ -26,6 +26,7 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines)
     implementation(libs.timber)
+    implementation(libs.androidx.collection)
     coreLibraryDesugaring(libs.desugar)
 
     implementation(platform(libs.compose.bom))
@@ -36,7 +37,6 @@ dependencies {
     androidTestImplementation(libs.compose.ui.test.junit4)
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.extended)
-    implementation(libs.compose.ui.tooling.preview)
     implementation("androidx.compose.foundation:foundation")
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso)

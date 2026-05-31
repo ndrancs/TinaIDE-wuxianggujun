@@ -8,9 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.*
@@ -42,16 +40,16 @@ fun DrawerGitPanelContent(
     status: GitStatus,
     onStageFile: (String) -> Unit,
     onUnstageFile: (String) -> Unit,
-    onStageAll: () -> Unit = {},
-    onUnstageAll: () -> Unit = {},
     onDiscardChanges: (String) -> Unit,
     onFileClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    onStageAll: () -> Unit = {},
+    onUnstageAll: () -> Unit = {},
     onShowDiff: (path: String, isStaged: Boolean) -> Unit = { _, _ -> },
     onCommit: (String) -> Unit = {},
     onInitRepository: () -> Unit = {},
     onOpenSync: () -> Unit = {},
-    onOpenRemotes: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onOpenRemotes: () -> Unit = {}
 ) {
     var commitMessage by remember { mutableStateOf("") }
 
@@ -183,196 +181,6 @@ fun DrawerGitPanelContent(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-/**
- * 侧滑栏 Git 面板（更改视图）- 带工具栏版本
- */
-@Composable
-fun DrawerGitPanel(
-    status: GitStatus,
-    isLoading: Boolean,
-    onRefresh: () -> Unit,
-    onStageFile: (String) -> Unit,
-    onUnstageFile: (String) -> Unit,
-    onStageAll: () -> Unit,
-    onCommit: () -> Unit,
-    onDiscardChanges: (String) -> Unit,
-    onFileClick: (String) -> Unit,
-    onShowDiff: (path: String, isStaged: Boolean) -> Unit = { _, _ -> },
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxSize()) {
-        // 工具栏
-        DrawerGitToolbar(
-            branch = status.branch,
-            hasChanges = status.hasChanges,
-            hasStagedChanges = status.staged.isNotEmpty(),
-            isLoading = isLoading,
-            onRefresh = onRefresh,
-            onStageAll = onStageAll,
-            onCommit = onCommit
-        )
-
-        if (!status.isRepository) {
-            NotARepositoryContent(modifier = Modifier.weight(1f))
-        } else if (!status.hasChanges) {
-            NoChangesContent(modifier = Modifier.weight(1f))
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                if (status.staged.isNotEmpty()) {
-                    item(key = "staged_header") {
-                        StagedSectionHeader(
-                            title = stringResource(Strings.git_staged_changes_section),
-                            count = status.staged.size,
-                            onUnstageAll = null
-                        )
-                    }
-                    items(status.staged, key = { "staged_${it.path}" }) { file ->
-                        GitFileCard(
-                            file = file,
-                            isStaged = true,
-                            onStage = { },
-                            onUnstage = { onUnstageFile(file.path) },
-                            onDiscard = { },
-                            onClick = { onFileClick(file.path) },
-                            onShowDiff = { onShowDiff(file.path, true) }
-                        )
-                    }
-                }
-
-                val allUnstaged = status.unstaged + status.untracked.map {
-                    GitFileStatus(it, FileStatus.UNTRACKED)
-                }
-                if (allUnstaged.isNotEmpty()) {
-                    item(key = "unstaged_header") {
-                        UnstagedSectionHeader(
-                            title = stringResource(Strings.git_section_changes),
-                            count = allUnstaged.size,
-                            onStageAll = onStageAll
-                        )
-                    }
-                    items(allUnstaged, key = { "unstaged_${it.path}" }) { file ->
-                        GitFileCard(
-                            file = file,
-                            isStaged = false,
-                            onStage = { onStageFile(file.path) },
-                            onUnstage = { },
-                            onDiscard = {
-                                if (file.status != FileStatus.UNTRACKED) {
-                                    onDiscardChanges(file.path)
-                                }
-                            },
-                            onClick = { onFileClick(file.path) },
-                            onShowDiff = {
-                                if (file.status != FileStatus.UNTRACKED) {
-                                    onShowDiff(file.path, false)
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DrawerGitToolbar(
-    branch: String?,
-    hasChanges: Boolean,
-    hasStagedChanges: Boolean,
-    isLoading: Boolean,
-    onRefresh: () -> Unit,
-    onStageAll: () -> Unit,
-    onCommit: () -> Unit
-) {
-    TinaOverlayPanelSurface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        shape = MaterialTheme.shapes.small,
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(Strings.drawer_tab_git_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                branch?.takeIf(String::isNotBlank)?.let { value ->
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            DrawerGitActionButton(
-                onClick = onRefresh,
-                enabled = !isLoading,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.22f)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = stringResource(Strings.menu_refresh),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(4.dp))
-
-            DrawerGitActionButton(
-                onClick = onStageAll,
-                enabled = hasChanges && !isLoading,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.22f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(Strings.content_desc_stage_all),
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(4.dp))
-
-            DrawerGitActionButton(
-                onClick = onCommit,
-                enabled = hasStagedChanges && !isLoading,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.22f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = stringResource(Strings.git_commit),
-                    modifier = Modifier.size(18.dp)
-                )
             }
         }
     }
@@ -713,8 +521,8 @@ private fun getFileStatusTextResId(status: FileStatus): Int = when (status) {
 
 @Composable
 private fun NotARepositoryContent(
-    onInitRepository: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onInitRepository: () -> Unit = {}
 ) {
     DrawerGitEmptyState(
         title = stringResource(Strings.git_not_a_repo),
@@ -736,15 +544,15 @@ private fun NoChangesContent(modifier: Modifier = Modifier) {
 @Composable
 private fun DrawerGitActionButton(
     onClick: () -> Unit,
-    modifier: Modifier = Modifier.size(32.dp),
-    enabled: Boolean = true,
     color: Color,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     minHeight: Dp = 32.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     TinaPanelSegmentButton(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.defaultMinSize(minWidth = minHeight, minHeight = minHeight),
         enabled = enabled,
         minHeight = minHeight,
         shape = MaterialTheme.shapes.small,

@@ -63,7 +63,9 @@ class LinuxDistroInstallerTest {
             writeText(sampleManifest(checksum = "0".repeat(64)))
         }
 
-        val catalog = ManifestLinuxDistroCatalog(FileLinuxDistroManifestSource(manifestFile).loadManifest())
+        val catalog = manifestFile.inputStream().use { input ->
+            ManifestLinuxDistroCatalog(LinuxDistroManifestParser.decode(input))
+        }
 
         assertThat(catalog.resolveDistro("alpine")?.defaultReleaseId).isEqualTo("3.20")
     }

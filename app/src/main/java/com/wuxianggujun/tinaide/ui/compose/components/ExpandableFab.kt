@@ -149,8 +149,8 @@ fun TinaFabMenuItem(
     label: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    spotlightTargetId: String? = null,
     modifier: Modifier = Modifier,
+    spotlightTargetId: String? = null
 ) {
     val menuShape = RoundedCornerShape(24.dp)
     val rowModifier = if (spotlightTargetId != null) {
