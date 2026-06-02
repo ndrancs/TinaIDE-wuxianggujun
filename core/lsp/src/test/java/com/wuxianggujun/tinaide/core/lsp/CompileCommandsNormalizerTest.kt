@@ -163,4 +163,100 @@ class CompileCommandsNormalizerTest {
             tempDir.deleteRecursively()
         }
     }
+
+    @Test
+    fun `normalizeForClangd inserts resource dir before source file`() {
+        val tempDir = createTempDirectory(prefix = "compile-commands-normalizer-resource-dir-").toFile()
+        try {
+            val sourceFile = File(tempDir, "compile_commands.json")
+            val targetFile = File(tempDir, "normalized/compile_commands.json")
+            val resourceDir = File(tempDir, "lib/clang/18")
+            sourceFile.writeText(
+                """
+                [
+                  {
+                    "directory": "/tmp/build",
+                    "file": "/tmp/main.c",
+                    "command": "/data/bin/clang --target=aarch64-linux-android28 -c /tmp/main.c"
+                  }
+                ]
+                """.trimIndent()
+            )
+
+            val normalized = CompileCommandsNormalizer.normalizeForClangd(
+                sourceFile = sourceFile,
+                targetFile = targetFile,
+                toolchainPaths = CompileCommandsNormalizer.ToolchainPaths(
+                    clangPath = "/data/bin/clang",
+                    clangppPath = "/data/bin/clang++",
+                    resourceDir = resourceDir
+                )
+            )
+
+            assertThat(normalized).isTrue()
+
+            val arguments = readArguments(targetFile)
+            val resourceFlagIndex = arguments.indexOf("-resource-dir")
+            val sourceIndex = arguments.indexOf("/tmp/main.c")
+
+            assertThat(resourceFlagIndex).isAtLeast(0)
+            assertThat(arguments[resourceFlagIndex + 1]).isEqualTo(resourceDir.absolutePath)
+            assertThat(resourceFlagIndex).isLessThan(sourceIndex)
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `normalizeForClangd updates existing inline resource dir`() {
+        val tempDir = createTempDirectory(prefix = "compile-commands-normalizer-existing-resource-dir-").toFile()
+        try {
+            val sourceFile = File(tempDir, "compile_commands.json")
+            val targetFile = File(tempDir, "normalized/compile_commands.json")
+            val resourceDir = File(tempDir, "lib/clang/18")
+            sourceFile.writeText(
+                """
+                [
+                  {
+                    "directory": "/tmp/build",
+                    "file": "/tmp/main.cpp",
+                    "arguments": [
+                      "/data/bin/clang++",
+                      "-resource-dir=/stale/clang",
+                      "-c",
+                      "/tmp/main.cpp"
+                    ]
+                  }
+                ]
+                """.trimIndent()
+            )
+
+            val normalized = CompileCommandsNormalizer.normalizeForClangd(
+                sourceFile = sourceFile,
+                targetFile = targetFile,
+                toolchainPaths = CompileCommandsNormalizer.ToolchainPaths(
+                    clangPath = "/data/bin/clang",
+                    clangppPath = "/data/bin/clang++",
+                    resourceDir = resourceDir
+                )
+            )
+
+            assertThat(normalized).isTrue()
+
+            val arguments = readArguments(targetFile)
+            assertThat(arguments).contains("-resource-dir=${resourceDir.absolutePath}")
+            assertThat(arguments).doesNotContain("-resource-dir=/stale/clang")
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    private fun readArguments(targetFile: File): List<String> {
+        return json.parseToJsonElement(targetFile.readText())
+            .jsonArray
+            .single()
+            .jsonObject["arguments"]!!
+            .jsonArray
+            .map { it.jsonPrimitive.contentOrNull.orEmpty() }
+    }
 }

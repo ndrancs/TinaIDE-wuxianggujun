@@ -1,6 +1,7 @@
 package com.wuxianggujun.tinaide.ui.workspace.model
 
 import com.google.common.truth.Truth.assertThat
+import com.wuxianggujun.tinaide.core.proot.PRootBootstrap
 import org.junit.Test
 
 class DependencyInstallUiStateTest {
@@ -41,6 +42,37 @@ class DependencyInstallUiStateTest {
         assertThat(state.failedMessage).isEqualTo("network timeout")
         assertThat(state.isNetworkRelated).isTrue()
         assertThat(state.rootfsHealth.status).isEqualTo(DependencyRootfsHealthStatus.ATTENTION)
+    }
+
+    @Test
+    fun installingState_shouldPreservePackageProgressAndPauseFlag() {
+        val packages = listOf(
+            PRootBootstrap.PackageInfo(
+                name = "clang",
+                displayName = "Clang",
+                status = PRootBootstrap.PackageStatus.COMPLETED
+            ),
+            PRootBootstrap.PackageInfo(
+                name = "cmake",
+                displayName = "CMake",
+                status = PRootBootstrap.PackageStatus.INSTALLING
+            )
+        )
+        val state = DependencyInstallUiState(
+            progress = 0.42f,
+            statusMessage = "installing cmake",
+            installStage = PRootBootstrap.InstallStage.INSTALLING_DISTRO,
+            packageList = packages,
+            currentPackage = "cmake",
+            isPaused = true
+        )
+
+        assertThat(state.installPhase).isEqualTo(InstallPhase.INSTALLING)
+        assertThat(state.progress).isEqualTo(0.42f)
+        assertThat(state.statusMessage).isEqualTo("installing cmake")
+        assertThat(state.packageList).containsExactlyElementsIn(packages).inOrder()
+        assertThat(state.currentPackage).isEqualTo("cmake")
+        assertThat(state.isPaused).isTrue()
     }
 
     @Test

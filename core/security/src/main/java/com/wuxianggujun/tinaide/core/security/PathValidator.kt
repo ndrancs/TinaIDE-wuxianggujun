@@ -112,7 +112,7 @@ class PathValidator(private val context: Context) {
         
         // 检查是否在白名单中
         val isAllowed = PROOT_GUEST_ALLOWED_PREFIXES.any { prefix ->
-            normalizedPath.startsWith(prefix)
+            normalizedPath.isSameOrChildOf(prefix)
         }
         
         if (!isAllowed) {
@@ -162,7 +162,7 @@ class PathValidator(private val context: Context) {
         
         // 检查是否在白名单中
         val isAllowed = hostAllowedPrefixes.any { prefix ->
-            canonicalPath.startsWith(prefix)
+            canonicalPath.isSameOrChildOf(prefix)
         }
         
         if (!isAllowed) {
@@ -270,5 +270,11 @@ class PathValidator(private val context: Context) {
     private fun File.canonicalPathOrAbsolute(): String {
         return runCatching { canonicalPath }.getOrDefault(absolutePath)
     }
-}
 
+    private fun String.isSameOrChildOf(prefix: String): Boolean {
+        val cleanPrefix = prefix.trimEnd('/', File.separatorChar)
+        return this == cleanPrefix ||
+            startsWith("$cleanPrefix/") ||
+            startsWith("$cleanPrefix${File.separator}")
+    }
+}

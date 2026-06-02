@@ -66,6 +66,12 @@ class PathValidatorTest {
     }
 
     @Test
+    fun `guest path with workspace prefix sibling is rejected`() {
+        assertThat(validator.isGuestPathAllowed("/workspace2/main.cpp")).isFalse()
+        assertThat(validator.isGuestPathAllowed("/workspace-backup/main.cpp")).isFalse()
+    }
+
+    @Test
     fun `guest path under tmp is allowed`() {
         assertThat(validator.isGuestPathAllowed("/tmp/build.log")).isTrue()
     }
@@ -164,6 +170,14 @@ class PathValidatorTest {
     fun `host path under app filesDir is allowed`() {
         val path = File(context.filesDir, "workspace/project/main.c").absolutePath
         assertThat(validator.isHostPathAllowed(path)).isTrue()
+    }
+
+    @Test
+    fun `host path with app filesDir prefix sibling is rejected`() {
+        val sibling = File(context.filesDir.parentFile, "${context.filesDir.name}-sibling")
+        sibling.mkdirs()
+
+        assertThat(validator.isHostPathAllowed(File(sibling, "main.c").absolutePath)).isFalse()
     }
 
     @Test
