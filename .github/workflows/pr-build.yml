@@ -18,6 +18,7 @@ env:
 jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -58,29 +59,66 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug APKs
+      - name: Build arm64 Debug APK
         run: |
-          ./gradlew :app:assembleDebugAllAbi --no-daemon \
+          ./gradlew :app:assembleArm64Debug --no-daemon -Ptina.devAbi=arm64 \
+            -Ptina.buildProotFromSource=false \
             -Dorg.gradle.internal.http.connectionTimeout=120000 \
             -Dorg.gradle.internal.http.socketTimeout=120000 \
             -Dorg.gradle.internal.repository.max.retries=4
 
       - name: List generated APKs
         run: |
-          echo "Generated APK files:"
-          if [ -d "app/build/outputs/apk" ]; then
-            find app/build/outputs/apk -name "*.apk" -type f | while read apk; do
+          set -euo pipefail
+
+          APK_DIR="app/build/outputs/apk/arm64/debug"
+          echo "Generated PR APK files:"
+          if [ -d "$APK_DIR" ]; then
+            find "$APK_DIR" -name "*.apk" -type f -print0 | while IFS= read -r -d '' apk; do
               size=$(du -h "$apk" | cut -f1)
-              echo "  - $apk ($size)"
+              bytes=$(wc -c < "$apk" | tr -d ' ')
+              echo "  - $apk ($size, ${bytes} bytes)"
+              if [ "$bytes" -gt 262144000 ]; then
+                echo "::warning file=$apk::PR debug APK exceeds 250 MiB ($size). Check assets/native payloads before merging."
+              fi
             done
           else
-            echo "  (no APK output dir: app/build/outputs/apk)"
+            echo "  (no PR APK output dir: $APK_DIR)"
           fi
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: debug-apk
-          path: app/build/outputs/apk/**/*.apk
-          retention-days: 7
+          name: TinaIDE-pr-${{ github.event.pull_request.number || github.run_id }}-arm64-v8a-debug-apk
+          path: app/build/outputs/apk/arm64/debug/*.apk
+          retention-days: 3
           if-no-files-found: error
+
+      - name: Build Summary
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          echo "## PR Build Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Build Type**: debug" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Architecture**: arm64-v8a" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Commit**: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **PR/Run**: ${{ github.event.pull_request.number || github.run_id }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Generated APKs" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Architecture | File | Size |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------------|------|------|" >> "$GITHUB_STEP_SUMMARY"
+
+          for apk in app/build/outputs/apk/arm64/debug/*.apk; do
+            [ -f "$apk" ] || continue
+            filename="$(basename "$apk")"
+            size="$(du -h "$apk" | cut -f1)"
+            echo "| arm64-v8a | $filename | $size |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Cleanup Gradle processes
+        if: ${{ always() }}
+        run: |
+          set +e
+          ./gradlew --stop || true
+          pgrep -af 'GradleDaemon|org.gradle.launcher.daemon' || true
