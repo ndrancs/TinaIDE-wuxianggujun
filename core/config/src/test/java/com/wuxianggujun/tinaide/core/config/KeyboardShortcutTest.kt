@@ -115,6 +115,14 @@ class KeyboardShortcutTest {
         assertThat(shortcut.matches(event)).isFalse()
     }
 
+    @Test
+    fun `matches returns false for key up event`() {
+        val shortcut = KeyboardShortcut(keyCode = KeyEvent.KEYCODE_S, ctrl = true)
+        val event = KeyEvent(0, 0, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_S, 0, KeyEvent.META_CTRL_ON)
+
+        assertThat(shortcut.matches(event)).isFalse()
+    }
+
     // ==================== getKeyName 测试 ====================
 
     @Test

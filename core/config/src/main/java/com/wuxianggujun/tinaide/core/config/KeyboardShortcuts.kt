@@ -54,7 +54,8 @@ data class KeyboardShortcut(
      * 检查按键事件是否匹配此快捷键
      */
     fun matches(event: KeyEvent): Boolean {
-        return event.keyCode == keyCode &&
+        return event.action == KeyEvent.ACTION_DOWN &&
+                event.keyCode == keyCode &&
                 event.isCtrlPressed == ctrl &&
                 event.isShiftPressed == shift &&
                 event.isAltPressed == alt
