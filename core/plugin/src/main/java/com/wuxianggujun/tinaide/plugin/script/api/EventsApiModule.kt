@@ -21,6 +21,7 @@ enum class PluginEvent(val id: String) {
     PROJECT_CLOSED("project.closed"),
     BUILD_STARTED("build.started"),
     BUILD_FINISHED("build.finished"),
+    CONFIG_CHANGED("config.changed"),
     CUSTOM("custom");
 
     companion object {
@@ -60,11 +61,20 @@ object PluginEventBus {
         Timber.d("Plugin $pluginId unsubscribed from all events")
     }
 
-    suspend fun emit(eventId: String, data: Map<String, Any?>? = null) {
+    suspend fun emit(
+        eventId: String,
+        data: Map<String, Any?>? = null,
+        targetPluginId: String? = null,
+    ) {
         val eventListeners = listeners[eventId] ?: return
-        Timber.d("Emitting event: $eventId to ${eventListeners.size} listeners")
+        val listenersToNotify = if (targetPluginId == null) {
+            eventListeners
+        } else {
+            eventListeners.filter { listener -> listener.pluginId == targetPluginId }
+        }
+        Timber.d("Emitting event: $eventId to ${listenersToNotify.size} listeners")
 
-        eventListeners.forEach { listener ->
+        listenersToNotify.forEach { listener ->
             try {
                 val runtime = runtimeProvider?.invoke(listener.pluginId)
                 if (runtime != null) {

@@ -120,7 +120,8 @@
 - `type = "string"` 且声明 `enum`：详情页渲染为单选项。
 
 配置 key 必须匹配 `^[A-Za-z0-9][A-Za-z0-9._-]*$`。宿主会按插件 ID 隔离保存配置；
-脚本 / hybrid 插件可通过 `tina.config.get/set/reset` 读取和更新自己声明过的配置项。
+脚本 / hybrid 插件可通过 `tina.config.get/set/reset` 读取和更新自己声明过的配置项，并可监听
+`config.changed` 响应自身配置变化。
 
 ### 4. 运行热安装
 

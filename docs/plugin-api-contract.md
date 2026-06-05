@@ -182,6 +182,9 @@
 | `set(key, value)` | 无 | 稳定 | 成功返回 `true`；未知 key、类型不匹配或枚举值非法时返回 `false, error`。 |
 | `reset(key)` | 无 | 稳定 | 删除已保存值并回退到 manifest `default`；未知 key 返回 `false, error`。 |
 
+插件可通过 `tina.events.on("config.changed", callbackName)` 监听自身配置变化。该事件只会定向派发给配置所属插件，
+不会广播其他插件的配置值。
+
 当前 schema 约束：
 
 - `type` 仅支持 `boolean`、`string`、`number`。
@@ -209,6 +212,7 @@
 | `file.renamed` | `oldPath`、`oldName`、`newPath`、`newName`、`isDirectory` | 无 |
 | `build.started` / `build.finished` | `rootPath` | 无 |
 | `diagnostics.changed` | `fileUri`、`fileName`、`totalCount`、`errorCount`、`warningCount`、`infoCount`、`hintCount` | `diagnostics` |
+| `config.changed` | `pluginId`、`key`、`value`、`previousValue` | 无 |
 
 ### 实验字段定义
 

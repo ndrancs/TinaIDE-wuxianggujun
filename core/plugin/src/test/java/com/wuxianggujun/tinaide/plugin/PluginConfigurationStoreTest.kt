@@ -3,7 +3,15 @@ package com.wuxianggujun.tinaide.plugin
 import android.app.Application
 import android.content.Context
 import com.google.common.truth.Truth.assertThat
+import com.wuxianggujun.tinaide.plugin.script.PluginExecutionResult
+import com.wuxianggujun.tinaide.plugin.script.ScriptPluginRuntime
+import com.wuxianggujun.tinaide.plugin.script.api.PluginEvent
+import com.wuxianggujun.tinaide.plugin.script.api.PluginEventBus
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.serialization.json.JsonPrimitive
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,6 +38,14 @@ class PluginConfigurationStoreTest {
             .clear()
             .commit()
         store = PluginConfigurationStore.getInstance(context)
+        PluginEventBus.clear()
+        PluginEventBus.setRuntimeProvider { null }
+    }
+
+    @After
+    fun tearDown() {
+        PluginEventBus.clear()
+        PluginEventBus.setRuntimeProvider { null }
     }
 
     @Test
@@ -73,6 +89,44 @@ class PluginConfigurationStoreTest {
         assertThat(store.setValue(manifest, "output.format", JsonPrimitive("json"))).isTrue()
 
         assertThat(store.getValue(manifest, "output.format")).isEqualTo(JsonPrimitive("json"))
+    }
+
+    @Test
+    fun `configuration store should emit targeted config changed events`() {
+        val manifest = manifest(
+            id = "demo.events",
+            defaultEnabled = false,
+        )
+        val runtime = mockk<ScriptPluginRuntime>()
+        val otherRuntime = mockk<ScriptPluginRuntime>()
+        coEvery { runtime.callFunction("onConfigChanged", any()) } returns PluginExecutionResult.Success(Unit)
+        coEvery { otherRuntime.callFunction("onConfigChanged", any()) } returns PluginExecutionResult.Success(Unit)
+        PluginEventBus.setRuntimeProvider { pluginId ->
+            when (pluginId) {
+                manifest.id -> runtime
+                "demo.other" -> otherRuntime
+                else -> null
+            }
+        }
+        PluginEventBus.subscribe(manifest.id, PluginEvent.CONFIG_CHANGED.id, "onConfigChanged")
+        PluginEventBus.subscribe("demo.other", PluginEvent.CONFIG_CHANGED.id, "onConfigChanged")
+
+        assertThat(store.setValue(manifest, "feature.enabled", JsonPrimitive(true))).isTrue()
+
+        coVerify(timeout = 1_000, exactly = 1) {
+            runtime.callFunction(
+                "onConfigChanged",
+                match<Map<String, Any?>> { payload ->
+                    payload["pluginId"] == manifest.id &&
+                        payload["key"] == "feature.enabled" &&
+                        payload["value"] == true &&
+                        payload["previousValue"] == false
+                }
+            )
+        }
+        coVerify(exactly = 0) {
+            otherRuntime.callFunction("onConfigChanged", any())
+        }
     }
 
     private fun manifest(

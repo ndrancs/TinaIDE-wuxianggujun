@@ -254,6 +254,7 @@
 - 未保存值时，`get()` 会先返回 manifest `default`，再使用调用方传入的 fallback。
 - `set()` 会校验类型；`string` + `enum` 会拒绝未声明的枚举值。
 - 支持类型为 `boolean`、`string`、`number`。
+- 配置变化会触发 `config.changed`，该事件只发给配置所属插件，不会暴露给其他插件。
 
 ### 4.8 `tina.storage`
 
@@ -395,6 +396,7 @@
 - `file.deleted`
 - `file.renamed`
 - `diagnostics.changed`
+- `config.changed`
 
 当前仅保留 ID、但不建议在教程里承诺已稳定触发的事件：
 
@@ -416,6 +418,8 @@
   包含 `oldPath`、`oldName`、`newPath`、`newName`、`isDirectory`
 - `diagnostics.changed`
   包含 `fileUri`、`fileName`、`totalCount`、`errorCount`、`warningCount`、`diagnostics`
+- `config.changed`
+  包含 `pluginId`、`key`、`value`、`previousValue`
 - `project.opened` / `project.closed`
   包含 `rootPath`、`projectName`
 - `build.started` / `build.finished`

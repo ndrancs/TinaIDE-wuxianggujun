@@ -22,6 +22,20 @@ object PluginHostEventDispatcher {
         }
     }
 
+    fun emitToPlugin(
+        pluginId: String,
+        eventId: String,
+        data: Map<String, Any?> = emptyMap(),
+    ) {
+        scope.launch {
+            PluginEventBus.emit(
+                eventId = eventId,
+                data = data,
+                targetPluginId = pluginId,
+            )
+        }
+    }
+
     fun emitProjectOpened(rootPath: String) {
         emit(
             eventId = PluginEvent.PROJECT_OPENED.id,
@@ -185,6 +199,24 @@ object PluginHostEventDispatcher {
         emit(
             eventId = PluginEvent.BUILD_FINISHED.id,
             data = mapOf("rootPath" to rootPath)
+        )
+    }
+
+    fun emitConfigChanged(
+        pluginId: String,
+        key: String,
+        value: Any?,
+        previousValue: Any?,
+    ) {
+        emitToPlugin(
+            pluginId = pluginId,
+            eventId = PluginEvent.CONFIG_CHANGED.id,
+            data = mapOf(
+                "pluginId" to pluginId,
+                "key" to key,
+                "value" to value,
+                "previousValue" to previousValue,
+            )
         )
     }
 }

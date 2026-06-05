@@ -226,11 +226,12 @@ interface HostCommand {
 - 已在插件详情页按 schema 自动生成配置 UI
 - 已提供按插件 ID 隔离的配置持久化
 - 已提供脚本 / hybrid 插件 `tina.config.get/set/reset`
+- 已提供定向 `config.changed` 事件，脚本可监听自身配置变化
 
 **当前边界**：
 - 支持 `boolean`、`string`、`number`
 - `string` + `enum` 会生成单选配置
-- 未实现配置变更监听；脚本可在需要时重新调用 `tina.config.get()`
+- `config.changed` 只派发给配置所属插件，不广播其他插件配置
 
 **manifest.json 示例**：
 

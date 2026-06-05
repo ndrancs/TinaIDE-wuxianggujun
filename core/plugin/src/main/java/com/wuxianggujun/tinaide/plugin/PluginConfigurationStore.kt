@@ -3,7 +3,11 @@ package com.wuxianggujun.tinaide.plugin
 import android.content.Context
 import android.content.SharedPreferences
 import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
+import com.wuxianggujun.tinaide.plugin.script.api.PluginHostEventDispatcher
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 class PluginConfigurationStore private constructor(
     context: Context,
@@ -31,9 +35,16 @@ class PluginConfigurationStore private constructor(
     ): Boolean {
         val property = PluginConfigurationSchema.resolveProperty(manifest, propertyKey) ?: return false
         val normalizedValue = PluginConfigurationSchema.normalizeValue(property, value) ?: return false
+        val previousValue = getValue(manifest, propertyKey)
         prefs.edit()
             .putString(buildPreferenceKey(manifest.id, propertyKey), normalizedValue.toString())
             .apply()
+        emitChangedIfNeeded(
+            pluginId = manifest.id,
+            property = property,
+            previousValue = previousValue,
+            nextValue = normalizedValue,
+        )
         return true
     }
 
@@ -41,10 +52,17 @@ class PluginConfigurationStore private constructor(
         manifest: PluginManifest,
         propertyKey: String,
     ): Boolean {
-        if (PluginConfigurationSchema.resolveProperty(manifest, propertyKey) == null) return false
+        val property = PluginConfigurationSchema.resolveProperty(manifest, propertyKey) ?: return false
+        val previousValue = getValue(manifest, propertyKey)
         prefs.edit()
             .remove(buildPreferenceKey(manifest.id, propertyKey))
             .apply()
+        emitChangedIfNeeded(
+            pluginId = manifest.id,
+            property = property,
+            previousValue = previousValue,
+            nextValue = property.defaultValue,
+        )
         return true
     }
 
@@ -55,6 +73,34 @@ class PluginConfigurationStore private constructor(
         prefs.edit().apply {
             keys.forEach(::remove)
         }.apply()
+    }
+
+    private fun emitChangedIfNeeded(
+        pluginId: String,
+        property: ResolvedPluginConfigurationProperty,
+        previousValue: JsonElement?,
+        nextValue: JsonElement?,
+    ) {
+        val previousEventValue = previousValue.toEventValue(property)
+        val nextEventValue = nextValue.toEventValue(property)
+        if (previousEventValue == nextEventValue) return
+        PluginHostEventDispatcher.emitConfigChanged(
+            pluginId = pluginId,
+            key = property.key,
+            value = nextEventValue,
+            previousValue = previousEventValue,
+        )
+    }
+
+    private fun JsonElement?.toEventValue(
+        property: ResolvedPluginConfigurationProperty,
+    ): Any? {
+        val primitive = this?.jsonPrimitive ?: return null
+        return when (property.type) {
+            PluginConfigurationPropertyType.BOOLEAN -> primitive.booleanOrNull
+            PluginConfigurationPropertyType.NUMBER -> primitive.doubleOrNull
+            PluginConfigurationPropertyType.STRING -> PluginConfigurationSchema.stringValue(this)
+        }
     }
 
     companion object {
