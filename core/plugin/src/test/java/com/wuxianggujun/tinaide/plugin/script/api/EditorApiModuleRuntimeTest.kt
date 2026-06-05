@@ -48,6 +48,8 @@ class EditorApiModuleRuntimeTest {
         runtimes.forEach { it.destroy() }
         permissionManager.revokeAllPermissions("test.editor.runtime")
         permissionManager.revokeAllPermissions("test.editor.permission.denied")
+        permissionManager.revokeAllPermissions("test.editor.runtime.a")
+        permissionManager.revokeAllPermissions("test.editor.runtime.b")
         PluginEditorBridgeHolder.clear()
         logManager.clearAll()
     }
@@ -142,6 +144,50 @@ class EditorApiModuleRuntimeTest {
             assertThat(entry.attributes[PluginLogEventKeys.API_METHOD]).isEqualTo("insertText")
             assertThat(entry.attributes[PluginLogEventKeys.PERMISSION_ID]).isEqualTo("editor.write")
             assertThat(entry.attributes[PluginLogEventKeys.DENIAL_REASON]).isEqualTo("NOT_DECLARED")
+        } finally {
+            registry.cleanup()
+        }
+    }
+
+    @Test
+    fun `editor api should keep runtime permissions isolated after another plugin initializes`() = runBlocking {
+        val firstPluginId = "test.editor.runtime.a"
+        val secondPluginId = "test.editor.runtime.b"
+        permissionManager.grantPermissions(firstPluginId, setOf(PluginPermission.EDITOR_WRITE))
+        val firstRuntime = createRuntime(
+            pluginId = firstPluginId,
+            permissions = listOf("editor.write")
+        )
+        val secondRuntime = createRuntime(
+            pluginId = secondPluginId,
+            permissions = emptyList()
+        )
+        val bridge = FakePluginEditorBridge()
+        val registry = PluginApiRegistry.createDefaultRegistry(context)
+        PluginEditorBridgeHolder.set(bridge)
+
+        try {
+            initializeRuntimeOrSkip(firstRuntime)
+            registry.initializeForRuntime(firstRuntime)
+            val defineResult = firstRuntime.execute(
+                """
+                function insert_after_second_runtime_loads()
+                  return tina.editor.insertText("from-first", 6, 8)
+                end
+                """.trimIndent()
+            )
+            assertThat(defineResult).isInstanceOf(PluginExecutionResult.Success::class.java)
+
+            initializeRuntimeOrSkip(secondRuntime)
+            registry.initializeForRuntime(secondRuntime)
+
+            val result = firstRuntime.callFunction("insert_after_second_runtime_loads")
+
+            assertThat(result).isEqualTo(PluginExecutionResult.Success(true))
+            assertThat(bridge.insertedText).isEqualTo("from-first")
+            assertThat(bridge.insertedLine).isEqualTo(6)
+            assertThat(bridge.insertedColumn).isEqualTo(8)
+            assertThat(logManager.getLogsForPlugin(firstPluginId)).isEmpty()
         } finally {
             registry.cleanup()
         }

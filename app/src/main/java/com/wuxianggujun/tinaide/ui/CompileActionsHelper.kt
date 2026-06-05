@@ -367,7 +367,7 @@ class CompileActionsHelper(
                 _uiEvents.tryEmit(
                     UiEvent.OpenTerminal(
                         launch.command,
-                        projectContext.getCurrentProject()?.rootPath
+                        launch.workingDirectory
                     )
                 )
             }

@@ -307,7 +307,8 @@ class CompileActionsHelperTest {
             summary = "run ok",
             launch = CompileProjectUseCase.LaunchSpec.Terminal(
                 command = "./imgui-demo",
-                runnablePath = "/tmp/imgui-demo"
+                runnablePath = "/tmp/imgui-demo",
+                workingDirectory = "/tmp/build"
             )
         )
 
@@ -322,7 +323,7 @@ class CompileActionsHelperTest {
             ),
             CompileActionsHelper.UiEvent.OpenTerminal(
                 command = "./imgui-demo",
-                workDir = project.rootPath
+                workDir = "/tmp/build"
             )
         ).inOrder()
     }

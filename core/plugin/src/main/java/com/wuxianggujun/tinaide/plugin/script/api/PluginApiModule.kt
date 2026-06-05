@@ -30,14 +30,20 @@ interface PluginApiModule {
  * under a single `tina` global table when a script plugin is initialised.
  */
 class PluginApiRegistry(private val context: Context) {
-    private val modules = mutableMapOf<String, PluginApiModule>()
+    private val moduleFactories = linkedMapOf<String, () -> PluginApiModule>()
+    private val runtimeModules = mutableMapOf<String, List<PluginApiModule>>()
 
-    fun registerModule(module: PluginApiModule) {
-        modules[module.namespace] = module
+    fun registerModule(namespace: String, factory: () -> PluginApiModule) {
+        moduleFactories[namespace] = factory
     }
 
     fun unregisterModule(namespace: String) {
-        modules.remove(namespace)
+        moduleFactories.remove(namespace)
+        runtimeModules.values.forEach { modules ->
+            modules
+                .filter { module -> module.namespace == namespace }
+                .forEach { module -> module.unregister() }
+        }
     }
 
     /**
@@ -51,11 +57,14 @@ class PluginApiRegistry(private val context: Context) {
      */
     fun initializeForRuntime(runtime: ScriptPluginRuntime) {
         val lua = runtime.getLuaState() ?: return
+        cleanupRuntime(runtime.pluginId)
+        val modules = moduleFactories.values.map { createModule -> createModule() }
+        runtimeModules[runtime.pluginId] = modules
 
         // tina = {}
         lua.createTable(0, modules.size + 1)
 
-        modules.values.forEach { module ->
+        modules.forEach { module ->
             lua.createTable(0, 12)
             module.register(runtime, lua)
             lua.setField(-2, module.namespace)
@@ -72,9 +81,15 @@ class PluginApiRegistry(private val context: Context) {
         lua.setGlobal("tina")
     }
 
+    fun cleanupRuntime(pluginId: String) {
+        runtimeModules.remove(pluginId)?.forEach { module -> module.unregister() }
+    }
+
     fun cleanup() {
-        modules.values.forEach { it.unregister() }
-        modules.clear()
+        runtimeModules.values
+            .flatten()
+            .forEach { module -> module.unregister() }
+        runtimeModules.clear()
     }
 
     companion object {
@@ -84,18 +99,18 @@ class PluginApiRegistry(private val context: Context) {
         ): PluginApiRegistry {
             val workspaceFileAccess = PluginWorkspaceFileAccess(projectRootProvider)
             return PluginApiRegistry(context).apply {
-                registerModule(EditorApiModule())
-                registerModule(UiApiModule(context))
-                registerModule(ConfigApiModule(context))
-                registerModule(StorageApiModule(context))
-                registerModule(CommandsApiModule(projectRootProvider))
-                registerModule(EventsApiModule())
-                registerModule(DiagnosticsApiModule())
-                registerModule(WorkspaceApiModule(workspaceFileAccess))
-                registerModule(FileApiModule(workspaceFileAccess))
-                registerModule(ClipboardApiModule(context))
-                registerModule(NetworkApiModule(context))
-                registerModule(DatabaseApiModule(context))
+                registerModule("editor") { EditorApiModule() }
+                registerModule("ui") { UiApiModule(context) }
+                registerModule("config") { ConfigApiModule(context) }
+                registerModule("storage") { StorageApiModule(context) }
+                registerModule("commands") { CommandsApiModule(projectRootProvider) }
+                registerModule("events") { EventsApiModule() }
+                registerModule("diagnostics") { DiagnosticsApiModule() }
+                registerModule("workspace") { WorkspaceApiModule(workspaceFileAccess) }
+                registerModule("fs") { FileApiModule(workspaceFileAccess) }
+                registerModule("clipboard") { ClipboardApiModule(context) }
+                registerModule("network") { NetworkApiModule(context) }
+                registerModule("db") { DatabaseApiModule(context) }
             }
         }
     }

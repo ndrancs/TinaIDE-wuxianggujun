@@ -1081,6 +1081,41 @@ class EditorContainerStateTest {
     }
 
     @Test
+    fun closeOtherTabsForActiveTab_shouldPromptBeforeClosingDirtyOtherTab() {
+        setTabs(
+            managerTabs = listOf(
+                EditorTab(id = "tab-1", file = File(context.cacheDir, "First.kt")),
+                EditorTab(id = "tab-2", file = File(context.cacheDir, "Second.kt")),
+                EditorTab(id = "tab-3", file = File(context.cacheDir, "Third.kt"))
+            ),
+            activeTabId = "tab-2"
+        )
+        state.updateTabState(tabId = "tab-1", isDirty = true, canUndo = false, canRedo = false)
+
+        assertThat(state.closeOtherTabsForActiveTab()).isTrue()
+
+        assertThat(state.pendingCloseTab?.id).isEqualTo("tab-1")
+        assertThat(state.tabs.map { it.id }).containsExactly("tab-1", "tab-2", "tab-3")
+    }
+
+    @Test
+    fun closeAllTabs_shouldPromptBeforeClosingDirtyTab() {
+        setTabs(
+            managerTabs = listOf(
+                EditorTab(id = "tab-1", file = File(context.cacheDir, "First.kt")),
+                EditorTab(id = "tab-2", file = File(context.cacheDir, "Second.kt"))
+            ),
+            activeTabId = "tab-2"
+        )
+        state.updateTabState(tabId = "tab-2", isDirty = true, canUndo = false, canRedo = false)
+
+        assertThat(state.closeAllTabs()).isTrue()
+
+        assertThat(state.pendingCloseTab?.id).isEqualTo("tab-2")
+        assertThat(state.tabs.map { it.id }).containsExactly("tab-1", "tab-2")
+    }
+
+    @Test
     fun toggleSplitEditor_shouldCollapseTabsBackToPrimaryPane() {
         setTabs(
             managerTabs = listOf(

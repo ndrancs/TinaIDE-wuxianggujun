@@ -67,7 +67,7 @@ class ScriptPluginManager private constructor(
     private var projectRootProvider: () -> String? = { null }
     private val apiRegistry by lazy {
         PluginApiRegistry.createDefaultRegistry(context, projectRootProvider).apply {
-            registerModule(LogApiModule(logManager))
+            registerModule("log") { LogApiModule(logManager) }
         }
     }
     
@@ -275,6 +275,7 @@ class ScriptPluginManager private constructor(
         val runtime = runtimes.remove(pluginId)
         PluginEventBus.unsubscribeAll(pluginId)
         PluginCommandRegistry.unregisterAll(pluginId)
+        apiRegistry.cleanupRuntime(pluginId)
         runtime?.destroy()
         updateState(pluginId, nextState, error)
         Timber.tag(TAG).i("Plugin unloaded: $pluginId")

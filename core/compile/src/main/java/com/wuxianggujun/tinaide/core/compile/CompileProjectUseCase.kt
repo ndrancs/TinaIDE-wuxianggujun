@@ -135,7 +135,11 @@ class CompileProjectUseCase(
 
     sealed class LaunchSpec {
         data object None : LaunchSpec()
-        data class Terminal(val command: String, val runnablePath: String?) : LaunchSpec()
+        data class Terminal(
+            val command: String,
+            val runnablePath: String?,
+            val workingDirectory: String,
+        ) : LaunchSpec()
         data class Debug(
             val programPath: String?,
             val workingDirectory: String,
@@ -671,7 +675,11 @@ class CompileProjectUseCase(
                 projectRoot = projectRoot,
                 extraEnvironment = launchEnvironment,
             )
-            LaunchSpec.Terminal(command, descriptor.runnablePath)
+            LaunchSpec.Terminal(
+                command = command,
+                runnablePath = descriptor.runnablePath,
+                workingDirectory = workingDir,
+            )
         }
     }
 

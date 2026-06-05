@@ -190,10 +190,7 @@ class MainActivityHostCommandExecutor(
                 true
             }
             HostCommands.EDITOR_CLOSE -> editorContainerState.requestCloseActiveTab()
-            HostCommands.EDITOR_CLOSE_ALL -> {
-                editorContainerState.closeAllTabs()
-                true
-            }
+            HostCommands.EDITOR_CLOSE_ALL -> editorContainerState.closeAllTabs()
             HostCommands.EDITOR_CLOSE_OTHERS -> editorContainerState.closeOtherTabsForActiveTab()
             HostCommands.EDITOR_UNDO -> {
                 actionsViewModel.performUndo(editorContainerState)

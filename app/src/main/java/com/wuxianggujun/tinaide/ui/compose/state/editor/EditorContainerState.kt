@@ -1200,39 +1200,42 @@ class EditorContainerState(
         selectTabInPane(pane, index)
     }
 
-    fun closeOtherTabs(exceptIndex: Int) {
+    fun closeOtherTabs(exceptIndex: Int): Boolean {
         val keptTabId = tabs.getOrNull(exceptIndex)?.id
-        tabManager.closeOtherTabs(exceptIndex)
-        if (keptTabId != null) {
-            tabPaneMap.keys
-                .filter { it != keptTabId }
-                .toList()
-                .forEach(tabPaneMap::remove)
-            removeMirroredTabsExcept(keptTabId)
-            val keptPane = resolvePaneForTab(keptTabId)
-            activeTabIdByPane.keys
-                .filter { it != keptPane }
-                .toList()
-                .forEach(activeTabIdByPane::remove)
-        }
+        if (keptTabId == null) return false
+        val completed = tabManager.closeOtherTabs(exceptIndex)
+        if (!completed) return true
+        tabPaneMap.keys
+            .filter { it != keptTabId }
+            .toList()
+            .forEach(tabPaneMap::remove)
+        removeMirroredTabsExcept(keptTabId)
+        val keptPane = resolvePaneForTab(keptTabId)
+        activeTabIdByPane.keys
+            .filter { it != keptPane }
+            .toList()
+            .forEach(activeTabIdByPane::remove)
         normalizeEditorPaneState(preferredActiveTabId = keptTabId)
         persistSplitEditorState()
+        return true
     }
 
     fun closeOtherTabsForActiveTab(): Boolean {
         val activeIndex = activeTabIndex.takeIf { it in tabs.indices } ?: return false
-        closeOtherTabs(activeIndex)
-        return true
+        return closeOtherTabs(activeIndex)
     }
 
-    fun closeAllTabs() {
-        tabManager.closeAllTabs()
+    fun closeAllTabs(): Boolean {
+        val hadTabs = tabs.isNotEmpty()
+        val completed = tabManager.closeAllTabs()
+        if (!completed) return hadTabs
         tabPaneMap.clear()
         mirroredTabIdsByPane.clear()
         activeTabIdByPane.clear()
         isSplitEditorEnabled = false
         focusedPane = EditorPaneId.PRIMARY
         persistSplitEditorState()
+        return hadTabs
     }
 
     fun updateTabState(tabId: String, isDirty: Boolean, canUndo: Boolean, canRedo: Boolean) {

@@ -321,24 +321,38 @@ class EditorTabManager(
     /**
      * 关闭其他标签页
      */
-    fun closeOtherTabs(exceptIndex: Int) {
-        if (exceptIndex < 0 || exceptIndex >= _tabs.size) return
+    fun closeOtherTabs(exceptIndex: Int): Boolean {
+        if (exceptIndex < 0 || exceptIndex >= _tabs.size) return false
         val tabsToClose = _tabs.indices.filter { it != exceptIndex }.reversed()
+        val dirtyTab = tabsToClose
+            .asSequence()
+            .map { index -> _tabs[index] }
+            .firstOrNull { tab -> tab.isDirty }
+        if (dirtyTab != null) {
+            pendingCloseTab = dirtyTab
+            return false
+        }
         tabsToClose.forEach { index -> closeTabInternal(index) }
+        return true
     }
 
     fun closeOtherTabsForActiveTab(): Boolean {
         val activeIndex = activeTabIndex.takeIf { it in _tabs.indices } ?: return false
-        closeOtherTabs(activeIndex)
-        return true
+        return closeOtherTabs(activeIndex)
     }
 
     /**
      * 关闭所有标签页
      */
-    fun closeAllTabs() {
+    fun closeAllTabs(): Boolean {
+        val dirtyTab = _tabs.firstOrNull { tab -> tab.isDirty }
+        if (dirtyTab != null) {
+            pendingCloseTab = dirtyTab
+            return false
+        }
         val tabsToClose = _tabs.indices.reversed().toList()
         tabsToClose.forEach { index -> closeTabInternal(index) }
+        return true
     }
 
     // ========== 选择标签页 ==========
