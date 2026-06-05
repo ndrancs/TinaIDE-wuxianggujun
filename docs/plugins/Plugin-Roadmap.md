@@ -1,6 +1,6 @@
 # 插件系统路线图（Roadmap）
 
-> 文档更新：2026-04-22
+> 文档更新：2026-06-05
 > 目标：以 **配置插件优先** 的方式逐步扩展 TinaIDE 插件能力（Play 合规、低风险、可维护）。
 
 ---
@@ -11,7 +11,8 @@
 
 - 插件安装/卸载/启用/禁用：`core/plugin/src/main/java/.../plugin/PluginManager.kt`
 - 插件管理 UI（设置 → 插件）：`feature/settings/src/main/java/.../settings/sections/PluginsSettingsSection.kt`
-- 主题、代码片段、文件树菜单、编辑器 Tab 长按菜单
+- 主题、代码片段、文件树菜单、编辑器 Tab 长按菜单、编辑器工具栏动作菜单
+- 插件快捷键、依赖声明提示、插件详情页配置 UI
 - 项目模板与 APK 导出模板（`contributions.projectTemplates` / `contributions.apkExports`）
 - LSP 插件安装链路
 - 脚本 / hybrid 插件最小运行时、权限确认与日志
@@ -54,7 +55,7 @@
 | Keybindings（快捷键绑定） | ⭐⭐⭐ | ⭐⭐⭐ | P2 | ✅ JSON 文件声明，MainActivity 硬件快捷键分发已接入 |
 | requires（依赖声明提示） | ⭐⭐⭐ | ⭐⭐ | P2 | ✅ 已完成：manifest 解析、详情展示、doctor 提示；不做安装 |
 | 插件详情页（权限/依赖/贡献预览） | ⭐⭐⭐ | ⭐⭐⭐ | P2 | UX 完整性 |
-| **插件设置页面** | ⭐⭐⭐ | ⭐⭐⭐ | P2 | 预留，阶段 2 前置；规范已定义，代码待实现 |
+| **插件设置页面** | ⭐⭐⭐ | ⭐⭐⭐ | P2 | ✅ 已完成：manifest `configuration` schema、插件详情页自动配置 UI、持久化与 `tina.config.*` API |
 
 ---
 
