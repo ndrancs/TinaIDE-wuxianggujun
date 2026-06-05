@@ -101,6 +101,7 @@ fun SettingsScreen(
     pluginManager: PluginManager,
     themeRegistry: EditorThemeIndex,
     lspPluginManager: LspPluginManager? = null,
+    initialPluginIdForDetail: String? = null,
     onNavigateBack: () -> Unit,
     onNavigateTo: (SettingsRoute) -> Unit,
     // Composable slots for screens that live outside this module
@@ -130,7 +131,9 @@ fun SettingsScreen(
     var selectedPluginLogName by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPluginLogLevelName by rememberSaveable { mutableStateOf<String?>(null) }
     // 插件详情页面状态需要被日志页快捷修复入口复用。
-    var selectedPluginIdForDetail by remember { mutableStateOf<String?>(null) }
+    var selectedPluginIdForDetail by rememberSaveable(initialPluginIdForDetail) {
+        mutableStateOf(initialPluginIdForDetail)
+    }
 
     when (routeResolution.host) {
         SettingsScreenHost.HelpContent -> {

@@ -64,6 +64,7 @@ internal object SettingsActivitySupport {
         context: Context,
         initialRoute: SettingsRoute? = null,
         initialHelpDocumentId: String? = null,
+        initialPluginDetailId: String? = null,
     ): Intent = Intent(context, SettingsActivity::class.java).apply {
         if (context !is Activity) {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -72,12 +73,18 @@ internal object SettingsActivitySupport {
         initialHelpDocumentId
             ?.takeUnless { it.isBlank() }
             ?.let { putExtra(SettingsActivity.EXTRA_INITIAL_HELP_DOCUMENT_ID, it) }
+        initialPluginDetailId
+            ?.takeUnless { it.isBlank() }
+            ?.let { putExtra(SettingsActivity.EXTRA_INITIAL_PLUGIN_DETAIL_ID, it) }
     }
 
     fun extractInitialRouteId(intent: Intent): String? = intent.getStringExtra(SettingsActivity.EXTRA_INITIAL_ROUTE)
         ?.takeUnless { it.isBlank() }
 
     fun extractInitialHelpDocumentId(intent: Intent): String? = intent.getStringExtra(SettingsActivity.EXTRA_INITIAL_HELP_DOCUMENT_ID)
+        ?.takeUnless { it.isBlank() }
+
+    fun extractInitialPluginDetailId(intent: Intent): String? = intent.getStringExtra(SettingsActivity.EXTRA_INITIAL_PLUGIN_DETAIL_ID)
         ?.takeUnless { it.isBlank() }
 
     fun resolveInitialRoute(routeId: String?): SettingsRoute = routeId?.takeUnless { it.isBlank() }?.let(initialRoutes::get) ?: SettingsRoute.Root
@@ -135,6 +142,7 @@ class SettingsActivity :
         private const val TAG = "SettingsActivity"
         const val EXTRA_INITIAL_ROUTE = "extra_initial_route"
         const val EXTRA_INITIAL_HELP_DOCUMENT_ID = "extra_initial_help_document_id"
+        const val EXTRA_INITIAL_PLUGIN_DETAIL_ID = "extra_initial_plugin_detail_id"
         const val EXTRA_PROJECT_ROOT = "extra_project_root"
 
         fun start(
@@ -147,6 +155,16 @@ class SettingsActivity :
                     context = context,
                     initialRoute = initialRoute,
                     initialHelpDocumentId = initialHelpDocumentId,
+                )
+            )
+        }
+
+        fun startPluginDetail(context: Context, pluginId: String) {
+            context.startActivity(
+                SettingsActivitySupport.buildStartIntent(
+                    context = context,
+                    initialRoute = SettingsRoute.Plugins,
+                    initialPluginDetailId = pluginId,
                 )
             )
         }
@@ -184,6 +202,7 @@ class SettingsActivity :
         // 若从项目列表菜单进入，绑定目标项目根路径；否则走默认（使用当前会话项目）
         val targetProjectRoot = intent.getStringExtra(EXTRA_PROJECT_ROOT)?.takeUnless { it.isBlank() }
         val initialHelpDocumentId = SettingsActivitySupport.extractInitialHelpDocumentId(intent)
+        val initialPluginDetailId = SettingsActivitySupport.extractInitialPluginDetailId(intent)
         settingsViewModel.setTargetProjectRoot(targetProjectRoot)
         initialHelpDocumentId?.let(helpViewModel::selectDocumentById)
 
@@ -220,6 +239,7 @@ class SettingsActivity :
                     pluginManager = pluginManager,
                     themeRegistry = themeRegistry,
                     lspPluginManager = lspPluginManager,
+                    initialPluginIdForDetail = initialPluginDetailId,
                     onNavigateBack = {
                         val backResult = SettingsActivityNavigationSupport.navigateBack(routeStack)
                         routeStack.clear()

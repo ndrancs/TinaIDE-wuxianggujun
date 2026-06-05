@@ -328,6 +328,7 @@
   <string name="lsp_plugin_dependency_status_repair_desc">检测到依赖或启动失败，请查看错误日志并执行修复。</string>
   <string name="lsp_plugin_dependency_status_install_desc">语言服务器依赖尚未安装，请先安装。</string>
   <string name="lsp_plugin_dependency_status_no_toolchains_desc">此 LSP 插件未声明额外工具链，启动状态以服务器探测结果为准。</string>
+  <string name="lsp_plugin_dependency_not_ready_snackbar">LSP 插件依赖未就绪：%1$s</string>
   <string name="lsp_plugin_dependency_last_error">最后错误：%1$s</string>
   <string name="lsp_plugin_dependency_toolchains_title">工具链明细</string>
   <string name="lsp_plugin_dependency_toolchain_line">%1$s（%2$s）：%3$s</string>

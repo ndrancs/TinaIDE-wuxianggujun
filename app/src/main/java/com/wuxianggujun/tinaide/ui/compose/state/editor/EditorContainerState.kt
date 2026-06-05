@@ -148,6 +148,13 @@ class EditorContainerState(
         val languageId: String
     )
 
+    data class PluginLspDependencyAlert(
+        val sequence: Long,
+        val pluginId: String,
+        val pluginName: String,
+        val message: String
+    )
+
     data class ActiveSaveTarget(
         val tabId: String,
         val file: File
@@ -328,10 +335,13 @@ class EditorContainerState(
     private val navigationForwardStack = mutableStateListOf<NavigationHistoryEntry>()
     private val maxNavigationHistorySize = 100
     private var pendingSaveAllNotificationTargets: List<ActiveSaveTarget> = emptyList()
+    private var pluginLspDependencyAlertSequence: Long = 0L
 
     private val lspStatusesByTabId = mutableStateMapOf<String, EditorStatus>()
     private val diagnosticsByFilePath = mutableStateMapOf<String, List<Diagnostic>>()
     private var diagnosticsObserver: ((fileUri: String, diagnostics: List<Diagnostic>) -> Unit)? = null
+    var pluginLspDependencyAlert by mutableStateOf<PluginLspDependencyAlert?>(null)
+        private set
 
     init {
         // 注入 LspPluginManager 到 LspEditorManager
@@ -350,6 +360,16 @@ class EditorContainerState(
 
         lspEditorManager.onLspStatusChanged = { tabId, status ->
             lspStatusesByTabId[tabId] = status
+        }
+
+        lspEditorManager.onPluginLspDependencyNotReady = { event ->
+            pluginLspDependencyAlertSequence += 1
+            pluginLspDependencyAlert = PluginLspDependencyAlert(
+                sequence = pluginLspDependencyAlertSequence,
+                pluginId = event.pluginId,
+                pluginName = event.pluginName,
+                message = event.message,
+            )
         }
 
         // 设置标签关闭回调，清理状态
@@ -381,6 +401,12 @@ class EditorContainerState(
     val activeTabIndex: Int get() = tabManager.activeTabIndex
     val pendingCloseTab: EditorTabState? get() = tabManager.pendingCloseTab
     val lastOpenError: String? get() = tabManager.lastOpenError
+
+    fun consumePluginLspDependencyAlert(): PluginLspDependencyAlert? {
+        val alert = pluginLspDependencyAlert
+        pluginLspDependencyAlert = null
+        return alert
+    }
 
     var isSplitEditorEnabled by mutableStateOf(false)
         private set

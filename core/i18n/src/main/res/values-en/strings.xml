@@ -258,6 +258,7 @@
   <string name="lsp_plugin_dependency_status_repair_desc">Dependency or startup failures were detected. Review error logs and run repair.</string>
   <string name="lsp_plugin_dependency_status_install_desc">Language server dependencies are not installed yet. Install them first.</string>
   <string name="lsp_plugin_dependency_status_no_toolchains_desc">This LSP plugin declares no extra toolchains. Startup state depends on server probing.</string>
+  <string name="lsp_plugin_dependency_not_ready_snackbar">LSP plugin dependencies are not ready: %1$s</string>
   <string name="lsp_plugin_dependency_last_error">Last error: %1$s</string>
   <string name="lsp_plugin_dependency_toolchains_title">Toolchain Details</string>
   <string name="lsp_plugin_dependency_toolchain_line">%1$s (%2$s): %3$s</string>

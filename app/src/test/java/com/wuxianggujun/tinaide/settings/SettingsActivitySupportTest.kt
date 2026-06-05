@@ -30,6 +30,7 @@ class SettingsActivitySupportTest {
             application,
             SettingsRoute.Feedback,
             "plugin-quick-start",
+            "tinaide.plugin.cpp-snippets",
         )
 
         assertThat(rootIntent.component?.className).isEqualTo(SettingsActivity::class.java.name)
@@ -44,6 +45,9 @@ class SettingsActivitySupportTest {
         assertThat(SettingsActivitySupport.extractInitialHelpDocumentId(rootIntent)).isNull()
         assertThat(SettingsActivitySupport.extractInitialHelpDocumentId(feedbackIntent))
             .isEqualTo("plugin-quick-start")
+        assertThat(SettingsActivitySupport.extractInitialPluginDetailId(rootIntent)).isNull()
+        assertThat(SettingsActivitySupport.extractInitialPluginDetailId(feedbackIntent))
+            .isEqualTo("tinaide.plugin.cpp-snippets")
     }
 
     @Test
@@ -55,6 +59,7 @@ class SettingsActivitySupportTest {
         assertThat(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK).isEqualTo(0)
         assertThat(SettingsActivitySupport.extractInitialRouteId(intent))
             .isEqualTo(SettingsRoute.Terminal.route)
+        assertThat(SettingsActivitySupport.extractInitialPluginDetailId(intent)).isNull()
     }
 
     @Test
@@ -73,6 +78,24 @@ class SettingsActivitySupportTest {
             .isEqualTo("plugin-quick-start")
         assertThat(SettingsActivitySupport.resolveInitialRoute(startedIntent))
             .isEqualTo(SettingsRoute.Help)
+    }
+
+    @Test
+    fun startPluginDetail_shouldLaunchPluginSettingsWithInitialPluginId() {
+        val application = RuntimeEnvironment.getApplication()
+
+        SettingsActivity.startPluginDetail(application, "tinaide.plugin.cpp-snippets")
+
+        val startedIntent = shadowOf(application).nextStartedActivity
+        assertThat(startedIntent.component?.className).isEqualTo(SettingsActivity::class.java.name)
+        assertThat(startedIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
+            .isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
+        assertThat(SettingsActivitySupport.extractInitialRouteId(startedIntent))
+            .isEqualTo(SettingsRoute.Plugins.route)
+        assertThat(SettingsActivitySupport.extractInitialPluginDetailId(startedIntent))
+            .isEqualTo("tinaide.plugin.cpp-snippets")
+        assertThat(SettingsActivitySupport.resolveInitialRoute(startedIntent))
+            .isEqualTo(SettingsRoute.Plugins)
     }
 
     @Test

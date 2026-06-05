@@ -97,6 +97,12 @@ import timber.log.Timber
 @Suppress("DEPRECATION", "TYPEALIAS_EXPANSION_DEPRECATION")
 private typealias ProtocolMarkedString = org.eclipse.lsp4j.MarkedString
 
+data class PluginLspDependencyNotReadyEvent(
+    val pluginId: String,
+    val pluginName: String,
+    val message: String
+)
+
 class LspEditorManager {
 
     companion object {
@@ -213,6 +219,7 @@ class LspEditorManager {
 
     var onDiagnosticsChanged: ((fileUri: String, diagnostics: List<Diagnostic>) -> Unit)? = null
     var onLspStatusChanged: ((tabId: String, status: EditorStatus) -> Unit)? = null
+    var onPluginLspDependencyNotReady: ((PluginLspDependencyNotReadyEvent) -> Unit)? = null
 
     val codeActionService = LspCodeActionService()
     val navigationService = LspNavigationService()
@@ -1252,6 +1259,13 @@ class LspEditorManager {
         if (!readiness.ready) {
             val message = readiness.toPluginReadinessMessage()
             pluginManager.markServerStartupFailed(pluginInfo.pluginId, message)
+            onPluginLspDependencyNotReady?.invoke(
+                PluginLspDependencyNotReadyEvent(
+                    pluginId = pluginInfo.pluginId,
+                    pluginName = pluginInfo.pluginName,
+                    message = message,
+                )
+            )
             logPluginLspEvent(
                 context = context,
                 pluginInfo = pluginInfo,

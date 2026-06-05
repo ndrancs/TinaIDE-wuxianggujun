@@ -16,8 +16,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,11 +75,13 @@ fun EditorContainer(
     onSaveFile: (tabId: String, onComplete: () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
     onCursorPositionChanged: (line: Int, column: Int) -> Unit = { _, _ -> },
-    onFileEncodingChanged: (encoding: String) -> Unit = { _ -> }
+    onFileEncodingChanged: (encoding: String) -> Unit = { _ -> },
+    onOpenPluginLspDependencySettings: (pluginId: String) -> Unit = { _ -> }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val latestOnOpenPluginLspDependencySettings by rememberUpdatedState(onOpenPluginLspDependencySettings)
 
     // 外部文件修改对话框状态
     var showExternalModificationDialog by remember { mutableStateOf(false) }
@@ -95,6 +99,21 @@ fun EditorContainer(
             message = message,
             withDismissAction = true
         )
+    }
+
+    val pluginLspDependencyAlert = state.pluginLspDependencyAlert
+    LaunchedEffect(pluginLspDependencyAlert?.sequence) {
+        val alert = state.consumePluginLspDependencyAlert() ?: return@LaunchedEffect
+        val pluginName = alert.pluginName.ifBlank { alert.pluginId }
+        val result = snackbarHostState.showSnackbar(
+            message = Strings.lsp_plugin_dependency_not_ready_snackbar.strOr(context, pluginName),
+            actionLabel = Strings.lsp_plugin_repair_deps.strOr(context),
+            withDismissAction = true,
+            duration = SnackbarDuration.Long,
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            latestOnOpenPluginLspDependencySettings(alert.pluginId)
+        }
     }
 
     // 监听外部文件修改

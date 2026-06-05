@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.wuxianggujun.tinaide.core.commands.HostCommandExecutor
 import com.wuxianggujun.tinaide.editor.IEditorManager
 import com.wuxianggujun.tinaide.editor.symbol.ProjectSymbolIndexService
+import com.wuxianggujun.tinaide.settings.SettingsActivity
 import com.wuxianggujun.tinaide.ui.BindMainActivityBottomPanelState
 import com.wuxianggujun.tinaide.ui.BottomPanelViewModel
 import com.wuxianggujun.tinaide.ui.DebugViewModel
@@ -54,6 +56,8 @@ internal fun MainActivityBottomPanelHost(
     navigationDelegate: MainActivityNavigationDelegate,
     callbacks: MainActivityScreenCallbacks,
 ) {
+    val context = LocalContext.current
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -96,6 +100,9 @@ internal fun MainActivityBottomPanelHost(
                         editorStateViewModel.updateFileEncoding(encoding)
                     },
                     onSaveFile = callbacks.onSaveFile,
+                    onOpenPluginLspDependencySettings = { pluginId ->
+                        SettingsActivity.startPluginDetail(context, pluginId)
+                    },
                 )
             }
 
