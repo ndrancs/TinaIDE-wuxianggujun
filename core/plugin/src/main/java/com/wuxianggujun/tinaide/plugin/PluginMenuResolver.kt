@@ -83,7 +83,9 @@ object PluginMenuResolver {
                         .orEmpty()
 
                     menuItems.forEach { menuItem ->
-                        val commandId = menuItem.command
+                        val commandId = menuItem.command.trim()
+                        if (commandId.isBlank()) return@forEach
+
                         val supportsHostCommand = HostCommands.isSupported(commandId)
                         val supportsPluginCommand = PluginCommandRegistry.isRegistered(commandId, plugin.manifest.id)
                         if (!supportsHostCommand && !supportsPluginCommand) {

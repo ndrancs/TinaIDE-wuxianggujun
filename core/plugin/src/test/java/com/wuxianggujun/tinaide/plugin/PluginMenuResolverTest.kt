@@ -142,6 +142,37 @@ class PluginMenuResolverTest {
         assertThat(cleanItems).isEmpty()
     }
 
+    @Test
+    fun `resolveEditorToolbarMenuItems should trim host command before resolving`() {
+        val plugin = InstalledPlugin(
+            manifest = PluginManifest(
+                id = "plugin.menu",
+                name = "Plugin Menu",
+                version = "1.0.0",
+                type = "config",
+                contributions = PluginContributions(
+                    menus = PluginMenus(
+                        editorToolbar = listOf(
+                            PluginMenuItem(command = " ${HostCommands.EDITOR_SAVE} ")
+                        )
+                    )
+                )
+            ),
+            directory = pluginDir,
+            enabled = true
+        )
+
+        val items = PluginMenuResolver.resolveEditorToolbarMenuItems(
+            context = context,
+            installedPlugins = listOf(plugin),
+            file = File(pluginDir, "main.cpp"),
+            isDirty = false
+        )
+
+        assertThat(items).hasSize(1)
+        assertThat(items.single().commandId).isEqualTo(HostCommands.EDITOR_SAVE)
+    }
+
     private fun createPlugin(
         commands: List<PluginCommand>,
         menuItems: List<PluginMenuItem>
