@@ -185,7 +185,7 @@ class NativeCMakeBuildExecutorConfigTest {
     }
 
     @Test
-    fun `resolveBuildToolProgram keeps real ninja when linker64 is disabled`() {
+    fun `resolveBuildToolProgram prefers shell shim when linker64 is disabled`() {
         val toolchainBinDir = createTempDirectory(prefix = "cmake-build-tool-").toFile()
         val shimRoot = createTempDirectory(prefix = "cmake-build-tool-shim-").toFile()
         try {
@@ -208,7 +208,7 @@ class NativeCMakeBuildExecutorConfigTest {
                 preferLinker64 = false
             )
 
-            assertThat(program?.absolutePath).isEqualTo(realNinja.absolutePath)
+            assertThat(program?.absolutePath).isEqualTo(shimFile.absolutePath)
         } finally {
             toolchainBinDir.deleteRecursively()
             shimRoot.deleteRecursively()

@@ -26,4 +26,16 @@ class ToolchainLinker64ShimManagerTest {
 
         assertThat(script).contains("REAL_BIN='/data/user/0/com.example/files/tool'\"'\"'chain/bin/clang'")
     }
+
+    @Test
+    fun `buildDirectShellShimScript execs real binary without linker64`() {
+        val script = ToolchainLinker64ShimManager.buildDirectShellShimScript(
+            realBinaryPath = "/data/user/0/com.example/files/toolchain/bin/ninja"
+        )
+
+        assertThat(script).contains("#!/system/bin/sh")
+        assertThat(script).contains("REAL_BIN='/data/user/0/com.example/files/toolchain/bin/ninja'")
+        assertThat(script).contains("exec \"\$REAL_BIN\" \"\$@\"")
+        assertThat(script).doesNotContain("linker64")
+    }
 }

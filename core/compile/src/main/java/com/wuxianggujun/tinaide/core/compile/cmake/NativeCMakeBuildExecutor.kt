@@ -159,8 +159,17 @@ class NativeCMakeBuildExecutor(
             shimSet: ToolchainLinker64ShimManager.ShimSet?,
             preferLinker64: Boolean
         ): File? {
-            // CMAKE_MAKE_PROGRAM 只能安全传入可被 CMake 直接 exec 的真实构建工具。
-            // shell shim 必须通过 /system/bin/sh 启动，不能作为 make/ninja 路径交给 CMake。
+            if (!realBinary.isFile) return null
+            if (!preferLinker64) {
+                // Android 9 / emulator 上 CMake 从 app 私有目录直接 exec ninja 时，
+                // 可能只拿到 linker64 helper 文本。用 shebang shell shim 让内核先进入 sh。
+                shimSet?.toolMap?.get(toolName)
+                    ?.takeIf { it.isFile && it.canExecute() }
+                    ?.let { return it }
+            }
+
+            // Android 10+ 的 linker64 shim 不能作为 CMAKE_MAKE_PROGRAM 传入，
+            // CMake 只能传一个可直接 exec 的构建工具路径，不能带 "/system/bin/sh <script>" 参数。
             return realBinary.takeIf { it.isFile }
         }
 
@@ -866,17 +875,22 @@ class NativeCMakeBuildExecutor(
             CMakeGenerator.NINJA -> "ninja"
         }
         val buildToolBinary = File(toolchainBinDir, buildToolName)
+        val buildToolShimSet = if (preferLinker64) {
+            toolchainShimSet
+        } else {
+            shimManager.prepareDirectShell(toolchainBinDir, setOf(buildToolName))
+        }
         val buildToolProgram = resolveBuildToolProgram(
             toolName = buildToolName,
             realBinary = buildToolBinary,
-            shimSet = toolchainShimSet,
+            shimSet = buildToolShimSet,
             preferLinker64 = preferLinker64
         )
         val buildToolProgramSource = resolveBuildToolProgramSource(
             toolName = buildToolName,
             realBinary = buildToolBinary,
             selectedProgram = buildToolProgram,
-            shimSet = toolchainShimSet,
+            shimSet = buildToolShimSet,
             preferLinker64 = preferLinker64
         )
         val compilerExecutionFlags = buildCompilerExecutionFlags(
@@ -1030,17 +1044,55 @@ class NativeCMakeBuildExecutor(
             useRecommendedTinaExec = options.useRecommendedTinaExec
         )
 
-        if (result.exitCode != 0) {
+        val finalResult = if (
+            result.exitCode != 0 &&
+            !preferLinker64 &&
+            buildToolProgramSource == "shim" &&
+            buildToolProgram != null &&
+            buildToolProgram.absolutePath != buildToolBinary.absolutePath &&
+            buildToolBinary.isFile
+        ) {
+            // 部分 Android 9 真机 ROM 可能禁止 app 私有目录里的 shell 脚本被 CMake 直接执行。
+            // 只在 direct shim configure 失败时回退真实构建工具，避免影响正常成功路径。
+            val retryCommand = command.map { argument ->
+                if (argument.startsWith("-DCMAKE_MAKE_PROGRAM=")) {
+                    "-DCMAKE_MAKE_PROGRAM=${buildToolBinary.absolutePath}"
+                } else {
+                    argument
+                }
+            }
+            Timber.tag(TAG).w(
+                "CMake configure with direct build-tool shim failed; retrying with real %s",
+                buildToolName
+            )
+            options.onProgress?.invoke(
+                "CMake configure with build-tool shim failed; retrying with real $buildToolName"
+            )
+            executeNativeCommand(
+                command = retryCommand,
+                workingDir = buildDir,
+                timeout = timeoutConfig.getCMakeConfigTimeout(),
+                toolchainId = options.toolchainId,
+                extraEnvironment = configureEnvironment,
+                onOutputLine = options.onProgress,
+                useToolchainShimEnvironment = false,
+                useRecommendedTinaExec = options.useRecommendedTinaExec
+            )
+        } else {
+            result
+        }
+
+        if (finalResult.exitCode != 0) {
             val errorMessage = buildConfigureFailureMessage(
-                primaryOutput = result.output,
+                primaryOutput = finalResult.output,
                 buildDir = buildDir,
-                exitCode = result.exitCode,
+                exitCode = finalResult.exitCode,
                 generator = options.generator.cmakeValue,
                 buildToolName = buildToolName,
                 buildToolSource = buildToolProgramSource,
                 buildToolReal = buildToolBinary,
                 buildToolSelected = buildToolProgram,
-                buildToolShim = toolchainShimSet?.shimPath(buildToolName),
+                buildToolShim = buildToolShimSet?.shimPath(buildToolName),
                 preferLinker64 = preferLinker64
             )
             Timber.tag(TAG).w(errorMessage)
@@ -1053,7 +1105,7 @@ class NativeCMakeBuildExecutor(
 
         val compileCommandsFile = File(buildDir, COMPILE_COMMANDS_FILE)
         return ConfigureResult.Success(
-            message = result.output,
+            message = finalResult.output,
             compileCommandsPath = compileCommandsFile.takeIf { it.isFile && it.length() > 0L }
         )
     }
