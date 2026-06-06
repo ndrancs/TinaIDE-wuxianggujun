@@ -20,6 +20,11 @@ data class RegisteredPluginCommand(
     val callbackName: String
 )
 
+data class PluginCommandDispatchResult(
+    val handled: Boolean,
+    val errorMessage: String? = null
+)
+
 object PluginCommandRegistry {
     private const val TAG = "PluginCommandRegistry"
     private const val COMMANDS_API_NAMESPACE = "commands"
@@ -116,11 +121,16 @@ object PluginCommandRegistry {
     fun dispatch(
         commandId: String,
         invocation: HostCommandInvocation = HostCommandInvocation()
-    ): Boolean {
-        val command = commandsById[commandId.trim()] ?: return false
-        val runtime = runtimeProvider?.invoke(command.pluginId) ?: return false
+    ): Boolean = dispatchWithResult(commandId, invocation).handled
+
+    fun dispatchWithResult(
+        commandId: String,
+        invocation: HostCommandInvocation = HostCommandInvocation()
+    ): PluginCommandDispatchResult {
+        val command = commandsById[commandId.trim()] ?: return PluginCommandDispatchResult(handled = false)
+        val runtime = runtimeProvider?.invoke(command.pluginId) ?: return PluginCommandDispatchResult(handled = false)
         if (!runtime.checkPermission(PluginPermission.COMMAND_EXECUTE)) {
-            runtime.reportPermissionDenied(
+            val errorMessage = runtime.reportPermissionDenied(
                 COMMANDS_API_NAMESPACE,
                 COMMANDS_EXECUTE_METHOD,
                 PluginPermission.COMMAND_EXECUTE
@@ -130,7 +140,10 @@ object PluginCommandRegistry {
                 command.commandId,
                 command.pluginId
             )
-            return false
+            return PluginCommandDispatchResult(
+                handled = false,
+                errorMessage = errorMessage
+            )
         }
 
         val payload = buildInvocationPayload(command.commandId, invocation)
@@ -168,7 +181,7 @@ object PluginCommandRegistry {
                 }
             }
         }
-        return true
+        return PluginCommandDispatchResult(handled = true)
     }
 
     private fun buildInvocationPayload(

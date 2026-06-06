@@ -342,8 +342,19 @@ class MainActivityHostCommandExecutor(
                 true
             }
 
-            else -> PluginCommandRegistry.dispatch(normalizedCommandId, invocation)
+            else -> executePluginCommand(normalizedCommandId, invocation)
         }
+    }
+
+    private fun executePluginCommand(
+        commandId: String,
+        invocation: HostCommandInvocation
+    ): Boolean {
+        val result = PluginCommandRegistry.dispatchWithResult(commandId, invocation)
+        result.errorMessage
+            ?.takeIf { message -> message.isNotBlank() }
+            ?.let(toastInfo)
+        return result.handled
     }
 
     private fun resolveTargetDirectoryForNew(file: File?): File? {
