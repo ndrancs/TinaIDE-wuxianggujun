@@ -62,13 +62,30 @@ Write-Host ""
 # 辅助函数
 # ========================================
 
+function Get-GradleAbiArguments {
+    param([string]$abi)
+
+    switch ($abi) {
+        "arm64" { return @("-Ptina.devAbi=arm64") }
+        "x86"   { return @("-Ptina.devAbi=x86_64") }
+        "all"   { return @("-Ptina.allAbi=true") }
+        default { return @() }
+    }
+}
+
+[string[]]$gradleAbiArgs = @(Get-GradleAbiArguments -abi $Abi)
+
 function Invoke-GradleTask {
     param(
         [Parameter(Mandatory = $true)][string]$Task,
         [switch]$WarnOnly
     )
     Write-Host "Executing Gradle task: $Task" -ForegroundColor DarkCyan
-    & ./gradlew $Task
+    if ($gradleAbiArgs.Count -gt 0) {
+        Write-Host "Gradle ABI arguments: $($gradleAbiArgs -join ' ')" -ForegroundColor DarkGray
+    }
+    [string[]]$gradleArgs = @($gradleAbiArgs + $Task)
+    & ./gradlew @gradleArgs
     if ($LASTEXITCODE -ne 0) {
         if ($WarnOnly) {
             Write-Host "Gradle task failed (${Task}) but script will continue. See Gradle output above for details." -ForegroundColor Yellow
