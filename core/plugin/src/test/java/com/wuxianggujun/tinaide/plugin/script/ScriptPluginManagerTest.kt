@@ -135,6 +135,34 @@ class ScriptPluginManagerTest {
             .isEqualTo(ScriptPluginState.DISABLED)
     }
 
+    @Test
+    fun `shutdown should clear runtimes commands event subscriptions and states`() {
+        val pluginId = "sample.shutdown.plugin"
+        val runtime = mockk<ScriptPluginRuntime>(relaxed = true)
+        every { runtime.destroy() } just runs
+
+        runtimesOf(manager)[pluginId] = runtime
+        statesOf(manager)[pluginId] = ScriptPluginInfo(
+            pluginId = pluginId,
+            state = ScriptPluginState.ACTIVE
+        )
+        PluginEventBus.subscribe(pluginId, "project.opened", "onProjectOpened")
+        PluginCommandRegistry.register(
+            pluginId = pluginId,
+            pluginName = "Plugin $pluginId",
+            commandId = "plugin.shutdown.command",
+            callbackName = "onShutdownCommand"
+        ).getOrThrow()
+
+        manager.shutdown()
+
+        assertThat(manager.getRuntime(pluginId)).isNull()
+        assertThat(manager.pluginStates.value).isEmpty()
+        assertThat(listenersOfEventBus()).isEmpty()
+        assertThat(PluginCommandRegistry.isRegistered("plugin.shutdown.command", pluginId)).isFalse()
+        verify(exactly = 1) { runtime.destroy() }
+    }
+
     private fun installedPlugin(
         pluginId: String,
         type: String,

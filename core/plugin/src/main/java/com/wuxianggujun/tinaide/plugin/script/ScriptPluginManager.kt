@@ -377,6 +377,7 @@ class ScriptPluginManager private constructor(
     fun shutdown() {
         runtimes.values.forEach { it.destroy() }
         runtimes.clear()
+        PluginEventBus.clear()
         PluginCommandRegistry.clear()
         apiRegistry.cleanup()
         _pluginStates.value = emptyMap()
