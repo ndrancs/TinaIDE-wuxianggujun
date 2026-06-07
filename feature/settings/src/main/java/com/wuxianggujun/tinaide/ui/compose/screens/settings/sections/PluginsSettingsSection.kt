@@ -193,6 +193,9 @@ internal fun PluginsSettingsSection(
         unavailableWithoutReasonTemplate = stringResource(
             Strings.plugins_commands_diagnostic_unavailable_unknown
         ),
+        executionFailedTemplate = stringResource(
+            Strings.plugins_commands_diagnostic_execution_failed
+        ),
         runtimeFixHint = stringResource(Strings.plugins_commands_diagnostic_runtime_fix_hint),
         permissionFixHint = stringResource(Strings.plugins_commands_diagnostic_permission_fix_hint),
         missingCommandIdLabel = stringResource(Strings.plugins_commands_missing_command_id_value),
@@ -1587,7 +1590,8 @@ private fun PluginCommandContributionRow(
         PluginCommandContributionStatus.MISSING_COMMAND_ID,
         PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION,
         PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION,
-        PluginCommandContributionStatus.UNAVAILABLE -> MaterialTheme.colorScheme.error
+        PluginCommandContributionStatus.UNAVAILABLE,
+        PluginCommandContributionStatus.EXECUTION_FAILED -> MaterialTheme.colorScheme.error
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(TinaSpacing.xs)) {

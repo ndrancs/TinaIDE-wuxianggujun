@@ -26,6 +26,7 @@ import com.wuxianggujun.tinaide.plugin.lsp.LspToolchainConfig
 import com.wuxianggujun.tinaide.plugin.lsp.ToolchainInstallState
 import com.wuxianggujun.tinaide.plugin.script.ScriptPluginState
 import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandAvailability
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandExecutionIssue
 import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistrationIssue
 import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistry
 import java.util.Locale
@@ -71,6 +72,7 @@ internal enum class PluginCommandContributionStatus {
     MISSING_COMMAND_DECLARATION,
     MISSING_RUNTIME_REGISTRATION,
     UNAVAILABLE,
+    EXECUTION_FAILED,
 }
 
 internal data class PluginsRequirementsSummary(
@@ -154,6 +156,7 @@ internal data class PluginCommandRuntimeDiagnosticText(
     val missingRegistrationWithReasonTemplate: String,
     val unavailableTemplate: String,
     val unavailableWithoutReasonTemplate: String,
+    val executionFailedTemplate: String,
     val runtimeFixHint: String,
     val permissionFixHint: String,
     val missingCommandIdLabel: String,
@@ -390,6 +393,19 @@ internal object PluginsSettingsSectionSupport {
                     },
                 )
             }
+            PluginCommandContributionStatus.EXECUTION_FAILED -> {
+                val reason = command.statusMessage.orEmpty()
+                buildCommandRuntimeDiagnosticEntry(
+                    severity = PluginDiagnosticSeverity.ERROR,
+                    category = PluginDiagnosticCategory.RUNTIME,
+                    message = formatLspDiagnosticText(
+                        diagnosticText.executionFailedTemplate,
+                        command.commandDisplayName(diagnosticText),
+                        reason,
+                    ),
+                    fixHint = diagnosticText.runtimeFixHint,
+                )
+            }
             PluginCommandContributionStatus.AVAILABLE,
             PluginCommandContributionStatus.MISSING_COMMAND_ID,
             PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION -> null
@@ -488,14 +504,27 @@ internal object PluginsSettingsSectionSupport {
     fun resolveCommandContributions(
         manifest: PluginManifest,
         checkRuntimeAvailability: Boolean = true,
-        isPluginCommandRegistered: (commandId: String, pluginId: String) -> Boolean = { commandId, pluginId ->
-            PluginCommandRegistry.isRegistered(commandId, pluginId)
-        },
-        pluginCommandAvailability: (commandId: String, pluginId: String) -> PluginCommandAvailability = { commandId, pluginId ->
+        isPluginCommandRegistered: (
+            commandId: String,
+            pluginId: String,
+        ) -> Boolean = { commandId, pluginId -> PluginCommandRegistry.isRegistered(commandId, pluginId) },
+        pluginCommandAvailability: (
+            commandId: String,
+            pluginId: String,
+        ) -> PluginCommandAvailability = { commandId, pluginId ->
             PluginCommandRegistry.availability(commandId, pluginId)
         },
-        pluginCommandRegistrationIssue: (commandId: String, pluginId: String) -> PluginCommandRegistrationIssue? = { commandId, pluginId ->
+        pluginCommandRegistrationIssue: (
+            commandId: String,
+            pluginId: String,
+        ) -> PluginCommandRegistrationIssue? = { commandId, pluginId ->
             PluginCommandRegistry.registrationIssue(commandId, pluginId)
+        },
+        pluginCommandExecutionIssue: (
+            commandId: String,
+            pluginId: String,
+        ) -> PluginCommandExecutionIssue? = { commandId, pluginId ->
+            PluginCommandRegistry.executionIssue(commandId, pluginId)
         },
     ): List<PluginsCommandContribution> {
         val contributions = manifest.contributions ?: return emptyList()
@@ -511,6 +540,7 @@ internal object PluginsSettingsSectionSupport {
                 isPluginCommandRegistered = isPluginCommandRegistered,
                 pluginCommandAvailability = pluginCommandAvailability,
                 pluginCommandRegistrationIssue = pluginCommandRegistrationIssue,
+                pluginCommandExecutionIssue = pluginCommandExecutionIssue,
             )
             appendCommandContributions(
                 pluginId = manifest.id,
@@ -521,6 +551,7 @@ internal object PluginsSettingsSectionSupport {
                 isPluginCommandRegistered = isPluginCommandRegistered,
                 pluginCommandAvailability = pluginCommandAvailability,
                 pluginCommandRegistrationIssue = pluginCommandRegistrationIssue,
+                pluginCommandExecutionIssue = pluginCommandExecutionIssue,
             )
             appendCommandContributions(
                 pluginId = manifest.id,
@@ -531,6 +562,7 @@ internal object PluginsSettingsSectionSupport {
                 isPluginCommandRegistered = isPluginCommandRegistered,
                 pluginCommandAvailability = pluginCommandAvailability,
                 pluginCommandRegistrationIssue = pluginCommandRegistrationIssue,
+                pluginCommandExecutionIssue = pluginCommandExecutionIssue,
             )
         }.sortedWith(
             compareBy<PluginsCommandContribution> { command -> command.surface.ordinal }
@@ -605,6 +637,7 @@ internal object PluginsSettingsSectionSupport {
         isPluginCommandRegistered: (commandId: String, pluginId: String) -> Boolean,
         pluginCommandAvailability: (commandId: String, pluginId: String) -> PluginCommandAvailability,
         pluginCommandRegistrationIssue: (commandId: String, pluginId: String) -> PluginCommandRegistrationIssue?,
+        pluginCommandExecutionIssue: (commandId: String, pluginId: String) -> PluginCommandExecutionIssue?,
     ) {
         menuItems.forEach { menuItem ->
             val commandId = menuItem.command.trim()
@@ -616,11 +649,16 @@ internal object PluginsSettingsSectionSupport {
                 else -> null
             }
             var registrationIssue: PluginCommandRegistrationIssue? = null
+            var executionIssue: PluginCommandExecutionIssue? = null
             val availability = if (source == ResolvedPluginCommandSource.PLUGIN) {
                 when {
                     !checkRuntimeAvailability -> PluginCommandAvailability(available = true)
                     isPluginCommandRegistered(commandId, pluginId) -> {
-                        pluginCommandAvailability(commandId, pluginId)
+                        pluginCommandAvailability(commandId, pluginId).also { currentAvailability ->
+                            if (currentAvailability.available) {
+                                executionIssue = pluginCommandExecutionIssue(commandId, pluginId)
+                            }
+                        }
                     }
                     else -> {
                         registrationIssue = pluginCommandRegistrationIssue(commandId, pluginId)
@@ -634,6 +672,7 @@ internal object PluginsSettingsSectionSupport {
                 commandId = commandId,
                 source = source,
                 availability = availability,
+                executionIssue = executionIssue,
             )
             add(
                 PluginsCommandContribution(
@@ -646,14 +685,12 @@ internal object PluginsSettingsSectionSupport {
                     source = source,
                     status = status,
                     whenExpression = menuItem.`when`?.trim()?.takeIf { expression -> expression.isNotBlank() },
-                    statusMessage = availability
-                        ?.errorMessage
-                        ?.trim()
-                        ?.takeIf { message -> message.isNotBlank() }
-                        ?: registrationIssue
-                            ?.message
-                            ?.trim()
-                            ?.takeIf { message -> message.isNotBlank() },
+                    statusMessage = resolveCommandContributionStatusMessage(
+                        status = status,
+                        availability = availability,
+                        registrationIssue = registrationIssue,
+                        executionIssue = executionIssue,
+                    ),
                 )
             )
         }
@@ -663,14 +700,26 @@ internal object PluginsSettingsSectionSupport {
         commandId: String,
         source: ResolvedPluginCommandSource?,
         availability: PluginCommandAvailability?,
+        executionIssue: PluginCommandExecutionIssue?,
     ): PluginCommandContributionStatus = when {
         commandId.isBlank() -> PluginCommandContributionStatus.MISSING_COMMAND_ID
         source == null -> PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION
         source == ResolvedPluginCommandSource.HOST -> PluginCommandContributionStatus.AVAILABLE
         availability == null -> PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION
-        availability.available -> PluginCommandContributionStatus.AVAILABLE
-        else -> PluginCommandContributionStatus.UNAVAILABLE
+        !availability.available -> PluginCommandContributionStatus.UNAVAILABLE
+        executionIssue != null -> PluginCommandContributionStatus.EXECUTION_FAILED
+        else -> PluginCommandContributionStatus.AVAILABLE
     }
+
+    private fun resolveCommandContributionStatusMessage(
+        status: PluginCommandContributionStatus,
+        availability: PluginCommandAvailability?,
+        registrationIssue: PluginCommandRegistrationIssue?,
+        executionIssue: PluginCommandExecutionIssue?,
+    ): String? = when (status) {
+        PluginCommandContributionStatus.EXECUTION_FAILED -> executionIssue?.message
+        else -> availability?.errorMessage ?: registrationIssue?.message
+    }?.trim()?.takeIf { message -> message.isNotBlank() }
 
     fun resolveRequirementsSummary(manifest: PluginManifest): PluginsRequirementsSummary {
         val requirements = manifest.requires
@@ -967,6 +1016,13 @@ internal object PluginsSettingsSectionSupport {
                 if (command.statusMessage?.isNotBlank() == true) {
                     add(PluginDiagnosticAction.SHOW_PERMISSIONS)
                 }
+                if (isScriptPlugin) {
+                    add(PluginDiagnosticAction.RELOAD_PLUGIN)
+                }
+                add(PluginDiagnosticAction.COPY_DIAGNOSTIC)
+            }
+            PluginCommandContributionStatus.EXECUTION_FAILED -> {
+                add(PluginDiagnosticAction.OPEN_LOGS)
                 if (isScriptPlugin) {
                     add(PluginDiagnosticAction.RELOAD_PLUGIN)
                 }
@@ -1276,6 +1332,7 @@ internal object PluginsSettingsSectionSupport {
             Strings.plugins_commands_status_missing_registration
         }
         PluginCommandContributionStatus.UNAVAILABLE -> Strings.plugins_commands_status_unavailable
+        PluginCommandContributionStatus.EXECUTION_FAILED -> Strings.plugins_commands_status_execution_failed
     }
 
     @StringRes

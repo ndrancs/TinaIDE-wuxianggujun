@@ -28,6 +28,7 @@ import com.wuxianggujun.tinaide.plugin.lsp.LspPluginInstallState
 import com.wuxianggujun.tinaide.plugin.lsp.LspToolchainConfig
 import com.wuxianggujun.tinaide.plugin.lsp.ToolchainInstallState
 import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandAvailability
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandExecutionIssue
 import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistrationIssue
 import java.io.File
 import kotlinx.serialization.json.JsonPrimitive
@@ -505,13 +506,15 @@ class PluginsSettingsSectionSupportTest {
                 commands = listOf(
                     PluginCommand(id = "plugin.missing", title = "Missing Runtime"),
                     PluginCommand(id = "plugin.denied", title = "Denied Runtime"),
+                    PluginCommand(id = "plugin.failed", title = "Failed Runtime"),
                     PluginCommand(id = "plugin.ready", title = "Ready Runtime"),
                 ),
                 menus = PluginMenus(
                     editorContext = listOf(
                         PluginMenuItem(command = "plugin.missing", group = "1_missing"),
                         PluginMenuItem(command = "plugin.denied", group = "2_denied"),
-                        PluginMenuItem(command = "plugin.ready", group = "3_ready"),
+                        PluginMenuItem(command = "plugin.failed", group = "3_failed"),
+                        PluginMenuItem(command = "plugin.ready", group = "4_ready"),
                     ),
                 ),
             ),
@@ -541,28 +544,43 @@ class PluginsSettingsSectionSupportTest {
                     null
                 }
             },
+            pluginCommandExecutionIssue = { commandId, pluginId ->
+                if (commandId == "plugin.failed") {
+                    PluginCommandExecutionIssue(
+                        pluginId = pluginId,
+                        pluginName = "Demo Plugin",
+                        commandId = commandId,
+                        message = "Boom",
+                    )
+                } else {
+                    null
+                }
+            },
         )
 
         assertThat(commands.map { command -> command.commandId }).containsExactly(
             "plugin.missing",
             "plugin.denied",
+            "plugin.failed",
             "plugin.ready",
         ).inOrder()
         assertThat(commands.map { command -> command.status }).containsExactly(
             PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION,
             PluginCommandContributionStatus.UNAVAILABLE,
+            PluginCommandContributionStatus.EXECUTION_FAILED,
             PluginCommandContributionStatus.AVAILABLE,
         ).inOrder()
         assertThat(commands[0].statusMessage)
             .isEqualTo("Command ID already registered by plugin other.plugin: plugin.missing")
         assertThat(commands[1].statusMessage).isEqualTo("Permission command.execute is not granted")
+        assertThat(commands[2].statusMessage).isEqualTo("Boom")
         assertThat(
             PluginsSettingsSectionSupport.resolveCommandContributionSummary(commands)
         ).isEqualTo(
             PluginsCommandContributionSummary(
-                totalCount = 3,
+                totalCount = 4,
                 availableCount = 1,
-                issueCount = 2,
+                issueCount = 3,
             )
         )
     }
@@ -592,9 +610,19 @@ class PluginsSettingsSectionSupportTest {
             ),
             PluginsCommandContribution(
                 surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                commandId = "plugin.failed",
+                title = "Failed Runtime",
+                group = "3_failed",
+                source = ResolvedPluginCommandSource.PLUGIN,
+                status = PluginCommandContributionStatus.EXECUTION_FAILED,
+                whenExpression = null,
+                statusMessage = "Boom",
+            ),
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
                 commandId = "plugin.ready",
                 title = "Ready Runtime",
-                group = "3_ready",
+                group = "4_ready",
                 source = ResolvedPluginCommandSource.PLUGIN,
                 status = PluginCommandContributionStatus.AVAILABLE,
                 whenExpression = null,
@@ -605,6 +633,7 @@ class PluginsSettingsSectionSupportTest {
             missingRegistrationWithReasonTemplate = "Command %1\$s registration failed: %2\$s",
             unavailableTemplate = "Command %1\$s is unavailable: %2\$s",
             unavailableWithoutReasonTemplate = "Command %1\$s is unavailable",
+            executionFailedTemplate = "Command %1\$s failed: %2\$s",
             runtimeFixHint = "Reload plugin",
             permissionFixHint = "Grant permission",
             missingCommandIdLabel = "Missing command ID",
@@ -614,22 +643,33 @@ class PluginsSettingsSectionSupportTest {
             commands = commands,
             diagnosticText = diagnosticText,
         )
+        val missingRegistrationMessage = "Command plugin.missing registration failed: " +
+            "Command ID already registered by plugin other.plugin: plugin.missing"
 
         assertThat(entries.map { entry -> entry.source }).containsExactly(
+            PluginDiagnosticSource.RUNTIME,
             PluginDiagnosticSource.RUNTIME,
             PluginDiagnosticSource.RUNTIME,
         )
         assertThat(entries.map { entry -> entry.issue.category }).containsExactly(
             PluginDiagnosticCategory.RUNTIME,
             PluginDiagnosticCategory.PERMISSIONS,
+            PluginDiagnosticCategory.RUNTIME,
+        )
+        assertThat(entries.map { entry -> entry.issue.severity }).containsExactly(
+            PluginDiagnosticSeverity.WARNING,
+            PluginDiagnosticSeverity.WARNING,
+            PluginDiagnosticSeverity.ERROR,
         )
         assertThat(entries.map { entry -> entry.issue.message }).containsExactly(
-            "Command plugin.missing registration failed: Command ID already registered by plugin other.plugin: plugin.missing",
+            missingRegistrationMessage,
             "Command plugin.denied is unavailable: Permission command.execute is not granted",
+            "Command plugin.failed failed: Boom",
         ).inOrder()
         assertThat(entries.map { entry -> entry.issue.fixHint }).containsExactly(
             "Reload plugin",
             "Grant permission",
+            "Reload plugin",
         ).inOrder()
         assertThat(
             PluginsSettingsSectionSupport.resolvePluginCommandContributionActions(
@@ -657,10 +697,20 @@ class PluginsSettingsSectionSupportTest {
                 command = commands[2],
                 isScriptPlugin = true,
             )
+        ).containsExactly(
+            PluginDiagnosticAction.OPEN_LOGS,
+            PluginDiagnosticAction.RELOAD_PLUGIN,
+            PluginDiagnosticAction.COPY_DIAGNOSTIC,
+        ).inOrder()
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionActions(
+                command = commands[3],
+                isScriptPlugin = true,
+            )
         ).isEmpty()
         assertThat(
             PluginsSettingsSectionSupport.resolvePluginCommandContributionActions(
-                command = commands[2].copy(
+                command = commands[3].copy(
                     status = PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION,
                 ),
                 isScriptPlugin = true,
@@ -698,6 +748,11 @@ class PluginsSettingsSectionSupportTest {
                 PluginCommandContributionStatus.UNAVAILABLE
             )
         ).isEqualTo(Strings.plugins_commands_status_unavailable)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandStatusLabelRes(
+                PluginCommandContributionStatus.EXECUTION_FAILED
+            )
+        ).isEqualTo(Strings.plugins_commands_status_execution_failed)
         assertThat(
             PluginsSettingsSectionSupport.resolvePluginCommandContributionFilterLabelRes(
                 PluginCommandContributionFilter.ISSUES

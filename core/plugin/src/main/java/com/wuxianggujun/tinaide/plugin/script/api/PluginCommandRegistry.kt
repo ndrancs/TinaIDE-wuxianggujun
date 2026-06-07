@@ -32,6 +32,13 @@ data class PluginCommandRegistrationIssue(
     val conflictingPluginId: String? = null
 )
 
+data class PluginCommandExecutionIssue(
+    val pluginId: String,
+    val pluginName: String,
+    val commandId: String,
+    val message: String
+)
+
 data class PluginCommandDispatchResult(
     val handled: Boolean,
     val errorMessage: String? = null
@@ -51,6 +58,8 @@ object PluginCommandRegistry {
     private val commandsById = ConcurrentHashMap<String, RegisteredPluginCommand>()
     private val registrationIssuesByPluginId =
         ConcurrentHashMap<String, ConcurrentHashMap<String, PluginCommandRegistrationIssue>>()
+    private val executionIssuesByPluginId =
+        ConcurrentHashMap<String, ConcurrentHashMap<String, PluginCommandExecutionIssue>>()
     private val revisionCounter = AtomicLong(0L)
     private val _stateRevision = MutableStateFlow(0L)
     val stateRevision: StateFlow<Long> = _stateRevision.asStateFlow()
@@ -131,6 +140,7 @@ object PluginCommandRegistry {
 
         commandsById[normalizedCommandId] = command
         clearRegistrationIssue(normalizedPluginId, normalizedCommandId)
+        clearExecutionIssue(normalizedPluginId, normalizedCommandId)
         signalStateChanged()
         Timber.tag(TAG).d(
             "Registered plugin command: commandId=%s pluginId=%s callback=%s",
@@ -147,6 +157,7 @@ object PluginCommandRegistry {
         if (normalizedCommandId.isBlank()) return false
 
         var changed = clearRegistrationIssue(normalizedPluginId, normalizedCommandId)
+        changed = clearExecutionIssue(normalizedPluginId, normalizedCommandId) || changed
         val existing = commandsById[normalizedCommandId]
         if (existing == null || existing.pluginId != normalizedPluginId) {
             if (changed) {
@@ -188,6 +199,7 @@ object PluginCommandRegistry {
         }
         var changed = removedCommandIds.isNotEmpty()
         changed = (registrationIssuesByPluginId.remove(normalizedPluginId) != null) || changed
+        changed = (executionIssuesByPluginId.remove(normalizedPluginId) != null) || changed
         changed = clearRegistrationIssuesBlockedBy(conflictingPluginId = normalizedPluginId) || changed
         if (changed) {
             signalStateChanged()
@@ -196,9 +208,12 @@ object PluginCommandRegistry {
     }
 
     fun clear() {
-        val changed = commandsById.isNotEmpty() || registrationIssuesByPluginId.isNotEmpty()
+        val changed = commandsById.isNotEmpty() ||
+            registrationIssuesByPluginId.isNotEmpty() ||
+            executionIssuesByPluginId.isNotEmpty()
         commandsById.clear()
         registrationIssuesByPluginId.clear()
+        executionIssuesByPluginId.clear()
         if (changed) {
             signalStateChanged()
         }
@@ -214,6 +229,13 @@ object PluginCommandRegistry {
         val normalizedCommandId = commandId.trim()
         if (normalizedPluginId.isBlank() || normalizedCommandId.isBlank()) return null
         return registrationIssuesByPluginId[normalizedPluginId]?.get(normalizedCommandId)
+    }
+
+    fun executionIssue(commandId: String, pluginId: String): PluginCommandExecutionIssue? {
+        val normalizedPluginId = pluginId.trim()
+        val normalizedCommandId = commandId.trim()
+        if (normalizedPluginId.isBlank() || normalizedCommandId.isBlank()) return null
+        return executionIssuesByPluginId[normalizedPluginId]?.get(normalizedCommandId)
     }
 
     fun titleFor(commandId: String, pluginId: String? = null): String? {
@@ -271,8 +293,29 @@ object PluginCommandRegistry {
         val payload = buildInvocationPayload(command.commandId, invocation)
 
         scope.launch {
-            when (val result = runtime.callFunction(command.callbackName, payload)) {
+            val result = runCatching {
+                runtime.callFunction(command.callbackName, payload)
+            }.getOrElse { throwable ->
+                val message = throwable.message
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() }
+                    ?: throwable::class.java.simpleName
+                if (recordExecutionIssue(command, "Unhandled exception: $message")) {
+                    signalStateChanged()
+                }
+                Timber.tag(TAG).e(
+                    throwable,
+                    "Plugin command callback crashed: commandId=%s pluginId=%s",
+                    command.commandId,
+                    command.pluginId
+                )
+                return@launch
+            }
+            when (result) {
                 is PluginExecutionResult.Success -> {
+                    if (clearExecutionIssue(command.pluginId, command.commandId)) {
+                        signalStateChanged()
+                    }
                     Timber.tag(TAG).d(
                         "Plugin command dispatched: commandId=%s pluginId=%s",
                         command.commandId,
@@ -286,6 +329,9 @@ object PluginCommandRegistry {
                         command.pluginId,
                         result.message
                     )
+                    if (recordExecutionIssue(command, result.message)) {
+                        signalStateChanged()
+                    }
                 }
                 PluginExecutionResult.Timeout -> {
                     Timber.tag(TAG).w(
@@ -293,6 +339,9 @@ object PluginCommandRegistry {
                         command.commandId,
                         command.pluginId
                     )
+                    if (recordExecutionIssue(command, "Command execution timed out")) {
+                        signalStateChanged()
+                    }
                 }
                 PluginExecutionResult.PermissionDenied -> {
                     Timber.tag(TAG).w(
@@ -300,6 +349,14 @@ object PluginCommandRegistry {
                         command.commandId,
                         command.pluginId
                     )
+                    if (
+                        recordExecutionIssue(
+                            command,
+                            "Command execution was denied by runtime permission check",
+                        )
+                    ) {
+                        signalStateChanged()
+                    }
                 }
             }
         }
@@ -360,12 +417,40 @@ object PluginCommandRegistry {
         return previous != issue
     }
 
+    private fun recordExecutionIssue(
+        command: RegisteredPluginCommand,
+        message: String,
+    ): Boolean {
+        val normalizedMessage = message.trim().takeIf { it.isNotBlank() }
+            ?: "Unknown command execution failure"
+        val issue = PluginCommandExecutionIssue(
+            pluginId = command.pluginId,
+            pluginName = command.pluginName,
+            commandId = command.commandId,
+            message = normalizedMessage,
+        )
+        val previous = executionIssuesByPluginId.computeIfAbsent(command.pluginId) {
+            ConcurrentHashMap()
+        }.put(command.commandId, issue)
+        return previous != issue
+    }
+
     private fun clearRegistrationIssue(pluginId: String, commandId: String): Boolean {
         if (pluginId.isBlank() || commandId.isBlank()) return false
         val issues = registrationIssuesByPluginId[pluginId] ?: return false
         val removed = issues.remove(commandId) != null
         if (issues.isEmpty()) {
             registrationIssuesByPluginId.remove(pluginId, issues)
+        }
+        return removed
+    }
+
+    private fun clearExecutionIssue(pluginId: String, commandId: String): Boolean {
+        if (pluginId.isBlank() || commandId.isBlank()) return false
+        val issues = executionIssuesByPluginId[pluginId] ?: return false
+        val removed = issues.remove(commandId) != null
+        if (issues.isEmpty()) {
+            executionIssuesByPluginId.remove(pluginId, issues)
         }
         return removed
     }

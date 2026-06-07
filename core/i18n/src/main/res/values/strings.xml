@@ -258,6 +258,7 @@
   <string name="plugins_commands_status_missing_declaration">缺少命令声明</string>
   <string name="plugins_commands_status_missing_registration">运行时未注册</string>
   <string name="plugins_commands_status_unavailable">当前不可用</string>
+  <string name="plugins_commands_status_execution_failed">执行失败</string>
   <string name="plugins_commands_status_message">原因：%1$s</string>
   <string name="plugins_commands_filter_issues">问题</string>
   <string name="plugins_commands_filter_available">可用</string>
@@ -265,6 +266,7 @@
   <string name="plugins_commands_diagnostic_missing_registration_reason">命令“%1$s”已在 manifest 声明，但运行时注册失败：%2$s</string>
   <string name="plugins_commands_diagnostic_unavailable">命令“%1$s”当前不可用：%2$s</string>
   <string name="plugins_commands_diagnostic_unavailable_unknown">命令“%1$s”当前不可用。</string>
+  <string name="plugins_commands_diagnostic_execution_failed">命令“%1$s”最近一次执行失败：%2$s</string>
   <string name="plugins_commands_diagnostic_runtime_fix_hint">确认脚本已注册该命令，查看日志后手动重载插件。</string>
   <string name="plugins_commands_diagnostic_permission_fix_hint">补全 command.execute 权限声明，并在权限详情中授予后重试。</string>
   <string name="plugins_details_requirements_title">依赖声明</string>
