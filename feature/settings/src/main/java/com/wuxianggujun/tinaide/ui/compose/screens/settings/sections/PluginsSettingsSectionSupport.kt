@@ -5,6 +5,7 @@ import com.wuxianggujun.tinaide.core.commands.HostCommands
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.plugin.InstalledPlugin
 import com.wuxianggujun.tinaide.plugin.PluginCommand
+import com.wuxianggujun.tinaide.plugin.PluginConfigurationSchema
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticCategory
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticEntry
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticIssue
@@ -14,7 +15,6 @@ import com.wuxianggujun.tinaide.plugin.PluginDiagnosticsReport
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticsSnapshot
 import com.wuxianggujun.tinaide.plugin.PluginLogLevel
 import com.wuxianggujun.tinaide.plugin.PluginManifest
-import com.wuxianggujun.tinaide.plugin.PluginConfigurationSchema
 import com.wuxianggujun.tinaide.plugin.PluginMenuItem
 import com.wuxianggujun.tinaide.plugin.ResolvedPluginCommandSource
 import com.wuxianggujun.tinaide.plugin.ResolvedPluginCommandSurface
@@ -26,6 +26,7 @@ import com.wuxianggujun.tinaide.plugin.lsp.LspToolchainConfig
 import com.wuxianggujun.tinaide.plugin.lsp.ToolchainInstallState
 import com.wuxianggujun.tinaide.plugin.script.ScriptPluginState
 import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandAvailability
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistrationIssue
 import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistry
 import java.util.Locale
 
@@ -150,6 +151,7 @@ internal data class LspRuntimeDiagnosticText(
 
 internal data class PluginCommandRuntimeDiagnosticText(
     val missingRegistrationTemplate: String,
+    val missingRegistrationWithReasonTemplate: String,
     val unavailableTemplate: String,
     val unavailableWithoutReasonTemplate: String,
     val runtimeFixHint: String,
@@ -339,13 +341,22 @@ internal object PluginsSettingsSectionSupport {
     ): List<PluginDiagnosticEntry> = commands.mapNotNull { command ->
         when (command.status) {
             PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION -> {
+                val reason = command.statusMessage?.takeIf { message -> message.isNotBlank() }
                 buildCommandRuntimeDiagnosticEntry(
                     severity = PluginDiagnosticSeverity.WARNING,
                     category = PluginDiagnosticCategory.RUNTIME,
-                    message = formatLspDiagnosticText(
-                        diagnosticText.missingRegistrationTemplate,
-                        command.commandDisplayName(diagnosticText),
-                    ),
+                    message = if (reason == null) {
+                        formatLspDiagnosticText(
+                            diagnosticText.missingRegistrationTemplate,
+                            command.commandDisplayName(diagnosticText),
+                        )
+                    } else {
+                        formatLspDiagnosticText(
+                            diagnosticText.missingRegistrationWithReasonTemplate,
+                            command.commandDisplayName(diagnosticText),
+                            reason,
+                        )
+                    },
                     fixHint = diagnosticText.runtimeFixHint,
                 )
             }
@@ -483,6 +494,9 @@ internal object PluginsSettingsSectionSupport {
         pluginCommandAvailability: (commandId: String, pluginId: String) -> PluginCommandAvailability = { commandId, pluginId ->
             PluginCommandRegistry.availability(commandId, pluginId)
         },
+        pluginCommandRegistrationIssue: (commandId: String, pluginId: String) -> PluginCommandRegistrationIssue? = { commandId, pluginId ->
+            PluginCommandRegistry.registrationIssue(commandId, pluginId)
+        },
     ): List<PluginsCommandContribution> {
         val contributions = manifest.contributions ?: return emptyList()
         val declaredCommands = contributions.commands.orEmpty()
@@ -496,6 +510,7 @@ internal object PluginsSettingsSectionSupport {
                 checkRuntimeAvailability = checkRuntimeAvailability,
                 isPluginCommandRegistered = isPluginCommandRegistered,
                 pluginCommandAvailability = pluginCommandAvailability,
+                pluginCommandRegistrationIssue = pluginCommandRegistrationIssue,
             )
             appendCommandContributions(
                 pluginId = manifest.id,
@@ -505,6 +520,7 @@ internal object PluginsSettingsSectionSupport {
                 checkRuntimeAvailability = checkRuntimeAvailability,
                 isPluginCommandRegistered = isPluginCommandRegistered,
                 pluginCommandAvailability = pluginCommandAvailability,
+                pluginCommandRegistrationIssue = pluginCommandRegistrationIssue,
             )
             appendCommandContributions(
                 pluginId = manifest.id,
@@ -514,6 +530,7 @@ internal object PluginsSettingsSectionSupport {
                 checkRuntimeAvailability = checkRuntimeAvailability,
                 isPluginCommandRegistered = isPluginCommandRegistered,
                 pluginCommandAvailability = pluginCommandAvailability,
+                pluginCommandRegistrationIssue = pluginCommandRegistrationIssue,
             )
         }.sortedWith(
             compareBy<PluginsCommandContribution> { command -> command.surface.ordinal }
@@ -587,6 +604,7 @@ internal object PluginsSettingsSectionSupport {
         checkRuntimeAvailability: Boolean,
         isPluginCommandRegistered: (commandId: String, pluginId: String) -> Boolean,
         pluginCommandAvailability: (commandId: String, pluginId: String) -> PluginCommandAvailability,
+        pluginCommandRegistrationIssue: (commandId: String, pluginId: String) -> PluginCommandRegistrationIssue?,
     ) {
         menuItems.forEach { menuItem ->
             val commandId = menuItem.command.trim()
@@ -597,13 +615,17 @@ internal object PluginsSettingsSectionSupport {
                 declaredCommand != null -> ResolvedPluginCommandSource.PLUGIN
                 else -> null
             }
+            var registrationIssue: PluginCommandRegistrationIssue? = null
             val availability = if (source == ResolvedPluginCommandSource.PLUGIN) {
                 when {
                     !checkRuntimeAvailability -> PluginCommandAvailability(available = true)
                     isPluginCommandRegistered(commandId, pluginId) -> {
                         pluginCommandAvailability(commandId, pluginId)
                     }
-                    else -> null
+                    else -> {
+                        registrationIssue = pluginCommandRegistrationIssue(commandId, pluginId)
+                        null
+                    }
                 }
             } else {
                 null
@@ -627,7 +649,11 @@ internal object PluginsSettingsSectionSupport {
                     statusMessage = availability
                         ?.errorMessage
                         ?.trim()
-                        ?.takeIf { message -> message.isNotBlank() },
+                        ?.takeIf { message -> message.isNotBlank() }
+                        ?: registrationIssue
+                            ?.message
+                            ?.trim()
+                            ?.takeIf { message -> message.isNotBlank() },
                 )
             )
         }
@@ -668,12 +694,10 @@ internal object PluginsSettingsSectionSupport {
         )
     }
 
-    fun resolveConfigurationSummary(manifest: PluginManifest): PluginsConfigurationSummary {
-        return PluginsConfigurationSummary(
-            title = manifest.configuration?.title?.trim()?.takeIf { title -> title.isNotBlank() },
-            properties = PluginConfigurationSchema.resolveProperties(manifest),
-        )
-    }
+    fun resolveConfigurationSummary(manifest: PluginManifest): PluginsConfigurationSummary = PluginsConfigurationSummary(
+        title = manifest.configuration?.title?.trim()?.takeIf { title -> title.isNotBlank() },
+        properties = PluginConfigurationSchema.resolveProperties(manifest),
+    )
 
     fun resolvePluginDiagnosticsSummary(report: PluginDiagnosticsReport?): PluginDiagnosticsSummary {
         val issues = report?.issues.orEmpty()

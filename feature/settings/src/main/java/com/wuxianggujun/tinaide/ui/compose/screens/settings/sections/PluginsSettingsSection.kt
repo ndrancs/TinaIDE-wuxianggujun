@@ -63,6 +63,9 @@ import com.wuxianggujun.tinaide.core.config.Prefs
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.plugin.EditorThemeIndex
 import com.wuxianggujun.tinaide.plugin.InstalledPlugin
+import com.wuxianggujun.tinaide.plugin.PluginConfigurationPropertyType
+import com.wuxianggujun.tinaide.plugin.PluginConfigurationSchema
+import com.wuxianggujun.tinaide.plugin.PluginConfigurationStore
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticCategory
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticEntry
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticIssue
@@ -70,9 +73,6 @@ import com.wuxianggujun.tinaide.plugin.PluginDiagnosticSeverity
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticsReport
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticsSnapshotFactory
 import com.wuxianggujun.tinaide.plugin.PluginDoctor
-import com.wuxianggujun.tinaide.plugin.PluginConfigurationPropertyType
-import com.wuxianggujun.tinaide.plugin.PluginConfigurationSchema
-import com.wuxianggujun.tinaide.plugin.PluginConfigurationStore
 import com.wuxianggujun.tinaide.plugin.PluginHostLogSources
 import com.wuxianggujun.tinaide.plugin.PluginLogLevel
 import com.wuxianggujun.tinaide.plugin.PluginLogManager
@@ -183,6 +183,9 @@ internal fun PluginsSettingsSection(
     val commandRuntimeDiagnosticText = PluginCommandRuntimeDiagnosticText(
         missingRegistrationTemplate = stringResource(
             Strings.plugins_commands_diagnostic_missing_registration
+        ),
+        missingRegistrationWithReasonTemplate = stringResource(
+            Strings.plugins_commands_diagnostic_missing_registration_reason
         ),
         unavailableTemplate = stringResource(Strings.plugins_commands_diagnostic_unavailable),
         unavailableWithoutReasonTemplate = stringResource(

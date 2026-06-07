@@ -28,6 +28,7 @@ import com.wuxianggujun.tinaide.plugin.lsp.LspPluginInstallState
 import com.wuxianggujun.tinaide.plugin.lsp.LspToolchainConfig
 import com.wuxianggujun.tinaide.plugin.lsp.ToolchainInstallState
 import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandAvailability
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistrationIssue
 import java.io.File
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Test
@@ -435,6 +436,7 @@ class PluginsSettingsSectionSupportTest {
                 source = ResolvedPluginCommandSource.PLUGIN,
                 status = PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION,
                 whenExpression = null,
+                statusMessage = "Command ID already registered by plugin other.plugin: plugin.missing",
             ),
             PluginsCommandContribution(
                 surface = ResolvedPluginCommandSurface.FILE_TREE_CONTEXT,
@@ -527,6 +529,18 @@ class PluginsSettingsSectionSupportTest {
                     else -> PluginCommandAvailability(available = true)
                 }
             },
+            pluginCommandRegistrationIssue = { commandId, pluginId ->
+                if (commandId == "plugin.missing") {
+                    PluginCommandRegistrationIssue(
+                        pluginId = pluginId,
+                        pluginName = "Demo Plugin",
+                        commandId = commandId,
+                        message = "Command ID already registered by plugin other.plugin: plugin.missing",
+                    )
+                } else {
+                    null
+                }
+            },
         )
 
         assertThat(commands.map { command -> command.commandId }).containsExactly(
@@ -539,7 +553,8 @@ class PluginsSettingsSectionSupportTest {
             PluginCommandContributionStatus.UNAVAILABLE,
             PluginCommandContributionStatus.AVAILABLE,
         ).inOrder()
-        assertThat(commands[0].statusMessage).isNull()
+        assertThat(commands[0].statusMessage)
+            .isEqualTo("Command ID already registered by plugin other.plugin: plugin.missing")
         assertThat(commands[1].statusMessage).isEqualTo("Permission command.execute is not granted")
         assertThat(
             PluginsSettingsSectionSupport.resolveCommandContributionSummary(commands)
@@ -563,6 +578,7 @@ class PluginsSettingsSectionSupportTest {
                 source = ResolvedPluginCommandSource.PLUGIN,
                 status = PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION,
                 whenExpression = null,
+                statusMessage = "Command ID already registered by plugin other.plugin: plugin.missing",
             ),
             PluginsCommandContribution(
                 surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
@@ -586,6 +602,7 @@ class PluginsSettingsSectionSupportTest {
         )
         val diagnosticText = PluginCommandRuntimeDiagnosticText(
             missingRegistrationTemplate = "Command %1\$s is not registered",
+            missingRegistrationWithReasonTemplate = "Command %1\$s registration failed: %2\$s",
             unavailableTemplate = "Command %1\$s is unavailable: %2\$s",
             unavailableWithoutReasonTemplate = "Command %1\$s is unavailable",
             runtimeFixHint = "Reload plugin",
@@ -607,7 +624,7 @@ class PluginsSettingsSectionSupportTest {
             PluginDiagnosticCategory.PERMISSIONS,
         )
         assertThat(entries.map { entry -> entry.issue.message }).containsExactly(
-            "Command plugin.missing is not registered",
+            "Command plugin.missing registration failed: Command ID already registered by plugin other.plugin: plugin.missing",
             "Command plugin.denied is unavailable: Permission command.execute is not granted",
         ).inOrder()
         assertThat(entries.map { entry -> entry.issue.fixHint }).containsExactly(

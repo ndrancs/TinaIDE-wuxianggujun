@@ -262,6 +262,7 @@
   <string name="plugins_commands_filter_issues">问题</string>
   <string name="plugins_commands_filter_available">可用</string>
   <string name="plugins_commands_diagnostic_missing_registration">命令“%1$s”已在 manifest 声明，但运行时尚未注册。</string>
+  <string name="plugins_commands_diagnostic_missing_registration_reason">命令“%1$s”已在 manifest 声明，但运行时注册失败：%2$s</string>
   <string name="plugins_commands_diagnostic_unavailable">命令“%1$s”当前不可用：%2$s</string>
   <string name="plugins_commands_diagnostic_unavailable_unknown">命令“%1$s”当前不可用。</string>
   <string name="plugins_commands_diagnostic_runtime_fix_hint">确认脚本已注册该命令，查看日志后手动重载插件。</string>

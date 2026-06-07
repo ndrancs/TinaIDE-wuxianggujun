@@ -48,6 +48,44 @@ class PluginCommandRegistryTest {
         assertThat(first.isSuccess).isTrue()
         assertThat(second.isFailure).isTrue()
         assertThat(second.exceptionOrNull()?.message).contains("already registered")
+        assertThat(
+            PluginCommandRegistry.registrationIssue(
+                commandId = "plugin.sayHello",
+                pluginId = "plugin.two",
+            )?.message
+        ).contains("already registered")
+    }
+
+    @Test
+    fun `register should clear registration issue after command registers successfully`() {
+        PluginCommandRegistry.register(
+            pluginId = "plugin.one",
+            pluginName = "Plugin One",
+            commandId = "plugin.sayHello",
+            callbackName = "handleHello"
+        ).getOrThrow()
+        PluginCommandRegistry.register(
+            pluginId = "plugin.two",
+            pluginName = "Plugin Two",
+            commandId = "plugin.sayHello",
+            callbackName = "handleHelloAgain"
+        )
+
+        PluginCommandRegistry.unregisterAll("plugin.one")
+        val retry = PluginCommandRegistry.register(
+            pluginId = "plugin.two",
+            pluginName = "Plugin Two",
+            commandId = "plugin.sayHello",
+            callbackName = "handleHelloAgain"
+        )
+
+        assertThat(retry.isSuccess).isTrue()
+        assertThat(
+            PluginCommandRegistry.registrationIssue(
+                commandId = "plugin.sayHello",
+                pluginId = "plugin.two",
+            )
+        ).isNull()
     }
 
     @Test

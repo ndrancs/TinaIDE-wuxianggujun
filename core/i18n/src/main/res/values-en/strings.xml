@@ -195,6 +195,7 @@
   <string name="plugins_commands_filter_issues">Issues</string>
   <string name="plugins_commands_filter_available">Available</string>
   <string name="plugins_commands_diagnostic_missing_registration">Command "%1$s" is declared in manifest, but it is not registered at runtime.</string>
+  <string name="plugins_commands_diagnostic_missing_registration_reason">Command "%1$s" is declared in manifest, but runtime registration failed: %2$s</string>
   <string name="plugins_commands_diagnostic_unavailable">Command "%1$s" is currently unavailable: %2$s</string>
   <string name="plugins_commands_diagnostic_unavailable_unknown">Command "%1$s" is currently unavailable.</string>
   <string name="plugins_commands_diagnostic_runtime_fix_hint">Confirm the script registers this command, inspect logs, then reload the plugin manually.</string>
