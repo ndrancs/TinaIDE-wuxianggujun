@@ -416,6 +416,84 @@ class PluginsSettingsSectionSupportTest {
     }
 
     @Test
+    fun commandContributionFilters_shouldExposeCountsAndFilteredLists() {
+        val commands = listOf(
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                commandId = "plugin.ready",
+                title = "Ready",
+                group = "ready",
+                source = ResolvedPluginCommandSource.PLUGIN,
+                status = PluginCommandContributionStatus.AVAILABLE,
+                whenExpression = null,
+            ),
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                commandId = "plugin.missing",
+                title = "Missing Runtime",
+                group = "missing",
+                source = ResolvedPluginCommandSource.PLUGIN,
+                status = PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION,
+                whenExpression = null,
+            ),
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.FILE_TREE_CONTEXT,
+                commandId = "",
+                title = "Broken Menu",
+                group = "broken",
+                source = null,
+                status = PluginCommandContributionStatus.MISSING_COMMAND_ID,
+                whenExpression = null,
+            ),
+        )
+        val summary = PluginsSettingsSectionSupport.resolveCommandContributionSummary(commands)
+
+        assertThat(
+            PluginsSettingsSectionSupport.resolveCommandContributionFilterOptions(summary)
+        ).containsExactly(
+            PluginCommandContributionFilterOption(
+                filter = PluginCommandContributionFilter.ALL,
+                count = 3,
+            ),
+            PluginCommandContributionFilterOption(
+                filter = PluginCommandContributionFilter.ISSUES,
+                count = 2,
+            ),
+            PluginCommandContributionFilterOption(
+                filter = PluginCommandContributionFilter.AVAILABLE,
+                count = 1,
+            ),
+        ).inOrder()
+        assertThat(
+            PluginsSettingsSectionSupport.filterCommandContributions(
+                commands = commands,
+                filter = PluginCommandContributionFilter.ISSUES,
+            ).map { command -> command.commandId }
+        ).containsExactly("plugin.missing", "")
+        assertThat(
+            PluginsSettingsSectionSupport.filterCommandContributions(
+                commands = commands,
+                filter = PluginCommandContributionFilter.AVAILABLE,
+            ).map { command -> command.commandId }
+        ).containsExactly("plugin.ready")
+        assertThat(
+            PluginsSettingsSectionSupport.resolveCommandContributionFilterOrAll(
+                filter = PluginCommandContributionFilter.AVAILABLE,
+                availableFilters = listOf(
+                    PluginCommandContributionFilterOption(
+                        filter = PluginCommandContributionFilter.ALL,
+                        count = 2,
+                    ),
+                    PluginCommandContributionFilterOption(
+                        filter = PluginCommandContributionFilter.ISSUES,
+                        count = 2,
+                    ),
+                ),
+            )
+        ).isEqualTo(PluginCommandContributionFilter.ALL)
+    }
+
+    @Test
     fun commandContributions_shouldExposeRuntimeAvailabilityDiagnostics() {
         val manifest = PluginManifest(
             id = "demo.plugin",
@@ -603,6 +681,16 @@ class PluginsSettingsSectionSupportTest {
                 PluginCommandContributionStatus.UNAVAILABLE
             )
         ).isEqualTo(Strings.plugins_commands_status_unavailable)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionFilterLabelRes(
+                PluginCommandContributionFilter.ISSUES
+            )
+        ).isEqualTo(Strings.plugins_commands_filter_issues)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionFilterLabelRes(
+                PluginCommandContributionFilter.AVAILABLE
+            )
+        ).isEqualTo(Strings.plugins_commands_filter_available)
     }
 
     @Test

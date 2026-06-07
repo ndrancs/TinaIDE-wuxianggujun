@@ -53,6 +53,17 @@ internal data class PluginsCommandContributionSummary(
     val issueCount: Int,
 )
 
+internal data class PluginCommandContributionFilterOption(
+    val filter: PluginCommandContributionFilter,
+    val count: Int,
+)
+
+internal enum class PluginCommandContributionFilter {
+    ALL,
+    ISSUES,
+    AVAILABLE,
+}
+
 internal enum class PluginCommandContributionStatus {
     AVAILABLE,
     MISSING_COMMAND_ID,
@@ -519,6 +530,54 @@ internal object PluginsSettingsSectionSupport {
         availableCount = commands.count { command -> command.status == PluginCommandContributionStatus.AVAILABLE },
         issueCount = commands.count { command -> command.status != PluginCommandContributionStatus.AVAILABLE },
     )
+
+    fun resolveCommandContributionFilterOptions(
+        summary: PluginsCommandContributionSummary,
+    ): List<PluginCommandContributionFilterOption> = buildList {
+        add(
+            PluginCommandContributionFilterOption(
+                filter = PluginCommandContributionFilter.ALL,
+                count = summary.totalCount,
+            )
+        )
+        if (summary.issueCount > 0) {
+            add(
+                PluginCommandContributionFilterOption(
+                    filter = PluginCommandContributionFilter.ISSUES,
+                    count = summary.issueCount,
+                )
+            )
+        }
+        if (summary.availableCount > 0) {
+            add(
+                PluginCommandContributionFilterOption(
+                    filter = PluginCommandContributionFilter.AVAILABLE,
+                    count = summary.availableCount,
+                )
+            )
+        }
+    }
+
+    fun resolveCommandContributionFilterOrAll(
+        filter: PluginCommandContributionFilter,
+        availableFilters: List<PluginCommandContributionFilterOption>,
+    ): PluginCommandContributionFilter {
+        val availableFilterValues = availableFilters.map { option -> option.filter }.toSet()
+        return filter.takeIf { it in availableFilterValues } ?: PluginCommandContributionFilter.ALL
+    }
+
+    fun filterCommandContributions(
+        commands: List<PluginsCommandContribution>,
+        filter: PluginCommandContributionFilter,
+    ): List<PluginsCommandContribution> = when (filter) {
+        PluginCommandContributionFilter.ALL -> commands
+        PluginCommandContributionFilter.ISSUES -> commands.filter { command ->
+            command.status != PluginCommandContributionStatus.AVAILABLE
+        }
+        PluginCommandContributionFilter.AVAILABLE -> commands.filter { command ->
+            command.status == PluginCommandContributionStatus.AVAILABLE
+        }
+    }
 
     private fun MutableList<PluginsCommandContribution>.appendCommandContributions(
         pluginId: String,
@@ -1193,5 +1252,12 @@ internal object PluginsSettingsSectionSupport {
             Strings.plugins_commands_status_missing_registration
         }
         PluginCommandContributionStatus.UNAVAILABLE -> Strings.plugins_commands_status_unavailable
+    }
+
+    @StringRes
+    fun resolvePluginCommandContributionFilterLabelRes(filter: PluginCommandContributionFilter): Int = when (filter) {
+        PluginCommandContributionFilter.ALL -> Strings.filter_all
+        PluginCommandContributionFilter.ISSUES -> Strings.plugins_commands_filter_issues
+        PluginCommandContributionFilter.AVAILABLE -> Strings.plugins_commands_filter_available
     }
 }

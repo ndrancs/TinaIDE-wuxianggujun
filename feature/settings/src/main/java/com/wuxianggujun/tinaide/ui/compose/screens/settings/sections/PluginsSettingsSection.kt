@@ -1483,6 +1483,9 @@ private fun PluginInfoRow(text: String) {
 private fun PluginCommandContributionsCard(
     commands: List<PluginsCommandContribution>,
     summary: PluginsCommandContributionSummary,
+    filterOptions: List<PluginCommandContributionFilterOption>,
+    selectedFilter: PluginCommandContributionFilter,
+    onFilterSelected: (PluginCommandContributionFilter) -> Unit,
     isScriptPlugin: Boolean,
     onActionClick: (PluginDiagnosticAction, PluginsCommandContribution) -> Unit,
 ) {
@@ -1500,6 +1503,13 @@ private fun PluginCommandContributionsCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (filterOptions.size > 1) {
+                PluginCommandContributionFilterRow(
+                    filters = filterOptions,
+                    selectedFilter = selectedFilter,
+                    onFilterSelected = onFilterSelected,
+                )
+            }
             commands.forEachIndexed { index, command ->
                 if (index > 0) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -1510,6 +1520,38 @@ private fun PluginCommandContributionsCard(
                     onActionClick = onActionClick,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun PluginCommandContributionFilterRow(
+    filters: List<PluginCommandContributionFilterOption>,
+    selectedFilter: PluginCommandContributionFilter,
+    onFilterSelected: (PluginCommandContributionFilter) -> Unit,
+) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(TinaSpacing.sm),
+    ) {
+        filters.forEach { option ->
+            FilterChip(
+                selected = selectedFilter == option.filter,
+                onClick = { onFilterSelected(option.filter) },
+                label = {
+                    Text(
+                        text = stringResource(
+                            Strings.plugins_diagnostics_source_filter_chip,
+                            stringResource(
+                                PluginsSettingsSectionSupport.resolvePluginCommandContributionFilterLabelRes(
+                                    option.filter,
+                                )
+                            ),
+                            option.count,
+                        )
+                    )
+                },
+            )
         }
     }
 }
@@ -1938,6 +1980,27 @@ private fun InstalledPluginDetailScreen(
     val commandContributionSummary = remember(commandContributions) {
         PluginsSettingsSectionSupport.resolveCommandContributionSummary(commandContributions)
     }
+    val commandContributionFilterOptions = remember(commandContributionSummary) {
+        PluginsSettingsSectionSupport.resolveCommandContributionFilterOptions(commandContributionSummary)
+    }
+    var commandContributionFilter by remember(manifest.id) {
+        mutableStateOf(PluginCommandContributionFilter.ALL)
+    }
+    LaunchedEffect(commandContributionFilterOptions, commandContributionFilter) {
+        val resolvedFilter = PluginsSettingsSectionSupport.resolveCommandContributionFilterOrAll(
+            filter = commandContributionFilter,
+            availableFilters = commandContributionFilterOptions,
+        )
+        if (resolvedFilter != commandContributionFilter) {
+            commandContributionFilter = resolvedFilter
+        }
+    }
+    val filteredCommandContributions = remember(commandContributions, commandContributionFilter) {
+        PluginsSettingsSectionSupport.filterCommandContributions(
+            commands = commandContributions,
+            filter = commandContributionFilter,
+        )
+    }
     val scope = rememberCoroutineScope()
     var doctorDiagnosticsReport by remember(manifest.id) { mutableStateOf<PluginDiagnosticsReport?>(null) }
     var isDoctorRunning by remember(manifest.id) { mutableStateOf(false) }
@@ -2145,8 +2208,13 @@ private fun InstalledPluginDetailScreen(
 
         if (commandContributions.isNotEmpty()) {
             PluginCommandContributionsCard(
-                commands = commandContributions,
+                commands = filteredCommandContributions,
                 summary = commandContributionSummary,
+                filterOptions = commandContributionFilterOptions,
+                selectedFilter = commandContributionFilter,
+                onFilterSelected = { selectedFilter ->
+                    commandContributionFilter = selectedFilter
+                },
                 isScriptPlugin = isScriptPlugin,
                 onActionClick = { action, command ->
                     when (action) {
