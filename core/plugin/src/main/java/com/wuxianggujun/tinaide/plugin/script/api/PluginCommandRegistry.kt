@@ -6,9 +6,13 @@ import com.wuxianggujun.tinaide.plugin.script.PluginExecutionResult
 import com.wuxianggujun.tinaide.plugin.script.PluginPermission
 import com.wuxianggujun.tinaide.plugin.script.ScriptPluginRuntime
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -24,7 +28,8 @@ data class PluginCommandRegistrationIssue(
     val pluginId: String,
     val pluginName: String,
     val commandId: String,
-    val message: String
+    val message: String,
+    val conflictingPluginId: String? = null
 )
 
 data class PluginCommandDispatchResult(
@@ -46,12 +51,16 @@ object PluginCommandRegistry {
     private val commandsById = ConcurrentHashMap<String, RegisteredPluginCommand>()
     private val registrationIssuesByPluginId =
         ConcurrentHashMap<String, ConcurrentHashMap<String, PluginCommandRegistrationIssue>>()
+    private val revisionCounter = AtomicLong(0L)
+    private val _stateRevision = MutableStateFlow(0L)
+    val stateRevision: StateFlow<Long> = _stateRevision.asStateFlow()
 
     @Volatile
     private var runtimeProvider: ((String) -> ScriptPluginRuntime?)? = null
 
     fun setRuntimeProvider(provider: (String) -> ScriptPluginRuntime?) {
         runtimeProvider = provider
+        signalStateChanged()
     }
 
     fun register(
@@ -64,51 +73,72 @@ object PluginCommandRegistry {
         val normalizedPluginId = pluginId.trim()
         val normalizedPluginName = pluginName.trim().takeIf { it.isNotBlank() } ?: normalizedPluginId
         val normalizedCommandId = commandId.trim()
-        val result = runCatching {
-            require(normalizedPluginId.isNotBlank()) { "Plugin ID is required" }
-            require(normalizedCommandId.isNotBlank()) { "Command ID is required" }
 
-            val normalizedCallbackName = callbackName.trim()
-            require(normalizedCallbackName.isNotBlank()) { "Callback name is required" }
-
-            require(!HostCommands.isSupported(normalizedCommandId)) {
-                "Command ID conflicts with host command: $normalizedCommandId"
-            }
-
-            val command = RegisteredPluginCommand(
+        if (normalizedPluginId.isBlank()) {
+            return recordRegistrationFailure(
                 pluginId = normalizedPluginId,
                 pluginName = normalizedPluginName,
                 commandId = normalizedCommandId,
-                title = title?.trim()?.takeIf { it.isNotBlank() },
-                callbackName = normalizedCallbackName
+                message = "Plugin ID is required",
             )
-
-            val existing = commandsById[normalizedCommandId]
-            require(existing == null || existing.pluginId == normalizedPluginId) {
-                "Command ID already registered by plugin ${existing?.pluginId}: $normalizedCommandId"
-            }
-
-            commandsById[normalizedCommandId] = command
-            Timber.tag(TAG).d(
-                "Registered plugin command: commandId=%s pluginId=%s callback=%s",
-                normalizedCommandId,
-                normalizedPluginId,
-                normalizedCallbackName
-            )
-            command
         }
-
-        result.onSuccess {
-            clearRegistrationIssue(normalizedPluginId, normalizedCommandId)
-        }.onFailure { throwable ->
-            recordRegistrationIssue(
+        if (normalizedCommandId.isBlank()) {
+            return recordRegistrationFailure(
                 pluginId = normalizedPluginId,
                 pluginName = normalizedPluginName,
                 commandId = normalizedCommandId,
-                message = throwable.message ?: "Failed to register command",
+                message = "Command ID is required",
             )
         }
-        return result
+
+        val normalizedCallbackName = callbackName.trim()
+        if (normalizedCallbackName.isBlank()) {
+            return recordRegistrationFailure(
+                pluginId = normalizedPluginId,
+                pluginName = normalizedPluginName,
+                commandId = normalizedCommandId,
+                message = "Callback name is required",
+            )
+        }
+
+        if (HostCommands.isSupported(normalizedCommandId)) {
+            return recordRegistrationFailure(
+                pluginId = normalizedPluginId,
+                pluginName = normalizedPluginName,
+                commandId = normalizedCommandId,
+                message = "Command ID conflicts with host command: $normalizedCommandId",
+            )
+        }
+
+        val existing = commandsById[normalizedCommandId]
+        if (existing != null && existing.pluginId != normalizedPluginId) {
+            return recordRegistrationFailure(
+                pluginId = normalizedPluginId,
+                pluginName = normalizedPluginName,
+                commandId = normalizedCommandId,
+                message = "Command ID already registered by plugin ${existing.pluginId}: $normalizedCommandId",
+                conflictingPluginId = existing.pluginId,
+            )
+        }
+
+        val command = RegisteredPluginCommand(
+            pluginId = normalizedPluginId,
+            pluginName = normalizedPluginName,
+            commandId = normalizedCommandId,
+            title = title?.trim()?.takeIf { it.isNotBlank() },
+            callbackName = normalizedCallbackName
+        )
+
+        commandsById[normalizedCommandId] = command
+        clearRegistrationIssue(normalizedPluginId, normalizedCommandId)
+        signalStateChanged()
+        Timber.tag(TAG).d(
+            "Registered plugin command: commandId=%s pluginId=%s callback=%s",
+            normalizedCommandId,
+            normalizedPluginId,
+            normalizedCallbackName
+        )
+        return Result.success(command)
     }
 
     fun unregister(pluginId: String, commandId: String): Boolean {
@@ -116,31 +146,62 @@ object PluginCommandRegistry {
         val normalizedCommandId = commandId.trim()
         if (normalizedCommandId.isBlank()) return false
 
-        clearRegistrationIssue(normalizedPluginId, normalizedCommandId)
-        val existing = commandsById[normalizedCommandId] ?: return false
-        if (existing.pluginId != normalizedPluginId) return false
+        var changed = clearRegistrationIssue(normalizedPluginId, normalizedCommandId)
+        val existing = commandsById[normalizedCommandId]
+        if (existing == null || existing.pluginId != normalizedPluginId) {
+            if (changed) {
+                signalStateChanged()
+            }
+            return false
+        }
 
         return commandsById.remove(normalizedCommandId, existing).also { removed ->
             if (removed) {
+                changed = true
+                changed = clearRegistrationIssuesBlockedBy(
+                    conflictingPluginId = normalizedPluginId,
+                    commandIds = setOf(normalizedCommandId),
+                ) ||
+                    changed
                 Timber.tag(TAG).d(
                     "Unregistered plugin command: commandId=%s pluginId=%s",
                     normalizedCommandId,
                     normalizedPluginId
                 )
             }
+            if (changed) {
+                signalStateChanged()
+            }
         }
     }
 
     fun unregisterAll(pluginId: String) {
         val normalizedPluginId = pluginId.trim()
-        commandsById.entries.removeIf { (_, command) -> command.pluginId == normalizedPluginId }
-        registrationIssuesByPluginId.remove(normalizedPluginId)
+        if (normalizedPluginId.isBlank()) return
+        val removedCommandIds = mutableSetOf<String>()
+        commandsById.entries.removeIf { (_, command) ->
+            (command.pluginId == normalizedPluginId).also { remove ->
+                if (remove) {
+                    removedCommandIds += command.commandId
+                }
+            }
+        }
+        var changed = removedCommandIds.isNotEmpty()
+        changed = (registrationIssuesByPluginId.remove(normalizedPluginId) != null) || changed
+        changed = clearRegistrationIssuesBlockedBy(conflictingPluginId = normalizedPluginId) || changed
+        if (changed) {
+            signalStateChanged()
+        }
         Timber.tag(TAG).d("Unregistered all commands for plugin: %s", normalizedPluginId)
     }
 
     fun clear() {
+        val changed = commandsById.isNotEmpty() || registrationIssuesByPluginId.isNotEmpty()
         commandsById.clear()
         registrationIssuesByPluginId.clear()
+        if (changed) {
+            signalStateChanged()
+        }
     }
 
     fun isRegistered(commandId: String, pluginId: String? = null): Boolean {
@@ -259,36 +320,78 @@ object PluginCommandRegistry {
         )
     }
 
+    private fun recordRegistrationFailure(
+        pluginId: String,
+        pluginName: String,
+        commandId: String,
+        message: String,
+        conflictingPluginId: String? = null,
+    ): Result<RegisteredPluginCommand> {
+        if (recordRegistrationIssue(pluginId, pluginName, commandId, message, conflictingPluginId)) {
+            signalStateChanged()
+        }
+        return Result.failure(IllegalArgumentException(message))
+    }
+
     private fun recordRegistrationIssue(
         pluginId: String,
         pluginName: String,
         commandId: String,
         message: String,
-    ) {
-        if (pluginId.isBlank() || commandId.isBlank()) return
+        conflictingPluginId: String?,
+    ): Boolean {
+        if (pluginId.isBlank() || commandId.isBlank()) return false
         val issue = PluginCommandRegistrationIssue(
             pluginId = pluginId,
             pluginName = pluginName,
             commandId = commandId,
             message = message,
+            conflictingPluginId = conflictingPluginId,
         )
-        registrationIssuesByPluginId.computeIfAbsent(pluginId) {
+        val previous = registrationIssuesByPluginId.computeIfAbsent(pluginId) {
             ConcurrentHashMap()
-        }[commandId] = issue
+        }.put(commandId, issue)
         Timber.tag(TAG).w(
             "Plugin command registration failed: commandId=%s pluginId=%s message=%s",
             commandId,
             pluginId,
             message
         )
+        return previous != issue
     }
 
-    private fun clearRegistrationIssue(pluginId: String, commandId: String) {
-        if (pluginId.isBlank() || commandId.isBlank()) return
-        val issues = registrationIssuesByPluginId[pluginId] ?: return
-        issues.remove(commandId)
+    private fun clearRegistrationIssue(pluginId: String, commandId: String): Boolean {
+        if (pluginId.isBlank() || commandId.isBlank()) return false
+        val issues = registrationIssuesByPluginId[pluginId] ?: return false
+        val removed = issues.remove(commandId) != null
         if (issues.isEmpty()) {
             registrationIssuesByPluginId.remove(pluginId, issues)
         }
+        return removed
+    }
+
+    private fun clearRegistrationIssuesBlockedBy(
+        conflictingPluginId: String,
+        commandIds: Set<String>? = null,
+    ): Boolean {
+        if (conflictingPluginId.isBlank()) return false
+        var changed = false
+        registrationIssuesByPluginId.forEach { (pluginId, issues) ->
+            val removed = issues.entries.removeIf { (_, issue) ->
+                issue.conflictingPluginId == conflictingPluginId &&
+                    (commandIds == null || issue.commandId in commandIds)
+            }
+            if (removed) {
+                changed = true
+                if (issues.isEmpty()) {
+                    registrationIssuesByPluginId.remove(pluginId, issues)
+                }
+            }
+        }
+        return changed
+    }
+
+    private fun signalStateChanged() {
+        _stateRevision.value = revisionCounter.incrementAndGet()
     }
 }

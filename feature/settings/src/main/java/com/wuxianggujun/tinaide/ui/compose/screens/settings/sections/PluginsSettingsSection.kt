@@ -89,6 +89,7 @@ import com.wuxianggujun.tinaide.plugin.script.PluginPermission
 import com.wuxianggujun.tinaide.plugin.script.PluginPermissionManager
 import com.wuxianggujun.tinaide.plugin.script.ScriptPluginInfo
 import com.wuxianggujun.tinaide.plugin.script.ScriptPluginManager
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistry
 import com.wuxianggujun.tinaide.plugin.toDiagnosticsReport
 import com.wuxianggujun.tinaide.ui.compose.components.DetailHeaderCard
 import com.wuxianggujun.tinaide.ui.compose.components.DetailIconPlaceholder
@@ -167,6 +168,7 @@ internal fun PluginsSettingsSection(
     val pluginLogs by pluginLogManager.logsFlow.collectAsState()
     val scriptPluginManager = remember { ScriptPluginManager.getInstance(appContext) }
     val scriptPluginStates by scriptPluginManager.pluginStates.collectAsState()
+    val commandRegistryRevision by PluginCommandRegistry.stateRevision.collectAsState()
     val lspPlugins by lspPluginManager?.lspPluginsFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
     val lspInstallStates by lspPluginManager?.installStatesFlow?.collectAsState() ?: remember { mutableStateOf(emptyMap()) }
     val lspRuntimeDiagnosticText = LspRuntimeDiagnosticText(
@@ -210,6 +212,7 @@ internal fun PluginsSettingsSection(
         installedPlugins,
         scriptPluginStates,
         permissionGrants,
+        commandRegistryRevision,
         commandRuntimeDiagnosticText,
     ) {
         PluginsSettingsSectionSupport.buildCommandRuntimeEntriesByPluginId(

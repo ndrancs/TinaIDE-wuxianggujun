@@ -89,6 +89,66 @@ class PluginCommandRegistryTest {
     }
 
     @Test
+    fun `unregisterAll should clear registration issues blocked by removed plugin`() {
+        PluginCommandRegistry.register(
+            pluginId = "plugin.one",
+            pluginName = "Plugin One",
+            commandId = "plugin.sayHello",
+            callbackName = "handleHello"
+        ).getOrThrow()
+        PluginCommandRegistry.register(
+            pluginId = "plugin.two",
+            pluginName = "Plugin Two",
+            commandId = "plugin.sayHello",
+            callbackName = "handleHelloAgain"
+        )
+
+        assertThat(
+            PluginCommandRegistry.registrationIssue(
+                commandId = "plugin.sayHello",
+                pluginId = "plugin.two",
+            )?.conflictingPluginId
+        ).isEqualTo("plugin.one")
+
+        PluginCommandRegistry.unregisterAll("plugin.one")
+
+        assertThat(
+            PluginCommandRegistry.registrationIssue(
+                commandId = "plugin.sayHello",
+                pluginId = "plugin.two",
+            )
+        ).isNull()
+    }
+
+    @Test
+    fun `stateRevision should advance when command registration state changes`() {
+        val initialRevision = PluginCommandRegistry.stateRevision.value
+
+        PluginCommandRegistry.register(
+            pluginId = "plugin.one",
+            pluginName = "Plugin One",
+            commandId = "plugin.sayHello",
+            callbackName = "handleHello"
+        ).getOrThrow()
+        val registeredRevision = PluginCommandRegistry.stateRevision.value
+
+        PluginCommandRegistry.register(
+            pluginId = "plugin.two",
+            pluginName = "Plugin Two",
+            commandId = "plugin.sayHello",
+            callbackName = "handleHelloAgain"
+        )
+        val failedRegistrationRevision = PluginCommandRegistry.stateRevision.value
+
+        PluginCommandRegistry.unregisterAll("plugin.one")
+        val unregisteredRevision = PluginCommandRegistry.stateRevision.value
+
+        assertThat(registeredRevision).isGreaterThan(initialRevision)
+        assertThat(failedRegistrationRevision).isGreaterThan(registeredRevision)
+        assertThat(unregisteredRevision).isGreaterThan(failedRegistrationRevision)
+    }
+
+    @Test
     fun `dispatch should invoke runtime callback with invocation payload`() {
         val runtime = mockk<ScriptPluginRuntime>()
         every { runtime.checkPermission(PluginPermission.COMMAND_EXECUTE) } returns true
