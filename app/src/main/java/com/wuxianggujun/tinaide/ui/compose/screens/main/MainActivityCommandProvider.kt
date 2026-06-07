@@ -122,8 +122,14 @@ internal fun selectMainActivityQuickCommands(
     pinnedCommandIds: List<String>,
 ): List<MainActivityCommand> {
     val commandById = commands.associateBy(MainActivityCommand::id)
-    val preferredIds = pinnedCommandIds.takeIf { it.isNotEmpty() } ?: DEFAULT_TOP_BAR_COMMAND_IDS
-    return preferredIds.mapNotNull(commandById::get).take(MAX_TOP_BAR_COMMANDS)
+    val pinnedCommands = pinnedCommandIds
+        .mapNotNull(commandById::get)
+        .take(MAX_TOP_BAR_COMMANDS)
+    if (pinnedCommands.isNotEmpty()) return pinnedCommands
+
+    return DEFAULT_TOP_BAR_COMMAND_IDS
+        .mapNotNull(commandById::get)
+        .take(MAX_TOP_BAR_COMMANDS)
 }
 
 private const val MAX_TOP_BAR_COMMANDS = 3
@@ -431,7 +437,11 @@ private fun ResolvedPluginCommand.toCommand(
         ?.takeIf(String::isNotBlank)
         ?.let(MainActivityCommandText::Literal)
     return MainActivityCommand(
-        id = "$PLUGIN_TOOLBAR_COMMAND_PREFIX$pluginId:$group:$commandId",
+        id = buildPluginToolbarCommandId(
+            pluginId = pluginId,
+            group = group,
+            commandId = commandId
+        ),
         title = MainActivityCommandText.Literal(title),
         category = MainActivityCommandCategory.PLUGIN,
         enabled = availability?.available ?: true,

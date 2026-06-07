@@ -5,14 +5,80 @@ import androidx.annotation.StringRes
 import com.wuxianggujun.tinaide.core.commands.HostCommandCategory
 import com.wuxianggujun.tinaide.core.config.ShortcutAction
 import com.wuxianggujun.tinaide.core.i18n.Strings
+import java.net.URLDecoder
+import java.net.URLEncoder
 
 internal const val PLUGIN_TOOLBAR_COMMAND_PREFIX = "pluginToolbar:"
+private const val PLUGIN_TOOLBAR_COMMAND_ENCODING_VERSION = "v2"
 
 internal fun String.pluginToolbarPluginIdOrNull(): String? {
+    return pluginToolbarCommandKeyOrNull()?.pluginId
+}
+
+internal data class PluginToolbarCommandKey(
+    val pluginId: String,
+    val group: String,
+    val commandId: String
+)
+
+internal fun buildPluginToolbarCommandId(
+    pluginId: String,
+    group: String,
+    commandId: String,
+): String {
+    return listOf(
+        PLUGIN_TOOLBAR_COMMAND_ENCODING_VERSION,
+        pluginId.encodePluginToolbarCommandPart(),
+        group.encodePluginToolbarCommandPart(),
+        commandId.encodePluginToolbarCommandPart()
+    ).joinToString(
+        separator = ":",
+        prefix = PLUGIN_TOOLBAR_COMMAND_PREFIX
+    )
+}
+
+internal fun String.pluginToolbarCommandKeyOrNull(): PluginToolbarCommandKey? {
     if (!startsWith(PLUGIN_TOOLBAR_COMMAND_PREFIX)) return null
-    return removePrefix(PLUGIN_TOOLBAR_COMMAND_PREFIX)
-        .substringBefore(':', missingDelimiterValue = "")
+
+    val payload = removePrefix(PLUGIN_TOOLBAR_COMMAND_PREFIX)
+    val parts = payload.split(':')
+    if (parts.firstOrNull() == PLUGIN_TOOLBAR_COMMAND_ENCODING_VERSION) {
+        if (parts.size != 4) return null
+        val pluginId = parts[1].decodePluginToolbarCommandPartOrNull()?.takeIf(String::isNotBlank)
+            ?: return null
+        val group = parts[2].decodePluginToolbarCommandPartOrNull().orEmpty()
+        val commandId = parts[3].decodePluginToolbarCommandPartOrNull()?.takeIf(String::isNotBlank)
+            ?: return null
+        return PluginToolbarCommandKey(
+            pluginId = pluginId,
+            group = group,
+            commandId = commandId
+        )
+    }
+
+    return payload.legacyPluginToolbarCommandKeyOrNull()
+}
+
+private fun String.legacyPluginToolbarCommandKeyOrNull(): PluginToolbarCommandKey? {
+    val pluginId = substringBefore(':', missingDelimiterValue = "")
         .takeIf(String::isNotBlank)
+        ?: return null
+    val remainder = substringAfter(':', missingDelimiterValue = "")
+    return PluginToolbarCommandKey(
+        pluginId = pluginId,
+        group = remainder.substringBefore(':', missingDelimiterValue = ""),
+        commandId = remainder.substringAfter(':', missingDelimiterValue = "")
+    )
+}
+
+private fun String.encodePluginToolbarCommandPart(): String {
+    return URLEncoder.encode(this, Charsets.UTF_8.name())
+}
+
+private fun String.decodePluginToolbarCommandPartOrNull(): String? {
+    return runCatching {
+        URLDecoder.decode(this, Charsets.UTF_8.name())
+    }.getOrNull()
 }
 
 internal sealed interface MainActivityCommandText {

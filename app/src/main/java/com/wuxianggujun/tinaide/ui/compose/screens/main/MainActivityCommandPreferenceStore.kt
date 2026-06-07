@@ -13,6 +13,7 @@ private const val KEY_PINNED_COMMAND_IDS = "pinned_command_ids"
 private const val KEY_RECENT_COMMAND_IDS = "recent_command_ids"
 private const val MAX_PINNED_COMMANDS = 8
 private const val MAX_RECENT_COMMANDS = 16
+private const val MAX_STORED_COMMAND_ID_LENGTH = 512
 
 internal enum class MainActivityPinnedCommandMoveDirection {
     UP,
@@ -110,7 +111,7 @@ internal class MainActivityCommandPreferenceStore(
         val value = trim()
         return value.takeIf {
             it.isNotBlank() &&
-                it.length <= 160 &&
+                it.length <= MAX_STORED_COMMAND_ID_LENGTH &&
                 '\n' !in it &&
                 '\r' !in it
         }

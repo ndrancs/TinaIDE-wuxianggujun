@@ -98,26 +98,52 @@ class MainActivityCommandPreferenceStoreTest {
     @Test
     fun `pruneUnavailablePluginCommands should remove disabled plugin commands`() {
         val store = MainActivityCommandPreferenceStore(context)
+        val disabledCommandId = buildPluginToolbarCommandId(
+            pluginId = "disabledPlugin",
+            group = "editor",
+            commandId = "format"
+        )
+        val enabledCommandId = buildPluginToolbarCommandId(
+            pluginId = "enabledPlugin",
+            group = "editor",
+            commandId = "format"
+        )
 
         store.togglePinned("view.settings")
-        store.togglePinned("pluginToolbar:disabledPlugin:editor:format")
-        store.togglePinned("pluginToolbar:enabledPlugin:editor:format")
+        store.togglePinned(disabledCommandId)
+        store.togglePinned(enabledCommandId)
         store.recordExecuted("project.build")
-        store.recordExecuted("pluginToolbar:disabledPlugin:editor:format")
-        store.recordExecuted("pluginToolbar:enabledPlugin:editor:format")
+        store.recordExecuted(disabledCommandId)
+        store.recordExecuted(enabledCommandId)
 
         store.pruneUnavailablePluginCommands(setOf("enabledPlugin"))
 
         assertThat(store.pinnedCommandIdsFlow.value)
-            .containsExactly("pluginToolbar:enabledPlugin:editor:format", "view.settings")
+            .containsExactly(enabledCommandId, "view.settings")
             .inOrder()
         assertThat(store.recentCommandIdsFlow.value)
-            .containsExactly("pluginToolbar:enabledPlugin:editor:format", "project.build")
+            .containsExactly(enabledCommandId, "project.build")
             .inOrder()
     }
 
     @Test
-    fun `pluginToolbarPluginIdOrNull should parse plugin toolbar command ids`() {
+    fun `pluginToolbarPluginIdOrNull should parse encoded and legacy plugin toolbar command ids`() {
+        val encodedCommandId = buildPluginToolbarCommandId(
+            pluginId = "plugin.menu",
+            group = "editor:toolbar",
+            commandId = "format:selection"
+        )
+
+        assertThat(encodedCommandId.pluginToolbarCommandKeyOrNull())
+            .isEqualTo(
+                PluginToolbarCommandKey(
+                    pluginId = "plugin.menu",
+                    group = "editor:toolbar",
+                    commandId = "format:selection"
+                )
+            )
+        assertThat(encodedCommandId.pluginToolbarPluginIdOrNull())
+            .isEqualTo("plugin.menu")
         assertThat("pluginToolbar:plugin.menu:editor:format".pluginToolbarPluginIdOrNull())
             .isEqualTo("plugin.menu")
         assertThat("view.settings".pluginToolbarPluginIdOrNull()).isNull()

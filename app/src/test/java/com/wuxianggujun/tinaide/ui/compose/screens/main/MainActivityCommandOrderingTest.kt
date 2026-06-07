@@ -2,6 +2,7 @@ package com.wuxianggujun.tinaide.ui.compose.screens.main
 
 import android.app.Application
 import com.google.common.truth.Truth.assertThat
+import com.wuxianggujun.tinaide.core.commands.HostCommands
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -117,6 +118,29 @@ class MainActivityCommandOrderingTest {
 
         assertThat(selected.map(MainActivityCommand::id))
             .containsExactly("first", "second", "third")
+            .inOrder()
+    }
+
+    @Test
+    fun `selectMainActivityQuickCommands should fall back to defaults when pinned commands are stale`() {
+        val commands = listOf(
+            command("view.globalSearch", MainActivityCommandCategory.VIEW),
+            command(HostCommands.VIEW_TOGGLE_TERMINAL, MainActivityCommandCategory.VIEW),
+            command(HostCommands.VIEW_SETTINGS, MainActivityCommandCategory.VIEW),
+            command(HostCommands.PROJECT_CLOSE, MainActivityCommandCategory.FILE),
+        )
+
+        val selected = selectMainActivityQuickCommands(
+            commands = commands,
+            pinnedCommandIds = listOf("missing.plugin.command")
+        )
+
+        assertThat(selected.map(MainActivityCommand::id))
+            .containsExactly(
+                "view.globalSearch",
+                HostCommands.VIEW_TOGGLE_TERMINAL,
+                HostCommands.VIEW_SETTINGS
+            )
             .inOrder()
     }
 
