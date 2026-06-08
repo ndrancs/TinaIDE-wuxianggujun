@@ -1,6 +1,6 @@
 # TinaIDE 文档中心
 
-> 更新日期：2026-04-29
+> 更新日期：2026-06-08
 
 这里汇总 TinaIDE 当前仍然有效的项目文档，并标出应该优先回看的源码入口。
 
@@ -62,6 +62,7 @@
 - [LSP 调试指南](guides/LSP-Debug-Guide.md)
 - [远程 LSP 指南](guides/Remote-LSP-Guide.md)
 - [PC LSP 代理配置](guides/PC-LSP-Proxy-Setup-Guide.md)
+- [MT Data Files Provider](guides/MT-Data-Files-Provider.md)
 - [文件预览指南](guides/File-Viewer-Guide.md)
 - [分支管理指南](guides/Branch-Management-Guide.md)
 

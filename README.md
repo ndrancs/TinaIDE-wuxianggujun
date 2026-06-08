@@ -40,8 +40,9 @@ https://github.com/wuxianggujun/TinaIDE-Registry
 ```
 
 该仓库承载 `plugins/index.v2.json`、`packages/index.v2.json`、单项详情文件、
-v1 兼容索引、官方插件包、依赖包文件和对应构建脚本。Android 主仓库只保留客户端、
-内置兜底资产和文档口径。
+官方插件包、依赖包文件和对应构建脚本。当前 Android 主干只读取 v2 索引，不再回退
+旧的 `plugins/index.json` / `packages/index.json`；如需服务旧客户端，应在 Registry
+仓库显式生成 v1 兼容产物。Android 主仓库只保留客户端、内置兜底资产和文档口径。
 
 ## 界面预览
 
@@ -161,7 +162,7 @@ Release 任务不只是“生成 APK”，还可能触发以下副作用：
 
 - 自动递增 `version.properties`
 - 备份 R8 mapping 文件
-- 尝试上传 mapping 文件到服务端
+- 不会默认上传 mapping 文件；只有显式设置 `-Ptina.releaseMapping.uploadEnabled=true` 时才会上传
 
 另外，脚本方式的 Release 构建会同时检查本地签名配置：
 
