@@ -4,8 +4,8 @@ import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.packages.PackageInstallPlan
 import com.wuxianggujun.tinaide.core.packages.PackageInstallPlanItem
 import com.wuxianggujun.tinaide.core.packages.model.GUIPackage
-import com.wuxianggujun.tinaide.core.packages.model.InstallType
 import com.wuxianggujun.tinaide.core.packages.model.InstallProgressEvent
+import com.wuxianggujun.tinaide.core.packages.model.InstallType
 import com.wuxianggujun.tinaide.core.packages.model.Platform
 import com.wuxianggujun.tinaide.core.packages.model.PlatformPackage
 import org.junit.Test

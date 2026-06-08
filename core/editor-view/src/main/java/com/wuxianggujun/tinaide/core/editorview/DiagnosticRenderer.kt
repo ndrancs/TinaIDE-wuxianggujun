@@ -203,12 +203,10 @@ internal class DiagnosticRenderer(
         return resolved
     }
 
-    private fun severityPriority(severity: DiagnosticSeverity): Int {
-        return when (severity) {
-            DiagnosticSeverity.ERROR -> 4
-            DiagnosticSeverity.WARNING -> 3
-            DiagnosticSeverity.INFO -> 2
-            DiagnosticSeverity.HINT -> 1
-        }
+    private fun severityPriority(severity: DiagnosticSeverity): Int = when (severity) {
+        DiagnosticSeverity.ERROR -> 4
+        DiagnosticSeverity.WARNING -> 3
+        DiagnosticSeverity.INFO -> 2
+        DiagnosticSeverity.HINT -> 1
     }
 }

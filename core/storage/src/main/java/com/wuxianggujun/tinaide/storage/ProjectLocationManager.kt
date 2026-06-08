@@ -5,13 +5,13 @@ import com.wuxianggujun.tinaide.core.ServiceLifecycle
 import com.wuxianggujun.tinaide.project.ProjectMetadataStore
 import com.wuxianggujun.tinaide.storage.db.ProjectLocationEntity
 import com.wuxianggujun.tinaide.storage.db.StorageDatabase
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 
 /**
  * 项目位置管理器
@@ -52,9 +52,7 @@ class ProjectLocationManager(
         // 缓存已经实时同步到数据库，无需额外保存
     }
 
-    fun getProjectLocation(projectId: String): ProjectLocation? {
-        return projectMappingsById[projectId]
-    }
+    fun getProjectLocation(projectId: String): ProjectLocation? = projectMappingsById[projectId]
 
     fun registerProject(sourceDir: File): ProjectLocation {
         require(sourceDir.exists() && sourceDir.isDirectory) {
@@ -100,13 +98,9 @@ class ProjectLocationManager(
         return location
     }
 
-    fun getAllProjects(): List<ProjectLocation> {
-        return projectMappingsById.values.toList()
-    }
+    fun getAllProjects(): List<ProjectLocation> = projectMappingsById.values.toList()
 
-    fun getSourceDir(projectId: String): File? {
-        return projectMappingsById[projectId]?.let { File(it.sourceRootPath) }
-    }
+    fun getSourceDir(projectId: String): File? = projectMappingsById[projectId]?.let { File(it.sourceRootPath) }
 
     fun getWorkspaceDir(projectId: String): File {
         require(projectMappingsById.containsKey(projectId)) {
@@ -115,9 +109,7 @@ class ProjectLocationManager(
         return ProjectPaths.getProjectWorkspaceDir(context, projectId).apply { mkdirs() }
     }
 
-    fun getBuildDir(projectId: String): File {
-        return ProjectPaths.getProjectBuildDir(getWorkspaceDir(projectId)).apply { mkdirs() }
-    }
+    fun getBuildDir(projectId: String): File = ProjectPaths.getProjectBuildDir(getWorkspaceDir(projectId)).apply { mkdirs() }
 
     fun unregisterProject(projectId: String, deleteWorkspace: Boolean = false): Boolean {
         val location = projectMappingsById.remove(projectId) ?: return false
@@ -188,10 +180,8 @@ class ProjectLocationManager(
         }
     }
 
-    fun findProjectByPath(projectPath: String): ProjectLocation? {
-        return projectIdBySourceRootPath[normalizePath(projectPath)]
-            ?.let(projectMappingsById::get)
-    }
+    fun findProjectByPath(projectPath: String): ProjectLocation? = projectIdBySourceRootPath[normalizePath(projectPath)]
+        ?.let(projectMappingsById::get)
 
     private fun migrateLegacyPrivateProjectsIfNeeded() {
         val markerFile = File(context.filesDir, LEGACY_PRIVATE_PROJECTS_MIGRATION_MARKER)
@@ -308,21 +298,13 @@ class ProjectLocationManager(
         }.onFailure { Timber.tag(TAG).w(it, "Failed to write migration marker: %s", markerFile.absolutePath) }
     }
 
-    private fun isLegacyPendingSourceRoot(path: String): Boolean {
-        return path.startsWith(ProjectLocationEntity.LEGACY_PENDING_SOURCE_ROOT_PREFIX)
-    }
+    private fun isLegacyPendingSourceRoot(path: String): Boolean = path.startsWith(ProjectLocationEntity.LEGACY_PENDING_SOURCE_ROOT_PREFIX)
 
-    private fun normalizePath(path: String): String {
-        return runCatching { File(path).canonicalPath }.getOrElse { File(path).absolutePath }
-    }
+    private fun normalizePath(path: String): String = runCatching { File(path).canonicalPath }.getOrElse { File(path).absolutePath }
 
-    private fun normalizePath(file: File): String {
-        return runCatching { file.canonicalPath }.getOrElse { file.absolutePath }
-    }
+    private fun normalizePath(file: File): String = runCatching { file.canonicalPath }.getOrElse { file.absolutePath }
 
-    private fun File.canonicalOrAbsolutePath(): String {
-        return runCatching { canonicalPath }.getOrElse { absolutePath }
-    }
+    private fun File.canonicalOrAbsolutePath(): String = runCatching { canonicalPath }.getOrElse { absolutePath }
 }
 
 /**

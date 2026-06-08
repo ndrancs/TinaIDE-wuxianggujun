@@ -1,10 +1,10 @@
 package com.wuxianggujun.tinaide.search.replace
 
 import com.wuxianggujun.tinaide.search.ProjectSearchResult
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.charset.Charset
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * 替换引擎
@@ -34,7 +34,9 @@ class ReplaceEngine {
             } catch (e: Exception) {
                 null
             }
-        } else null
+        } else {
+            null
+        }
 
         // 按行号分组匹配结果
         val matchesByLine = matches
@@ -210,7 +212,9 @@ class ReplaceEngine {
                 val backupFile = File(file.parent, "${file.name}.bak")
                 file.copyTo(backupFile, overwrite = true)
                 backupFile.absolutePath
-            } else null
+            } else {
+                null
+            }
 
             // 写入新内容
             file.writeText(preview.newContent, Charset.defaultCharset())

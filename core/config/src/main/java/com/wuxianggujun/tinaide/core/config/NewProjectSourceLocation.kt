@@ -5,8 +5,6 @@ enum class NewProjectSourceLocation(val value: String) {
     PRIVATE("private");
 
     companion object {
-        fun fromValue(raw: String?): NewProjectSourceLocation {
-            return entries.firstOrNull { it.value == raw } ?: PUBLIC
-        }
+        fun fromValue(raw: String?): NewProjectSourceLocation = entries.firstOrNull { it.value == raw } ?: PUBLIC
     }
 }

@@ -4,8 +4,8 @@ import android.content.Context
 import com.wuxianggujun.tinaide.core.compile.action.BuildIntent
 import com.wuxianggujun.tinaide.core.compile.action.CompileRequest
 import com.wuxianggujun.tinaide.core.compile.action.LaunchIntent
-import com.wuxianggujun.tinaide.core.compile.event.BuildReport
 import com.wuxianggujun.tinaide.core.compile.event.BuildEvent
+import com.wuxianggujun.tinaide.core.compile.event.BuildReport
 import com.wuxianggujun.tinaide.core.compile.event.SharedFlowBuildEventEmitter
 import com.wuxianggujun.tinaide.core.compile.launcher.LaunchDescriptor
 import com.wuxianggujun.tinaide.core.compile.pipeline.BuildContextFactory
@@ -18,6 +18,7 @@ import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.editor.IEditorTabProvider
 import com.wuxianggujun.tinaide.file.IProjectContext
 import com.wuxianggujun.tinaide.output.IOutputManager
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -26,7 +27,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 
 /**
  * 编译项目用例。
@@ -67,7 +67,10 @@ class CompileProjectUseCase(
     )
 
     enum class ExecutionMode {
-        BUILD, RUN, DEBUG, TERMINAL
+        BUILD,
+        RUN,
+        DEBUG,
+        TERMINAL
     }
 
     /**
@@ -84,17 +87,13 @@ class CompileProjectUseCase(
         fun resolveRequest(outputMode: OutputMode): CompileRequest = requestFactory(outputMode)
 
         companion object {
-            fun forBuild(): Operation =
-                Operation(ExecutionMode.BUILD, Action.BUILD) { CompileRequest.buildOnly() }
+            fun forBuild(): Operation = Operation(ExecutionMode.BUILD, Action.BUILD) { CompileRequest.buildOnly() }
 
-            fun forRun(): Operation =
-                Operation(ExecutionMode.RUN, Action.RUN) { outputMode -> CompileRequest.run(outputMode) }
+            fun forRun(): Operation = Operation(ExecutionMode.RUN, Action.RUN) { outputMode -> CompileRequest.run(outputMode) }
 
-            fun forDebug(): Operation =
-                Operation(ExecutionMode.DEBUG, Action.DEBUG) { CompileRequest.debug() }
+            fun forDebug(): Operation = Operation(ExecutionMode.DEBUG, Action.DEBUG) { CompileRequest.debug() }
 
-            fun forTerminal(): Operation =
-                Operation(ExecutionMode.TERMINAL, Action.TERMINAL) { CompileRequest.terminal() }
+            fun forTerminal(): Operation = Operation(ExecutionMode.TERMINAL, Action.TERMINAL) { CompileRequest.terminal() }
 
             fun rebuildRun(): Operation = Operation(
                 mode = ExecutionMode.RUN,
@@ -106,7 +105,11 @@ class CompileProjectUseCase(
     }
 
     enum class BuildArtifactKind {
-        EXECUTABLE, SHARED_LIBRARY, STATIC_LIBRARY, PLUGIN_PACKAGE, UNKNOWN;
+        EXECUTABLE,
+        SHARED_LIBRARY,
+        STATIC_LIBRARY,
+        PLUGIN_PACKAGE,
+        UNKNOWN;
 
         fun displayName(context: Context): String = when (this) {
             EXECUTABLE -> Strings.compile_artifact_kind_executable.strOr(context)
@@ -118,8 +121,14 @@ class CompileProjectUseCase(
     }
 
     enum class Action {
-        BUILD, RUN, REBUILD_RUN, DEBUG, TERMINAL,
-        CMAKE_RECONFIGURE, CMAKE_CLEAR_BUILD_DIRECTORY, CMAKE_CLEAR_AND_RECONFIGURE;
+        BUILD,
+        RUN,
+        REBUILD_RUN,
+        DEBUG,
+        TERMINAL,
+        CMAKE_RECONFIGURE,
+        CMAKE_CLEAR_BUILD_DIRECTORY,
+        CMAKE_CLEAR_AND_RECONFIGURE;
 
         fun isCMakeMaintenance(): Boolean = when (this) {
             CMAKE_RECONFIGURE, CMAKE_CLEAR_BUILD_DIRECTORY, CMAKE_CLEAR_AND_RECONFIGURE -> true
@@ -230,7 +239,8 @@ class CompileProjectUseCase(
                         files.isEmpty() -> Strings.compile_error_empty_dir.strOr(appContext)
                         else -> Strings.compile_error_no_source_files.strOr(
                             appContext,
-                            files.take(10).joinToString(", ") { it.name })
+                            files.take(10).joinToString(", ") { it.name }
+                        )
                     }
                 }
                 else -> Strings.compile_error_unsupported_build_system.strOr(appContext, buildSystem.toString())
@@ -283,8 +293,12 @@ class CompileProjectUseCase(
         // CMake + SDL 图形运行必须运行共享库目标；旧配置误选 executable 时自动纠正。
         if (buildSystem == BuildSystem.CMAKE && preferSharedLibraryForRun) {
             val ctxForTargetsQuery = buildContextFactory.create(
-                appContext = appContext, projectRoot = projectRoot, buildDir = buildDir,
-                buildSystem = buildSystem, options = options, target = null,
+                appContext = appContext,
+                projectRoot = projectRoot,
+                buildDir = buildDir,
+                buildSystem = buildSystem,
+                options = options,
+                target = null,
             )
             val targets = strategyRegistry.resolve(buildSystem)?.getTargets(ctxForTargetsQuery).orEmpty()
             val selectedTarget = effectiveTargetName
@@ -328,7 +342,9 @@ class CompileProjectUseCase(
         require(action.isCMakeMaintenance()) { "Unsupported CMake maintenance action: $action" }
 
         val project = projectContext.getCurrentProject() ?: return@withContext Result.Error(
-            action, Strings.toast_please_open_project.strOr(appContext), null,
+            action,
+            Strings.toast_please_open_project.strOr(appContext),
+            null,
         )
         val projectRoot = File(project.rootPath)
         val buildDir = File(project.buildDirPath)
@@ -350,8 +366,12 @@ class CompileProjectUseCase(
             onProgress = { msg -> log(msg) },
         )
         val ctx = buildContextFactory.create(
-            appContext = appContext, projectRoot = projectRoot, buildDir = buildDir,
-            buildSystem = buildSystem, options = options, target = null,
+            appContext = appContext,
+            projectRoot = projectRoot,
+            buildDir = buildDir,
+            buildSystem = buildSystem,
+            options = options,
+            target = null,
         )
 
         val reconfigureAfterClean = action == Action.CMAKE_RECONFIGURE || action == Action.CMAKE_CLEAR_AND_RECONFIGURE
@@ -405,8 +425,12 @@ class CompileProjectUseCase(
             linuxEnvironmentAvailable = linuxEnvironmentAvailable,
         )
         val ctx = buildContextFactory.create(
-            appContext = appContext, projectRoot = projectRoot, buildDir = buildDir,
-            buildSystem = buildSystem, options = options, target = null,
+            appContext = appContext,
+            projectRoot = projectRoot,
+            buildDir = buildDir,
+            buildSystem = buildSystem,
+            options = options,
+            target = null,
         )
         strategy.getTargets(ctx)
     }
@@ -465,11 +489,13 @@ class CompileProjectUseCase(
         action: Action,
         result: PluginProjectActionResult,
     ): Result.Success {
-        log(Strings.compile_plugin_project_diagnostics_summary.strOr(
-            appContext,
-            result.errorCount,
-            result.warningCount,
-        ))
+        log(
+            Strings.compile_plugin_project_diagnostics_summary.strOr(
+                appContext,
+                result.errorCount,
+                result.warningCount,
+            )
+        )
         result.diagnostics.forEach { diagnostic ->
             val message = when (diagnostic.severity) {
                 PluginProjectDiagnosticSeverity.ERROR ->
@@ -491,36 +517,44 @@ class CompileProjectUseCase(
             kind = BuildArtifactKind.PLUGIN_PACKAGE,
         )
         return if (result.installed) {
-            log(Strings.compile_plugin_project_install_complete.strOr(
-                appContext,
-                result.pluginName,
-                result.pluginVersion,
-            ))
-            Result.Success(Report(
-                action = action,
-                summary = Strings.compile_plugin_project_install_summary.strOr(
+            log(
+                Strings.compile_plugin_project_install_complete.strOr(
                     appContext,
                     result.pluginName,
-                ),
-                artifact = artifact,
-                launch = LaunchSpec.PluginInstalled(
-                    pluginId = result.pluginId,
-                    pluginName = result.pluginName,
-                    pluginVersion = result.pluginVersion,
-                    packagePath = result.packageFile.absolutePath,
-                ),
-            ))
+                    result.pluginVersion,
+                )
+            )
+            Result.Success(
+                Report(
+                    action = action,
+                    summary = Strings.compile_plugin_project_install_summary.strOr(
+                        appContext,
+                        result.pluginName,
+                    ),
+                    artifact = artifact,
+                    launch = LaunchSpec.PluginInstalled(
+                        pluginId = result.pluginId,
+                        pluginName = result.pluginName,
+                        pluginVersion = result.pluginVersion,
+                        packagePath = result.packageFile.absolutePath,
+                    ),
+                )
+            )
         } else {
-            log(Strings.compile_plugin_project_package_complete.strOr(
-                appContext,
-                result.packageFile.absolutePath,
-            ))
-            Result.Success(Report(
-                action = action,
-                summary = Strings.compile_plugin_project_package_summary.strOr(appContext),
-                artifact = artifact,
-                launch = LaunchSpec.None,
-            ))
+            log(
+                Strings.compile_plugin_project_package_complete.strOr(
+                    appContext,
+                    result.packageFile.absolutePath,
+                )
+            )
+            Result.Success(
+                Report(
+                    action = action,
+                    summary = Strings.compile_plugin_project_package_summary.strOr(appContext),
+                    artifact = artifact,
+                    launch = LaunchSpec.None,
+                )
+            )
         }
     }
 
@@ -552,12 +586,14 @@ class CompileProjectUseCase(
                     report.artifact.absolutePath,
                     artifactKind,
                 )
-                Result.Success(Report(
-                    action = action,
-                    summary = buildResultSummary(artifactKind),
-                    artifact = toBuildArtifact(projectRoot, report.artifact, artifactKind),
-                    launch = LaunchSpec.None,
-                ))
+                Result.Success(
+                    Report(
+                        action = action,
+                        summary = buildResultSummary(artifactKind),
+                        artifact = toBuildArtifact(projectRoot, report.artifact, artifactKind),
+                        launch = LaunchSpec.None,
+                    )
+                )
             }
             is BuildReport.Success -> {
                 log(successLog(mode))
@@ -575,17 +611,21 @@ class CompileProjectUseCase(
                     artifactKind,
                     launch::class.simpleName,
                 )
-                Result.Success(Report(
-                    action = action,
-                    summary = successSummary(mode),
-                    artifact = toBuildArtifact(projectRoot, report.artifact, artifactKind),
-                    launch = launch,
-                ))
+                Result.Success(
+                    Report(
+                        action = action,
+                        summary = successSummary(mode),
+                        artifact = toBuildArtifact(projectRoot, report.artifact, artifactKind),
+                        launch = launch,
+                    )
+                )
             }
-            is BuildReport.Cleaned -> Result.Success(Report(
-                action = action,
-                summary = Strings.compile_result_build_complete.strOr(appContext),
-            ))
+            is BuildReport.Cleaned -> Result.Success(
+                Report(
+                    action = action,
+                    summary = Strings.compile_result_build_complete.strOr(appContext),
+                )
+            )
             is BuildReport.BuildFailed -> {
                 log(report.reason)
                 Timber.tag(TAG).w(
@@ -617,35 +657,34 @@ class CompileProjectUseCase(
         }
     }
 
-    private suspend fun runWithProgressLogging(block: suspend () -> BuildReport): BuildReport =
-        coroutineScope {
-            val collectorJob: Job = eventBus.events
-                .onEach { event ->
-                    when (event) {
-                        is BuildEvent.Planning.Started -> log(Strings.compile_checking_artifact.strOr(appContext))
-                        is BuildEvent.Build.Skipped -> log(Strings.compile_reusing_artifact.strOr(appContext))
-                        is BuildEvent.Planning.Decided -> {
-                            if (event.summary.startsWith("build:")) {
-                                log(Strings.compile_rebuilding.strOr(appContext))
-                                log(Strings.compile_rebuild_reason.strOr(appContext, event.summary.removePrefix("build:").trim()))
-                            }
+    private suspend fun runWithProgressLogging(block: suspend () -> BuildReport): BuildReport = coroutineScope {
+        val collectorJob: Job = eventBus.events
+            .onEach { event ->
+                when (event) {
+                    is BuildEvent.Planning.Started -> log(Strings.compile_checking_artifact.strOr(appContext))
+                    is BuildEvent.Build.Skipped -> log(Strings.compile_reusing_artifact.strOr(appContext))
+                    is BuildEvent.Planning.Decided -> {
+                        if (event.summary.startsWith("build:")) {
+                            log(Strings.compile_rebuilding.strOr(appContext))
+                            log(Strings.compile_rebuild_reason.strOr(appContext, event.summary.removePrefix("build:").trim()))
                         }
-                        is BuildEvent.AutoFallback -> log(
-                            Strings.compile_autofallback_triggered.strOr(appContext, event.firstFailure.reason)
-                        )
-                        is BuildEvent.Build.CompileProgress -> log(event.message)
-                        is BuildEvent.Build.ConfigureFailed -> log(event.reason)
-                        is BuildEvent.Build.CompileFailed -> log(event.reason)
-                        else -> Unit
                     }
+                    is BuildEvent.AutoFallback -> log(
+                        Strings.compile_autofallback_triggered.strOr(appContext, event.firstFailure.reason)
+                    )
+                    is BuildEvent.Build.CompileProgress -> log(event.message)
+                    is BuildEvent.Build.ConfigureFailed -> log(event.reason)
+                    is BuildEvent.Build.CompileFailed -> log(event.reason)
+                    else -> Unit
                 }
-                .launchIn(this)
-            try {
-                block()
-            } finally {
-                collectorJob.cancel()
             }
+            .launchIn(this)
+        try {
+            block()
+        } finally {
+            collectorJob.cancel()
         }
+    }
 
     private fun mapDescriptor(
         descriptor: LaunchDescriptor,
@@ -683,14 +722,13 @@ class CompileProjectUseCase(
         }
     }
 
-    private fun mapKind(kind: com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind): BuildArtifactKind =
-        when (kind) {
-            com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.EXECUTABLE -> BuildArtifactKind.EXECUTABLE
-            com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.SHARED_LIBRARY -> BuildArtifactKind.SHARED_LIBRARY
-            com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.STATIC_LIBRARY -> BuildArtifactKind.STATIC_LIBRARY
-            com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.OBJECT -> BuildArtifactKind.UNKNOWN
-            com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.UNKNOWN -> BuildArtifactKind.UNKNOWN
-        }
+    private fun mapKind(kind: com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind): BuildArtifactKind = when (kind) {
+        com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.EXECUTABLE -> BuildArtifactKind.EXECUTABLE
+        com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.SHARED_LIBRARY -> BuildArtifactKind.SHARED_LIBRARY
+        com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.STATIC_LIBRARY -> BuildArtifactKind.STATIC_LIBRARY
+        com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.OBJECT -> BuildArtifactKind.UNKNOWN
+        com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind.UNKNOWN -> BuildArtifactKind.UNKNOWN
+    }
 
     private fun toBuildArtifact(
         projectRoot: File,
@@ -733,8 +771,11 @@ class CompileProjectUseCase(
         val currentFile = getCurrentEditingFile()
         when (config.sourceFileMode) {
             SourceFileMode.CURRENT_FILE -> {
-                if (currentFile == null) log(Strings.compile_warning_no_file_open.strOr(appContext))
-                else if (!RunConfiguration.isSourceFile(currentFile)) log(Strings.compile_warning_not_source_file.strOr(appContext))
+                if (currentFile == null) {
+                    log(Strings.compile_warning_no_file_open.strOr(appContext))
+                } else if (!RunConfiguration.isSourceFile(currentFile)) {
+                    log(Strings.compile_warning_not_source_file.strOr(appContext))
+                }
             }
             SourceFileMode.SPECIFIED_FILE -> log(Strings.compile_warning_specified_file_invalid.strOr(appContext))
             else -> Unit

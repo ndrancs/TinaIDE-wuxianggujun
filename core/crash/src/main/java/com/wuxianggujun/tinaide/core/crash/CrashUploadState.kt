@@ -43,24 +43,18 @@ object CrashUploadState {
         val attemptCount: Int,
     )
 
-    fun isAutoUploadEnabled(context: Context): Boolean {
-        return context
-            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getBoolean(KEY_AUTO_UPLOAD_ENABLED, false)
-    }
+    fun isAutoUploadEnabled(context: Context): Boolean = context
+        .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getBoolean(KEY_AUTO_UPLOAD_ENABLED, false)
 
-    fun getLastUploadedName(context: Context): String {
-        return context
-            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_LAST_UPLOADED_NAME, "")
-            .orEmpty()
-    }
+    fun getLastUploadedName(context: Context): String = context
+        .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getString(KEY_LAST_UPLOADED_NAME, "")
+        .orEmpty()
 
-    fun getLastUploadedMtime(context: Context): Long {
-        return context
-            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getLong(KEY_LAST_UPLOADED_MTIME, 0L)
-    }
+    fun getLastUploadedMtime(context: Context): Long = context
+        .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getLong(KEY_LAST_UPLOADED_MTIME, 0L)
 
     fun getLastUploadSnapshot(context: Context): Snapshot {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -87,16 +81,14 @@ object CrashUploadState {
         return getUploadSkippedNames(context).contains(fileName)
     }
 
-    fun markUploadQueued(context: Context, fileName: String, reason: String = "queued"): Boolean {
-        return updateLastStatus(
-            context = context,
-            status = Status.QUEUED,
-            fileName = fileName,
-            mtime = 0L,
-            reason = reason,
-            incrementAttempt = false,
-        )
-    }
+    fun markUploadQueued(context: Context, fileName: String, reason: String = "queued"): Boolean = updateLastStatus(
+        context = context,
+        status = Status.QUEUED,
+        fileName = fileName,
+        mtime = 0L,
+        reason = reason,
+        incrementAttempt = false,
+    )
 
     fun markUploadAttemptStarted(context: Context, fileName: String, mtime: Long): Boolean {
         if (fileName.isBlank()) return false
@@ -202,14 +194,12 @@ object CrashUploadState {
         mtime: Long,
         reason: String,
         attemptCount: Int,
-    ): android.content.SharedPreferences.Editor {
-        return putString(KEY_LAST_STATUS, status.name)
-            .putString(KEY_LAST_STATUS_NAME, normalizeFileName(fileName))
-            .putLong(KEY_LAST_STATUS_MTIME, mtime)
-            .putLong(KEY_LAST_STATUS_AT, System.currentTimeMillis())
-            .putString(KEY_LAST_STATUS_REASON, reason.take(240))
-            .putInt(KEY_LAST_ATTEMPT_COUNT, attemptCount.coerceAtLeast(0))
-    }
+    ): android.content.SharedPreferences.Editor = putString(KEY_LAST_STATUS, status.name)
+        .putString(KEY_LAST_STATUS_NAME, normalizeFileName(fileName))
+        .putLong(KEY_LAST_STATUS_MTIME, mtime)
+        .putLong(KEY_LAST_STATUS_AT, System.currentTimeMillis())
+        .putString(KEY_LAST_STATUS_REASON, reason.take(240))
+        .putInt(KEY_LAST_ATTEMPT_COUNT, attemptCount.coerceAtLeast(0))
 
     private fun currentAttemptCount(context: Context, fileName: String): Int {
         val normalizedName = normalizeFileName(fileName)
@@ -222,21 +212,15 @@ object CrashUploadState {
         }
     }
 
-    private fun getUploadedNames(context: Context): Set<String> {
-        return context
-            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getStringSet(KEY_UPLOADED_NAMES, emptySet())
-            .orEmpty()
-    }
+    private fun getUploadedNames(context: Context): Set<String> = context
+        .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getStringSet(KEY_UPLOADED_NAMES, emptySet())
+        .orEmpty()
 
-    private fun getUploadSkippedNames(context: Context): Set<String> {
-        return context
-            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getStringSet(KEY_UPLOAD_SKIPPED_NAMES, emptySet())
-            .orEmpty()
-    }
+    private fun getUploadSkippedNames(context: Context): Set<String> = context
+        .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getStringSet(KEY_UPLOAD_SKIPPED_NAMES, emptySet())
+        .orEmpty()
 
-    private fun normalizeFileName(fileName: String): String {
-        return fileName.trim().ifBlank { UNKNOWN_FILE_NAME }
-    }
+    private fun normalizeFileName(fileName: String): String = fileName.trim().ifBlank { UNKNOWN_FILE_NAME }
 }

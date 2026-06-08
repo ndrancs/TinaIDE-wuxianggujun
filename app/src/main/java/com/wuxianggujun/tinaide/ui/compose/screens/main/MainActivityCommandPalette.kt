@@ -447,11 +447,9 @@ private fun MainActivityCommand.pinnedState(
 }
 
 @Composable
-private fun MainActivityCommandText.asString(): String {
-    return when (this) {
-        is MainActivityCommandText.Literal -> value
-        is MainActivityCommandText.Resource -> stringResource(resId)
-    }
+private fun MainActivityCommandText.asString(): String = when (this) {
+    is MainActivityCommandText.Literal -> value
+    is MainActivityCommandText.Resource -> stringResource(resId)
 }
 
 private sealed interface CommandPaletteRow {
@@ -471,18 +469,16 @@ private sealed interface CommandPaletteRow {
     }
 }
 
-private fun List<MainActivityCommandGroup>.toCommandPaletteRows(): List<CommandPaletteRow> {
-    return buildList {
-        this@toCommandPaletteRows.forEachIndexed { index, group ->
-            add(
-                CommandPaletteRow.Section(
-                    titleRes = group.titleRes,
-                    index = index
-                )
+private fun List<MainActivityCommandGroup>.toCommandPaletteRows(): List<CommandPaletteRow> = buildList {
+    this@toCommandPaletteRows.forEachIndexed { index, group ->
+        add(
+            CommandPaletteRow.Section(
+                titleRes = group.titleRes,
+                index = index
             )
-            group.commands.forEach { command ->
-                add(CommandPaletteRow.Command(command))
-            }
+        )
+        group.commands.forEach { command ->
+            add(CommandPaletteRow.Command(command))
         }
     }
 }

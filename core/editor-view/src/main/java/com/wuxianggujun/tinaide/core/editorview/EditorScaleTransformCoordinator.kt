@@ -83,9 +83,11 @@ internal class EditorScaleTransformCoordinator(
 
         // 累积缩放
         val newTarget = (gestureTargetFontSizeSp!! * zoomChange).coerceIn(10f, 40f)
-        if (abs(newTarget - gestureTargetFontSizeSp!!) < 0.05f
-            && abs(newTarget - gestureInitialFontSizeSp!!) < 0.1f
-        ) return
+        if (abs(newTarget - gestureTargetFontSizeSp!!) < 0.05f &&
+            abs(newTarget - gestureInitialFontSizeSp!!) < 0.1f
+        ) {
+            return
+        }
         gestureTargetFontSizeSp = newTarget
 
         // 更新视觉缩放比例（Canvas 会读取此值应用 scale 变换）

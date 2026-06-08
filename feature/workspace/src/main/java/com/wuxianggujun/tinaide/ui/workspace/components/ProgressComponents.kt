@@ -5,8 +5,6 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -20,20 +18,17 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.wuxianggujun.tinaide.core.i18n.Drawables
-import com.wuxianggujun.tinaide.core.proot.PRootBootstrap
-import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
 import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.proot.PRootBootstrap
 
 /**
  * 进度相关 Compose 组件
- * 
+ *
  * 包含：
  * - CircularProgressWithIcon: 圆形进度指示器
  * - PackageInstallItem: 单个包安装项
@@ -42,7 +37,7 @@ import com.wuxianggujun.tinaide.core.i18n.Strings
 
 /**
  * 圆形进度指示器带图标
- * 
+ *
  * 优化版本：
  * - 使用渐变色背景圆环，更有层次感
  * - 添加微妙的脉冲动画效果
@@ -78,15 +73,15 @@ fun CircularProgressWithIcon(
     )
 
     // 根据尺寸动态计算其他尺寸
-    val strokeWidth = (size.value * 0.075f).dp  // 线宽为尺寸的 7.5%
-    val innerCircleSize = size * 0.65f  // 内圆为尺寸的 65%
-    val iconSize = size * 0.35f  // 图标为尺寸的 35%
+    val strokeWidth = (size.value * 0.075f).dp // 线宽为尺寸的 7.5%
+    val innerCircleSize = size * 0.65f // 内圆为尺寸的 65%
+    val iconSize = size * 0.35f // 图标为尺寸的 35%
 
     // 使用主题颜色
     val primaryColor = MaterialTheme.colorScheme.primary
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
     val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
-    
+
     // 创建渐变色
     val trackGradient = Brush.sweepGradient(
         colors = listOf(
@@ -96,7 +91,7 @@ fun CircularProgressWithIcon(
             primaryContainer.copy(alpha = 0.5f)
         )
     )
-    
+
     val progressGradient = Brush.sweepGradient(
         colors = listOf(
             primaryColor,
@@ -224,7 +219,7 @@ fun PackageInstallItem(
     } else {
         0f
     }
-    
+
     // 根据状态确定进度和颜色 - 使用主题颜色
     val primaryColor = MaterialTheme.colorScheme.primary
     val errorColor = MaterialTheme.colorScheme.error
@@ -233,22 +228,22 @@ fun PackageInstallItem(
     val (displayProgress, progressColor, backgroundColor) = when (packageInfo.status) {
         PRootBootstrap.PackageStatus.COMPLETED -> Triple(
             1f,
-            primaryColor.copy(alpha = 0.25f),  // 主题色，完成
+            primaryColor.copy(alpha = 0.25f), // 主题色，完成
             primaryColor.copy(alpha = 0.08f)
         )
         PRootBootstrap.PackageStatus.DOWNLOADING -> Triple(
-            animatedProgress.coerceIn(0f, 1f),  // 动态进度
-            primaryColor.copy(alpha = 0.3f),   // 主题色，下载中
+            animatedProgress.coerceIn(0f, 1f), // 动态进度
+            primaryColor.copy(alpha = 0.3f), // 主题色，下载中
             primaryColor.copy(alpha = 0.08f)
         )
         PRootBootstrap.PackageStatus.INSTALLING -> Triple(
-            animatedProgress.coerceIn(0f, 1f),  // 动态进度
-            primaryColor.copy(alpha = 0.3f),   // 主题色，安装中
+            animatedProgress.coerceIn(0f, 1f), // 动态进度
+            primaryColor.copy(alpha = 0.3f), // 主题色，安装中
             primaryColor.copy(alpha = 0.08f)
         )
         PRootBootstrap.PackageStatus.FAILED -> Triple(
             1f,
-            errorColor.copy(alpha = 0.2f),   // 错误色，失败
+            errorColor.copy(alpha = 0.2f), // 错误色，失败
             errorColor.copy(alpha = 0.08f)
         )
         PRootBootstrap.PackageStatus.PENDING -> Triple(
@@ -257,7 +252,7 @@ fun PackageInstallItem(
             surfaceVariantColor.copy(alpha = 0.3f)
         )
     }
-    
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -270,7 +265,7 @@ fun PackageInstallItem(
                 .fillMaxSize()
                 .background(backgroundColor)
         )
-        
+
         // 进度条层 - 从左到右推进的颜色覆盖
         if (displayProgress > 0f) {
             Box(
@@ -286,14 +281,14 @@ fun PackageInstallItem(
                         )
                     )
             )
-            
-        // 光晕效果（仅用于正在处理的状态）
-        if (isBusy) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(60.dp)
-                    .offset(x = (displayProgress * 300 * shimmerOffset).dp - 60.dp)
+
+            // 光晕效果（仅用于正在处理的状态）
+            if (isBusy) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(60.dp)
+                        .offset(x = (displayProgress * 300 * shimmerOffset).dp - 60.dp)
                         .background(
                             brush = Brush.horizontalGradient(
                                 colors = listOf(
@@ -306,7 +301,7 @@ fun PackageInstallItem(
                 )
             }
         }
-        
+
         // 内容层（包名、图标、状态）
         Row(
             modifier = Modifier
@@ -360,7 +355,7 @@ fun PackageInstallItem(
                     }
                 }
             }
-            
+
             // 包名和描述
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -379,7 +374,7 @@ fun PackageInstallItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             // 状态标签（带背景）
             val statusText = when (packageInfo.status) {
                 PRootBootstrap.PackageStatus.COMPLETED -> stringResource(Strings.package_status_completed)
@@ -388,7 +383,7 @@ fun PackageInstallItem(
                 PRootBootstrap.PackageStatus.FAILED -> stringResource(Strings.package_status_failed)
                 PRootBootstrap.PackageStatus.PENDING -> stringResource(Strings.package_status_pending)
             }
-            
+
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = when (packageInfo.status) {
@@ -463,7 +458,7 @@ fun InstallStepItem(
                 )
             }
         }
-        
+
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
@@ -481,7 +476,7 @@ fun InstallStepItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
+
         // 状态指示
         if (isActive) {
             CircularProgressIndicator(
@@ -491,4 +486,3 @@ fun InstallStepItem(
         }
     }
 }
-

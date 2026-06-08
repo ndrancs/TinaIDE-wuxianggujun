@@ -101,5 +101,4 @@ class TerminalCommandBuilder(context: Context) {
             "; printf '\\033]777;tina-run-end;%d\\a' \"\$__tina_rc\"" +
             "; cat > /dev/null"
     }
-
 }

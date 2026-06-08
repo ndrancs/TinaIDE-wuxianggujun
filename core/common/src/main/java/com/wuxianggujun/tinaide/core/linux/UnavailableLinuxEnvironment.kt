@@ -13,24 +13,19 @@ object UnavailableLinuxEnvironment : LinuxEnvironment {
         env: Map<String, String>,
         timeout: Long?,
         stdin: String?,
-    ): LinuxExecutionResult {
-        return LinuxExecutionResult(
-            exitCode = -1,
-            stdout = "",
-            stderr = "Linux environment is unavailable",
-            durationMs = 0L,
-            timedOut = false,
-        )
-    }
+    ): LinuxExecutionResult = LinuxExecutionResult(
+        exitCode = -1,
+        stdout = "",
+        stderr = "Linux environment is unavailable",
+        durationMs = 0L,
+        timedOut = false,
+    )
 
     override fun startInteractive(
         command: List<String>,
         workDir: String,
         env: Map<String, String>,
-    ): LinuxInteractiveProcess {
-        throw IllegalStateException("Linux environment is unavailable")
-    }
+    ): LinuxInteractiveProcess = throw IllegalStateException("Linux environment is unavailable")
 
     override fun toGuestPath(hostPath: String): String = hostPath
 }
-

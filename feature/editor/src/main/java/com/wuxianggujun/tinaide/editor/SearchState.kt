@@ -23,7 +23,7 @@ data class SearchState(
 ) {
     /** 是否有匹配结果 */
     val hasMatches: Boolean get() = matchCount > 0
-    
+
     /** 显示用的索引（从1开始） */
     val displayIndex: Int get() = if (currentIndex >= 0) currentIndex + 1 else 0
 }

@@ -28,4 +28,3 @@ object ServerConfigHmacVerifier {
         return MessageDigest.isEqual(expected, signature)
     }
 }
-

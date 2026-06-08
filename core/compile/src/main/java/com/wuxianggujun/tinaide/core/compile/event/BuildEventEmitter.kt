@@ -23,14 +23,14 @@ class SharedFlowBuildEventEmitter(
     extraBufferCapacity: Int = 64,
 ) : BuildEventEmitter {
 
-    private val _flow = MutableSharedFlow<BuildEvent>(
+    private val mutableEvents = MutableSharedFlow<BuildEvent>(
         replay = replay,
         extraBufferCapacity = extraBufferCapacity,
     )
 
-    val events: SharedFlow<BuildEvent> = _flow.asSharedFlow()
+    val events: SharedFlow<BuildEvent> = mutableEvents.asSharedFlow()
 
-    override suspend fun emit(event: BuildEvent) = _flow.emit(event)
+    override suspend fun emit(event: BuildEvent) = mutableEvents.emit(event)
 
-    override fun tryEmit(event: BuildEvent): Boolean = _flow.tryEmit(event)
+    override fun tryEmit(event: BuildEvent): Boolean = mutableEvents.tryEmit(event)
 }

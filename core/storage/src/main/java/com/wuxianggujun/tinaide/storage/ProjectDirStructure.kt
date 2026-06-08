@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide.storage
 
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * 项目目录结构管理
@@ -53,124 +53,90 @@ object ProjectDirStructure {
     /**
      * 获取 .tinaide 根目录
      */
-    fun getTinaideDir(projectPath: String): File {
-        return File(projectPath, TINAIDE_DIR)
-    }
-    
+    fun getTinaideDir(projectPath: String): File = File(projectPath, TINAIDE_DIR)
+
     /**
      * 获取状态目录
      */
-    fun getStateDir(projectPath: String): File {
-        return File(getTinaideDir(projectPath), STATE_DIR)
-    }
+    fun getStateDir(projectPath: String): File = File(getTinaideDir(projectPath), STATE_DIR)
 
     /**
      * 获取构建产物导出目录。
      */
-    fun getArtifactsDir(projectPath: String): File {
-        return File(getTinaideDir(projectPath), ARTIFACTS_DIR)
-    }
-    
+    fun getArtifactsDir(projectPath: String): File = File(getTinaideDir(projectPath), ARTIFACTS_DIR)
+
     /**
      * 获取缓存目录
      */
-    fun getCacheDir(projectPath: String): File {
-        return File(getTinaideDir(projectPath), CACHE_DIR)
-    }
-    
+    fun getCacheDir(projectPath: String): File = File(getTinaideDir(projectPath), CACHE_DIR)
+
     /**
      * 获取配置目录
      */
-    fun getConfigDir(projectPath: String): File {
-        return File(getTinaideDir(projectPath), CONFIG_DIR)
-    }
+    fun getConfigDir(projectPath: String): File = File(getTinaideDir(projectPath), CONFIG_DIR)
 
     /**
      * 获取 APK 导出配置目录（permissions.json / signing.properties / icons/）
      */
-    fun getApkExportDir(projectPath: String): File {
-        return File(getTinaideDir(projectPath), APK_EXPORT_DIR)
-    }
+    fun getApkExportDir(projectPath: String): File = File(getTinaideDir(projectPath), APK_EXPORT_DIR)
 
     /**
      * 获取 APK 导出图标目录
      */
-    fun getApkExportIconsDir(projectPath: String): File {
-        return File(getApkExportDir(projectPath), APK_ICONS_DIR)
-    }
+    fun getApkExportIconsDir(projectPath: String): File = File(getApkExportDir(projectPath), APK_ICONS_DIR)
 
     /**
      * 获取 APK 导出附加运行库目录
      */
-    fun getApkExportRuntimeLibsDir(projectPath: String): File {
-        return File(getApkExportDir(projectPath), APK_RUNTIME_LIBS_DIR)
-    }
+    fun getApkExportRuntimeLibsDir(projectPath: String): File = File(getApkExportDir(projectPath), APK_RUNTIME_LIBS_DIR)
 
     /**
      * 获取 APK 权限记忆文件
      */
-    fun getApkPermissionsFile(projectPath: String): File {
-        return File(getApkExportDir(projectPath), APK_PERMISSIONS_FILE)
-    }
+    fun getApkPermissionsFile(projectPath: String): File = File(getApkExportDir(projectPath), APK_PERMISSIONS_FILE)
 
     /**
      * 获取 APK 自定义签名记忆文件（含密码，勿提交）
      */
-    fun getApkSigningPropertiesFile(projectPath: String): File {
-        return File(getApkExportDir(projectPath), APK_SIGNING_FILE)
-    }
+    fun getApkSigningPropertiesFile(projectPath: String): File = File(getApkExportDir(projectPath), APK_SIGNING_FILE)
 
     /**
      * 获取 APK 打包用 keystore 目录
      */
-    fun getKeystoreDir(projectPath: String): File {
-        return File(getTinaideDir(projectPath), KEYSTORE_DIR)
-    }
-    
+    fun getKeystoreDir(projectPath: String): File = File(getTinaideDir(projectPath), KEYSTORE_DIR)
+
     /**
      * 获取书签文件路径
      */
-    fun getBookmarksFile(projectPath: String): File {
-        return File(getStateDir(projectPath), BOOKMARKS_FILE)
-    }
-    
+    fun getBookmarksFile(projectPath: String): File = File(getStateDir(projectPath), BOOKMARKS_FILE)
+
     /**
      * 获取终端状态文件路径
      */
-    fun getTerminalStateFile(projectPath: String): File {
-        return File(getStateDir(projectPath), TERMINAL_STATE_FILE)
-    }
-    
+    fun getTerminalStateFile(projectPath: String): File = File(getStateDir(projectPath), TERMINAL_STATE_FILE)
+
     /**
      * 获取编辑器状态文件路径
      */
-    fun getEditorStateFile(projectPath: String): File {
-        return File(getStateDir(projectPath), EDITOR_STATE_FILE)
-    }
-    
+    fun getEditorStateFile(projectPath: String): File = File(getStateDir(projectPath), EDITOR_STATE_FILE)
+
     /**
      * 确保状态目录存在
-     * 
+     *
      * @return true 如果目录存在或创建成功，false 如果创建失败
      */
-    fun ensureStateDir(projectPath: String): Boolean {
-        return ensureDirectory(getStateDir(projectPath), "state")
-    }
+    fun ensureStateDir(projectPath: String): Boolean = ensureDirectory(getStateDir(projectPath), "state")
 
     /**
      * 确保构建产物目录存在
      */
-    fun ensureArtifactsDir(projectPath: String): Boolean {
-        return ensureDirectory(getArtifactsDir(projectPath), "artifacts")
-    }
-    
+    fun ensureArtifactsDir(projectPath: String): Boolean = ensureDirectory(getArtifactsDir(projectPath), "artifacts")
+
     /**
      * 确保缓存目录存在
      */
-    fun ensureCacheDir(projectPath: String): Boolean {
-        return ensureDirectory(getCacheDir(projectPath), "cache")
-    }
-    
+    fun ensureCacheDir(projectPath: String): Boolean = ensureDirectory(getCacheDir(projectPath), "cache")
+
     /**
      * 清理缓存目录
      */

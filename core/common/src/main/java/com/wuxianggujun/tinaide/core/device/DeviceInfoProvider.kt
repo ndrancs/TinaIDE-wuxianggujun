@@ -24,15 +24,13 @@ object DeviceInfoProvider {
     /**
      * 获取设备信息（JSON 格式，用于上传接口）
      */
-    suspend fun getDeviceInfo(context: Context): DeviceInfo {
-        return DeviceInfo(
-            deviceId = DeviceFingerprint.get(context),
-            model = getDeviceModel(),
-            osVersion = getOsVersion(),
-            appVersion = _versionName
-        )
-    }
-    
+    suspend fun getDeviceInfo(context: Context): DeviceInfo = DeviceInfo(
+        deviceId = DeviceFingerprint.get(context),
+        model = getDeviceModel(),
+        osVersion = getOsVersion(),
+        appVersion = _versionName
+    )
+
     /**
      * 获取设备型号（格式：品牌 型号）
      * 确保不为空
@@ -42,7 +40,7 @@ object DeviceInfoProvider {
         val model = Build.MODEL.takeIf { it.isNotBlank() } ?: "Unknown"
         return "$brand $model"
     }
-    
+
     /**
      * 获取系统版本（格式：Android 版本 (API 级别)）
      */
@@ -51,26 +49,24 @@ object DeviceInfoProvider {
         val sdk = Build.VERSION.SDK_INT
         return "Android $release (API $sdk)"
     }
-    
+
     /**
      * 获取设备信息文本（用于导出到日志文件）
      */
-    fun getDeviceInfoText(): String {
-        return buildString {
-            appendLine("=== Device Info ===")
-            appendLine("Brand: ${Build.BRAND.takeIf { it.isNotBlank() } ?: "Unknown"}")
-            appendLine("Model: ${Build.MODEL.takeIf { it.isNotBlank() } ?: "Unknown"}")
-            appendLine("Manufacturer: ${Build.MANUFACTURER.takeIf { it.isNotBlank() } ?: "Unknown"}")
-            appendLine("Android release: ${Build.VERSION.RELEASE.takeIf { it.isNotBlank() } ?: "Unknown"}")
-            appendLine("SDK: ${Build.VERSION.SDK_INT}")
-            appendLine("CPU ABIs: ${Build.SUPPORTED_ABIS.joinToString()}")
-            appendLine("Device: ${Build.DEVICE.takeIf { it.isNotBlank() } ?: "Unknown"}")
-            appendLine("Board: ${Build.BOARD.takeIf { it.isNotBlank() } ?: "Unknown"}")
-            appendLine("App version: $_versionName")
-            appendLine()
-        }
+    fun getDeviceInfoText(): String = buildString {
+        appendLine("=== Device Info ===")
+        appendLine("Brand: ${Build.BRAND.takeIf { it.isNotBlank() } ?: "Unknown"}")
+        appendLine("Model: ${Build.MODEL.takeIf { it.isNotBlank() } ?: "Unknown"}")
+        appendLine("Manufacturer: ${Build.MANUFACTURER.takeIf { it.isNotBlank() } ?: "Unknown"}")
+        appendLine("Android release: ${Build.VERSION.RELEASE.takeIf { it.isNotBlank() } ?: "Unknown"}")
+        appendLine("SDK: ${Build.VERSION.SDK_INT}")
+        appendLine("CPU ABIs: ${Build.SUPPORTED_ABIS.joinToString()}")
+        appendLine("Device: ${Build.DEVICE.takeIf { it.isNotBlank() } ?: "Unknown"}")
+        appendLine("Board: ${Build.BOARD.takeIf { it.isNotBlank() } ?: "Unknown"}")
+        appendLine("App version: $_versionName")
+        appendLine()
     }
-    
+
     /**
      * 记录设备信息到日志（用于调试）
      */

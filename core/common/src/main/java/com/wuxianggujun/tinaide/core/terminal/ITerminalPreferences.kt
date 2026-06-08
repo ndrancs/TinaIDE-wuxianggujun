@@ -15,8 +15,8 @@ interface ITerminalPreferences {
         const val MAX_FONT_SIZE = 32f
 
         // 光标闪烁常量
-        const val CURSOR_BLINK_RATE_MIN = 100     // 最小闪烁率 100ms
-        const val CURSOR_BLINK_RATE_MAX = 2000    // 最大闪烁率 2000ms
+        const val CURSOR_BLINK_RATE_MIN = 100 // 最小闪烁率 100ms
+        const val CURSOR_BLINK_RATE_MAX = 2000 // 最大闪烁率 2000ms
         const val DEFAULT_CURSOR_BLINK_RATE = 500 // 默认闪烁率 500ms
     }
 

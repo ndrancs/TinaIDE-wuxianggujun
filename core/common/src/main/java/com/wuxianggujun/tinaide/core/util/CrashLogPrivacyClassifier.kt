@@ -8,24 +8,21 @@ package com.wuxianggujun.tinaide.core.util
 object CrashLogPrivacyClassifier {
     private val userRuntimeProcessSuffixes = setOf(":gui", ":sdl")
 
-    fun isHostAppProcess(packageName: String, processName: String): Boolean {
-        return packageName.isNotBlank() && processName == packageName
-    }
+    fun isHostAppProcess(packageName: String, processName: String): Boolean = packageName.isNotBlank() && processName == packageName
 
     fun isUserRuntimeProcess(packageName: String, processName: String): Boolean {
         if (packageName.isBlank() || processName.isBlank()) return false
         return userRuntimeProcessSuffixes.any { suffix -> processName == packageName + suffix }
     }
 
-    fun shouldUploadCrashForProcess(packageName: String, processName: String): Boolean {
-        return isHostAppProcess(packageName, processName)
-    }
+    fun shouldUploadCrashForProcess(packageName: String, processName: String): Boolean = isHostAppProcess(packageName, processName)
 
     fun isUserRuntimeCrash(packageName: String, crashText: String): Boolean {
         if (packageName.isBlank() || crashText.isBlank()) return false
         return userRuntimeProcessSuffixes.any { suffix ->
             crashText.contains(">>> $packageName$suffix <<<")
-        } || containsRunBinPath(packageName, crashText)
+        } ||
+            containsRunBinPath(packageName, crashText)
     }
 
     fun containsRunBinPath(packageName: String, text: String): Boolean {

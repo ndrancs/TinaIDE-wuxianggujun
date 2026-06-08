@@ -26,13 +26,13 @@ import com.wuxianggujun.tinaide.core.compile.strategy.BuildStrategyRegistry
 import com.wuxianggujun.tinaide.core.compile.strategy.ExecutionOutcome
 import com.wuxianggujun.tinaide.core.linux.LinuxRunModePolicy
 import io.mockk.mockk
+import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * BuildPlanner 决策路径覆盖:
@@ -282,9 +282,10 @@ class BuildPlannerTest {
         override suspend fun register(artifact: Artifact, buildDir: File) {
             map[key(artifact.id, buildDir)] = artifact
         }
-        override suspend fun invalidate(id: ArtifactId, buildDir: File) { map.remove(key(id, buildDir)) }
-        override suspend fun listAll(buildDir: File): List<Artifact> =
-            map.filterKeys { it.endsWith("|${buildDir.absolutePath}") }.values.toList()
+        override suspend fun invalidate(id: ArtifactId, buildDir: File) {
+            map.remove(key(id, buildDir))
+        }
+        override suspend fun listAll(buildDir: File): List<Artifact> = map.filterKeys { it.endsWith("|${buildDir.absolutePath}") }.values.toList()
         override suspend fun clearAll(buildDir: File) {
             map.keys.filter { it.endsWith("|${buildDir.absolutePath}") }.forEach { map.remove(it) }
         }

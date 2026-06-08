@@ -34,9 +34,7 @@ data class ClangdSettings(
         ;
 
         companion object {
-            fun fromValue(value: String): HeaderInsertionMode {
-                return entries.find { it.value == value } ?: IWYU
-            }
+            fun fromValue(value: String): HeaderInsertionMode = entries.find { it.value == value } ?: IWYU
         }
     }
 
@@ -52,39 +50,35 @@ data class ClangdSettings(
         ;
 
         companion object {
-            fun fromValue(value: String): CompletionStyle {
-                return entries.find { it.value == value } ?: DETAILED
-            }
+            fun fromValue(value: String): CompletionStyle = entries.find { it.value == value } ?: DETAILED
         }
     }
 
     /**
      * 构建 clangd 命令行参数
      */
-    fun buildCommandArgs(): String {
-        return buildString {
-            // 后台索引
-            if (backgroundIndex) {
-                append(" --background-index")
-            } else {
-                append(" --background-index=false")
-            }
-
-            // clang-tidy
-            if (clangTidy) {
-                append(" --clang-tidy")
-            } else {
-                append(" --clang-tidy=false")
-            }
-
-            // 头文件插入
-            append(" --header-insertion=${headerInsertion.value}")
-
-            // 补全样式
-            append(" --completion-style=${completionStyle.value}")
-
-            // 函数参数占位符（clangd 21+ 需要显式布尔值）
-            append(" --function-arg-placeholders=${if (functionArgPlaceholders) "true" else "false"}")
+    fun buildCommandArgs(): String = buildString {
+        // 后台索引
+        if (backgroundIndex) {
+            append(" --background-index")
+        } else {
+            append(" --background-index=false")
         }
+
+        // clang-tidy
+        if (clangTidy) {
+            append(" --clang-tidy")
+        } else {
+            append(" --clang-tidy=false")
+        }
+
+        // 头文件插入
+        append(" --header-insertion=${headerInsertion.value}")
+
+        // 补全样式
+        append(" --completion-style=${completionStyle.value}")
+
+        // 函数参数占位符（clangd 21+ 需要显式布尔值）
+        append(" --function-arg-placeholders=${if (functionArgPlaceholders) "true" else "false"}")
     }
 }

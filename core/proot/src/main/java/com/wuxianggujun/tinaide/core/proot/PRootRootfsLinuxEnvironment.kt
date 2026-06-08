@@ -11,9 +11,7 @@ internal class PRootRootfsLinuxEnvironment(
 ) : LinuxEnvironment {
     private val manager = PRootManager(context.applicationContext, rootfsPath)
 
-    override fun isAvailable(): Boolean {
-        return manager.isInstalled()
-    }
+    override fun isAvailable(): Boolean = manager.isInstalled()
 
     override suspend fun execute(
         command: List<String>,
@@ -42,17 +40,13 @@ internal class PRootRootfsLinuxEnvironment(
         command: List<String>,
         workDir: String,
         env: Map<String, String>,
-    ): LinuxInteractiveProcess {
-        return PRootInteractiveAdapter(
-            manager.startInteractive(
-                command = command,
-                workDir = workDir,
-                extraEnv = env,
-            )
+    ): LinuxInteractiveProcess = PRootInteractiveAdapter(
+        manager.startInteractive(
+            command = command,
+            workDir = workDir,
+            extraEnv = env,
         )
-    }
+    )
 
-    override fun toGuestPath(hostPath: String): String {
-        return manager.toGuestPath(hostPath)
-    }
+    override fun toGuestPath(hostPath: String): String = manager.toGuestPath(hostPath)
 }

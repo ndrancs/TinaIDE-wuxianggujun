@@ -72,22 +72,18 @@ class ToolchainPathResolver(context: Context) {
         cachedRootfsPath = null
     }
 
-    fun getCCompiler(compilerType: CompilerType, customCCompiler: String? = null): String {
-        return when (compilerType) {
-            CompilerType.CLANG -> resolve().clang
-            CompilerType.GCC -> resolve().gcc
-            CompilerType.CUSTOM -> customCCompiler?.takeIf { it.isNotBlank() }
-                ?: throw IllegalArgumentException("Custom C compiler path is empty")
-        }
+    fun getCCompiler(compilerType: CompilerType, customCCompiler: String? = null): String = when (compilerType) {
+        CompilerType.CLANG -> resolve().clang
+        CompilerType.GCC -> resolve().gcc
+        CompilerType.CUSTOM -> customCCompiler?.takeIf { it.isNotBlank() }
+            ?: throw IllegalArgumentException("Custom C compiler path is empty")
     }
 
-    fun getCppCompiler(compilerType: CompilerType, customCppCompiler: String? = null): String {
-        return when (compilerType) {
-            CompilerType.CLANG -> resolve().clangpp
-            CompilerType.GCC -> resolve().gpp
-            CompilerType.CUSTOM -> customCppCompiler?.takeIf { it.isNotBlank() }
-                ?: throw IllegalArgumentException("Custom C++ compiler path is empty")
-        }
+    fun getCppCompiler(compilerType: CompilerType, customCppCompiler: String? = null): String = when (compilerType) {
+        CompilerType.CLANG -> resolve().clangpp
+        CompilerType.GCC -> resolve().gpp
+        CompilerType.CUSTOM -> customCppCompiler?.takeIf { it.isNotBlank() }
+            ?: throw IllegalArgumentException("Custom C++ compiler path is empty")
     }
 
     fun getClangd(): String = resolve().clangd

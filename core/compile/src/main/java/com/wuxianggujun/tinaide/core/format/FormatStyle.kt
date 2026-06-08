@@ -36,58 +36,58 @@ sealed class FormatStyle {
          * 所有预定义风格列表（不包括 FILE 和 Custom）
          */
         val predefinedStyles = listOf(
-            LLVM, GOOGLE, CHROMIUM, MOZILLA, WEBKIT, MICROSOFT, GNU
+            LLVM,
+            GOOGLE,
+            CHROMIUM,
+            MOZILLA,
+            WEBKIT,
+            MICROSOFT,
+            GNU
         )
 
         /**
          * 获取风格的显示名称
          */
-        fun getDisplayName(style: FormatStyle): String {
-            return when (style) {
-                FILE -> "File (.clang-format)"
-                LLVM -> "LLVM"
-                GOOGLE -> "Google"
-                CHROMIUM -> "Chromium"
-                MOZILLA -> "Mozilla"
-                WEBKIT -> "WebKit"
-                MICROSOFT -> "Microsoft"
-                GNU -> "GNU"
-                is Custom -> "Custom"
-            }
+        fun getDisplayName(style: FormatStyle): String = when (style) {
+            FILE -> "File (.clang-format)"
+            LLVM -> "LLVM"
+            GOOGLE -> "Google"
+            CHROMIUM -> "Chromium"
+            MOZILLA -> "Mozilla"
+            WEBKIT -> "WebKit"
+            MICROSOFT -> "Microsoft"
+            GNU -> "GNU"
+            is Custom -> "Custom"
         }
 
         /**
          * 从字符串解析风格
          */
-        fun fromString(name: String): FormatStyle {
-            return when (name.uppercase()) {
-                "FILE" -> FILE
-                "LLVM" -> LLVM
-                "GOOGLE" -> GOOGLE
-                "CHROMIUM" -> CHROMIUM
-                "MOZILLA" -> MOZILLA
-                "WEBKIT" -> WEBKIT
-                "MICROSOFT" -> MICROSOFT
-                "GNU" -> GNU
-                else -> LLVM
-            }
+        fun fromString(name: String): FormatStyle = when (name.uppercase()) {
+            "FILE" -> FILE
+            "LLVM" -> LLVM
+            "GOOGLE" -> GOOGLE
+            "CHROMIUM" -> CHROMIUM
+            "MOZILLA" -> MOZILLA
+            "WEBKIT" -> WEBKIT
+            "MICROSOFT" -> MICROSOFT
+            "GNU" -> GNU
+            else -> LLVM
         }
 
         /**
          * 将风格转换为字符串（用于存储）
          */
-        fun toString(style: FormatStyle): String {
-            return when (style) {
-                FILE -> "FILE"
-                LLVM -> "LLVM"
-                GOOGLE -> "GOOGLE"
-                CHROMIUM -> "CHROMIUM"
-                MOZILLA -> "MOZILLA"
-                WEBKIT -> "WEBKIT"
-                MICROSOFT -> "MICROSOFT"
-                GNU -> "GNU"
-                is Custom -> "CUSTOM"
-            }
+        fun toString(style: FormatStyle): String = when (style) {
+            FILE -> "FILE"
+            LLVM -> "LLVM"
+            GOOGLE -> "GOOGLE"
+            CHROMIUM -> "CHROMIUM"
+            MOZILLA -> "MOZILLA"
+            WEBKIT -> "WEBKIT"
+            MICROSOFT -> "MICROSOFT"
+            GNU -> "GNU"
+            is Custom -> "CUSTOM"
         }
     }
 }

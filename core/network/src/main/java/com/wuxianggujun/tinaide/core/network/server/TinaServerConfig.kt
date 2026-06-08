@@ -29,10 +29,8 @@ class TinaServerConfig private constructor(private val context: Context) {
         @Volatile
         private var instance: TinaServerConfig? = null
 
-        fun getInstance(context: Context): TinaServerConfig {
-            return instance ?: synchronized(this) {
-                instance ?: TinaServerConfig(context.applicationContext).also { instance = it }
-            }
+        fun getInstance(context: Context): TinaServerConfig = instance ?: synchronized(this) {
+            instance ?: TinaServerConfig(context.applicationContext).also { instance = it }
         }
 
         fun getBaseUrl(): String = DEFAULT_SERVER_URL
@@ -46,11 +44,9 @@ class TinaServerConfig private constructor(private val context: Context) {
         TinaServerHttpClientFactory.anonymous(OkHttpClientProvider.default)
     }
 
-    suspend fun getServerUrl(): String {
-        return prefs.getString(KEY_SERVER_URL, null)
-            ?.takeIf { it.isNotBlank() }
-            ?: getDefaultServerUrl()
-    }
+    suspend fun getServerUrl(): String = prefs.getString(KEY_SERVER_URL, null)
+        ?.takeIf { it.isNotBlank() }
+        ?: getDefaultServerUrl()
 
     suspend fun setServerUrl(url: String?) {
         prefs.edit().apply {
@@ -84,19 +80,13 @@ class TinaServerConfig private constructor(private val context: Context) {
         return UUID.nameUUIDFromBytes(deviceInfo.toByteArray()).toString()
     }
 
-    suspend fun getDeviceInfo(): DeviceInfo {
-        return DeviceInfoProvider.getDeviceInfo(context)
-    }
+    suspend fun getDeviceInfo(): DeviceInfo = DeviceInfoProvider.getDeviceInfo(context)
 
-    suspend fun getApi(): TinaServerApi {
-        return TinaServerApi.getInstance(getServerUrl(), apiClient)
-    }
+    suspend fun getApi(): TinaServerApi = TinaServerApi.getInstance(getServerUrl(), apiClient)
 
-    suspend fun checkServerConnection(): Boolean {
-        return try {
-            getApi().healthCheck().isSuccess
-        } catch (_: Exception) {
-            false
-        }
+    suspend fun checkServerConnection(): Boolean = try {
+        getApi().healthCheck().isSuccess
+    } catch (_: Exception) {
+        false
     }
 }

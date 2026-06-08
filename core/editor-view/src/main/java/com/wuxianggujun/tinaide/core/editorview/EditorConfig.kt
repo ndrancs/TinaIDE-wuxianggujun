@@ -47,28 +47,26 @@ data class EditorConfig(
     val selectionMagnifierEnabled: Boolean = true
 ) {
     companion object {
-        fun fromPrefs(): EditorConfig {
-            return runCatching {
-                val rainbow = Prefs.editorRainbowBrackets
-                EditorConfig(
-                    showLineNumbers = Prefs.editorShowLineNumbers,
-                    fontSizeSp = Prefs.editorFontSize,
-                    tabSize = Prefs.editorTabSize,
-                    completionCaseSensitive = Prefs.completionCaseSensitive,
-                    wordWrap = Prefs.editorWordWrap,
-                    autoIndent = Prefs.editorAutoIndent,
-                    scrollFlingEnabled = Prefs.editorScrollFlingEnabled,
-                    singleDirectionDragging = Prefs.editorSingleDirectionDragging,
-                    singleDirectionFling = Prefs.editorSingleDirectionFling,
-                    codeFolding = Prefs.editorCodeFolding,
-                    rainbowBrackets = rainbow,
-                    rainbowBracketsMaxLines = Prefs.editorRainbowBracketsMaxLines,
-                    bracketPairGuides = rainbow,
-                    renderWhitespace = parseWhitespaceMode(Prefs.editorRenderWhitespace),
-                    insertSpacesForTabs = Prefs.editorInsertSpacesForTabs
-                )
-            }.getOrDefault(EditorConfig())
-        }
+        fun fromPrefs(): EditorConfig = runCatching {
+            val rainbow = Prefs.editorRainbowBrackets
+            EditorConfig(
+                showLineNumbers = Prefs.editorShowLineNumbers,
+                fontSizeSp = Prefs.editorFontSize,
+                tabSize = Prefs.editorTabSize,
+                completionCaseSensitive = Prefs.completionCaseSensitive,
+                wordWrap = Prefs.editorWordWrap,
+                autoIndent = Prefs.editorAutoIndent,
+                scrollFlingEnabled = Prefs.editorScrollFlingEnabled,
+                singleDirectionDragging = Prefs.editorSingleDirectionDragging,
+                singleDirectionFling = Prefs.editorSingleDirectionFling,
+                codeFolding = Prefs.editorCodeFolding,
+                rainbowBrackets = rainbow,
+                rainbowBracketsMaxLines = Prefs.editorRainbowBracketsMaxLines,
+                bracketPairGuides = rainbow,
+                renderWhitespace = parseWhitespaceMode(Prefs.editorRenderWhitespace),
+                insertSpacesForTabs = Prefs.editorInsertSpacesForTabs
+            )
+        }.getOrDefault(EditorConfig())
 
         private fun parseWhitespaceMode(value: String): WhitespaceRenderMode = when (value) {
             "boundary" -> WhitespaceRenderMode.BOUNDARY

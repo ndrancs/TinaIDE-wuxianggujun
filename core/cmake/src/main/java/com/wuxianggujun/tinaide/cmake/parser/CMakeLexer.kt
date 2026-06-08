@@ -80,9 +80,7 @@ class CMakeLexer(private val source: String) {
         return if (idx < length) source[idx] else null
     }
 
-    private fun advance(): Char? {
-        return if (position < length) source[position++] else null
-    }
+    private fun advance(): Char? = if (position < length) source[position++] else null
 
     private fun isAtEnd(): Boolean = position >= length
 
@@ -115,17 +113,13 @@ class CMakeLexer(private val source: String) {
     /**
      * 无引号参数中不允许的字符（标准模式）
      */
-    private fun isUnquotedForbidden(c: Char): Boolean {
-        return c in " \t\r\n()#\"\\".toSet()
-    }
+    private fun isUnquotedForbidden(c: Char): Boolean = c in " \t\r\n()#\"\\".toSet()
 
     /**
      * Legacy 无引号参数中不允许的字符
      * Legacy 模式允许内嵌引号和 $() 引用
      */
-    private fun isLegacyUnquotedForbidden(c: Char): Boolean {
-        return c in " \t\r\n()#".toSet()
-    }
+    private fun isLegacyUnquotedForbidden(c: Char): Boolean = c in " \t\r\n()#".toSet()
 
     // ========== 跳过空白和注释 ==========
 
@@ -227,8 +221,9 @@ class CMakeLexer(private val source: String) {
         }
 
         // 跳过可选的首行换行
-        if (peek() == '\n') advance()
-        else if (peek() == '\r' && peekAt(1) == '\n') {
+        if (peek() == '\n') {
+            advance()
+        } else if (peek() == '\r' && peekAt(1) == '\n') {
             advance()
             advance()
         }

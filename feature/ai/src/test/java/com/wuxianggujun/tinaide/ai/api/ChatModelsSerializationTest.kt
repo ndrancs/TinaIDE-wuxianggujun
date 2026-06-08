@@ -85,5 +85,4 @@ class ChatModelsSerializationTest {
         assertThat(encoded).contains("tool_call_id")
         assertThat(encoded).contains("budget_tokens")
     }
-
 }

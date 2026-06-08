@@ -1,17 +1,17 @@
 package com.wuxianggujun.tinaide.core.packages.download
 
 import com.wuxianggujun.tinaide.core.network.OkHttpClientProvider
+import java.io.File
+import java.io.FileOutputStream
+import java.io.RandomAccessFile
+import java.security.MessageDigest
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
-import java.io.RandomAccessFile
-import java.security.MessageDigest
-import kotlin.coroutines.coroutineContext
 
 class ResumableDownloader(
     private val downloadDir: File,
@@ -108,7 +108,9 @@ class ResumableDownloader(
                             val elapsed = now - lastProgressTime
                             val speed = if (elapsed > 0) {
                                 (downloaded - lastProgressBytes) * 1000 / elapsed
-                            } else 0L
+                            } else {
+                                0L
+                            }
 
                             progress(downloaded, totalSize, speed)
 
@@ -150,7 +152,6 @@ class ResumableDownloader(
 
             Timber.tag(TAG).d("Download completed: ${targetFile.absolutePath}")
             DownloadResult.Success(targetFile)
-
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Download failed")
             DownloadResult.Failed(DownloadError.IOError(e.message ?: "Unknown error"))

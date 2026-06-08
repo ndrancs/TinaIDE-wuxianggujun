@@ -85,20 +85,18 @@ class LinuxDistroRootfsProfileMapperTest {
         return rootfsDir
     }
 
-    private fun installedLinuxDistro(rootfsDir: File): InstalledLinuxDistro {
-        return InstalledLinuxDistro(
-            distroId = "alpine",
-            releaseId = "3.20",
-            architecture = DistroArchitecture.AARCH64,
-            displayName = "Alpine Linux",
-            packageManager = DistroPackageManager.APK,
-            rootfsPath = rootfsDir.absolutePath,
-            archivePath = File(rootfsDir.parentFile, "alpine.tar.gz").absolutePath,
-            checksum = null,
-            installedAtEpochMillis = INSTALLED_AT,
-            updatedAtEpochMillis = UPDATED_AT,
-        )
-    }
+    private fun installedLinuxDistro(rootfsDir: File): InstalledLinuxDistro = InstalledLinuxDistro(
+        distroId = "alpine",
+        releaseId = "3.20",
+        architecture = DistroArchitecture.AARCH64,
+        displayName = "Alpine Linux",
+        packageManager = DistroPackageManager.APK,
+        rootfsPath = rootfsDir.absolutePath,
+        archivePath = File(rootfsDir.parentFile, "alpine.tar.gz").absolutePath,
+        checksum = null,
+        installedAtEpochMillis = INSTALLED_AT,
+        updatedAtEpochMillis = UPDATED_AT,
+    )
 
     private companion object {
         private const val INSTALLED_AT = 1_800_000_000_000L

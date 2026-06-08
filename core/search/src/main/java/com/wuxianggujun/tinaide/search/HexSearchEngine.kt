@@ -9,4 +9,3 @@ class HexSearchEngine(
         return searchOffsets(query).map { HexSearchResult(it) }
     }
 }
-

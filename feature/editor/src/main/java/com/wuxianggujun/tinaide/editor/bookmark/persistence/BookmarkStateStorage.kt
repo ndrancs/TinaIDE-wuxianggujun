@@ -4,10 +4,10 @@ import android.content.Context
 import com.wuxianggujun.tinaide.editor.bookmark.db.BookmarkDatabase
 import com.wuxianggujun.tinaide.editor.bookmark.db.BookmarkEntity
 import com.wuxianggujun.tinaide.editor.bookmark.model.ProjectBookmarkState
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 
 /**
  * 书签状态存储工具
@@ -26,7 +26,7 @@ class BookmarkStateStorage(context: Context) {
 
     /**
      * 转换为持久化路径（相对路径）
-     * 
+     *
      * Android 系统统一使用 / 作为路径分隔符，无需特殊处理。
      */
     private fun toPersistedPath(projectPath: String, filePath: String): String {
@@ -121,4 +121,3 @@ class BookmarkStateStorage(context: Context) {
         }.getOrElse { false }
     }
 }
-

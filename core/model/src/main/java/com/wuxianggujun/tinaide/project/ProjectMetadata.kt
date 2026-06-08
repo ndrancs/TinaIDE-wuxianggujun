@@ -149,69 +149,49 @@ data class ProjectMetadata(
     /**
      * 获取项目元数据中的原生 API Level（合法范围 21-35）。
      */
-    fun getNativeApiLevelOrNull(): Int? {
-        return nativeApiLevel?.takeIf { it in 21..35 }
-    }
+    fun getNativeApiLevelOrNull(): Int? = nativeApiLevel?.takeIf { it in 21..35 }
 
     /**
      * 获取项目级 include 路径（去空、去重）。
      */
-    fun normalizedNativeIncludeDirs(): List<String> {
-        return normalizePathEntries(nativeIncludeDirs)
-    }
+    fun normalizedNativeIncludeDirs(): List<String> = normalizePathEntries(nativeIncludeDirs)
 
     /**
      * 获取项目级 library 路径（去空、去重）。
      */
-    fun normalizedNativeLibraryDirs(): List<String> {
-        return normalizePathEntries(nativeLibraryDirs)
-    }
+    fun normalizedNativeLibraryDirs(): List<String> = normalizePathEntries(nativeLibraryDirs)
 
     /**
      * 获取项目级 runtime 路径（去空、去重）。
      */
-    fun normalizedNativeRuntimeDirs(): List<String> {
-        return normalizePathEntries(nativeRuntimeDirs)
-    }
+    fun normalizedNativeRuntimeDirs(): List<String> = normalizePathEntries(nativeRuntimeDirs)
 
     /**
      * 获取项目级 C 编译参数（去空白）。
      */
-    fun normalizedNativeCFlags(): String {
-        return normalizeFlagValue(nativeCFlags)
-    }
+    fun normalizedNativeCFlags(): String = normalizeFlagValue(nativeCFlags)
 
     /**
      * 获取项目级 C++ 编译参数（去空白）。
      */
-    fun normalizedNativeCppFlags(): String {
-        return normalizeFlagValue(nativeCppFlags)
-    }
+    fun normalizedNativeCppFlags(): String = normalizeFlagValue(nativeCppFlags)
 
     /**
      * 获取项目级链接参数（去空白）。
      */
-    fun normalizedNativeLdFlags(): String {
-        return normalizeFlagValue(nativeLdFlags)
-    }
+    fun normalizedNativeLdFlags(): String = normalizeFlagValue(nativeLdFlags)
 
     /**
      * 获取项目级链接库参数（去空白）。
      */
-    fun normalizedNativeLdLibs(): String {
-        return normalizeFlagValue(nativeLdLibs)
-    }
+    fun normalizedNativeLdLibs(): String = normalizeFlagValue(nativeLdLibs)
 
     /**
      * 获取项目级 CMake 参数（去空、去重）。
      */
-    fun normalizedNativeCMakeArgs(): List<String> {
-        return normalizeStringEntries(nativeCMakeArgs)
-    }
+    fun normalizedNativeCMakeArgs(): List<String> = normalizeStringEntries(nativeCMakeArgs)
 
-    private fun normalizePathEntries(entries: List<String>): List<String> {
-        return normalizeStringEntries(entries)
-    }
+    private fun normalizePathEntries(entries: List<String>): List<String> = normalizeStringEntries(entries)
 
     private fun normalizeStringEntries(entries: List<String>): List<String> {
         if (entries.isEmpty()) return emptyList()

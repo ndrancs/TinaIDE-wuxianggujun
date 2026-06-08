@@ -1325,7 +1325,6 @@ class AiChatViewModelTest {
         field.isAccessible = true
         field.set(AppStrings, null)
     }
-
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

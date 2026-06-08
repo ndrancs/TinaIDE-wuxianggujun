@@ -190,33 +190,29 @@ private class FakePackageManager(
 
     override suspend fun getCategories(): Result<List<PackageCategory>> = Result.success(emptyList())
 
-    override suspend fun getPackageDetail(packageId: String): Result<GUIPackage> {
-        return Result.success(availablePackages.first { it.id == packageId })
-    }
+    override suspend fun getPackageDetail(packageId: String): Result<GUIPackage> = Result.success(availablePackages.first { it.id == packageId })
 
     override suspend fun getInstallState(packageId: String): PackageInstallState = PackageInstallState()
 
     override suspend fun previewInstallPlan(
         packageId: String,
         platform: Platform
-    ): Result<PackageInstallPlan> {
-        return Result.success(
-            previewPlans[packageId] ?: PackageInstallPlan(
-                packageId = packageId,
-                packageName = packageId,
-                platform = platform,
-                packages = listOf(
-                    PackageInstallPlanItem(
-                        packageId = packageId,
-                        packageName = packageId,
-                        version = "1.0.0",
-                        isRoot = true,
-                        isAlreadyInstalled = false
-                    )
+    ): Result<PackageInstallPlan> = Result.success(
+        previewPlans[packageId] ?: PackageInstallPlan(
+            packageId = packageId,
+            packageName = packageId,
+            platform = platform,
+            packages = listOf(
+                PackageInstallPlanItem(
+                    packageId = packageId,
+                    packageName = packageId,
+                    version = "1.0.0",
+                    isRoot = true,
+                    isAlreadyInstalled = false
                 )
             )
         )
-    }
+    )
 
     override suspend fun install(
         packageId: String,

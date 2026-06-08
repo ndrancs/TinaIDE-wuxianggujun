@@ -38,14 +38,12 @@ internal object TrackedInputCollector {
     private fun walkProjectFiles(
         projectRoot: File,
         predicate: (File) -> Boolean,
-    ): List<File> {
-        return projectRoot.walkTopDown()
-            .onEnter { dir ->
-                dir == projectRoot || dir.name !in EXCLUDED_DIR_NAMES
-            }
-            .filter { it.isFile && predicate(it) }
-            .toList()
-    }
+    ): List<File> = projectRoot.walkTopDown()
+        .onEnter { dir ->
+            dir == projectRoot || dir.name !in EXCLUDED_DIR_NAMES
+        }
+        .filter { it.isFile && predicate(it) }
+        .toList()
 
     private fun mergeUniqueFiles(files: List<File>): List<File> {
         val unique = linkedMapOf<String, File>()
@@ -59,6 +57,5 @@ internal object TrackedInputCollector {
         return unique.values.toList()
     }
 
-    private fun normalizePath(file: File): String =
-        file.absolutePath.replace(File.separatorChar, '/')
+    private fun normalizePath(file: File): String = file.absolutePath.replace(File.separatorChar, '/')
 }

@@ -51,7 +51,7 @@ class EditorCompletionPopupInstrumentationTest {
             )
         }
 
-        assertNotNull(composeRule.onNodeWithTag(completionPopupTag).fetchSemanticsNode())
+        assertNotNull(composeRule.onNodeWithTag(COMPLETION_POPUP_TAG).fetchSemanticsNode())
         assertNotNull(composeRule.onNodeWithTag(completionPopupRowTag(0)).fetchSemanticsNode())
         assertNotNull(composeRule.onNodeWithTag(completionPopupRowTag(1)).fetchSemanticsNode())
         assertNotNull(

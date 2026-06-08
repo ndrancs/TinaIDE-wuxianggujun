@@ -30,16 +30,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.ui.compose.components.TinaAlertDialog
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogCard
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogContentColumn
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogTitleText
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaTextButton
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.RandomAccessFile
-import com.wuxianggujun.tinaide.core.i18n.Strings
+import kotlinx.coroutines.launch
 
 /**
  * 十六进制查看器状态
@@ -68,8 +68,11 @@ data class HexLine(
             val hexString = buildString {
                 hexParts.forEachIndexed { index, hex ->
                     append(hex)
-                    if (index == 7) append("  ")
-                    else if (index < hexParts.lastIndex) append(" ")
+                    if (index == 7) {
+                        append("  ")
+                    } else if (index < hexParts.lastIndex) {
+                        append(" ")
+                    }
                 }
                 repeat(16 - bytes.size) { i ->
                     val pos = bytes.size + i
@@ -129,7 +132,7 @@ fun HexViewerScreen(
             isLoading = false
         )
     }
-    
+
     // 注册搜索回调
     LaunchedEffect(state.fileSize) {
         if (state.fileSize > 0 && onRegisterSearch != null) {
@@ -149,7 +152,7 @@ fun HexViewerScreen(
             )
         }
     }
-    
+
     // 注销搜索回调
     androidx.compose.runtime.DisposableEffect(Unit) {
         onDispose {
@@ -354,7 +357,7 @@ private fun GotoOffsetDialog(
 ) {
     var offsetText by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    
+
     val errorInvalidOffset = stringResource(Strings.error_invalid_offset)
     val errorOutOfRange = stringResource(Strings.error_offset_out_of_range, maxOffset - 1)
 
@@ -412,9 +415,9 @@ private fun parseOffset(text: String): Long? {
     val trimmed = text.trim()
     return try {
         when {
-            trimmed.startsWith("0x", ignoreCase = true) -> 
+            trimmed.startsWith("0x", ignoreCase = true) ->
                 trimmed.substring(2).toLong(16)
-            trimmed.startsWith("0X") -> 
+            trimmed.startsWith("0X") ->
                 trimmed.substring(2).toLong(16)
             else -> trimmed.toLongOrNull()
         }
@@ -452,14 +455,14 @@ private fun loadHexLine(file: File, lineIndex: Int, bytesPerRow: Int): HexLine {
  */
 private fun searchInHexFile(file: File, query: String): List<Long> {
     if (query.isEmpty() || !file.exists()) return emptyList()
-    
+
     val offsets = mutableListOf<Long>()
     val searchBytes: ByteArray
-    
+
     // 判断是否为十六进制搜索
     val hexPattern = query.replace(" ", "").replace("-", "")
     val isHexSearch = hexPattern.matches(Regex("^[0-9A-Fa-f]+$")) && hexPattern.length % 2 == 0
-    
+
     searchBytes = if (isHexSearch) {
         // 解析十六进制字符串
         try {
@@ -471,21 +474,21 @@ private fun searchInHexFile(file: File, query: String): List<Long> {
         // ASCII 文本搜索
         query.toByteArray(Charsets.UTF_8)
     }
-    
+
     if (searchBytes.isEmpty()) return emptyList()
-    
+
     // 读取文件并搜索
     try {
         RandomAccessFile(file, "r").use { raf ->
-            val bufferSize = 64 * 1024  // 64KB 缓冲区
+            val bufferSize = 64 * 1024 // 64KB 缓冲区
             val buffer = ByteArray(bufferSize + searchBytes.size - 1)
             var fileOffset = 0L
-            
+
             while (fileOffset < file.length()) {
                 raf.seek(fileOffset)
                 val bytesRead = raf.read(buffer)
                 if (bytesRead <= 0) break
-                
+
                 // 在缓冲区中搜索
                 var i = 0
                 while (i <= bytesRead - searchBytes.size) {
@@ -505,7 +508,7 @@ private fun searchInHexFile(file: File, query: String): List<Long> {
                     }
                     i++
                 }
-                
+
                 // 移动到下一个缓冲区，保留重叠部分
                 fileOffset += bufferSize
             }
@@ -513,7 +516,6 @@ private fun searchInHexFile(file: File, query: String): List<Long> {
     } catch (e: Exception) {
         // 搜索失败，返回空列表
     }
-    
+
     return offsets
 }
-

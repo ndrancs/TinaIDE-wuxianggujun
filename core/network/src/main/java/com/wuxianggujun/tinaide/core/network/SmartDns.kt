@@ -1,15 +1,15 @@
 package com.wuxianggujun.tinaide.core.network
 
-import okhttp3.Dns
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.json.JSONObject
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import okhttp3.Dns
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 
 internal object SuspiciousIp {
     fun isSuspicious(address: InetAddress): Boolean {
@@ -214,9 +214,7 @@ internal class OkHttpSmartDns(private val resolver: SmartDnsResolver) : Dns {
     }
 }
 
-private fun String.toInetAddressOrNull(): InetAddress? {
-    return runCatching { InetAddress.getByName(this) }.getOrNull()
-}
+private fun String.toInetAddressOrNull(): InetAddress? = runCatching { InetAddress.getByName(this) }.getOrNull()
 
 /**
  * 全局 SmartDns 单例。
@@ -252,4 +250,3 @@ internal object SmartDns : Dns {
         return OkHttpSmartDns(smartResolver)
     }
 }
-

@@ -16,6 +16,7 @@ internal class SelectionMagnifierController(
         // - 之前 100x70dp 太窄，用户很难看清更多上下文。
         // - 这里调整为更宽一些的尺寸（更接近 Sora 的观感）。
         private const val MAGNIFIER_WIDTH_DP = 280f
+
         // 高度保持与之前一致，避免放大镜位置（Y 方向）发生额外变化
         private const val MAGNIFIER_HEIGHT_DP = 70f
         private const val MAGNIFIER_CORNER_RADIUS_DP = 8f
@@ -39,13 +40,12 @@ internal class SelectionMagnifierController(
         }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun buildCustomMagnifier(): Magnifier =
-        Magnifier.Builder(hostView)
-            .setSize(dpToPx(MAGNIFIER_WIDTH_DP), dpToPx(MAGNIFIER_HEIGHT_DP))
-            .setCornerRadius(dpToPxF(MAGNIFIER_CORNER_RADIUS_DP))
-            .setElevation(dpToPxF(MAGNIFIER_ELEVATION_DP))
-            .setInitialZoom(MAGNIFIER_ZOOM)
-            .build()
+    private fun buildCustomMagnifier(): Magnifier = Magnifier.Builder(hostView)
+        .setSize(dpToPx(MAGNIFIER_WIDTH_DP), dpToPx(MAGNIFIER_HEIGHT_DP))
+        .setCornerRadius(dpToPxF(MAGNIFIER_CORNER_RADIUS_DP))
+        .setElevation(dpToPxF(MAGNIFIER_ELEVATION_DP))
+        .setInitialZoom(MAGNIFIER_ZOOM)
+        .build()
 
     private val magnifierWidthPx = dpToPxF(MAGNIFIER_WIDTH_DP)
     private val magnifierHeightPx = dpToPxF(MAGNIFIER_HEIGHT_DP)

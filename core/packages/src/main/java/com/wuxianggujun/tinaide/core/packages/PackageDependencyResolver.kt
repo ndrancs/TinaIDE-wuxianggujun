@@ -91,11 +91,9 @@ internal fun GUIPackage.platformPackage(platform: Platform): PlatformPackage? = 
     Platform.ANDROID -> android
 }
 
-internal fun List<String>?.normalizedPackageDependencies(): List<String> {
-    return orEmpty()
-        .asSequence()
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .distinct()
-        .toList()
-}
+internal fun List<String>?.normalizedPackageDependencies(): List<String> = orEmpty()
+    .asSequence()
+    .map { it.trim() }
+    .filter { it.isNotEmpty() }
+    .distinct()
+    .toList()

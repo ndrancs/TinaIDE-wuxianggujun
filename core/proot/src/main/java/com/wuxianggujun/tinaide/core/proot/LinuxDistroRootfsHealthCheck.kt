@@ -200,42 +200,36 @@ internal class LinuxDistroRootfsHealthChecker(
         linuxEnvironment: LinuxEnvironment,
         command: List<String>,
         timeoutMs: Long,
-    ): LinuxExecutionResult {
-        return try {
-            linuxEnvironment.execute(
-                command = command,
-                workDir = "/",
-                timeout = timeoutMs,
-            )
-        } catch (t: Throwable) {
-            if (t is CancellationException) throw t
-            LinuxExecutionResult(
-                exitCode = -1,
-                stdout = "",
-                stderr = t.message.orEmpty(),
-                durationMs = 0L,
-            )
+    ): LinuxExecutionResult = try {
+        linuxEnvironment.execute(
+            command = command,
+            workDir = "/",
+            timeout = timeoutMs,
+        )
+    } catch (t: Throwable) {
+        if (t is CancellationException) throw t
+        LinuxExecutionResult(
+            exitCode = -1,
+            stdout = "",
+            stderr = t.message.orEmpty(),
+            durationMs = 0L,
+        )
+    }
+
+    private fun LinuxExecutionResult.firstOutputLine(): String? = combinedOutput
+        .lineSequence()
+        .map { line -> line.trim() }
+        .firstOrNull { line -> line.isNotEmpty() }
+
+    private fun parseOsRelease(content: String): Map<String, String> = content.lineSequence()
+        .map { line -> line.trim() }
+        .filter { line -> line.isNotEmpty() && !line.startsWith('#') && '=' in line }
+        .mapNotNull { line ->
+            val key = line.substringBefore('=').trim()
+            val value = line.substringAfter('=').trim().decodeOsReleaseValue()
+            key.takeIf { it.isNotEmpty() }?.let { it to value }
         }
-    }
-
-    private fun LinuxExecutionResult.firstOutputLine(): String? {
-        return combinedOutput
-            .lineSequence()
-            .map { line -> line.trim() }
-            .firstOrNull { line -> line.isNotEmpty() }
-    }
-
-    private fun parseOsRelease(content: String): Map<String, String> {
-        return content.lineSequence()
-            .map { line -> line.trim() }
-            .filter { line -> line.isNotEmpty() && !line.startsWith('#') && '=' in line }
-            .mapNotNull { line ->
-                val key = line.substringBefore('=').trim()
-                val value = line.substringAfter('=').trim().decodeOsReleaseValue()
-                key.takeIf { it.isNotEmpty() }?.let { it to value }
-            }
-            .toMap()
-    }
+        .toMap()
 
     private fun String.decodeOsReleaseValue(): String {
         val trimmed = trim()

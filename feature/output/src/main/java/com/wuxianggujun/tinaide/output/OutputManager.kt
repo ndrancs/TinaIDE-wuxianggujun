@@ -1,10 +1,10 @@
 package com.wuxianggujun.tinaide.output
 
 import android.content.Context
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.EnumMap
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
+import java.util.EnumMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * 输出管理器实现
@@ -15,10 +15,11 @@ class OutputManager(
 
     private val bufferLock = Any()
     private val channelBuffers = EnumMap<IOutputManager.OutputChannel, StringBuilder>(IOutputManager.OutputChannel::class.java)
+
     // 增加缓冲区大小到10MB，支持更多输出
     private val maxBufferChars = 10 * 1024 * 1024 // 10MB 级别的字符数
     private val listeners = CopyOnWriteArrayList<IOutputManager.OutputListener>()
-    
+
     override fun appendOutput(text: String, channel: IOutputManager.OutputChannel) {
         synchronized(bufferLock) {
             val buffer = channelBuffers.getOrPut(channel) { StringBuilder() }
@@ -48,11 +49,11 @@ class OutputManager(
             return channelBuffers[channel]?.toString() ?: ""
         }
     }
-    
+
     override fun addOutputListener(listener: IOutputManager.OutputListener) {
         listeners.add(listener)
     }
-    
+
     override fun removeOutputListener(listener: IOutputManager.OutputListener) {
         listeners.remove(listener)
     }

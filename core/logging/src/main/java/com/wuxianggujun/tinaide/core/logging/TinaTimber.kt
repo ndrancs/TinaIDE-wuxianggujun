@@ -3,9 +3,9 @@ package com.wuxianggujun.tinaide.core.logging
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
-import timber.log.Timber
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
+import timber.log.Timber
 
 /**
  * TinaIDE Timber 日志管理器
@@ -153,16 +153,14 @@ object TinaTimber {
     @JvmStatic
     fun getFileLoggingTree(): FileLoggingTree? = fileLoggingTree
 
-    private fun priorityName(priority: Int): String {
-        return when (priority) {
-            Log.VERBOSE -> "VERBOSE"
-            Log.DEBUG -> "DEBUG"
-            Log.INFO -> "INFO"
-            Log.WARN -> "WARN"
-            Log.ERROR -> "ERROR"
-            Log.ASSERT -> "ASSERT"
-            else -> "UNKNOWN"
-        }
+    private fun priorityName(priority: Int): String = when (priority) {
+        Log.VERBOSE -> "VERBOSE"
+        Log.DEBUG -> "DEBUG"
+        Log.INFO -> "INFO"
+        Log.WARN -> "WARN"
+        Log.ERROR -> "ERROR"
+        Log.ASSERT -> "ASSERT"
+        else -> "UNKNOWN"
     }
 
     /**

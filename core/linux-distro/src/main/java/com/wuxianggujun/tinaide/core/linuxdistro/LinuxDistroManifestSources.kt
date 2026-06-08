@@ -12,15 +12,11 @@ class AndroidAssetLinuxDistroManifestSource(
 ) : LinuxDistroManifestSource {
     private val appContext = context.applicationContext
 
-    override fun loadManifest(): LinuxDistroManifest {
-        return appContext.assets.open(assetPath).use { input -> LinuxDistroManifestParser.decode(input) }
-    }
+    override fun loadManifest(): LinuxDistroManifest = appContext.assets.open(assetPath).use { input -> LinuxDistroManifestParser.decode(input) }
 
     companion object {
         const val DEFAULT_ASSET_PATH = "linux-distro/manifest.json"
     }
 }
 
-fun LinuxDistroManifestSource.loadCatalog(): LinuxDistroCatalog {
-    return ManifestLinuxDistroCatalog(loadManifest())
-}
+fun LinuxDistroManifestSource.loadCatalog(): LinuxDistroCatalog = ManifestLinuxDistroCatalog(loadManifest())

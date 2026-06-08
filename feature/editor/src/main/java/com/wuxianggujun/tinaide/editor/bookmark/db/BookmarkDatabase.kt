@@ -27,25 +27,23 @@ abstract class BookmarkDatabase : RoomDatabase() {
 
     companion object {
         @Volatile
-        private var INSTANCE: BookmarkDatabase? = null
+        private var instanceRef: BookmarkDatabase? = null
 
-        fun getInstance(context: Context): BookmarkDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    BookmarkDatabase::class.java,
-                    "tinaide_editor.db"
-                )
-                    .build()
-                INSTANCE = instance
-                instance
-            }
+        fun getInstance(context: Context): BookmarkDatabase = instanceRef ?: synchronized(this) {
+            val instance = Room.databaseBuilder(
+                context.applicationContext,
+                BookmarkDatabase::class.java,
+                "tinaide_editor.db"
+            )
+                .build()
+            instanceRef = instance
+            instance
         }
 
         @Synchronized
         fun closeInstance() {
-            INSTANCE?.close()
-            INSTANCE = null
+            instanceRef?.close()
+            instanceRef = null
         }
     }
 }

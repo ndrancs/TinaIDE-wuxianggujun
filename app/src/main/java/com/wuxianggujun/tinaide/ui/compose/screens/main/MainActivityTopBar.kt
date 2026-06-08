@@ -246,45 +246,41 @@ private fun SaveActionButton(
     }
 }
 
-private fun MainActivityCommand.iconVector(): ImageVector {
-    return when (id) {
-        HostCommands.PROJECT_BUILD,
-        "project.rebuildRun",
-        "project.packageApk",
-        "project.cmake.reconfigure",
-        "project.cmake.cleanReconfigure",
-        "project.cmake.clearBuildDir",
-        "project.cmake.openArtifacts" -> Icons.Default.Build
+private fun MainActivityCommand.iconVector(): ImageVector = when (id) {
+    HostCommands.PROJECT_BUILD,
+    "project.rebuildRun",
+    "project.packageApk",
+    "project.cmake.reconfigure",
+    "project.cmake.cleanReconfigure",
+    "project.cmake.clearBuildDir",
+    "project.cmake.openArtifacts" -> Icons.Default.Build
 
-        HostCommands.PROJECT_RUN,
-        "project.runTerminal",
-        "project.debug" -> Icons.Default.PlayArrow
+    HostCommands.PROJECT_RUN,
+    "project.runTerminal",
+    "project.debug" -> Icons.Default.PlayArrow
 
-        "view.globalSearch" -> Icons.Default.Search
-        HostCommands.VIEW_TOGGLE_TERMINAL -> Icons.Default.Terminal
-        HostCommands.VIEW_SETTINGS -> Icons.Default.Settings
-        HostCommands.VIEW_TOGGLE_FILE_TREE -> Icons.Default.Folder
-        HostCommands.PROJECT_CLOSE -> Icons.AutoMirrored.Filled.ExitToApp
-        HostCommands.EDITOR_FORMAT,
-        HostCommands.EDITOR_GOTO_LINE,
-        HostCommands.EDITOR_CODE_ACTIONS,
-        HostCommands.EDITOR_RENAME_SYMBOL -> Icons.Default.Code
+    "view.globalSearch" -> Icons.Default.Search
+    HostCommands.VIEW_TOGGLE_TERMINAL -> Icons.Default.Terminal
+    HostCommands.VIEW_SETTINGS -> Icons.Default.Settings
+    HostCommands.VIEW_TOGGLE_FILE_TREE -> Icons.Default.Folder
+    HostCommands.PROJECT_CLOSE -> Icons.AutoMirrored.Filled.ExitToApp
+    HostCommands.EDITOR_FORMAT,
+    HostCommands.EDITOR_GOTO_LINE,
+    HostCommands.EDITOR_CODE_ACTIONS,
+    HostCommands.EDITOR_RENAME_SYMBOL -> Icons.Default.Code
 
-        else -> when (category) {
-            MainActivityCommandCategory.BUILD -> Icons.Default.Build
-            MainActivityCommandCategory.CODE -> Icons.Default.Code
-            MainActivityCommandCategory.FILE -> Icons.Default.Folder
-            MainActivityCommandCategory.TERMINAL -> Icons.Default.Terminal
-            MainActivityCommandCategory.VIEW -> Icons.Default.Search
-            MainActivityCommandCategory.PLUGIN -> Icons.Default.Code
-        }
+    else -> when (category) {
+        MainActivityCommandCategory.BUILD -> Icons.Default.Build
+        MainActivityCommandCategory.CODE -> Icons.Default.Code
+        MainActivityCommandCategory.FILE -> Icons.Default.Folder
+        MainActivityCommandCategory.TERMINAL -> Icons.Default.Terminal
+        MainActivityCommandCategory.VIEW -> Icons.Default.Search
+        MainActivityCommandCategory.PLUGIN -> Icons.Default.Code
     }
 }
 
 @Composable
-private fun MainActivityCommand.titleText(): String {
-    return when (val commandTitle = title) {
-        is MainActivityCommandText.Literal -> commandTitle.value
-        is MainActivityCommandText.Resource -> stringResource(commandTitle.resId)
-    }
+private fun MainActivityCommand.titleText(): String = when (val commandTitle = title) {
+    is MainActivityCommandText.Literal -> commandTitle.value
+    is MainActivityCommandText.Resource -> stringResource(commandTitle.resId)
 }

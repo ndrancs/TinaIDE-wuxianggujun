@@ -46,4 +46,3 @@ dependencies {
     implementation(libs.tree.sitter)
     api(project(":core:tree-sitter"))
 }
-

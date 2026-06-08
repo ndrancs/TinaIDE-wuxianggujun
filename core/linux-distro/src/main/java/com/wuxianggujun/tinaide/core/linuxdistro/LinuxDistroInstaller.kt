@@ -189,45 +189,39 @@ class LinuxDistroInstaller(
         rootfsDir: File,
         archiveFile: File,
         installedAtEpochMillis: Long,
-    ): InstalledLinuxDistro {
-        return InstalledLinuxDistro(
-            distroId = resolved.distro.id,
-            releaseId = resolved.release.id,
-            architecture = resolved.artifact.architecture,
-            displayName = resolved.distro.displayName,
-            packageManager = resolved.distro.packageManager,
-            rootfsPath = rootfsDir.absolutePath,
-            archivePath = archiveFile.absolutePath,
-            checksum = resolved.artifact.checksum,
-            installedAtEpochMillis = installedAtEpochMillis,
-            updatedAtEpochMillis = clock().coerceAtLeast(installedAtEpochMillis),
-        )
-    }
+    ): InstalledLinuxDistro = InstalledLinuxDistro(
+        distroId = resolved.distro.id,
+        releaseId = resolved.release.id,
+        architecture = resolved.artifact.architecture,
+        displayName = resolved.distro.displayName,
+        packageManager = resolved.distro.packageManager,
+        rootfsPath = rootfsDir.absolutePath,
+        archivePath = archiveFile.absolutePath,
+        checksum = resolved.artifact.checksum,
+        installedAtEpochMillis = installedAtEpochMillis,
+        updatedAtEpochMillis = clock().coerceAtLeast(installedAtEpochMillis),
+    )
 
     private fun LinuxDistroInstallRequest.progress(
         phase: LinuxDistroInstallPhase,
         fraction: Float,
         resolved: ResolvedDistroArtifact? = null,
-    ): LinuxDistroInstallProgress {
-        return LinuxDistroInstallProgress(
-            phase = phase,
-            fraction = fraction.coerceIn(0f, 1f),
-            distroId = resolved?.distro?.id ?: distroId,
-            releaseId = resolved?.release?.id ?: releaseId,
-            architecture = resolved?.artifact?.architecture ?: architecture,
-        )
-    }
+    ): LinuxDistroInstallProgress = LinuxDistroInstallProgress(
+        phase = phase,
+        fraction = fraction.coerceIn(0f, 1f),
+        distroId = resolved?.distro?.id ?: distroId,
+        releaseId = resolved?.release?.id ?: releaseId,
+        architecture = resolved?.artifact?.architecture ?: architecture,
+    )
 
     private fun InstalledLinuxDistro.matchesResolvedArtifact(
         resolved: ResolvedDistroArtifact,
         rootfsDir: File,
-    ): Boolean {
-        return distroId == resolved.distro.id &&
-            releaseId == resolved.release.id &&
-            architecture == resolved.artifact.architecture &&
-            checksum == resolved.artifact.checksum &&
-            rootfsPath == rootfsDir.absolutePath
-    }
+    ): Boolean = distroId == resolved.distro.id &&
+        releaseId == resolved.release.id &&
+        architecture == resolved.artifact.architecture &&
+        checksum == resolved.artifact.checksum &&
+        rootfsPath == rootfsDir.absolutePath
 }
 
 data class LinuxDistroInstallRequest(

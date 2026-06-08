@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide.core.compile.artifact
 
-import kotlinx.serialization.Serializable
 import java.io.File
+import kotlinx.serialization.Serializable
 
 /**
  * 构建产物:IDE 中的"一等公民",持久化到 `<buildDir>/.tina/artifacts/<storageKey>.json`。

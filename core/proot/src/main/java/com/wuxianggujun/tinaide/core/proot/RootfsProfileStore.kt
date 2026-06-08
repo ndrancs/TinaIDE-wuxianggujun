@@ -4,10 +4,10 @@ import android.content.Context
 import com.wuxianggujun.tinaide.core.config.ConfigKeys
 import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.storage.ProjectPaths
+import java.io.File
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.io.File
 
 class RootfsProfileStore(
     context: Context,
@@ -28,20 +28,14 @@ class RootfsProfileStore(
     private val stateFile: File
         get() = File(ProjectPaths.getPRootRoot(appContext), "rootfs_profiles.json")
 
-    fun listProfiles(): List<RootfsProfile> {
-        return getState().profiles.sortedWith(
-            compareByDescending<RootfsProfile> { it.updatedAt }
-                .thenBy { it.displayName.lowercase() }
-        )
-    }
+    fun listProfiles(): List<RootfsProfile> = getState().profiles.sortedWith(
+        compareByDescending<RootfsProfile> { it.updatedAt }
+            .thenBy { it.displayName.lowercase() }
+    )
 
-    fun getState(): RootfsProfilesState {
-        return synchronized(lock) { ensureStateLocked() }
-    }
+    fun getState(): RootfsProfilesState = synchronized(lock) { ensureStateLocked() }
 
-    fun getProfile(profileId: String): RootfsProfile? {
-        return getState().profiles.firstOrNull { it.id == profileId }
-    }
+    fun getProfile(profileId: String): RootfsProfile? = getState().profiles.firstOrNull { it.id == profileId }
 
     fun getActiveProfileOrNull(): RootfsProfile? {
         val state = getState()
@@ -49,20 +43,16 @@ class RootfsProfileStore(
             ?: state.profiles.firstOrNull()
     }
 
-    fun getActiveProfile(): RootfsProfile {
-        return getActiveProfileOrNull()
-            ?: throw IllegalStateException("No Linux rootfs profile is installed")
-    }
+    fun getActiveProfile(): RootfsProfile = getActiveProfileOrNull()
+        ?: throw IllegalStateException("No Linux rootfs profile is installed")
 
-    fun setActiveProfile(profileId: String): RootfsProfile {
-        return synchronized(lock) {
-            val currentState = ensureStateLocked()
-            val target = currentState.profiles.firstOrNull { it.id == profileId }
-                ?: throw IllegalArgumentException("Unknown rootfs profile: $profileId")
-            val nextState = currentState.copy(activeProfileId = target.id)
-            persistStateLocked(nextState)
-            target
-        }
+    fun setActiveProfile(profileId: String): RootfsProfile = synchronized(lock) {
+        val currentState = ensureStateLocked()
+        val target = currentState.profiles.firstOrNull { it.id == profileId }
+            ?: throw IllegalArgumentException("Unknown rootfs profile: $profileId")
+        val nextState = currentState.copy(activeProfileId = target.id)
+        persistStateLocked(nextState)
+        target
     }
 
     fun renameProfile(profileId: String, displayName: String): RootfsProfile {
@@ -88,50 +78,46 @@ class RootfsProfileStore(
         }
     }
 
-    fun deleteProfile(profileId: String): RootfsProfile {
-        return synchronized(lock) {
-            val currentState = ensureStateLocked()
-            val target = currentState.profiles.firstOrNull { it.id == profileId }
-                ?: throw IllegalArgumentException("Unknown rootfs profile: $profileId")
+    fun deleteProfile(profileId: String): RootfsProfile = synchronized(lock) {
+        val currentState = ensureStateLocked()
+        val target = currentState.profiles.firstOrNull { it.id == profileId }
+            ?: throw IllegalArgumentException("Unknown rootfs profile: $profileId")
 
-            deleteProfileRootfsDirIfManaged(target)
+        deleteProfileRootfsDirIfManaged(target)
 
-            val remainingProfiles = currentState.profiles.filterNot { it.id == profileId }
-            val nextActiveId = when {
-                currentState.activeProfileId != profileId -> currentState.activeProfileId
-                else -> remainingProfiles.firstOrNull()?.id.orEmpty()
-            }
-            val nextState = currentState.copy(
-                activeProfileId = nextActiveId,
-                profiles = remainingProfiles,
-            )
-            persistStateLocked(nextState)
-            target
+        val remainingProfiles = currentState.profiles.filterNot { it.id == profileId }
+        val nextActiveId = when {
+            currentState.activeProfileId != profileId -> currentState.activeProfileId
+            else -> remainingProfiles.firstOrNull()?.id.orEmpty()
         }
+        val nextState = currentState.copy(
+            activeProfileId = nextActiveId,
+            profiles = remainingProfiles,
+        )
+        persistStateLocked(nextState)
+        target
     }
 
-    fun upsertProfile(profile: RootfsProfile, makeActive: Boolean = false): RootfsProfile {
-        return synchronized(lock) {
-            val currentState = ensureStateLocked()
-            val now = System.currentTimeMillis()
-            val existing = currentState.profiles.firstOrNull { it.id == profile.id }
-            val merged = profile.copy(
-                createdAt = existing?.createdAt ?: profile.createdAt,
-                updatedAt = now,
-            )
-            val nextProfiles = currentState.profiles
-                .filterNot { it.id == merged.id } + merged
-            val nextState = currentState.copy(
-                activeProfileId = when {
-                    makeActive -> merged.id
-                    currentState.activeProfileId.isBlank() -> merged.id
-                    else -> currentState.activeProfileId
-                },
-                profiles = nextProfiles,
-            )
-            persistStateLocked(nextState)
-            merged
-        }
+    fun upsertProfile(profile: RootfsProfile, makeActive: Boolean = false): RootfsProfile = synchronized(lock) {
+        val currentState = ensureStateLocked()
+        val now = System.currentTimeMillis()
+        val existing = currentState.profiles.firstOrNull { it.id == profile.id }
+        val merged = profile.copy(
+            createdAt = existing?.createdAt ?: profile.createdAt,
+            updatedAt = now,
+        )
+        val nextProfiles = currentState.profiles
+            .filterNot { it.id == merged.id } + merged
+        val nextState = currentState.copy(
+            activeProfileId = when {
+                makeActive -> merged.id
+                currentState.activeProfileId.isBlank() -> merged.id
+                else -> currentState.activeProfileId
+            },
+            profiles = nextProfiles,
+        )
+        persistStateLocked(nextState)
+        merged
     }
 
     fun isInstalled(profile: RootfsProfile): Boolean {

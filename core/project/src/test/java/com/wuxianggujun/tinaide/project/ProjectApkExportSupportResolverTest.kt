@@ -170,7 +170,5 @@ class ProjectApkExportSupportResolverTest {
         }
     }
 
-    private fun createTempProjectRoot(): File {
-        return Files.createTempDirectory("project-apk-export-support-test").toFile()
-    }
+    private fun createTempProjectRoot(): File = Files.createTempDirectory("project-apk-export-support-test").toFile()
 }

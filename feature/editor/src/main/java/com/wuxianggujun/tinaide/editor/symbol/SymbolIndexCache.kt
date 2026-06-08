@@ -1,12 +1,12 @@
 package com.wuxianggujun.tinaide.editor.symbol
 
 import android.content.Context
+import java.io.File
+import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
-import java.security.MessageDigest
 import timber.log.Timber
 
 /**
@@ -27,6 +27,7 @@ class SymbolIndexCache(private val context: Context) {
     companion object {
         private const val TAG = "SymbolIndexCache"
         private const val CACHE_DIR = "symbol_cache"
+
         // v4: symbol index provider generalized to multi-language (C++/Java/Kotlin/Python/Rust).
         private const val CACHE_VERSION = 4
         private const val MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000L // 7 天
@@ -181,23 +182,21 @@ class SymbolIndexCache(private val context: Context) {
 
     // ========== 序列化方法 ==========
 
-    private fun serializeFileSnapshots(fileSnapshots: List<CachedFileSnapshot>): JSONArray {
-        return JSONArray().apply {
-            for (snapshot in fileSnapshots) {
-                put(
-                    JSONObject().apply {
-                        put("filePath", snapshot.filePath)
-                        put("globals", serializeGlobals(snapshot.globals))
-                    }
-                )
-            }
+    private fun serializeFileSnapshots(fileSnapshots: List<CachedFileSnapshot>): JSONArray = JSONArray().apply {
+        for (snapshot in fileSnapshots) {
+            put(
+                JSONObject().apply {
+                    put("filePath", snapshot.filePath)
+                    put("globals", serializeGlobals(snapshot.globals))
+                }
+            )
         }
     }
 
-    private fun serializeGlobals(globals: List<ProjectSymbol>): JSONArray {
-        return JSONArray().apply {
-            for (symbol in globals) {
-                put(JSONObject().apply {
+    private fun serializeGlobals(globals: List<ProjectSymbol>): JSONArray = JSONArray().apply {
+        for (symbol in globals) {
+            put(
+                JSONObject().apply {
                     put("name", symbol.name)
                     put("kind", symbol.kind.name)
                     put("detail", symbol.detail)
@@ -206,16 +205,14 @@ class SymbolIndexCache(private val context: Context) {
                         put("line", loc.line)
                         put("column", loc.column)
                     }
-                })
-            }
+                }
+            )
         }
     }
 
-    private fun serializeFileTimestamps(timestamps: Map<String, Long>): JSONObject {
-        return JSONObject().apply {
-            for ((path, timestamp) in timestamps) {
-                put(path, timestamp)
-            }
+    private fun serializeFileTimestamps(timestamps: Map<String, Long>): JSONObject = JSONObject().apply {
+        for ((path, timestamp) in timestamps) {
+            put(path, timestamp)
         }
     }
 
@@ -241,7 +238,9 @@ class SymbolIndexCache(private val context: Context) {
             val obj = array.getJSONObject(i)
             val location = if (obj.has("line")) {
                 SymbolLocation(obj.getInt("line"), obj.getInt("column"))
-            } else null
+            } else {
+                null
+            }
             result.add(
                 ProjectSymbol(
                     name = obj.getString("name"),

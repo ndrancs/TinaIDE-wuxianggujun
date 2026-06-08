@@ -72,12 +72,10 @@ internal object MTDataFilesProviderPathSafety {
         return documentId.substring(0, lastSlash)
     }
 
-    fun appendDocumentId(parentDocumentId: String, displayName: String): String {
-        return if (parentDocumentId.endsWith("/")) {
-            parentDocumentId + displayName
-        } else {
-            "$parentDocumentId/$displayName"
-        }
+    fun appendDocumentId(parentDocumentId: String, displayName: String): String = if (parentDocumentId.endsWith("/")) {
+        parentDocumentId + displayName
+    } else {
+        "$parentDocumentId/$displayName"
     }
 
     @Throws(FileNotFoundException::class)

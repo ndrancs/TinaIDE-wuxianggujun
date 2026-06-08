@@ -32,12 +32,8 @@ enum class AndroidApiLevel(
         /** NDK 项目模板的默认 API level */
         val DEFAULT = API_28
 
-        fun fromLevel(level: Int): AndroidApiLevel {
-            return entries.find { it.level == level } ?: DEFAULT
-        }
+        fun fromLevel(level: Int): AndroidApiLevel = entries.find { it.level == level } ?: DEFAULT
 
-        fun fromString(value: String?): AndroidApiLevel {
-            return entries.find { it.name == value } ?: DEFAULT
-        }
+        fun fromString(value: String?): AndroidApiLevel = entries.find { it.name == value } ?: DEFAULT
     }
 }

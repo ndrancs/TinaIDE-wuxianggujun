@@ -10,10 +10,10 @@ import com.wuxianggujun.tinaide.core.compile.CompilerType
 import com.wuxianggujun.tinaide.core.compile.strategy.BuildContext
 import com.wuxianggujun.tinaide.core.linux.LinuxRunModePolicy
 import io.mockk.mockk
-import org.junit.Test
-import org.junit.Rule
-import org.junit.rules.TemporaryFolder
 import java.io.File
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 /**
  * 验证 FingerprintCalculator 把 BuildOptions 的全部关键字段都带入 BuildFingerprint。

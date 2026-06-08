@@ -188,5 +188,4 @@ class EditorInputHostLayerTest {
         )
         return state
     }
-
 }

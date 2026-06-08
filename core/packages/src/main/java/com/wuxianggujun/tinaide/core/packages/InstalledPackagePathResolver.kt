@@ -216,16 +216,12 @@ object InstalledPackagePathResolver {
             .toList()
     }
 
-    private fun canonicalOrAbsolute(file: File): File {
-        return runCatching { file.canonicalFile }.getOrDefault(file.absoluteFile)
-    }
+    private fun canonicalOrAbsolute(file: File): File = runCatching { file.canonicalFile }.getOrDefault(file.absoluteFile)
 
-    private fun inferPrefixDirFromIncludeDir(includeDir: File): File? {
-        return if (includeDir.name.equals("include", ignoreCase = true)) {
-            includeDir.parentFile ?: includeDir
-        } else {
-            includeDir
-        }
+    private fun inferPrefixDirFromIncludeDir(includeDir: File): File? = if (includeDir.name.equals("include", ignoreCase = true)) {
+        includeDir.parentFile ?: includeDir
+    } else {
+        includeDir
     }
 
     private fun inferPrefixDirFromLibDir(libDir: File): File? {

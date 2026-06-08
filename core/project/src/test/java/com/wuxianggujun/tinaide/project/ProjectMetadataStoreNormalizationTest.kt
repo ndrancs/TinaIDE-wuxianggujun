@@ -67,9 +67,7 @@ class ProjectMetadataStoreNormalizationTest {
         }
     }
 
-    private fun createTempProjectRoot(): File {
-        return Files.createTempDirectory("project-meta-normalization-test").toFile()
-    }
+    private fun createTempProjectRoot(): File = Files.createTempDirectory("project-meta-normalization-test").toFile()
 
     private fun writeProjectMetadata(projectRoot: File, content: String) {
         val file = File(projectRoot, ".tinaide/project.json")
@@ -77,7 +75,5 @@ class ProjectMetadataStoreNormalizationTest {
         file.writeText(content)
     }
 
-    private fun readProjectMetadata(projectRoot: File): String {
-        return File(projectRoot, ".tinaide/project.json").readText()
-    }
+    private fun readProjectMetadata(projectRoot: File): String = File(projectRoot, ".tinaide/project.json").readText()
 }

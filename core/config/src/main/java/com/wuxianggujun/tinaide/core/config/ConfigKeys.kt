@@ -13,8 +13,7 @@ sealed class ConfigKey<T>(val key: String, val default: T) {
     )
 
     // 面板可见性：ui.panel.<PANEL_NAME> -> Boolean
-    class PanelVisible(panelName: String, defaultVisible: Boolean) :
-        ConfigKey<Boolean>("ui.panel.$panelName", defaultVisible)
+    class PanelVisible(panelName: String, defaultVisible: Boolean) : ConfigKey<Boolean>("ui.panel.$panelName", defaultVisible)
 
     object CurrentProject : ConfigKey<String>(
         key = "file.current_project",
@@ -175,7 +174,6 @@ sealed class ConfigKey<T>(val key: String, val default: T) {
         key = "storage.mt_file_provider.enabled",
         default = false
     )
-
 }
 
 /**
@@ -184,8 +182,7 @@ sealed class ConfigKey<T>(val key: String, val default: T) {
 object ConfigKeys {
     val Theme = ConfigKey.Theme
     val DebugToolbarPosition = ConfigKey.DebugToolbarPositionMode
-    fun panelVisible(panelName: String, defaultVisible: Boolean) =
-        ConfigKey.PanelVisible(panelName, defaultVisible)
+    fun panelVisible(panelName: String, defaultVisible: Boolean) = ConfigKey.PanelVisible(panelName, defaultVisible)
 
     val CurrentProject = ConfigKey.CurrentProject
     val RecentFiles = ConfigKey.RecentFiles

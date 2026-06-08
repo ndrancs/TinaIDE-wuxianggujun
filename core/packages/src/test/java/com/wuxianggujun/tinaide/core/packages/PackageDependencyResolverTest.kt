@@ -77,33 +77,27 @@ class PackageDependencyResolverTest {
     private fun descriptor(
         packageId: String,
         dependencies: List<String> = emptyList()
-    ): PackageInstallDescriptor {
-        return PackageInstallDescriptor(
-            packageId = packageId,
-            packageName = packageId,
-            platform = Platform.ANDROID,
-            platformPackage = platformPackage(dependencies),
-            dependencies = dependencies.normalizedPackageDependencies()
-        )
-    }
+    ): PackageInstallDescriptor = PackageInstallDescriptor(
+        packageId = packageId,
+        packageName = packageId,
+        platform = Platform.ANDROID,
+        platformPackage = platformPackage(dependencies),
+        dependencies = dependencies.normalizedPackageDependencies()
+    )
 
     private fun guiPackage(
         packageId: String,
         name: String,
         dependencies: List<String> = emptyList()
-    ): GUIPackage {
-        return GUIPackage(
-            id = packageId,
-            name = name,
-            android = platformPackage(dependencies)
-        )
-    }
+    ): GUIPackage = GUIPackage(
+        id = packageId,
+        name = name,
+        android = platformPackage(dependencies)
+    )
 
-    private fun platformPackage(dependencies: List<String>): PlatformPackage {
-        return PlatformPackage(
-            version = "1.0.0",
-            installType = InstallType.DOWNLOAD,
-            dependencies = dependencies
-        )
-    }
+    private fun platformPackage(dependencies: List<String>): PlatformPackage = PlatformPackage(
+        version = "1.0.0",
+        installType = InstallType.DOWNLOAD,
+        dependencies = dependencies
+    )
 }

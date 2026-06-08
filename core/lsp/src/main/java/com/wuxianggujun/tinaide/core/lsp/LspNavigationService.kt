@@ -1,12 +1,12 @@
 package com.wuxianggujun.tinaide.core.lsp
 
+import java.io.File
+import java.net.URI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import timber.log.Timber
-import java.io.File
-import java.net.URI
 
 /**
  * LSP 导航服务
@@ -243,7 +243,6 @@ class LspNavigationService {
         }
     }
 
-
     /**
      * Call Hierarchy：查询当前符号的入向调用（谁调用了它）。
      */
@@ -286,12 +285,10 @@ class LspNavigationService {
      */
     private fun parseLocationEither(
         either: Either<List<Location>, List<LocationLink>>
-    ): List<LocationItem> {
-        return when {
-            either.isLeft -> either.left.map { it.toLocationItem() }
-            either.isRight -> either.right.map { it.toLocationItem() }
-            else -> emptyList()
-        }
+    ): List<LocationItem> = when {
+        either.isLeft -> either.left.map { it.toLocationItem() }
+        either.isRight -> either.right.map { it.toLocationItem() }
+        else -> emptyList()
     }
 
     private fun Location.toLocationItem(): LocationItem {
@@ -319,7 +316,6 @@ class LspNavigationService {
             endColumn = targetSelectionRange.end.character
         )
     }
-
 
     private fun CallHierarchyIncomingCall.toLocationItems(): List<LocationItem> {
         val caller = from ?: return emptyList()
@@ -405,13 +401,11 @@ class LspNavigationService {
         }
     }
 
-    private fun uriToFilePath(uri: String): String {
-        return try {
-            File(URI(uri)).absolutePath
-        } catch (e: Exception) {
-            // 如果 URI 解析失败，尝试直接去掉 file:// 前缀
-            uri.removePrefix("file://")
-        }
+    private fun uriToFilePath(uri: String): String = try {
+        File(URI(uri)).absolutePath
+    } catch (e: Exception) {
+        // 如果 URI 解析失败，尝试直接去掉 file:// 前缀
+        uri.removePrefix("file://")
     }
 
     private fun extractUriString(result: Any?): String? {
@@ -430,12 +424,10 @@ class LspNavigationService {
 
     private fun parseWorkspaceSymbolEither(
         either: Either<List<SymbolInformation>, List<WorkspaceSymbol?>>,
-    ): List<WorkspaceSymbolItem> {
-        return when {
-            either.isLeft -> either.left.mapNotNull { it.toWorkspaceSymbolItemOrNull() }
-            either.isRight -> either.right.mapNotNull { it?.toWorkspaceSymbolItemOrNull() }
-            else -> emptyList()
-        }
+    ): List<WorkspaceSymbolItem> = when {
+        either.isLeft -> either.left.mapNotNull { it.toWorkspaceSymbolItemOrNull() }
+        either.isRight -> either.right.mapNotNull { it?.toWorkspaceSymbolItemOrNull() }
+        else -> emptyList()
     }
 
     private fun parseDocumentSymbolEither(
@@ -668,9 +660,7 @@ data class DocumentSymbolItem(
     val level: Int = 0,
 )
 
-private fun WorkspaceSymbolItem.composeStableKey(): String {
-    return stableId
-}
+private fun WorkspaceSymbolItem.composeStableKey(): String = stableId
 
 private fun buildWorkspaceSymbolStableId(
     filePath: String,
@@ -680,43 +670,39 @@ private fun buildWorkspaceSymbolStableId(
     line: Int?,
     column: Int?,
     data: Any?,
-): String {
-    return buildString {
-        append("ws|")
-        append(filePath)
-        append("|")
-        append(name)
-        append("|")
-        append(kindValue ?: -1)
-        append("|")
-        append(containerName ?: "")
-        append("|")
-        if (line != null && column != null) {
-            append("@")
-            append(line)
-            append(":")
-            append(column)
-        } else {
-            append("data#")
-            append(data?.hashCode() ?: 0)
-        }
+): String = buildString {
+    append("ws|")
+    append(filePath)
+    append("|")
+    append(name)
+    append("|")
+    append(kindValue ?: -1)
+    append("|")
+    append(containerName ?: "")
+    append("|")
+    if (line != null && column != null) {
+        append("@")
+        append(line)
+        append(":")
+        append(column)
+    } else {
+        append("data#")
+        append(data?.hashCode() ?: 0)
     }
 }
 
-private fun DocumentSymbolItem.composeStableKey(): String {
-    return buildString {
-        append(filePath)
-        append("|")
-        append(line)
-        append("|")
-        append(column)
-        append("|")
-        append(level)
-        append("|")
-        append(name)
-        append("|")
-        append(kind)
-        append("|")
-        append(containerName ?: "")
-    }
+private fun DocumentSymbolItem.composeStableKey(): String = buildString {
+    append(filePath)
+    append("|")
+    append(line)
+    append("|")
+    append(column)
+    append("|")
+    append(level)
+    append("|")
+    append(name)
+    append("|")
+    append(kind)
+    append("|")
+    append(containerName ?: "")
 }

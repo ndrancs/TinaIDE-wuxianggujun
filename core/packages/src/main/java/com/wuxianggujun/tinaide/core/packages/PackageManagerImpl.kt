@@ -42,7 +42,7 @@ class PackageManagerImpl(
         search: String?
     ): Result<List<GUIPackage>> {
         val isDefaultQuery = page == 1 && category == null && platform == null && search == null
-        
+
         if (isDefaultQuery) {
             cacheManager.getPackages()?.let { cached ->
                 Timber.tag(TAG).d("Returning ${cached.size} packages from cache")
@@ -61,6 +61,7 @@ class PackageManagerImpl(
         return when (result) {
             is ApiResult.Success -> {
                 val rawPackages = result.data.packages
+
                 @Suppress("SENSELESS_COMPARISON")
                 val packages = if (rawPackages == null) {
                     Timber.tag(TAG).e("API returned null packages; falling back to cache/empty list")
@@ -157,33 +158,29 @@ class PackageManagerImpl(
         }
     }
 
-    override suspend fun getInstallState(packageId: String): PackageInstallState {
-        return installStateStore.getInstallState(packageId)
-    }
+    override suspend fun getInstallState(packageId: String): PackageInstallState = installStateStore.getInstallState(packageId)
 
     override suspend fun previewInstallPlan(
         packageId: String,
         platform: Platform
-    ): Result<PackageInstallPlan> {
-        return resolveInstallPlan(packageId, platform).map { descriptors ->
-            PackageInstallPlan(
-                packageId = packageId,
-                packageName = descriptors.firstOrNull { it.packageId == packageId }?.packageName ?: packageId,
-                platform = platform,
-                packages = descriptors.map { descriptor ->
-                    PackageInstallPlanItem(
-                        packageId = descriptor.packageId,
-                        packageName = descriptor.packageName,
-                        version = descriptor.platformPackage.version,
-                        isRoot = descriptor.packageId == packageId,
-                        isAlreadyInstalled = installStateStore.isInstalled(
-                            descriptor.packageId,
-                            descriptor.platform
-                        )
+    ): Result<PackageInstallPlan> = resolveInstallPlan(packageId, platform).map { descriptors ->
+        PackageInstallPlan(
+            packageId = packageId,
+            packageName = descriptors.firstOrNull { it.packageId == packageId }?.packageName ?: packageId,
+            platform = platform,
+            packages = descriptors.map { descriptor ->
+                PackageInstallPlanItem(
+                    packageId = descriptor.packageId,
+                    packageName = descriptor.packageName,
+                    version = descriptor.platformPackage.version,
+                    isRoot = descriptor.packageId == packageId,
+                    isAlreadyInstalled = installStateStore.isInstalled(
+                        descriptor.packageId,
+                        descriptor.platform
                     )
-                }
-            )
-        }
+                )
+            }
+        )
     }
 
     override suspend fun install(
@@ -230,14 +227,12 @@ class PackageManagerImpl(
     private suspend fun resolveInstallPlan(
         packageId: String,
         platform: Platform
-    ): Result<List<PackageInstallDescriptor>> {
-        return PackageDependencyResolver.resolveInstallPlan(
-            rootPackageId = packageId,
-            platform = platform,
-            loadPackage = { dependencyId -> resolveInstallDescriptor(dependencyId, platform) },
-            isInstalled = installStateStore::isInstalled
-        )
-    }
+    ): Result<List<PackageInstallDescriptor>> = PackageDependencyResolver.resolveInstallPlan(
+        rootPackageId = packageId,
+        platform = platform,
+        loadPackage = { dependencyId -> resolveInstallDescriptor(dependencyId, platform) },
+        isInstalled = installStateStore::isInstalled
+    )
 
     private suspend fun resolveInstallDescriptor(
         packageId: String,
@@ -491,7 +486,9 @@ class PackageManagerImpl(
                         Platform.LINUX -> versionsResult.data.linux
                         Platform.ANDROID -> versionsResult.data.android
                     }
-                } else null
+                } else {
+                    null
+                }
 
                 val uninstallScript = versions?.find { it.isLatest }?.uninstallScript
 
@@ -562,9 +559,7 @@ class PackageManagerImpl(
         }
     }
 
-    override suspend fun getInstalledPackages(): List<InstalledPackageInfo> {
-        return installStateStore.getAllInstalledPackages()
-    }
+    override suspend fun getInstalledPackages(): List<InstalledPackageInfo> = installStateStore.getAllInstalledPackages()
 
     override suspend fun getDependentPackages(packageId: String, platform: Platform): List<String> {
         val installedPackageIds = installStateStore.getAllInstalledPackages()
@@ -614,13 +609,13 @@ class PackageManagerImpl(
     override suspend fun checkForUpdates(): Map<String, UpdateInfo> {
         val updates = mutableMapOf<String, UpdateInfo>()
         val installedPackages = installStateStore.getAllInstalledPackages()
-        
+
         for (installed in installedPackages) {
             try {
                 val detailResult = apiClient.getPackageDetail(installed.packageId)
                 if (detailResult is ApiResult.Success) {
                     val pkg = detailResult.data
-                    
+
                     if (installed.platform == Platform.LINUX) {
                         pkg.linux?.let { platformPkg ->
                             if (isNewerVersion(platformPkg.version, installed.version)) {
@@ -634,7 +629,7 @@ class PackageManagerImpl(
                             }
                         }
                     }
-                    
+
                     if (installed.platform == Platform.ANDROID) {
                         pkg.android?.let { platformPkg ->
                             if (isNewerVersion(platformPkg.version, installed.version)) {
@@ -653,7 +648,7 @@ class PackageManagerImpl(
                 Timber.tag(TAG).w(e, "Failed to check update for ${installed.packageId}")
             }
         }
-        
+
         for ((packageId, updateInfo) in updates) {
             installStateStore.setUpdateAvailable(
                 packageId = packageId,
@@ -662,14 +657,14 @@ class PackageManagerImpl(
                 newVersion = updateInfo.newVersion
             )
         }
-        
+
         return updates
     }
 
     private fun isNewerVersion(remote: String, local: String): Boolean {
         val remoteParts = remote.split(".").mapNotNull { it.toIntOrNull() }
         val localParts = local.split(".").mapNotNull { it.toIntOrNull() }
-        
+
         for (i in 0 until maxOf(remoteParts.size, localParts.size)) {
             val r = remoteParts.getOrElse(i) { 0 }
             val l = localParts.getOrElse(i) { 0 }

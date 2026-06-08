@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -99,15 +98,18 @@ fun SectionHeader(title: String) {
 fun ProjectTagChip(tag: ProjectTag) {
     val context = LocalContext.current
     val (backgroundColor, textColor) = when (tag) {
-        ProjectTag.PUBLIC_SOURCE -> MaterialTheme.colorScheme.secondaryContainer to
-            MaterialTheme.colorScheme.onSecondaryContainer
-        ProjectTag.PRIVATE_SOURCE -> MaterialTheme.colorScheme.tertiaryContainer to
-            MaterialTheme.colorScheme.onTertiaryContainer
+        ProjectTag.PUBLIC_SOURCE ->
+            MaterialTheme.colorScheme.secondaryContainer to
+                MaterialTheme.colorScheme.onSecondaryContainer
+        ProjectTag.PRIVATE_SOURCE ->
+            MaterialTheme.colorScheme.tertiaryContainer to
+                MaterialTheme.colorScheme.onTertiaryContainer
         ProjectTag.GIT -> TinaSemanticColors.Language.gitBg to TinaSemanticColors.Language.gitText
         ProjectTag.CMAKE -> TinaSemanticColors.Language.cmakeBg to TinaSemanticColors.Language.cmakeText
         ProjectTag.MAKEFILE -> TinaSemanticColors.Language.makefileBg to TinaSemanticColors.Language.makefileText
-        ProjectTag.PLUGIN -> MaterialTheme.colorScheme.primaryContainer to
-            MaterialTheme.colorScheme.onPrimaryContainer
+        ProjectTag.PLUGIN ->
+            MaterialTheme.colorScheme.primaryContainer to
+                MaterialTheme.colorScheme.onPrimaryContainer
         ProjectTag.C_CPP -> TinaSemanticColors.Language.cppBg to TinaSemanticColors.Language.cppText
         ProjectTag.JAVA -> TinaSemanticColors.Language.javaBg to TinaSemanticColors.Language.javaText
         ProjectTag.KOTLIN -> TinaSemanticColors.Language.kotlinBg to TinaSemanticColors.Language.kotlinText
@@ -235,17 +237,13 @@ fun calculateDirectorySize(dir: File): Long {
     return size
 }
 
-fun countFiles(dir: File): Int {
-    return dir.walkTopDown().count { it.isFile }
-}
+fun countFiles(dir: File): Int = dir.walkTopDown().count { it.isFile }
 
-fun formatFileSize(size: Long): String {
-    return when {
-        size < 1024 -> "$size B"
-        size < 1024 * 1024 -> "${size / 1024} KB"
-        size < 1024 * 1024 * 1024 -> "${size / (1024 * 1024)} MB"
-        else -> "${size / (1024 * 1024 * 1024)} GB"
-    }
+fun formatFileSize(size: Long): String = when {
+    size < 1024 -> "$size B"
+    size < 1024 * 1024 -> "${size / 1024} KB"
+    size < 1024 * 1024 * 1024 -> "${size / (1024 * 1024)} MB"
+    else -> "${size / (1024 * 1024 * 1024)} GB"
 }
 
 fun extractProjectNameFromUrl(url: String): String {

@@ -561,9 +561,7 @@ class CompileDatabaseProvider(context: Context) {
         return sha256Hex(input.toByteArray())
     }
 
-    private fun canonicalPathOrAbs(file: File): String {
-        return runCatching { file.canonicalPath }.getOrDefault(file.absolutePath)
-    }
+    private fun canonicalPathOrAbs(file: File): String = runCatching { file.canonicalPath }.getOrDefault(file.absolutePath)
 
     private fun sha256Hex(bytes: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
@@ -603,11 +601,9 @@ class CompileDatabaseProvider(context: Context) {
         return null
     }
 
-    private fun resolveCppStandard(workspaceRoot: File): CppStandard {
-        return runCatching {
-            ProjectMetadataStore.read(workspaceRoot)?.getCppStandard()
-        }.getOrNull() ?: CppStandard.DEFAULT
-    }
+    private fun resolveCppStandard(workspaceRoot: File): CppStandard = runCatching {
+        ProjectMetadataStore.read(workspaceRoot)?.getCppStandard()
+    }.getOrNull() ?: CppStandard.DEFAULT
 
     private fun materializeCompileCommandsForLsp(
         effectiveRunMode: LinuxRunModePolicy.RunMode,

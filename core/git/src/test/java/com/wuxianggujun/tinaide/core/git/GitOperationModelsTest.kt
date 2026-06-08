@@ -43,23 +43,19 @@ class GitOperationModelsTest {
         assertThat(credential.password).isEqualTo("token")
     }
 
-    private fun GitProgress.currentCount(): Int? {
-        return when (this) {
-            is GitProgress.Counting -> current
-            is GitProgress.Compressing -> current
-            is GitProgress.Receiving -> current
-            is GitProgress.Resolving -> current
-            GitProgress.Indeterminate -> null
-        }
+    private fun GitProgress.currentCount(): Int? = when (this) {
+        is GitProgress.Counting -> current
+        is GitProgress.Compressing -> current
+        is GitProgress.Receiving -> current
+        is GitProgress.Resolving -> current
+        GitProgress.Indeterminate -> null
     }
 
-    private fun GitProgress.totalCount(): Int? {
-        return when (this) {
-            is GitProgress.Counting -> total
-            is GitProgress.Compressing -> total
-            is GitProgress.Receiving -> total
-            is GitProgress.Resolving -> total
-            GitProgress.Indeterminate -> null
-        }
+    private fun GitProgress.totalCount(): Int? = when (this) {
+        is GitProgress.Counting -> total
+        is GitProgress.Compressing -> total
+        is GitProgress.Receiving -> total
+        is GitProgress.Resolving -> total
+        GitProgress.Indeterminate -> null
     }
 }

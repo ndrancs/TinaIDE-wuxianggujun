@@ -26,10 +26,10 @@ import com.wuxianggujun.tinaide.core.packages.InstalledPackagePathResolver
 import com.wuxianggujun.tinaide.core.util.DiagnosticLogFormatter
 import com.wuxianggujun.tinaide.core.util.NativeExecutableRunner
 import com.wuxianggujun.tinaide.project.NativeBuildFlagTokenizer
-import timber.log.Timber
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import timber.log.Timber
 
 /**
  * 单文件构建策略。
@@ -200,9 +200,11 @@ class SingleFileStrategy(
             ctx.projectRoot.absolutePath,
         )
 
-        emitter.tryEmit(BuildEvent.Build.CompileProgress(
-            Strings.compile_single_file_compiling.str(mainSource.name)
-        ))
+        emitter.tryEmit(
+            BuildEvent.Build.CompileProgress(
+                Strings.compile_single_file_compiling.str(mainSource.name)
+            )
+        )
 
         val cppStandard = if (isCpp) {
             options.cppStandard?.trim().takeUnless { it.isNullOrBlank() } ?: "c++17"
@@ -348,14 +350,12 @@ class SingleFileStrategy(
         if (ctx.buildDir.exists()) ctx.buildDir.deleteRecursively()
     }
 
-    override suspend fun getTargets(ctx: BuildContext): List<TargetInfo> {
-        return findSourceFiles(ctx.projectRoot).map { file ->
-            TargetInfo(
-                name = file.nameWithoutExtension,
-                type = TargetInfo.Type.EXECUTABLE,
-                sources = listOf(file.name),
-            )
-        }
+    override suspend fun getTargets(ctx: BuildContext): List<TargetInfo> = findSourceFiles(ctx.projectRoot).map { file ->
+        TargetInfo(
+            name = file.nameWithoutExtension,
+            type = TargetInfo.Type.EXECUTABLE,
+            sources = listOf(file.name),
+        )
     }
 
     // ---------- 编译 / 诊断助手 ----------
@@ -366,71 +366,74 @@ class SingleFileStrategy(
         timeout: Long,
         options: BuildOptions,
         onOutput: ((String) -> Unit)? = null,
-    ): CommandResult {
-        return try {
-            val executable = command[0]
-            val args = command.drop(1)
-            val fullCommand = NativeExecutableRunner.buildCommand(executable = executable, args = args)
+    ): CommandResult = try {
+        val executable = command[0]
+        val args = command.drop(1)
+        val fullCommand = NativeExecutableRunner.buildCommand(executable = executable, args = args)
 
-            val processBuilder = ProcessBuilder(fullCommand).apply {
-                directory(workingDir)
-                NativeExecutableRunner.configureEnvironment(
-                    this,
-                    nativeLibDir,
-                    toolchainManager.getBinDir(options.toolchainId).absolutePath,
-                    tmpDir = appContext.cacheDir.absolutePath,
-                    homeDir = appContext.filesDir.absolutePath,
-                )
-                NativeExecutableRunner.applyRecommendedTinaExec(
-                    environment = environment(),
-                    context = appContext,
-                    fullCommand = fullCommand,
-                )
-                redirectErrorStream(true)
-            }
-            NativeExecutableRunner.logExecutionDiagnostics(
-                tag = TAG,
-                executable = executable,
-                args = args,
-                fullCommand = fullCommand,
-                workingDir = workingDir,
-                environment = processBuilder.environment().toMap(),
-                toolchainBinDir = toolchainManager.getBinDir(options.toolchainId).absolutePath,
+        val processBuilder = ProcessBuilder(fullCommand).apply {
+            directory(workingDir)
+            NativeExecutableRunner.configureEnvironment(
+                this,
+                nativeLibDir,
+                toolchainManager.getBinDir(options.toolchainId).absolutePath,
+                tmpDir = appContext.cacheDir.absolutePath,
+                homeDir = appContext.filesDir.absolutePath,
             )
+            NativeExecutableRunner.applyRecommendedTinaExec(
+                environment = environment(),
+                context = appContext,
+                fullCommand = fullCommand,
+            )
+            redirectErrorStream(true)
+        }
+        NativeExecutableRunner.logExecutionDiagnostics(
+            tag = TAG,
+            executable = executable,
+            args = args,
+            fullCommand = fullCommand,
+            workingDir = workingDir,
+            environment = processBuilder.environment().toMap(),
+            toolchainBinDir = toolchainManager.getBinDir(options.toolchainId).absolutePath,
+        )
 
-            val process = processBuilder.start()
-            val output = StringBuilder()
-            process.inputStream.bufferedReader().use { reader ->
-                reader.lineSequence().forEach { line ->
-                    output.appendLine(line)
-                    onOutput?.invoke(line)
-                    Timber.tag(TAG).v(line)
-                }
+        val process = processBuilder.start()
+        val output = StringBuilder()
+        process.inputStream.bufferedReader().use { reader ->
+            reader.lineSequence().forEach { line ->
+                output.appendLine(line)
+                onOutput?.invoke(line)
+                Timber.tag(TAG).v(line)
             }
+        }
 
-            val finished = process.waitFor(timeout, TimeUnit.MILLISECONDS)
-            val exitCode = if (finished) process.exitValue() else { process.destroy(); -1 }
-            if (!finished) Timber.tag(TAG).w("Native compile command timed out after %d ms", timeout)
-            if (exitCode != 0) {
-                NativeExecutableRunner.logFailureDiagnostics(
-                    tag = TAG,
-                    executable = executable,
-                    output = output.toString(),
-                    toolchainBinDir = toolchainManager.getBinDir().absolutePath,
-                )
-            }
-
-            CommandResult(exitCode = exitCode, output = output.toString())
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to execute native compile command")
+        val finished = process.waitFor(timeout, TimeUnit.MILLISECONDS)
+        val exitCode = if (finished) {
+            process.exitValue()
+        } else {
+            process.destroy()
+            -1
+        }
+        if (!finished) Timber.tag(TAG).w("Native compile command timed out after %d ms", timeout)
+        if (exitCode != 0) {
             NativeExecutableRunner.logFailureDiagnostics(
                 tag = TAG,
-                executable = command.firstOrNull().orEmpty(),
-                output = e.message ?: "unknown error",
+                executable = executable,
+                output = output.toString(),
                 toolchainBinDir = toolchainManager.getBinDir().absolutePath,
             )
-            CommandResult(exitCode = -1, output = Strings.compile_exec_exception.strOr(appContext, e.message ?: ""))
         }
+
+        CommandResult(exitCode = exitCode, output = output.toString())
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Failed to execute native compile command")
+        NativeExecutableRunner.logFailureDiagnostics(
+            tag = TAG,
+            executable = command.firstOrNull().orEmpty(),
+            output = e.message ?: "unknown error",
+            toolchainBinDir = toolchainManager.getBinDir().absolutePath,
+        )
+        CommandResult(exitCode = -1, output = Strings.compile_exec_exception.strOr(appContext, e.message ?: ""))
     }
 
     private suspend fun appendClangTraceDiagnostics(
@@ -475,7 +478,12 @@ class SingleFileStrategy(
         val diagBinary = File(appContext.cacheDir, "${sourceFile.nameWithoutExtension}-${System.currentTimeMillis()}-diag-bin")
 
         val compileOnly = buildList {
-            add(compiler); add(sourceFile.absolutePath); add("-c"); add("-o"); add(diagObject.absolutePath); addAll(argsWithoutIo)
+            add(compiler)
+            add(sourceFile.absolutePath)
+            add("-c")
+            add("-o")
+            add(diagObject.absolutePath)
+            addAll(argsWithoutIo)
         }
         emitDiagLine(outputBuilder, onProgress, "$phasePrefix compile-only command: ${compileOnly.joinToString(" ")}")
         val compileOnlyResult = executeNativeCommand(compileOnly, workingDir, timeout, options) { line ->
@@ -491,7 +499,11 @@ class SingleFileStrategy(
 
         val linkOnlyArgs = extractLinkOnlyArgs(argsWithoutIo)
         val linkOnly = buildList {
-            add(compiler); add(diagObject.absolutePath); add("-o"); add(diagBinary.absolutePath); addAll(linkOnlyArgs)
+            add(compiler)
+            add(diagObject.absolutePath)
+            add("-o")
+            add(diagBinary.absolutePath)
+            addAll(linkOnlyArgs)
         }
         emitDiagLine(outputBuilder, onProgress, "$phasePrefix link-only command: ${linkOnly.joinToString(" ")}")
         val linkOnlyResult = executeNativeCommand(linkOnly, workingDir, timeout, options) { line ->
@@ -513,16 +525,28 @@ class SingleFileStrategy(
         var i = 0
         while (i < args.size) {
             val arg = args[i]
-            if (arg == sourcePath) { i += 1; continue }
-            if (arg == "-o") { i += 2; continue }
-            result.add(arg); i += 1
+            if (arg == sourcePath) {
+                i += 1
+                continue
+            }
+            if (arg == "-o") {
+                i += 2
+                continue
+            }
+            result.add(arg)
+            i += 1
         }
         return result
     }
 
     private fun extractLinkOnlyArgs(argsWithoutIo: List<String>): List<String> = argsWithoutIo.filterNot { arg ->
-        arg == "-fintegrated-cc1" || arg == "-Wall" || arg == "-Wextra" || arg == "-g" || arg == "-c"
-            || arg.startsWith("-std=") || arg.startsWith("-O")
+        arg == "-fintegrated-cc1" ||
+            arg == "-Wall" ||
+            arg == "-Wextra" ||
+            arg == "-g" ||
+            arg == "-c" ||
+            arg.startsWith("-std=") ||
+            arg.startsWith("-O")
     }
 
     private fun emitDiagLine(outputBuilder: StringBuilder, onProgress: ((String) -> Unit)?, line: String) {
@@ -532,19 +556,26 @@ class SingleFileStrategy(
 
     private fun resolveCompilerPath(isCpp: Boolean, options: BuildOptions): String? = when (options.compilerType) {
         CompilerType.CLANG -> {
-            if (!toolchainManager.isInstalled()) null
-            else File(toolchainManager.getBinDir(options.toolchainId), if (isCpp) "clang++" else "clang")
-                .takeIf { it.isFile }?.absolutePath
+            if (!toolchainManager.isInstalled()) {
+                null
+            } else {
+                File(toolchainManager.getBinDir(options.toolchainId), if (isCpp) "clang++" else "clang")
+                    .takeIf { it.isFile }?.absolutePath
+            }
         }
         CompilerType.GCC -> {
-            if (!toolchainManager.isInstalled()) null
-            else File(toolchainManager.getBinDir(options.toolchainId), if (isCpp) "g++" else "gcc")
-                .takeIf { it.isFile }?.absolutePath
+            if (!toolchainManager.isInstalled()) {
+                null
+            } else {
+                File(toolchainManager.getBinDir(options.toolchainId), if (isCpp) "g++" else "gcc")
+                    .takeIf { it.isFile }?.absolutePath
+            }
         }
         CompilerType.CUSTOM -> {
             val customPath = (if (isCpp) options.customCppCompiler else options.customCCompiler)?.trim().orEmpty()
-            if (customPath.isBlank()) null
-            else {
+            if (customPath.isBlank()) {
+                null
+            } else {
                 val customFile = File(customPath)
                 if (customFile.isAbsolute && (!customFile.isFile || !customFile.canExecute())) null else customPath
             }
@@ -554,15 +585,17 @@ class SingleFileStrategy(
     private fun resolveOptimizationFlag(options: BuildOptions): String {
         if (options.generateDebugInfo) return "-O0"
         return when (options.optimizationLevel.trim().uppercase()) {
-            "O0" -> "-O0"; "O1" -> "-O1"; "O2" -> "-O2"; "O3" -> "-O3"; else -> "-O2"
+            "O0" -> "-O0"
+            "O1" -> "-O1"
+            "O2" -> "-O2"
+            "O3" -> "-O3"
+            else -> "-O2"
         }
     }
 
-    private fun isExecStyleFailure(output: String): Boolean {
-        return output.contains("unable to execute command", ignoreCase = true)
-            || output.contains("No such file or directory", ignoreCase = true)
-            || output.contains("clang frontend command failed", ignoreCase = true)
-    }
+    private fun isExecStyleFailure(output: String): Boolean = output.contains("unable to execute command", ignoreCase = true) ||
+        output.contains("No such file or directory", ignoreCase = true) ||
+        output.contains("clang frontend command failed", ignoreCase = true)
 
     private fun buildSysrootFlags(isCpp: Boolean, apiLevel: Int): List<String> {
         val sysrootManager = AndroidSysrootManager(appContext)
@@ -599,11 +632,9 @@ class SingleFileStrategy(
         return sources.firstOrNull { it.nameWithoutExtension == "main" } ?: sources.first()
     }
 
-    private fun findSourceFiles(projectRoot: File): List<File> =
-        projectRoot.walkTopDown().filter { it.isFile && it.extension.lowercase() in SOURCE_EXTENSIONS }.toList()
+    private fun findSourceFiles(projectRoot: File): List<File> = projectRoot.walkTopDown().filter { it.isFile && it.extension.lowercase() in SOURCE_EXTENSIONS }.toList()
 
-    private fun isSourceFile(file: File): Boolean =
-        file.isFile && file.extension.lowercase() in SOURCE_EXTENSIONS
+    private fun isSourceFile(file: File): Boolean = file.isFile && file.extension.lowercase() in SOURCE_EXTENSIONS
 
     private fun resolveVariant(options: BuildOptions): String {
         val base = options.buildType.name.lowercase()
@@ -614,7 +645,11 @@ class SingleFileStrategy(
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
             val buffer = ByteArray(64 * 1024)
-            while (true) { val n = input.read(buffer); if (n <= 0) break; digest.update(buffer, 0, n) }
+            while (true) {
+                val n = input.read(buffer)
+                if (n <= 0) break
+                digest.update(buffer, 0, n)
+            }
         }
         val bytes = digest.digest()
         return buildString(32) {

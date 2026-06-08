@@ -332,17 +332,15 @@ class NewProjectWizardSupportTest {
         id: String,
         buildSystem: ProjectBuildSystem,
         primaryLanguage: ProjectLanguage,
-    ): ProjectTemplateOption {
-        return ProjectTemplateOption(
+    ): ProjectTemplateOption = ProjectTemplateOption(
+        id = id,
+        displayName = id,
+        description = id,
+        spec = ProjectTemplateSpec.Zip(
             id = id,
-            displayName = id,
-            description = id,
-            spec = ProjectTemplateSpec.Zip(
-                id = id,
-                zipFile = File("$id.zip"),
-                buildSystem = buildSystem,
-                primaryLanguage = primaryLanguage,
-            ),
-        )
-    }
+            zipFile = File("$id.zip"),
+            buildSystem = buildSystem,
+            primaryLanguage = primaryLanguage,
+        ),
+    )
 }

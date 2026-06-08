@@ -5,9 +5,8 @@ import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.packages.InstalledPackagePathResolver
 import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
-import com.wuxianggujun.tinaide.core.proot.PRootManager
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * PRoot Makefile 构建引擎。
@@ -33,9 +32,7 @@ class PRootMakeBuildStrategy(
 
     val buildSystem = BuildSystem.MAKE
 
-    suspend fun canHandle(projectRoot: File): Boolean {
-        return hasMakefile(projectRoot)
-    }
+    suspend fun canHandle(projectRoot: File): Boolean = hasMakefile(projectRoot)
 
     suspend fun build(
         projectRoot: File,
@@ -177,9 +174,7 @@ class PRootMakeBuildStrategy(
     /**
      * 检查是否存在 Makefile
      */
-    private fun hasMakefile(projectRoot: File): Boolean {
-        return findMakefile(projectRoot) != null
-    }
+    private fun hasMakefile(projectRoot: File): Boolean = findMakefile(projectRoot) != null
 
     /**
      * 查找 Makefile
@@ -222,8 +217,5 @@ class PRootMakeBuildStrategy(
     /**
      * 解析编译错误诊断信息
      */
-    private fun parseDiagnostics(output: String): List<BuildDiagnostic> {
-        return BuildDiagnosticParser.parse(output)
-    }
-
+    private fun parseDiagnostics(output: String): List<BuildDiagnostic> = BuildDiagnosticParser.parse(output)
 }

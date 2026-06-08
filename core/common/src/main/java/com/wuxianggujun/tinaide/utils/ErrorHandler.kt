@@ -1,18 +1,18 @@
 package com.wuxianggujun.tinaide.utils
 
 import android.content.Context
-import timber.log.Timber
-import java.io.IOException
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
+import java.io.IOException
+import timber.log.Timber
 
 /**
  * 统一错误处理工具
  */
 object ErrorHandler {
-    
+
     private const val TAG = "ErrorHandler"
-    
+
     /**
      * 处理错误并显示 Toast
      */
@@ -23,21 +23,21 @@ object ErrorHandler {
     ) {
         val message = getErrorMessage(context, error)
         val fullMessage = if (prefix.isNotEmpty()) "$prefix: $message" else message
-        
+
         // 记录日志
         Timber.tag(TAG).e(error, "Error: %s", fullMessage)
-        
+
         // 显示 Toast
         ToastUtil.showError(context, fullMessage)
     }
-    
+
     /**
      * 只记录错误日志，不显示
      */
     fun log(error: Throwable, tag: String = TAG) {
         Timber.tag(tag).e(error, "Error: %s", error.message)
     }
-    
+
     /**
      * 获取友好的错误消息
      */
@@ -62,4 +62,3 @@ object ErrorHandler {
 fun Context.handleErrorWithToast(error: Throwable, prefix: String = "") {
     ErrorHandler.handleWithToast(this, error, prefix)
 }
-

@@ -24,9 +24,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.gyf.immersionbar.ktx.immersionBar
-import com.wuxianggujun.tinaide.storage.ExternalFileIntents
 import com.wuxianggujun.tinaide.core.i18n.Drawables
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.proot.InstallLogManager
+import com.wuxianggujun.tinaide.storage.ExternalFileIntents
+import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
 import com.wuxianggujun.tinaide.ui.compose.components.TinaCustomDialogHeader
 import com.wuxianggujun.tinaide.ui.compose.components.TinaCustomDialogScaffold
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogActionRow
@@ -37,17 +40,14 @@ import com.wuxianggujun.tinaide.ui.compose.components.TinaOutlinedButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaOverlayPanelSurface
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPanelSegmentButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
 import com.wuxianggujun.tinaide.ui.compose.components.tinaBackAction
+import com.wuxianggujun.tinaide.ui.theme.TinaIDETheme
 import com.wuxianggujun.tinaide.ui.workspace.components.rememberWorkspacePainter
 import com.wuxianggujun.tinaide.ui.workspace.log.ComposeInstallLogPanel
-import com.wuxianggujun.tinaide.ui.theme.TinaIDETheme
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
+import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -56,13 +56,15 @@ import org.koin.core.component.inject
  *
  * 显示 PRoot 环境安装过程中的详细日志
  */
-class InstallLogActivity : ComponentActivity(), KoinComponent {
+class InstallLogActivity :
+    ComponentActivity(),
+    KoinComponent {
 
     private val installLogManager: InstallLogManager by inject()
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // 设置沉浸式状态栏（深色背景使用浅色图标）
         immersionBar {
             transparentStatusBar()
@@ -70,7 +72,7 @@ class InstallLogActivity : ComponentActivity(), KoinComponent {
             navigationBarColor(android.R.color.transparent)
             navigationBarDarkIcon(false)
         }
-        
+
         setContent {
             TinaIDETheme {
                 InstallLogScreen(
@@ -82,7 +84,7 @@ class InstallLogActivity : ComponentActivity(), KoinComponent {
             }
         }
     }
-    
+
     private fun copyLogToClipboard() {
         val logText = installLogManager.getFullLogText()
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -90,13 +92,13 @@ class InstallLogActivity : ComponentActivity(), KoinComponent {
         clipboard.setPrimaryClip(clip)
         Toast.makeText(this, Strings.toast_log_copied.strOr(this), Toast.LENGTH_SHORT).show()
     }
-    
+
     @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
     private fun exportLogFile() {
         kotlinx.coroutines.GlobalScope.launch {
             val fileName = "install_log_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.txt"
             val file = installLogManager.exportLog(this@InstallLogActivity, fileName)
-            
+
             runOnUiThread {
                 if (file != null) {
                     // 使用 FileProvider 分享文件
@@ -138,7 +140,7 @@ fun InstallLogScreen(
         } else {
             entries.filter { entry ->
                 entry.message.contains(searchQuery, ignoreCase = true) ||
-                entry.tag?.contains(searchQuery, ignoreCase = true) == true
+                    entry.tag?.contains(searchQuery, ignoreCase = true) == true
             }
         }
     }

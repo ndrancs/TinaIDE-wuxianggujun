@@ -4,8 +4,8 @@ import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.textengine.RopeTextBuffer
 import com.wuxianggujun.tinaide.core.textengine.TextChange
 import com.wuxianggujun.tinaide.core.treesitter.HighlightLineSegment
-import com.wuxianggujun.tinaide.core.treesitter.HighlightType
 import com.wuxianggujun.tinaide.core.treesitter.HighlightSpan
+import com.wuxianggujun.tinaide.core.treesitter.HighlightType
 import com.wuxianggujun.tinaide.core.treesitter.SyntaxHighlighter
 import org.junit.Test
 import org.junit.runner.RunWith

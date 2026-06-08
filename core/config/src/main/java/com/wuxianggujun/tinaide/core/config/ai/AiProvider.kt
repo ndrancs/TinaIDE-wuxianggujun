@@ -35,8 +35,6 @@ enum class AiProvider(
     );
 
     companion object {
-        fun fromName(name: String): AiProvider {
-            return entries.find { it.name == name } ?: DEEPSEEK
-        }
+        fun fromName(name: String): AiProvider = entries.find { it.name == name } ?: DEEPSEEK
     }
 }

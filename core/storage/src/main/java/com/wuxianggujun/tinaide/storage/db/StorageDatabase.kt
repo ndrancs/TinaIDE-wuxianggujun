@@ -23,7 +23,7 @@ abstract class StorageDatabase : RoomDatabase() {
 
     companion object {
         @Volatile
-        private var INSTANCE: StorageDatabase? = null
+        private var instanceRef: StorageDatabase? = null
 
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -79,19 +79,17 @@ abstract class StorageDatabase : RoomDatabase() {
             }
         }
 
-        fun getInstance(context: Context): StorageDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    StorageDatabase::class.java,
-                    "tinaide_storage.db"
-                )
-                    .addMigrations(MIGRATION_1_2)
-                    .addMigrations(MIGRATION_2_3)
-                    .build()
-                INSTANCE = instance
-                instance
-            }
+        fun getInstance(context: Context): StorageDatabase = instanceRef ?: synchronized(this) {
+            val instance = Room.databaseBuilder(
+                context.applicationContext,
+                StorageDatabase::class.java,
+                "tinaide_storage.db"
+            )
+                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_2_3)
+                .build()
+            instanceRef = instance
+            instance
         }
     }
 }

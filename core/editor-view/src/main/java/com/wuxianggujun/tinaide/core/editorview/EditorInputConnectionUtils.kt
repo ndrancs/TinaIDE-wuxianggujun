@@ -51,10 +51,8 @@ internal fun nextComposingRange(
     )
 }
 
-private fun normalizeRange(start: Int, end: Int): Pair<Int, Int> {
-    return if (start <= end) {
-        start to end
-    } else {
-        end to start
-    }
+private fun normalizeRange(start: Int, end: Int): Pair<Int, Int> = if (start <= end) {
+    start to end
+} else {
+    end to start
 }

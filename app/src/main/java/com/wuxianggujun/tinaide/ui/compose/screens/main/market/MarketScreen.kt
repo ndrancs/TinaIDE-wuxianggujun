@@ -70,8 +70,8 @@ import com.wuxianggujun.tinaide.plugin.marketplace.PluginMarketplaceSelectionSup
 import com.wuxianggujun.tinaide.plugin.marketplace.PluginSummary
 import com.wuxianggujun.tinaide.plugin.marketplace.PluginVersion
 import com.wuxianggujun.tinaide.ui.compose.components.PluginCardSkeleton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
 import com.wuxianggujun.tinaide.ui.compose.components.TinaAlertDialog
+import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
 import com.wuxianggujun.tinaide.ui.compose.components.TinaCard
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogCard
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogContentColumn
@@ -467,11 +467,9 @@ private fun MarketPackageInstallConfirmDialog(
 }
 
 @Composable
-private fun marketPlatformDisplayName(platform: Platform): String {
-    return when (platform) {
-        Platform.LINUX -> stringResource(Strings.pkg_manager_platform_linux)
-        Platform.ANDROID -> stringResource(Strings.pkg_manager_platform_android)
-    }
+private fun marketPlatformDisplayName(platform: Platform): String = when (platform) {
+    Platform.LINUX -> stringResource(Strings.pkg_manager_platform_linux)
+    Platform.ANDROID -> stringResource(Strings.pkg_manager_platform_android)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

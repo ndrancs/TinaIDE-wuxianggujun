@@ -12,7 +12,7 @@ sealed class ReplaceResult {
     data class Success(
         val file: File,
         val replacedCount: Int,
-        val backupPath: String? = null    // 备份文件路径（用于撤销）
+        val backupPath: String? = null
     ) : ReplaceResult()
 
     /**

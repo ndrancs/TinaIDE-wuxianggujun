@@ -57,14 +57,12 @@ internal data class MainActivityCommandAvailability(
     val currentBuildSystem: BuildSystem,
 )
 
-internal fun resolveCanPackageApk(buildUiState: MainActivityBuildUiState): Boolean {
-    return when (buildUiState.apkExportType) {
-        null,
-        ProjectApkExportType.DISABLED -> false
+internal fun resolveCanPackageApk(buildUiState: MainActivityBuildUiState): Boolean = when (buildUiState.apkExportType) {
+    null,
+    ProjectApkExportType.DISABLED -> false
 
-        ProjectApkExportType.TERMINAL -> buildUiState.hasTerminalApkExportOptions
-        else -> true
-    }
+    ProjectApkExportType.TERMINAL -> buildUiState.hasTerminalApkExportOptions
+    else -> true
 }
 
 @Composable
@@ -504,18 +502,16 @@ private fun MutableList<MainActivityCommand>.addHostCommand(
     )
 }
 
-private fun MainActivityCommandAvailability.isEnabled(descriptor: HostCommandDescriptor): Boolean {
-    return when (descriptor.availability) {
-        HostCommandAvailability.ALWAYS -> true
-        HostCommandAvailability.ACTIVE_FILE -> hasActiveFile
-        HostCommandAvailability.DIRTY_ACTIVE_FILE -> hasActiveFile && isDirty
-        HostCommandAvailability.ACTIVE_EDITOR -> hasActiveFile
-        HostCommandAvailability.BASIC_LSP_NAVIGATION -> isBasicLspNavigationAvailable
-        HostCommandAvailability.ADVANCED_LSP_NAVIGATION -> isAdvancedLspNavigationAvailable
-        HostCommandAvailability.LSP_REFACTOR -> isLspRefactorAvailable
-        HostCommandAvailability.HEADER_SOURCE_SWITCH -> isHeaderSourceSwitchAvailable
-        HostCommandAvailability.NAVIGATE_BACK -> canNavigateBack
-        HostCommandAvailability.NAVIGATE_FORWARD -> canNavigateForward
-        HostCommandAvailability.NOT_COMPILING -> !isCompiling
-    }
+private fun MainActivityCommandAvailability.isEnabled(descriptor: HostCommandDescriptor): Boolean = when (descriptor.availability) {
+    HostCommandAvailability.ALWAYS -> true
+    HostCommandAvailability.ACTIVE_FILE -> hasActiveFile
+    HostCommandAvailability.DIRTY_ACTIVE_FILE -> hasActiveFile && isDirty
+    HostCommandAvailability.ACTIVE_EDITOR -> hasActiveFile
+    HostCommandAvailability.BASIC_LSP_NAVIGATION -> isBasicLspNavigationAvailable
+    HostCommandAvailability.ADVANCED_LSP_NAVIGATION -> isAdvancedLspNavigationAvailable
+    HostCommandAvailability.LSP_REFACTOR -> isLspRefactorAvailable
+    HostCommandAvailability.HEADER_SOURCE_SWITCH -> isHeaderSourceSwitchAvailable
+    HostCommandAvailability.NAVIGATE_BACK -> canNavigateBack
+    HostCommandAvailability.NAVIGATE_FORWARD -> canNavigateForward
+    HostCommandAvailability.NOT_COMPILING -> !isCompiling
 }

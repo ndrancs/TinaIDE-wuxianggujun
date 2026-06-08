@@ -2,18 +2,17 @@ package com.wuxianggujun.tinaide.core.network.api
 
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.str
+import com.wuxianggujun.tinaide.core.network.ApiEnvelopeParser
 import com.wuxianggujun.tinaide.core.network.ApiResult
 import com.wuxianggujun.tinaide.core.network.OkHttpClientProvider
-import com.wuxianggujun.tinaide.core.network.ApiEnvelopeParser
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerialName
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import timber.log.Timber
-import java.io.IOException
 
 /**
  * 用户内容 API 客户端
@@ -31,18 +30,14 @@ class UserContentApiClient private constructor(
         @Volatile
         private var instance: UserContentApiClient? = null
 
-        fun getInstance(baseUrl: String): UserContentApiClient {
-            return instance ?: synchronized(this) {
-                instance ?: createInstance(baseUrl).also { instance = it }
-            }
+        fun getInstance(baseUrl: String): UserContentApiClient = instance ?: synchronized(this) {
+            instance ?: createInstance(baseUrl).also { instance = it }
         }
 
-        private fun createInstance(baseUrl: String): UserContentApiClient {
-            return UserContentApiClient(
-                baseUrl = baseUrl.trimEnd('/'),
-                client = OkHttpClientProvider.default
-            )
-        }
+        private fun createInstance(baseUrl: String): UserContentApiClient = UserContentApiClient(
+            baseUrl = baseUrl.trimEnd('/'),
+            client = OkHttpClientProvider.default
+        )
 
         fun resetInstance() {
             instance = null
@@ -52,23 +47,17 @@ class UserContentApiClient private constructor(
     /**
      * 添加收藏
      */
-    suspend fun addFavorite(pluginId: String): ApiResult<Unit> {
-        return postUnit("/api/user/favorites/$pluginId")
-    }
+    suspend fun addFavorite(pluginId: String): ApiResult<Unit> = postUnit("/api/user/favorites/$pluginId")
 
     /**
      * 取消收藏
      */
-    suspend fun removeFavorite(pluginId: String): ApiResult<Unit> {
-        return deleteUnit("/api/user/favorites/$pluginId")
-    }
+    suspend fun removeFavorite(pluginId: String): ApiResult<Unit> = deleteUnit("/api/user/favorites/$pluginId")
 
     /**
      * 获取收藏列表
      */
-    suspend fun getFavorites(page: Int = 1, pageSize: Int = 20): ApiResult<FavoritesListResponse> {
-        return get("/api/user/favorites?page=$page&page_size=$pageSize")
-    }
+    suspend fun getFavorites(page: Int = 1, pageSize: Int = 20): ApiResult<FavoritesListResponse> = get("/api/user/favorites?page=$page&page_size=$pageSize")
 
     private suspend inline fun <reified T> get(path: String): ApiResult<T> = withContext(Dispatchers.IO) {
         try {

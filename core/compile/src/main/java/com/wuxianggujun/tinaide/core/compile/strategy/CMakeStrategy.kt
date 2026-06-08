@@ -33,9 +33,9 @@ import com.wuxianggujun.tinaide.core.ndk.AndroidNativeToolchainManager
 import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
 import com.wuxianggujun.tinaide.core.proot.ToolchainPathResolver
 import com.wuxianggujun.tinaide.project.ProjectMetadataStore
-import timber.log.Timber
 import java.io.File
 import java.security.MessageDigest
+import timber.log.Timber
 
 /**
  * CMake 构建策略。
@@ -76,8 +76,7 @@ class CMakeStrategy(
 
     override val buildSystem: BuildSystem = BuildSystem.CMAKE
 
-    override suspend fun canHandle(projectRoot: File): Boolean =
-        File(projectRoot, "CMakeLists.txt").exists()
+    override suspend fun canHandle(projectRoot: File): Boolean = File(projectRoot, "CMakeLists.txt").exists()
 
     override suspend fun describeOutput(ctx: BuildContext): ArtifactSpec? {
         val all = loadTargets(ctx.projectRoot, ctx.buildDir)
@@ -169,8 +168,7 @@ class CMakeStrategy(
         }
     }
 
-    override suspend fun getTargets(ctx: BuildContext): List<TargetInfo> =
-        loadTargets(ctx.projectRoot, ctx.buildDir)
+    override suspend fun getTargets(ctx: BuildContext): List<TargetInfo> = loadTargets(ctx.projectRoot, ctx.buildDir)
 
     // ---------- configure / build 分派 ----------
 
@@ -178,12 +176,10 @@ class CMakeStrategy(
         projectRoot: File,
         buildDir: File,
         options: BuildOptions,
-    ): ConfigureResult {
-        return if (isNativeMode(options.resolvedRunMode)) {
-            configureNative(projectRoot, buildDir, options)
-        } else {
-            configurePRoot(projectRoot, buildDir, options)
-        }
+    ): ConfigureResult = if (isNativeMode(options.resolvedRunMode)) {
+        configureNative(projectRoot, buildDir, options)
+    } else {
+        configurePRoot(projectRoot, buildDir, options)
     }
 
     private suspend fun configureNative(
@@ -277,15 +273,13 @@ class CMakeStrategy(
         buildDir: File,
         target: String?,
         options: BuildOptions,
-    ): BuildResult {
-        return prootExecutor.build(
-            projectRoot = projectRoot,
-            buildDir = buildDir,
-            target = target,
-            parallelJobs = resolveParallelJobs(options.parallelJobs),
-            progress = options.onProgress ?: {},
-        )
-    }
+    ): BuildResult = prootExecutor.build(
+        projectRoot = projectRoot,
+        buildDir = buildDir,
+        target = target,
+        parallelJobs = resolveParallelJobs(options.parallelJobs),
+        progress = options.onProgress ?: {},
+    )
 
     // ---------- needsReconfigure ----------
 
@@ -358,8 +352,7 @@ class CMakeStrategy(
 
     private fun resolveParallelJobs(fallbackJobs: Int): Int = fallbackJobs.coerceIn(1, 8)
 
-    private fun isNativeMode(runMode: LinuxRunModePolicy.RunMode): Boolean =
-        runMode == LinuxRunModePolicy.RunMode.NATIVE
+    private fun isNativeMode(runMode: LinuxRunModePolicy.RunMode): Boolean = runMode == LinuxRunModePolicy.RunMode.NATIVE
 
     // ---------- targets / 产物 / variant / hash ----------
 
@@ -511,7 +504,11 @@ class CMakeStrategy(
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
             val buffer = ByteArray(64 * 1024)
-            while (true) { val n = input.read(buffer); if (n <= 0) break; digest.update(buffer, 0, n) }
+            while (true) {
+                val n = input.read(buffer)
+                if (n <= 0) break
+                digest.update(buffer, 0, n)
+            }
         }
         val bytes = digest.digest()
         return buildString(32) {

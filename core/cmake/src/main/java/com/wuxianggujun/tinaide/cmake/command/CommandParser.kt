@@ -363,10 +363,22 @@ object CommandParser {
         var currentSection = "NAMES"
         while (i < args.size) {
             when (args[i].text) {
-                "NAMES" -> { currentSection = "NAMES"; i++ }
-                "HINTS" -> { currentSection = "HINTS"; i++ }
-                "PATHS" -> { currentSection = "PATHS"; i++ }
-                "REQUIRED" -> { isRequired = true; i++ }
+                "NAMES" -> {
+                    currentSection = "NAMES"
+                    i++
+                }
+                "HINTS" -> {
+                    currentSection = "HINTS"
+                    i++
+                }
+                "PATHS" -> {
+                    currentSection = "PATHS"
+                    i++
+                }
+                "REQUIRED" -> {
+                    isRequired = true
+                    i++
+                }
                 else -> {
                     when (currentSection) {
                         "NAMES" -> names.add(args[i].text)
@@ -429,9 +441,18 @@ object CommandParser {
         var currentSection = "NAMES"
         while (i < args.size) {
             when (args[i].text) {
-                "NAMES" -> { currentSection = "NAMES"; i++ }
-                "HINTS" -> { currentSection = "HINTS"; i++ }
-                "PATHS" -> { currentSection = "PATHS"; i++ }
+                "NAMES" -> {
+                    currentSection = "NAMES"
+                    i++
+                }
+                "HINTS" -> {
+                    currentSection = "HINTS"
+                    i++
+                }
+                "PATHS" -> {
+                    currentSection = "PATHS"
+                    i++
+                }
                 else -> {
                     when (currentSection) {
                         "NAMES" -> names.add(args[i].text)
@@ -489,7 +510,9 @@ object CommandParser {
             args.getOrNull(formatIndex + 1)?.text?.let { fmt ->
                 MathCommand.OutputFormat.entries.find { it.name == fmt }
             }
-        } else null
+        } else {
+            null
+        }
 
         return MathCommand(expr, outputVariable, outputFormat, args)
     }
@@ -514,11 +537,26 @@ object CommandParser {
                     }
                     commands.add(cmd)
                 }
-                "WORKING_DIRECTORY" -> { workingDirectory = args.getOrNull(++i)?.text; i++ }
-                "TIMEOUT" -> { timeout = args.getOrNull(++i)?.text?.toIntOrNull(); i++ }
-                "RESULT_VARIABLE" -> { resultVariable = args.getOrNull(++i)?.text; i++ }
-                "OUTPUT_VARIABLE" -> { outputVariable = args.getOrNull(++i)?.text; i++ }
-                "ERROR_VARIABLE" -> { errorVariable = args.getOrNull(++i)?.text; i++ }
+                "WORKING_DIRECTORY" -> {
+                    workingDirectory = args.getOrNull(++i)?.text
+                    i++
+                }
+                "TIMEOUT" -> {
+                    timeout = args.getOrNull(++i)?.text?.toIntOrNull()
+                    i++
+                }
+                "RESULT_VARIABLE" -> {
+                    resultVariable = args.getOrNull(++i)?.text
+                    i++
+                }
+                "OUTPUT_VARIABLE" -> {
+                    outputVariable = args.getOrNull(++i)?.text
+                    i++
+                }
+                "ERROR_VARIABLE" -> {
+                    errorVariable = args.getOrNull(++i)?.text
+                    i++
+                }
                 else -> i++
             }
         }
@@ -539,7 +577,9 @@ object CommandParser {
             args.getOrNull(newlineStyleIndex + 1)?.text?.let { style ->
                 ConfigureFileCommand.NewlineStyle.entries.find { it.name == style }
             }
-        } else null
+        } else {
+            null
+        }
 
         return ConfigureFileCommand(input, output, isCopyOnly, isEscapeQuotes, isAtOnly, newlineStyle, args)
     }
@@ -557,9 +597,18 @@ object CommandParser {
         var i = 1
         while (i < args.size) {
             when (args[i].text) {
-                "VERSION" -> { version = args.getOrNull(++i)?.text; i++ }
-                "DESCRIPTION" -> { description = args.getOrNull(++i)?.text; i++ }
-                "HOMEPAGE_URL" -> { homepage = args.getOrNull(++i)?.text; i++ }
+                "VERSION" -> {
+                    version = args.getOrNull(++i)?.text
+                    i++
+                }
+                "DESCRIPTION" -> {
+                    description = args.getOrNull(++i)?.text
+                    i++
+                }
+                "HOMEPAGE_URL" -> {
+                    homepage = args.getOrNull(++i)?.text
+                    i++
+                }
                 "LANGUAGES" -> {
                     i++
                     while (i < args.size && args[i].text !in listOf("VERSION", "DESCRIPTION", "HOMEPAGE_URL")) {
@@ -622,8 +671,14 @@ object CommandParser {
             .map { it.text }
 
         return AddLibraryCommand(
-            targetName, libraryType, sources, isExcludeFromAll,
-            isImported, isAlias, aliasTarget, args
+            targetName,
+            libraryType,
+            sources,
+            isExcludeFromAll,
+            isImported,
+            isAlias,
+            aliasTarget,
+            args
         )
     }
 
@@ -923,17 +978,11 @@ object CommandParser {
         return LinkLibrariesCommand(libraries, args)
     }
 
-    private fun parseAddCompileDefinitions(args: List<Token>): AddCompileDefinitionsCommand {
-        return AddCompileDefinitionsCommand(args.map { it.text }, args)
-    }
+    private fun parseAddCompileDefinitions(args: List<Token>): AddCompileDefinitionsCommand = AddCompileDefinitionsCommand(args.map { it.text }, args)
 
-    private fun parseAddCompileOptions(args: List<Token>): AddCompileOptionsCommand {
-        return AddCompileOptionsCommand(args.map { it.text }, args)
-    }
+    private fun parseAddCompileOptions(args: List<Token>): AddCompileOptionsCommand = AddCompileOptionsCommand(args.map { it.text }, args)
 
-    private fun parseAddLinkOptions(args: List<Token>): AddLinkOptionsCommand {
-        return AddLinkOptionsCommand(args.map { it.text }, args)
-    }
+    private fun parseAddLinkOptions(args: List<Token>): AddLinkOptionsCommand = AddLinkOptionsCommand(args.map { it.text }, args)
 
     private fun parseSetProperty(args: List<Token>): SetPropertyCommand {
         val scopeType = args.getOrNull(0)?.text?.let { type ->

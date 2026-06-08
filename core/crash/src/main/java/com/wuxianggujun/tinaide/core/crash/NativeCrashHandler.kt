@@ -1,11 +1,11 @@
 package com.wuxianggujun.tinaide.core.crash
 
 import android.content.Context
+import java.io.File
+import timber.log.Timber
 import xcrash.ICrashCallback
 import xcrash.TombstoneManager
 import xcrash.XCrash
-import java.io.File
-import timber.log.Timber
 
 /**
  * Native 崩溃捕获处理器
@@ -62,7 +62,7 @@ object NativeCrashHandler {
             // 设置崩溃日志目录
             .setLogDir(getTombstoneDir(context).absolutePath)
             // Java 崩溃配置
-            .setJavaRethrow(false)  // 不重新抛出，由 xCrash 统一处理
+            .setJavaRethrow(false) // 不重新抛出，由 xCrash 统一处理
             .setJavaLogCountMax(10)
             .setJavaDumpAllThreadsWhiteList(arrayOf("^main$", "^Binder:.*", "^.*coroutine.*"))
             .setJavaCallback(callback)
@@ -135,12 +135,10 @@ object NativeCrashHandler {
         )
     }
 
-    private fun crashLogFileName(logPath: String?): String {
-        return logPath
-            ?.takeIf { it.isNotBlank() }
-            ?.let { File(it).name }
-            .orEmpty()
-    }
+    private fun crashLogFileName(logPath: String?): String = logPath
+        ?.takeIf { it.isNotBlank() }
+        ?.let { File(it).name }
+        .orEmpty()
 
     /**
      * 构建崩溃信息
@@ -183,11 +181,9 @@ object NativeCrashHandler {
     /**
      * 获取 tombstone 目录
      */
-    fun getTombstoneDir(context: Context): File {
-        return com.wuxianggujun.tinaide.storage.ProjectPaths.ensureDir(
-            com.wuxianggujun.tinaide.storage.ProjectPaths.getTombstonesRoot(context)
-        )
-    }
+    fun getTombstoneDir(context: Context): File = com.wuxianggujun.tinaide.storage.ProjectPaths.ensureDir(
+        com.wuxianggujun.tinaide.storage.ProjectPaths.getTombstonesRoot(context)
+    )
 
     /**
      * 获取所有崩溃日志文件
@@ -253,16 +249,12 @@ object NativeCrashHandler {
     /**
      * 检查是否有未处理的崩溃日志
      */
-    fun hasUnhandledCrash(context: Context? = appContext): Boolean {
-        return getAllTombstones(context).isNotEmpty()
-    }
+    fun hasUnhandledCrash(context: Context? = appContext): Boolean = getAllTombstones(context).isNotEmpty()
 
     /**
      * 获取最新的崩溃日志
      */
-    fun getLatestTombstone(context: Context? = appContext): File? {
-        return getAllTombstones(context)
-            .filter { it.exists() && it.isFile && it.canRead() && it.length() > 0L }
-            .maxWithOrNull(compareBy<File> { it.lastModified() }.thenBy { it.name })
-    }
+    fun getLatestTombstone(context: Context? = appContext): File? = getAllTombstones(context)
+        .filter { it.exists() && it.isFile && it.canRead() && it.length() > 0L }
+        .maxWithOrNull(compareBy<File> { it.lastModified() }.thenBy { it.name })
 }

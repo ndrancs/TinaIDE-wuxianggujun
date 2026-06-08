@@ -3,11 +3,11 @@ package com.wuxianggujun.tinaide.ui.compose.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.data.model.FeedbackCategory
 import com.wuxianggujun.tinaide.data.repository.FeedbackRepository
 import com.wuxianggujun.tinaide.data.repository.FeedbackResult
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,21 +19,21 @@ class FeedbackViewModel(
     private val context: Context,
     private val feedbackRepository: FeedbackRepository
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow(FeedbackUiState())
     val uiState: StateFlow<FeedbackUiState> = _uiState.asStateFlow()
-    
+
     // 防止重复提交：记录上次提交时间
     private var lastSubmitTime: Long = 0
     private val minSubmitInterval = 3000L // 3秒内不能重复提交
-    
+
     fun selectCategory(category: FeedbackCategory) {
         _uiState.update { it.copy(category = category) }
     }
-    
+
     fun updateTitle(title: String) {
         if (title.length <= MAX_TITLE_LENGTH) {
-            _uiState.update { 
+            _uiState.update {
                 it.copy(
                     title = title,
                     titleError = null
@@ -41,10 +41,10 @@ class FeedbackViewModel(
             }
         }
     }
-    
+
     fun updateContent(content: String) {
         if (content.length <= MAX_CONTENT_LENGTH) {
-            _uiState.update { 
+            _uiState.update {
                 it.copy(
                     content = content,
                     contentError = null
@@ -52,10 +52,10 @@ class FeedbackViewModel(
             }
         }
     }
-    
+
     fun submitFeedback() {
         val state = _uiState.value
-        
+
         // 防止重复提交：检查提交间隔
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastSubmitTime < minSubmitInterval) {
@@ -70,11 +70,11 @@ class FeedbackViewModel(
             }
             return
         }
-        
+
         // 验证
         val titleError = validateTitle(state.title)
         val contentError = validateContent(state.content)
-        
+
         if (titleError != null || contentError != null) {
             _uiState.update {
                 it.copy(
@@ -84,7 +84,7 @@ class FeedbackViewModel(
             }
             return
         }
-        
+
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, submitError = null) }
 
@@ -139,15 +139,15 @@ class FeedbackViewModel(
             }
         }
     }
-    
+
     fun resetState() {
         _uiState.value = FeedbackUiState()
     }
-    
+
     fun dismissError() {
         _uiState.update { it.copy(submitError = null) }
     }
-    
+
     private fun validateTitle(title: String): String? {
         val trimmed = title.trim()
         return when {
@@ -162,7 +162,7 @@ class FeedbackViewModel(
             else -> null
         }
     }
-    
+
     private fun validateContent(content: String): String? {
         val trimmed = content.trim()
         return when {
@@ -177,7 +177,7 @@ class FeedbackViewModel(
             else -> null
         }
     }
-    
+
     companion object {
         private const val TAG = "FeedbackViewModel"
         private const val MIN_TITLE_LENGTH = 5
@@ -185,7 +185,6 @@ class FeedbackViewModel(
         private const val MIN_CONTENT_LENGTH = 10
         private const val MAX_CONTENT_LENGTH = 5000
     }
-    
 }
 
 data class FeedbackUiState(
@@ -200,9 +199,9 @@ data class FeedbackUiState(
 ) {
     val canSubmit: Boolean
         get() = title.trim().length >= 5 &&
-                content.trim().length >= 10 &&
-                titleError == null &&
-                contentError == null &&
-                !isSubmitting &&
-                !submitSuccess // 提交成功后禁用按钮
+            content.trim().length >= 10 &&
+            titleError == null &&
+            contentError == null &&
+            !isSubmitting &&
+            !submitSuccess // 提交成功后禁用按钮
 }

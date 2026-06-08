@@ -19,10 +19,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wuxianggujun.tinaide.core.proot.InstallLogEntry
-import com.wuxianggujun.tinaide.core.proot.InstallLogLevel
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
+import com.wuxianggujun.tinaide.core.proot.InstallLogEntry
+import com.wuxianggujun.tinaide.core.proot.InstallLogLevel
 
 /**
  * 纯 Compose 实现的安装日志面板
@@ -49,10 +49,10 @@ fun ComposeInstallLogPanel(
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
-    
+
     // 记住选中的条目（用 id 避免列表滚动/裁剪后 index 变化）
     var selectedEntryId by remember { mutableStateOf<Long?>(null) }
-    
+
     // 自动滚动到底部
     LaunchedEffect(entries.size, autoScroll) {
         if (autoScroll && entries.isNotEmpty()) {
@@ -60,7 +60,7 @@ fun ComposeInstallLogPanel(
             listState.scrollToItem(entries.size - 1)
         }
     }
-    
+
     LazyColumn(
         state = listState,
         modifier = modifier
@@ -73,7 +73,7 @@ fun ComposeInstallLogPanel(
             key = { entry -> entry.id }
         ) { entry ->
             val isSelected = selectedEntryId == entry.id
-            
+
             InstallLogItem(
                 entry = entry,
                 isSelected = isSelected,
@@ -114,7 +114,7 @@ private fun InstallLogItem(
     } else {
         Color.Transparent
     }
-    
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -133,7 +133,7 @@ private fun InstallLogItem(
             fontFamily = FontFamily.Monospace,
             modifier = Modifier.padding(end = 12.dp)
         )
-        
+
         // 标签（如果有）- 白色
         if (entry.tag.isNotEmpty()) {
             Text(
@@ -144,7 +144,7 @@ private fun InstallLogItem(
                 modifier = Modifier.padding(end = 6.dp)
             )
         }
-        
+
         // 日志消息（通过颜色区分级别）
         Text(
             text = entry.message,
@@ -161,17 +161,15 @@ private fun InstallLogItem(
  * 根据日志级别获取颜色 - 与设计图一致
  */
 @Composable
-private fun getLevelColor(level: InstallLogLevel): Color {
-    return when (level) {
-        InstallLogLevel.VERBOSE -> Color(0xFF9CA3AF)  // 灰色
-        InstallLogLevel.DEBUG -> Color(0xFF60A5FA)    // 蓝色
-        InstallLogLevel.INFO -> Color(0xFF4ADE80)     // 绿色（与设计图一致）
-        InstallLogLevel.WARN -> Color(0xFFFBBF24)     // 黄色（与设计图一致）
-        InstallLogLevel.ERROR -> Color(0xFFF87171)    // 红色
-        InstallLogLevel.SUCCESS -> Color(0xFF4ADE80)  // 亮绿色（与设计图一致）
-        InstallLogLevel.FAIL -> Color(0xFFF87171)     // 亮红色
-        InstallLogLevel.COMMAND -> Color(0xFF93C5FD)  // 浅蓝色（命令颜色）
-    }
+private fun getLevelColor(level: InstallLogLevel): Color = when (level) {
+    InstallLogLevel.VERBOSE -> Color(0xFF9CA3AF) // 灰色
+    InstallLogLevel.DEBUG -> Color(0xFF60A5FA) // 蓝色
+    InstallLogLevel.INFO -> Color(0xFF4ADE80) // 绿色（与设计图一致）
+    InstallLogLevel.WARN -> Color(0xFFFBBF24) // 黄色（与设计图一致）
+    InstallLogLevel.ERROR -> Color(0xFFF87171) // 红色
+    InstallLogLevel.SUCCESS -> Color(0xFF4ADE80) // 亮绿色（与设计图一致）
+    InstallLogLevel.FAIL -> Color(0xFFF87171) // 亮红色
+    InstallLogLevel.COMMAND -> Color(0xFF93C5FD) // 浅蓝色（命令颜色）
 }
 
 /**
@@ -183,4 +181,3 @@ private fun copyToClipboard(context: Context, entry: InstallLogEntry) {
     clipboardManager.setPrimaryClip(clip)
     Toast.makeText(context, Strings.toast_copied.strOr(context), Toast.LENGTH_SHORT).show()
 }
-

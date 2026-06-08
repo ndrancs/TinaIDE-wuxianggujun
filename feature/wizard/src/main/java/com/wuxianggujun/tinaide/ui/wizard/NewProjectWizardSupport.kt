@@ -22,20 +22,16 @@ internal object NewProjectWizardSupport {
     fun resolveSelectedTemplate(
         selectedTemplateId: String,
         templateOptions: List<ProjectTemplateOption>,
-    ): ProjectTemplateOption? {
-        return templateOptions.firstOrNull { option -> option.id == selectedTemplateId }
-            ?: templateOptions.firstOrNull()
-    }
+    ): ProjectTemplateOption? = templateOptions.firstOrNull { option -> option.id == selectedTemplateId }
+        ?: templateOptions.firstOrNull()
 
     fun resolveVisibleTemplateOptions(
         preferPluginTemplate: Boolean,
         templateOptions: List<ProjectTemplateOption>,
-    ): List<ProjectTemplateOption> {
-        return if (preferPluginTemplate) {
-            templateOptions.filter { option -> isPluginTemplate(option) }
-        } else {
-            templateOptions
-        }
+    ): List<ProjectTemplateOption> = if (preferPluginTemplate) {
+        templateOptions.filter { option -> isPluginTemplate(option) }
+    } else {
+        templateOptions
     }
 
     fun resolveInitialTemplateSelection(
@@ -68,42 +64,32 @@ internal object NewProjectWizardSupport {
 
     fun resolveTemplateCategoryGroups(
         templateOptions: List<ProjectTemplateOption>,
-    ): List<ProjectTemplateCategoryGroup> {
-        return ProjectTemplateCategory.entries.mapNotNull { category ->
-            val options = templateOptions.filter { option ->
-                resolveTemplateCategory(option) == category
-            }
-            options.takeIf { it.isNotEmpty() }?.let {
-                ProjectTemplateCategoryGroup(category = category, options = it)
-            }
+    ): List<ProjectTemplateCategoryGroup> = ProjectTemplateCategory.entries.mapNotNull { category ->
+        val options = templateOptions.filter { option ->
+            resolveTemplateCategory(option) == category
+        }
+        options.takeIf { it.isNotEmpty() }?.let {
+            ProjectTemplateCategoryGroup(category = category, options = it)
         }
     }
 
     fun resolveSelectedTemplateCategory(
         selectedTemplateId: String,
         groups: List<ProjectTemplateCategoryGroup>,
-    ): ProjectTemplateCategory? {
-        return groups.firstOrNull { group ->
-            group.options.any { option -> option.id == selectedTemplateId }
-        }?.category
-    }
+    ): ProjectTemplateCategory? = groups.firstOrNull { group ->
+        group.options.any { option -> option.id == selectedTemplateId }
+    }?.category
 
     fun resolveFirstTemplateInCategory(
         category: ProjectTemplateCategory,
         groups: List<ProjectTemplateCategoryGroup>,
-    ): ProjectTemplateOption? {
-        return groups.firstOrNull { group -> group.category == category }
-            ?.options
-            ?.firstOrNull()
-    }
+    ): ProjectTemplateOption? = groups.firstOrNull { group -> group.category == category }
+        ?.options
+        ?.firstOrNull()
 
-    fun isPluginTemplate(option: ProjectTemplateOption?): Boolean {
-        return option?.spec?.buildSystem == ProjectBuildSystem.PLUGIN
-    }
+    fun isPluginTemplate(option: ProjectTemplateOption?): Boolean = option?.spec?.buildSystem == ProjectBuildSystem.PLUGIN
 
-    fun isUserTemplate(option: ProjectTemplateOption?): Boolean {
-        return option?.id?.startsWith(UserProjectTemplates.TEMPLATE_ID_PREFIX) == true
-    }
+    fun isUserTemplate(option: ProjectTemplateOption?): Boolean = option?.id?.startsWith(UserProjectTemplates.TEMPLATE_ID_PREFIX) == true
 
     fun shouldShowCppStandard(option: ProjectTemplateOption?): Boolean {
         val language = option?.spec?.primaryLanguage ?: return true
@@ -111,39 +97,29 @@ internal object NewProjectWizardSupport {
     }
 
     @StringRes
-    fun resolveTemplateBadgeRes(option: ProjectTemplateOption?): Int? {
-        return when {
-            isPluginTemplate(option) -> Strings.wizard_plugin_template_badge
-            isUserTemplate(option) -> Strings.wizard_user_template_badge
-            else -> null
-        }
+    fun resolveTemplateBadgeRes(option: ProjectTemplateOption?): Int? = when {
+        isPluginTemplate(option) -> Strings.wizard_plugin_template_badge
+        isUserTemplate(option) -> Strings.wizard_user_template_badge
+        else -> null
     }
 
     @StringRes
-    fun resolveTemplateCardGuideRes(option: ProjectTemplateOption?): Int? {
-        return when {
-            isPluginTemplate(option) -> Strings.wizard_plugin_template_card_hint
-            isUserTemplate(option) -> Strings.wizard_user_template_card_hint
-            else -> null
-        }
+    fun resolveTemplateCardGuideRes(option: ProjectTemplateOption?): Int? = when {
+        isPluginTemplate(option) -> Strings.wizard_plugin_template_card_hint
+        isUserTemplate(option) -> Strings.wizard_user_template_card_hint
+        else -> null
     }
 
     @StringRes
-    fun resolveConfigurationGuideTitleRes(option: ProjectTemplateOption?): Int? {
-        return if (isPluginTemplate(option)) Strings.wizard_plugin_template_config_guide_title else null
-    }
+    fun resolveConfigurationGuideTitleRes(option: ProjectTemplateOption?): Int? = if (isPluginTemplate(option)) Strings.wizard_plugin_template_config_guide_title else null
 
     @StringRes
-    fun resolveConfigurationGuideBodyRes(option: ProjectTemplateOption?): Int? {
-        return if (isPluginTemplate(option)) Strings.wizard_plugin_template_config_guide_body else null
-    }
+    fun resolveConfigurationGuideBodyRes(option: ProjectTemplateOption?): Int? = if (isPluginTemplate(option)) Strings.wizard_plugin_template_config_guide_body else null
 
     @StringRes
-    fun resolveProjectCreatedMessageRes(option: ProjectTemplateOption?): Int {
-        return if (isPluginTemplate(option)) {
-            Strings.success_plugin_project_created
-        } else {
-            Strings.success_project_created
-        }
+    fun resolveProjectCreatedMessageRes(option: ProjectTemplateOption?): Int = if (isPluginTemplate(option)) {
+        Strings.success_plugin_project_created
+    } else {
+        Strings.success_project_created
     }
 }

@@ -1,14 +1,6 @@
 package com.wuxianggujun.tinaide.core.git.ssh
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider
-import org.eclipse.jgit.transport.CredentialsProvider
-import org.eclipse.jgit.transport.sshd.JGitKeyCache
-import org.eclipse.jgit.transport.sshd.ServerKeyDatabase
-import org.eclipse.jgit.transport.sshd.SshdSessionFactory
-import timber.log.Timber
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.URI
@@ -17,6 +9,14 @@ import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.util.Base64
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider
+import org.eclipse.jgit.transport.CredentialsProvider
+import org.eclipse.jgit.transport.sshd.JGitKeyCache
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase
+import org.eclipse.jgit.transport.sshd.SshdSessionFactory
+import timber.log.Timber
 
 /** SSH passphrase 错误标记，用于 ViewModel 层识别 */
 const val TINA_GIT_SSH_PASSPHRASE_MARKER = "[TINA_SSH_PASSPHRASE]"
@@ -242,7 +242,9 @@ class GitSshManager(context: Context) {
             state.hostBindings
                 .firstOrNull { it.host.equals(target.host, ignoreCase = true) }
                 ?.keyName
-        } else null
+        } else {
+            null
+        }
         val resolvedKeyName = keyName ?: state.defaultKeyName ?: DEFAULT_KEY_NAME
 
         val keyFile = File(sshDir, resolvedKeyName)
@@ -275,7 +277,8 @@ class GitSshManager(context: Context) {
             }
 
             override fun getServerKeyDatabase(
-                homeDir: File, sshDir: File
+                homeDir: File,
+                sshDir: File
             ): ServerKeyDatabase = object : ServerKeyDatabase {
                 override fun lookup(
                     connectAddress: String,
@@ -296,8 +299,11 @@ class GitSshManager(context: Context) {
 
     private fun isPassphraseError(e: Exception): Boolean {
         val msg = (e.message ?: "").lowercase(Locale.ROOT)
-        return "passphrase" in msg || "encrypted" in msg || "password" in msg ||
-                "failed to decrypt" in msg || "cannot read" in msg
+        return "passphrase" in msg ||
+            "encrypted" in msg ||
+            "password" in msg ||
+            "failed to decrypt" in msg ||
+            "cannot read" in msg
     }
 
     fun getSshDir(): File = sshDir

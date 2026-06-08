@@ -8,14 +8,12 @@ internal enum class HelpQuickAction {
 internal object HelpQuickActionSupport {
     const val PLUGIN_QUICK_START_DOCUMENT_ID = "plugin-quick-start"
 
-    fun resolveActions(document: HelpDocument): List<HelpQuickAction> {
-        return if (document.id == PLUGIN_QUICK_START_DOCUMENT_ID) {
-            listOf(
-                HelpQuickAction.CREATE_PLUGIN_PROJECT,
-                HelpQuickAction.OPEN_PLUGIN_SETTINGS,
-            )
-        } else {
-            emptyList()
-        }
+    fun resolveActions(document: HelpDocument): List<HelpQuickAction> = if (document.id == PLUGIN_QUICK_START_DOCUMENT_ID) {
+        listOf(
+            HelpQuickAction.CREATE_PLUGIN_PROJECT,
+            HelpQuickAction.OPEN_PLUGIN_SETTINGS,
+        )
+    } else {
+        emptyList()
     }
 }

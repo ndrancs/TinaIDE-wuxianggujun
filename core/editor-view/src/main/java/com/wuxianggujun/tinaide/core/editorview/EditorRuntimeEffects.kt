@@ -7,10 +7,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlin.math.roundToInt
 
 @Composable
 internal fun EditorRuntimeEffects(

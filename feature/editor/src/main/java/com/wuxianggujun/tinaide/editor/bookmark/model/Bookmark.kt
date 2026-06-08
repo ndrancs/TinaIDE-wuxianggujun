@@ -13,4 +13,3 @@ data class Bookmark(
     val note: String = "",
     val createdAt: Long = System.currentTimeMillis()
 )
-

@@ -37,11 +37,13 @@ internal class MainActivityCommandPreferenceStore(
     fun togglePinned(commandId: String) {
         val normalizedCommandId = commandId.normalizedCommandIdOrNull() ?: return
         val current = pinnedState.value
-        val next = (if (normalizedCommandId in current) {
-            current - normalizedCommandId
-        } else {
-            listOf(normalizedCommandId) + current
-        }).take(MAX_PINNED_COMMANDS)
+        val next = (
+            if (normalizedCommandId in current) {
+                current - normalizedCommandId
+            } else {
+                listOf(normalizedCommandId) + current
+            }
+            ).take(MAX_PINNED_COMMANDS)
         writeCommandIds(KEY_PINNED_COMMAND_IDS, next)
         pinnedState.value = next
     }
@@ -92,14 +94,12 @@ internal class MainActivityCommandPreferenceStore(
         }
     }
 
-    private fun readCommandIds(key: String): List<String> {
-        return prefs.getString(key, null)
-            ?.lineSequence()
-            ?.mapNotNull { it.normalizedCommandIdOrNull() }
-            ?.distinct()
-            ?.toList()
-            .orEmpty()
-    }
+    private fun readCommandIds(key: String): List<String> = prefs.getString(key, null)
+        ?.lineSequence()
+        ?.mapNotNull { it.normalizedCommandIdOrNull() }
+        ?.distinct()
+        ?.toList()
+        .orEmpty()
 
     private fun writeCommandIds(key: String, commandIds: List<String>) {
         prefs.edit()
@@ -120,11 +120,9 @@ internal class MainActivityCommandPreferenceStore(
 
 private fun List<String>.filterAvailablePluginCommands(
     enabledPluginIds: Set<String>
-): List<String> {
-    return filter { commandId ->
-        val pluginId = commandId.pluginToolbarPluginIdOrNull()
-        pluginId == null || pluginId in enabledPluginIds
-    }
+): List<String> = filter { commandId ->
+    val pluginId = commandId.pluginToolbarPluginIdOrNull()
+    pluginId == null || pluginId in enabledPluginIds
 }
 
 @Composable

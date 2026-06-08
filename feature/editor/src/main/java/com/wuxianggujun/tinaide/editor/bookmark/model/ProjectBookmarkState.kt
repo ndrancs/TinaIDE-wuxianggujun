@@ -14,4 +14,3 @@ data class ProjectBookmarkState(
         return copy(bookmarks = normalizedBookmarks)
     }
 }
-

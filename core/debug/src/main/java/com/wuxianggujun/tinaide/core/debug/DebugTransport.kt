@@ -2,18 +2,17 @@ package com.wuxianggujun.tinaide.core.debug
 
 import android.net.LocalServerSocket
 import android.net.LocalSocket
-import android.net.LocalSocketAddress
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.Closeable
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
+import org.json.JSONObject
 import timber.log.Timber
 
 /**
@@ -200,121 +199,115 @@ class DebugTransport(private val socketName: String) : Closeable {
         return json.toString()
     }
 
-    private fun deserializeResponse(line: String): DebugResponse {
-        return try {
-            val json = JSONObject(line)
-            val type = json.optString("type", "")
+    private fun deserializeResponse(line: String): DebugResponse = try {
+        val json = JSONObject(line)
+        val type = json.optString("type", "")
 
-            when (type) {
-                "ready" -> {
-                    val loc = json.optJSONObject("location")?.let { parseLocation(it) }
-                    DebugResponse.Ready(loc)
-                }
-                "stopped" -> {
-                    val reason = parseStopReason(json.optString("reason", ""))
-                    val loc = json.optJSONObject("location")?.let { parseLocation(it) }
-                    val tid = json.optInt("thread", 0)
-                    DebugResponse.Stopped(reason, loc, tid)
-                }
-                "exited" -> {
-                    DebugResponse.Exited(json.optInt("code", 0))
-                }
-                "crashed" -> {
-                    DebugResponse.Crashed(json.optString("signal", "UNKNOWN"))
-                }
-                "bp_set" -> {
-                    DebugResponse.BreakpointSet(json.optLong("addr", 0))
-                }
-                "bp_removed" -> {
-                    DebugResponse.BreakpointRemoved(json.optBoolean("ok", false))
-                }
-                "backtrace" -> {
-                    val frames = mutableListOf<StackFrame>()
-                    val arr = json.optJSONArray("frames") ?: JSONArray()
-                    for (i in 0 until arr.length()) {
-                        val f = arr.getJSONObject(i)
-                        frames.add(
-                            StackFrame(
-                                id = f.optInt("id", i),
-                                name = f.optString("name", "<unknown>"),
-                                file = f.optString("file").takeIf { it.isNotBlank() },
-                                line = f.optInt("line", -1).takeIf { it >= 0 },
-                                address = f.optLong("addr", 0)
-                            )
+        when (type) {
+            "ready" -> {
+                val loc = json.optJSONObject("location")?.let { parseLocation(it) }
+                DebugResponse.Ready(loc)
+            }
+            "stopped" -> {
+                val reason = parseStopReason(json.optString("reason", ""))
+                val loc = json.optJSONObject("location")?.let { parseLocation(it) }
+                val tid = json.optInt("thread", 0)
+                DebugResponse.Stopped(reason, loc, tid)
+            }
+            "exited" -> {
+                DebugResponse.Exited(json.optInt("code", 0))
+            }
+            "crashed" -> {
+                DebugResponse.Crashed(json.optString("signal", "UNKNOWN"))
+            }
+            "bp_set" -> {
+                DebugResponse.BreakpointSet(json.optLong("addr", 0))
+            }
+            "bp_removed" -> {
+                DebugResponse.BreakpointRemoved(json.optBoolean("ok", false))
+            }
+            "backtrace" -> {
+                val frames = mutableListOf<StackFrame>()
+                val arr = json.optJSONArray("frames") ?: JSONArray()
+                for (i in 0 until arr.length()) {
+                    val f = arr.getJSONObject(i)
+                    frames.add(
+                        StackFrame(
+                            id = f.optInt("id", i),
+                            name = f.optString("name", "<unknown>"),
+                            file = f.optString("file").takeIf { it.isNotBlank() },
+                            line = f.optInt("line", -1).takeIf { it >= 0 },
+                            address = f.optLong("addr", 0)
                         )
-                    }
-                    DebugResponse.Backtrace(frames)
-                }
-                "variables" -> {
-                    val vars = mutableListOf<Variable>()
-                    val arr = json.optJSONArray("vars") ?: JSONArray()
-                    for (i in 0 until arr.length()) {
-                        val v = arr.getJSONObject(i)
-                        vars.add(
-                            Variable(
-                                name = v.optString("name", ""),
-                                value = v.optString("value", ""),
-                                type = v.optString("type").takeIf { it.isNotBlank() },
-                                variablesReference = v.optInt("ref", 0)
-                            )
-                        )
-                    }
-                    DebugResponse.Variables(vars)
-                }
-                "eval" -> {
-                    DebugResponse.EvaluateResult(
-                        value = json.optString("value", ""),
-                        type = json.optString("type").takeIf { it.isNotBlank() }
                     )
                 }
-                "memory" -> {
-                    val hex = json.optString("data", "")
-                    val bytes = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-                    DebugResponse.MemoryData(bytes)
-                }
-                "registers" -> {
-                    val regs = mutableMapOf<String, Long>()
-                    val obj = json.optJSONObject("regs") ?: JSONObject()
-                    obj.keys().forEach { key ->
-                        regs[key] = obj.optLong(key, 0)
-                    }
-                    DebugResponse.Registers(regs)
-                }
-                "error" -> {
-                    DebugResponse.Error(json.optString("msg", "Unknown error"))
-                }
-                "ack" -> {
-                    DebugResponse.Ack
-                }
-                else -> {
-                    DebugResponse.Error("Unknown response type: $type")
-                }
+                DebugResponse.Backtrace(frames)
             }
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to parse response: $line")
-            DebugResponse.Error("Parse error: ${e.message}")
+            "variables" -> {
+                val vars = mutableListOf<Variable>()
+                val arr = json.optJSONArray("vars") ?: JSONArray()
+                for (i in 0 until arr.length()) {
+                    val v = arr.getJSONObject(i)
+                    vars.add(
+                        Variable(
+                            name = v.optString("name", ""),
+                            value = v.optString("value", ""),
+                            type = v.optString("type").takeIf { it.isNotBlank() },
+                            variablesReference = v.optInt("ref", 0)
+                        )
+                    )
+                }
+                DebugResponse.Variables(vars)
+            }
+            "eval" -> {
+                DebugResponse.EvaluateResult(
+                    value = json.optString("value", ""),
+                    type = json.optString("type").takeIf { it.isNotBlank() }
+                )
+            }
+            "memory" -> {
+                val hex = json.optString("data", "")
+                val bytes = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+                DebugResponse.MemoryData(bytes)
+            }
+            "registers" -> {
+                val regs = mutableMapOf<String, Long>()
+                val obj = json.optJSONObject("regs") ?: JSONObject()
+                obj.keys().forEach { key ->
+                    regs[key] = obj.optLong(key, 0)
+                }
+                DebugResponse.Registers(regs)
+            }
+            "error" -> {
+                DebugResponse.Error(json.optString("msg", "Unknown error"))
+            }
+            "ack" -> {
+                DebugResponse.Ack
+            }
+            else -> {
+                DebugResponse.Error("Unknown response type: $type")
+            }
         }
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Failed to parse response: $line")
+        DebugResponse.Error("Parse error: ${e.message}")
     }
 
-    private fun parseLocation(json: JSONObject): SourceLocation {
-        return SourceLocation(
-            file = json.optString("file").takeIf { it.isNotBlank() } ?: "",
-            line = json.optInt("line", 0),
-            column = json.optInt("col", 0),
-            function = json.optString("func").takeIf { it.isNotBlank() },
-            address = json.optLong("addr", 0)
-        )
-    }
+    private fun parseLocation(json: JSONObject): SourceLocation = SourceLocation(
+        file = json.optString("file").takeIf { it.isNotBlank() } ?: "",
+        line = json.optInt("line", 0),
+        column = json.optInt("col", 0),
+        function = json.optString("func").takeIf { it.isNotBlank() },
+        address = json.optLong("addr", 0)
+    )
 
-    private fun parseStopReason(reason: String): PauseReason {
-        return when (reason.lowercase()) {
-            "entry" -> PauseReason.ENTRY
-            "breakpoint", "bp" -> PauseReason.BREAKPOINT
-            "step" -> PauseReason.STEP
-            "exception" -> PauseReason.EXCEPTION
-            "signal" -> PauseReason.SIGNAL
-            "pause" -> PauseReason.USER_REQUEST
-            else -> PauseReason.BREAKPOINT
-        }
+    private fun parseStopReason(reason: String): PauseReason = when (reason.lowercase()) {
+        "entry" -> PauseReason.ENTRY
+        "breakpoint", "bp" -> PauseReason.BREAKPOINT
+        "step" -> PauseReason.STEP
+        "exception" -> PauseReason.EXCEPTION
+        "signal" -> PauseReason.SIGNAL
+        "pause" -> PauseReason.USER_REQUEST
+        else -> PauseReason.BREAKPOINT
     }
 }

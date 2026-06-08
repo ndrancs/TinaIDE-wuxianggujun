@@ -466,6 +466,4 @@ class MainActivityHostCommandExecutor(
     }
 }
 
-internal fun normalizeHostCommandId(commandId: String): String {
-    return commandId.trim()
-}
+internal fun normalizeHostCommandId(commandId: String): String = commandId.trim()

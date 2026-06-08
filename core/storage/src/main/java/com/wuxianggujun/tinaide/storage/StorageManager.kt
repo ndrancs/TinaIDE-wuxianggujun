@@ -9,11 +9,11 @@ import android.os.Environment
 import android.provider.Settings
 import com.wuxianggujun.tinaide.core.ServiceLifecycle
 import com.wuxianggujun.tinaide.core.i18n.Strings
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
-import java.io.File
 
 /**
  * 存储管理器
@@ -49,11 +49,11 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
         Timber.tag(TAG).d("StorageManager initialized")
         ensurePrivateDirectories()
     }
-    
+
     override fun onDestroy() {
         Timber.tag(TAG).d("StorageManager destroyed")
     }
-    
+
     // ============ 公有源码目录管理 ============
 
     /**
@@ -74,37 +74,33 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
     }
 
     // ============ 私有存储管理 ============
-    
+
     /**
      * 获取同步元数据目录
      * 路径：/data/data/com.wuxianggujun.tinaIDE/files/sync-meta/
      */
-    fun getSyncMetaDir(): File {
-        return ProjectPaths.getSyncMetaRoot(context)
-    }
-    
+    fun getSyncMetaDir(): File = ProjectPaths.getSyncMetaRoot(context)
+
     /**
      * 获取终端状态存储目录
      * 路径：/sdcard/Android/data/com.wuxianggujun.tinaide/files/terminal_states/
      *
      * 用于存储终端会话状态（按项目隔离）
      */
-    fun getTerminalStatesDir(): File {
-        return ProjectPaths.getTerminalStatesRoot(context)
-    }
-    
+    fun getTerminalStatesDir(): File = ProjectPaths.getTerminalStatesRoot(context)
+
     /**
      * 确保私有目录存在
      */
     private fun ensurePrivateDirectories() {
         val metaDir = getSyncMetaDir()
-        
+
         if (!metaDir.exists()) {
             metaDir.mkdirs()
             Timber.tag(TAG).d("Created sync meta directory: %s", metaDir.absolutePath)
         }
     }
-    
+
     // ============ 权限管理 ============
 
     /**
@@ -112,9 +108,7 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
      *
      * 响应式订阅请走 [permissionStatus]；UI 请求权限后主动 [refreshPermissionStatus] 更新。
      */
-    fun checkExternalStoragePermission(): PermissionStatus {
-        return computePermissionStatus()
-    }
+    fun checkExternalStoragePermission(): PermissionStatus = computePermissionStatus()
 
     /**
      * 重新读取系统权限状态并更新 [permissionStatus] StateFlow。
@@ -129,44 +123,38 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
         return status
     }
 
-    private fun computePermissionStatus(): PermissionStatus {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11+: 检查 MANAGE_EXTERNAL_STORAGE
-            if (Environment.isExternalStorageManager()) {
-                PermissionStatus.GRANTED
-            } else {
-                PermissionStatus.DENIED
-            }
+    private fun computePermissionStatus(): PermissionStatus = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        // Android 11+: 检查 MANAGE_EXTERNAL_STORAGE
+        if (Environment.isExternalStorageManager()) {
+            PermissionStatus.GRANTED
         } else {
-            // Android 6-10: 检查 READ/WRITE_EXTERNAL_STORAGE
-            val hasRead = context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) ==
-                android.content.pm.PackageManager.PERMISSION_GRANTED
-            val hasWrite = context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
-                android.content.pm.PackageManager.PERMISSION_GRANTED
+            PermissionStatus.DENIED
+        }
+    } else {
+        // Android 6-10: 检查 READ/WRITE_EXTERNAL_STORAGE
+        val hasRead = context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        val hasWrite = context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
 
-            if (hasRead && hasWrite) {
-                PermissionStatus.GRANTED
-            } else {
-                PermissionStatus.DENIED
-            }
+        if (hasRead && hasWrite) {
+            PermissionStatus.GRANTED
+        } else {
+            PermissionStatus.DENIED
         }
     }
 
     /**
      * 是否有外部存储权限
      */
-    fun hasExternalStoragePermission(): Boolean {
-        return checkExternalStoragePermission() == PermissionStatus.GRANTED
-    }
+    fun hasExternalStoragePermission(): Boolean = checkExternalStoragePermission() == PermissionStatus.GRANTED
 
     /**
      * 判断项目目录当前是否可通过 java.io.File 正常访问。
      *
      * 私有源码目录始终可访问；其余目录依赖外部存储权限。
      */
-    fun canAccessProjectDir(dir: File): Boolean {
-        return checkProjectDirAccess(dir).canAccess
-    }
+    fun canAccessProjectDir(dir: File): Boolean = checkProjectDirAccess(dir).canAccess
 
     /**
      * 检查项目目录是否真正可打开。
@@ -213,14 +201,12 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
      * Android 11+: 跳转到"所有文件访问权限"设置页
      * Android 6-10: 返回 null，由调用方使用 ActivityCompat.requestPermissions
      */
-    fun createPermissionRequestIntent(): Intent? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                data = Uri.parse("package:${context.packageName}")
-            }
-        } else {
-            null  // 使用传统运行时权限
+    fun createPermissionRequestIntent(): Intent? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+            data = Uri.parse("package:${context.packageName}")
         }
+    } else {
+        null // 使用传统运行时权限
     }
 
     /**
@@ -239,9 +225,9 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
             )
         )
     }
-    
+
     // ============ 存储空间管理 ============
-    
+
     /**
      * 获取指定位置的可用空间（字节）
      */
@@ -250,10 +236,10 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
             StorageLocation.PUBLIC_SOURCE -> getPublicProjectsDir()
             StorageLocation.PRIVATE_META -> getSyncMetaDir()
         }
-        
+
         return dir?.usableSpace ?: 0L
     }
-    
+
     /**
      * 获取指定位置的总空间（字节）
      */
@@ -262,20 +248,18 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
             StorageLocation.PUBLIC_SOURCE -> getPublicProjectsDir()
             StorageLocation.PRIVATE_META -> getSyncMetaDir()
         }
-        
+
         return dir?.totalSpace ?: 0L
     }
-    
+
     /**
      * 格式化文件大小
      */
-    fun formatSize(bytes: Long): String {
-        return when {
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> String.format("%.2f KB", bytes / 1024.0)
-            bytes < 1024 * 1024 * 1024 -> String.format("%.2f MB", bytes / (1024.0 * 1024))
-            else -> String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024))
-        }
+    fun formatSize(bytes: Long): String = when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> String.format("%.2f KB", bytes / 1024.0)
+        bytes < 1024 * 1024 * 1024 -> String.format("%.2f MB", bytes / (1024.0 * 1024))
+        else -> String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024))
     }
 }
 
@@ -283,14 +267,14 @@ class StorageManager(private val context: Context) : ServiceLifecycle {
  * 存储位置枚举
  */
 enum class StorageLocation {
-    PUBLIC_SOURCE,  // 公有源码目录（Documents/TinaIDE）
-    PRIVATE_META    // 私有同步元数据
+    PUBLIC_SOURCE, // 公有源码目录（Documents/TinaIDE）
+    PRIVATE_META // 私有同步元数据
 }
 
 /**
  * 权限状态
  */
 enum class PermissionStatus {
-    GRANTED,   // 已授权
-    DENIED     // 未授权
+    GRANTED, // 已授权
+    DENIED // 未授权
 }

@@ -4,6 +4,9 @@ import android.content.Context
 import com.wuxianggujun.tinaide.editor.bookmark.model.Bookmark
 import com.wuxianggujun.tinaide.editor.bookmark.model.ProjectBookmarkState
 import com.wuxianggujun.tinaide.editor.bookmark.persistence.BookmarkStateStorage
+import java.io.File
+import java.util.TreeMap
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,9 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.util.TreeMap
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 书签服务（项目级）
@@ -56,17 +56,11 @@ class BookmarkService(context: Context) : BookmarkRepository {
 
     private val projectDataMap = ConcurrentHashMap<String, ProjectData>()
 
-    private fun getProjectData(projectPath: String): ProjectData {
-        return projectDataMap.computeIfAbsent(projectPath) { ProjectData() }
-    }
+    private fun getProjectData(projectPath: String): ProjectData = projectDataMap.computeIfAbsent(projectPath) { ProjectData() }
 
-    private fun bookmarkKey(filePath: String, line: Int): BookmarkKey {
-        return BookmarkKey(filePath = filePath, line = line)
-    }
+    private fun bookmarkKey(filePath: String, line: Int): BookmarkKey = BookmarkKey(filePath = filePath, line = line)
 
-    private fun bookmarkKey(bookmark: Bookmark): BookmarkKey {
-        return bookmarkKey(bookmark.filePath, bookmark.line)
-    }
+    private fun bookmarkKey(bookmark: Bookmark): BookmarkKey = bookmarkKey(bookmark.filePath, bookmark.line)
 
     private fun publishSnapshotLocked(data: ProjectData): List<Bookmark> {
         val snapshot = data.index.values.toList()
@@ -74,9 +68,7 @@ class BookmarkService(context: Context) : BookmarkRepository {
         return snapshot
     }
 
-    override fun bookmarksFlow(projectPath: String): StateFlow<List<Bookmark>> {
-        return getProjectData(projectPath).flow.asStateFlow()
-    }
+    override fun bookmarksFlow(projectPath: String): StateFlow<List<Bookmark>> = getProjectData(projectPath).flow.asStateFlow()
 
     override suspend fun prefetch(projectPath: String) {
         ensureLoaded(projectPath)

@@ -204,7 +204,9 @@ class PackageManagerViewModel(
                 _dialogState.update { current ->
                     if (current is PackageDialogState.Installing && current.packageId == packageId) {
                         current.copy(event = event)
-                    } else current
+                    } else {
+                        current
+                    }
                 }
             }
         }.getOrElse { throwable ->
@@ -448,14 +450,18 @@ class PackageManagerViewModel(
                             Strings.pkg_manager_progress_installing.strOr(appContext, packageName)
                         )
                     )
-                } else current
+                } else {
+                    current
+                }
             }
 
             val result = packageManager.install(packageId, platform) { event ->
                 _dialogState.update { current ->
                     if (current is PackageDialogState.BatchInstalling) {
                         current.copy(event = event)
-                    } else current
+                    } else {
+                        current
+                    }
                 }
             }
 
@@ -502,14 +508,18 @@ class PackageManagerViewModel(
                             )
                         )
                     )
-                } else current
+                } else {
+                    current
+                }
             }
 
             val result = packageManager.install(update.packageId, update.platform) { event ->
                 _dialogState.update { current ->
                     if (current is PackageDialogState.BatchUpdating) {
                         current.copy(event = event)
-                    } else current
+                    } else {
+                        current
+                    }
                 }
             }
 
@@ -556,14 +566,12 @@ class PackageManagerViewModel(
 
     private fun buildInstalledMetadataMap(
         installedPackages: List<com.wuxianggujun.tinaide.core.packages.InstalledPackageInfo>
-    ): Map<String, InstalledPackageMetadata> {
-        return installedPackages.asSequence()
-            .filter { it.platform == Platform.ANDROID }
-            .mapNotNull { installed ->
-                InstalledPackageMetadataReader.read(appContext, installed.packageId)
-            }
-            .associateBy { it.id }
-    }
+    ): Map<String, InstalledPackageMetadata> = installedPackages.asSequence()
+        .filter { it.platform == Platform.ANDROID }
+        .mapNotNull { installed ->
+            InstalledPackageMetadataReader.read(appContext, installed.packageId)
+        }
+        .associateBy { it.id }
 
     private fun mergeAvailableAndInstalledPackages(
         availablePackages: List<GUIPackage>,
@@ -726,8 +734,6 @@ private fun GUIPackage.platformPackageFor(platform: Platform): PlatformPackage? 
     Platform.ANDROID -> android
 }
 
-private fun List<PackageInstallPlan>.hasPendingDependencies(): Boolean {
-    return any { plan ->
-        plan.packages.any { item -> !item.isRoot && !item.isAlreadyInstalled }
-    }
+private fun List<PackageInstallPlan>.hasPendingDependencies(): Boolean = any { plan ->
+    plan.packages.any { item -> !item.isRoot && !item.isAlreadyInstalled }
 }

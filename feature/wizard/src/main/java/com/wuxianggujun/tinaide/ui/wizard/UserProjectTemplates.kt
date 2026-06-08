@@ -19,12 +19,10 @@ internal object UserProjectTemplates {
     private const val TAG = "UserProjectTemplates"
     private const val MANIFEST_INSPECTION_LIMIT_BYTES = 64 * 1024
 
-    fun listOptions(context: Context): List<ProjectTemplateOption> {
-        return listOptionsFromDirectory(
-            context = context,
-            templatesDir = ProjectPaths.getUserProjectTemplatesRoot(context)
-        )
-    }
+    fun listOptions(context: Context): List<ProjectTemplateOption> = listOptionsFromDirectory(
+        context = context,
+        templatesDir = ProjectPaths.getUserProjectTemplatesRoot(context)
+    )
 
     internal fun listOptionsFromDirectory(
         context: Context,
@@ -74,17 +72,15 @@ internal object UserProjectTemplates {
         return "$slug-$pathHash"
     }
 
-    private fun String.toDisplayName(): String {
-        return replace(Regex("[_-]+"), " ")
-            .split(' ')
-            .filter { it.isNotBlank() }
-            .joinToString(" ") { part ->
-                part.replaceFirstChar { char ->
-                    if (char.isLowerCase()) char.titlecase(Locale.ROOT) else char.toString()
-                }
+    private fun String.toDisplayName(): String = replace(Regex("[_-]+"), " ")
+        .split(' ')
+        .filter { it.isNotBlank() }
+        .joinToString(" ") { part ->
+            part.replaceFirstChar { char ->
+                if (char.isLowerCase()) char.titlecase(Locale.ROOT) else char.toString()
             }
-            .ifBlank { this }
-    }
+        }
+        .ifBlank { this }
 
     private fun inspectTemplateZip(zipFile: File): TemplateInspection {
         ZipFile(zipFile).use { zip ->

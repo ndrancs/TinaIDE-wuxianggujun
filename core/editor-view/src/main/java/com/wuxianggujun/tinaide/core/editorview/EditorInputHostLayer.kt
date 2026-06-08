@@ -2,12 +2,12 @@ package com.wuxianggujun.tinaide.core.editorview
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.foundation.layout.size
 
 @Composable
 internal fun EditorInputHostLayer(

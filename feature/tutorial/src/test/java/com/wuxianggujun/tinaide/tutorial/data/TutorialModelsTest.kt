@@ -57,23 +57,21 @@ class TutorialModelsTest {
         assertThat(item.isCompleted).isTrue()
     }
 
-    private fun tutorialWithSteps(stepCount: Int): Tutorial {
-        return Tutorial(
-            id = "intro",
-            titleRes = Strings.tutorial_cat_getting_started,
-            descriptionRes = Strings.tutorial_cat_getting_started_desc,
-            category = TutorialCategory.GETTING_STARTED,
-            type = TutorialType.INTERACTIVE,
-            estimatedMinutes = 5,
-            order = 0,
-            steps = (0 until stepCount).map { index ->
-                TutorialStep(
-                    id = "step-$index",
-                    targetId = "target-$index",
-                    titleRes = Strings.tutorial_cat_getting_started,
-                    descriptionRes = Strings.tutorial_cat_getting_started_desc
-                )
-            }
-        )
-    }
+    private fun tutorialWithSteps(stepCount: Int): Tutorial = Tutorial(
+        id = "intro",
+        titleRes = Strings.tutorial_cat_getting_started,
+        descriptionRes = Strings.tutorial_cat_getting_started_desc,
+        category = TutorialCategory.GETTING_STARTED,
+        type = TutorialType.INTERACTIVE,
+        estimatedMinutes = 5,
+        order = 0,
+        steps = (0 until stepCount).map { index ->
+            TutorialStep(
+                id = "step-$index",
+                targetId = "target-$index",
+                titleRes = Strings.tutorial_cat_getting_started,
+                descriptionRes = Strings.tutorial_cat_getting_started_desc
+            )
+        }
+    )
 }

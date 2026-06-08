@@ -11,7 +11,7 @@ import timber.log.Timber
 
 /**
  * TinaIDE 的 TerminalViewClient 实现
- * 
+ *
  * 处理终端视图的用户交互事件
  */
 class TinaTerminalViewClient(
@@ -59,57 +59,33 @@ class TinaTerminalViewClient(
         onSingleTap.invoke(e)
     }
 
-    override fun shouldBackButtonBeMappedToEscape(): Boolean {
-        return backButtonMappedToEscape
-    }
+    override fun shouldBackButtonBeMappedToEscape(): Boolean = backButtonMappedToEscape
 
-    override fun shouldEnforceCharBasedInput(): Boolean {
-        return enforceCharBasedInput
-    }
+    override fun shouldEnforceCharBasedInput(): Boolean = enforceCharBasedInput
 
-    override fun shouldUseCtrlSpaceWorkaround(): Boolean {
-        return useCtrlSpaceWorkaround
-    }
+    override fun shouldUseCtrlSpaceWorkaround(): Boolean = useCtrlSpaceWorkaround
 
-    override fun isTerminalViewSelected(): Boolean {
-        return terminalViewSelected
-    }
+    override fun isTerminalViewSelected(): Boolean = terminalViewSelected
 
     override fun copyModeChanged(copyMode: Boolean) {
         onCopyModeChanged.invoke(copyMode)
     }
 
-    override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession?): Boolean {
-        return onKeyDown.invoke(keyCode, e, session)
-    }
+    override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession?): Boolean = onKeyDown.invoke(keyCode, e, session)
 
-    override fun onKeyUp(keyCode: Int, e: KeyEvent): Boolean {
-        return onKeyUp.invoke(keyCode, e)
-    }
+    override fun onKeyUp(keyCode: Int, e: KeyEvent): Boolean = onKeyUp.invoke(keyCode, e)
 
-    override fun onLongPress(event: MotionEvent): Boolean {
-        return onLongPress.invoke(event)
-    }
+    override fun onLongPress(event: MotionEvent): Boolean = onLongPress.invoke(event)
 
-    override fun readControlKey(): Boolean {
-        return ctrlEnabled
-    }
+    override fun readControlKey(): Boolean = ctrlEnabled
 
-    override fun readAltKey(): Boolean {
-        return altEnabled
-    }
+    override fun readAltKey(): Boolean = altEnabled
 
-    override fun readShiftKey(): Boolean {
-        return shiftEnabled
-    }
+    override fun readShiftKey(): Boolean = shiftEnabled
 
-    override fun readFnKey(): Boolean {
-        return fnEnabled
-    }
+    override fun readFnKey(): Boolean = fnEnabled
 
-    override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean {
-        return onCodePoint.invoke(codePoint, ctrlDown, session)
-    }
+    override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = onCodePoint.invoke(codePoint, ctrlDown, session)
 
     override fun onEmulatorSet() {
         onEmulatorSet.invoke()

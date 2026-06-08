@@ -7,12 +7,12 @@ import com.wuxianggujun.tinaide.core.config.Prefs
 import com.wuxianggujun.tinaide.core.ndk.AndroidNativeToolchainManager
 import com.wuxianggujun.tinaide.core.util.AndroidSystemLinker
 import com.wuxianggujun.tinaide.core.util.NativeExecutableRunner
-import timber.log.Timber
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import kotlin.concurrent.thread
+import timber.log.Timber
 
 /**
  * 通过原生 linker64 启动 clangd（不走 PRoot），并以 stdio 方式提供 LSP 连接流。

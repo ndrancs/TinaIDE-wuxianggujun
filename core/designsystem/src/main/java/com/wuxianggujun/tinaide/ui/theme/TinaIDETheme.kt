@@ -1,8 +1,7 @@
 package com.wuxianggujun.tinaide.ui.theme
 
-import com.wuxianggujun.tinaide.core.config.AppTheme
-import com.wuxianggujun.tinaide.core.config.ThemeManager
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -13,11 +12,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wuxianggujun.tinaide.core.config.AppTheme
+import com.wuxianggujun.tinaide.core.config.ThemeManager
 
 /**
  * TinaIDE Compose 主题入口（重构版）

@@ -4,9 +4,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.wuxianggujun.tinaide.core.packages.InstalledPackageInfo
 import com.wuxianggujun.tinaide.core.packages.model.*
+import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 
 class LocalInstallStateStore(context: Context) {
 
@@ -28,7 +28,7 @@ class LocalInstallStateStore(context: Context) {
         val installedAt: Long,
         val installType: String,
         val size: Long? = null,
-        val isBundled: Boolean = false // 是否为内置包
+        val isBundled: Boolean = false
     )
 
     @Serializable
@@ -42,7 +42,7 @@ class LocalInstallStateStore(context: Context) {
     fun getInstallState(packageId: String): PackageInstallState {
         val installedPackages = getStoredPackages()
         val updateInfos = getStoredUpdates()
-        
+
         val linuxInfo = installedPackages.find { it.packageId == packageId && it.platform == "linux" }
         val androidInfo = installedPackages.find { it.packageId == packageId && it.platform == "android" }
         val linuxUpdate = updateInfos.find { it.packageId == packageId && it.platform == "linux" }
@@ -97,36 +97,28 @@ class LocalInstallStateStore(context: Context) {
         saveStoredPackages(installedPackages)
     }
 
-    fun getAllInstalledPackages(): List<InstalledPackageInfo> {
-        return getStoredPackages().map { stored ->
-            InstalledPackageInfo(
-                packageId = stored.packageId,
-                packageName = stored.packageName,
-                platform = Platform.valueOf(stored.platform.uppercase()),
-                version = stored.version,
-                installedAt = stored.installedAt,
-                installType = InstallType.valueOf(stored.installType.uppercase()),
-                size = stored.size
-            )
-        }
+    fun getAllInstalledPackages(): List<InstalledPackageInfo> = getStoredPackages().map { stored ->
+        InstalledPackageInfo(
+            packageId = stored.packageId,
+            packageName = stored.packageName,
+            platform = Platform.valueOf(stored.platform.uppercase()),
+            version = stored.version,
+            installedAt = stored.installedAt,
+            installType = InstallType.valueOf(stored.installType.uppercase()),
+            size = stored.size
+        )
     }
 
-    fun isInstalled(packageId: String, platform: Platform): Boolean {
-        return getStoredPackages().any {
-            it.packageId == packageId && it.platform == platform.name.lowercase()
-        }
+    fun isInstalled(packageId: String, platform: Platform): Boolean = getStoredPackages().any {
+        it.packageId == packageId && it.platform == platform.name.lowercase()
     }
 
-    fun getInstalledVersion(packageId: String, platform: Platform): String? {
-        return getStoredPackages().find {
-            it.packageId == packageId && it.platform == platform.name.lowercase()
-        }?.version
-    }
+    fun getInstalledVersion(packageId: String, platform: Platform): String? = getStoredPackages().find {
+        it.packageId == packageId && it.platform == platform.name.lowercase()
+    }?.version
 
-    fun isBundledPackage(packageId: String): Boolean {
-        return getStoredPackages().any {
-            it.packageId == packageId && it.isBundled
-        }
+    fun isBundledPackage(packageId: String): Boolean = getStoredPackages().any {
+        it.packageId == packageId && it.isBundled
     }
 
     fun setUpdateAvailable(

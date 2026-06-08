@@ -16,8 +16,7 @@ enum class ShellType(val value: String) {
     ZSH("zsh");
 
     companion object {
-        fun fromValue(value: String): ShellType =
-            entries.find { it.value == value } ?: AUTO
+        fun fromValue(value: String): ShellType = entries.find { it.value == value } ?: AUTO
     }
 }
 
@@ -34,8 +33,7 @@ enum class BackendMode(val value: String) {
     HOST("host");
 
     companion object {
-        fun fromValue(value: String): BackendMode =
-            entries.find { it.value == value } ?: AUTO
+        fun fromValue(value: String): BackendMode = entries.find { it.value == value } ?: AUTO
     }
 }
 
@@ -50,7 +48,6 @@ enum class TerminalLocale(val value: String, @param:StringRes val displayNameRes
     JA_JP("ja_JP.UTF-8", com.wuxianggujun.tinaide.core.i18n.R.string.terminal_locale_ja_jp);
 
     companion object {
-        fun fromValue(value: String): TerminalLocale =
-            entries.find { it.value == value } ?: C_UTF8
+        fun fromValue(value: String): TerminalLocale = entries.find { it.value == value } ?: C_UTF8
     }
 }

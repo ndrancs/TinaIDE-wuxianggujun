@@ -4,7 +4,6 @@ import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.compile.CompilerType
 import com.wuxianggujun.tinaide.core.ndk.AndroidSysrootManager
 import com.wuxianggujun.tinaide.core.packages.InstalledPackagePathResolver
-import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -12,6 +11,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.createTempDirectory
+import org.junit.Test
 
 class NativeCMakeBuildExecutorConfigTest {
 
@@ -745,9 +745,7 @@ class NativeCMakeBuildExecutorConfigTest {
 
         override fun waitFor(): Int = exitCode
 
-        override fun waitFor(timeout: Long, unit: TimeUnit): Boolean {
-            return waitResults.removeFirstOrNull() ?: true
-        }
+        override fun waitFor(timeout: Long, unit: TimeUnit): Boolean = waitResults.removeFirstOrNull() ?: true
 
         override fun exitValue(): Int = exitCode
 

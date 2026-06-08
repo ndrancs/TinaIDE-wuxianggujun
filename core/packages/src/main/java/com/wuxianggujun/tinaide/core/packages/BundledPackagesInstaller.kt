@@ -73,18 +73,16 @@ class BundledPackagesInstaller(
     /**
      * 解析包文件名，提取包 ID 和压缩格式
      */
-    private fun parsePackageFileName(fileName: String): PackageFileInfo? {
-        return when {
-            fileName.endsWith(".tar.xz", ignoreCase = true) ->
-                PackageFileInfo(fileName.removeSuffix(".tar.xz"), CompressionFormat.TAR_XZ)
-            fileName.endsWith(".tar.zst", ignoreCase = true) ->
-                PackageFileInfo(fileName.removeSuffix(".tar.zst"), CompressionFormat.TAR_ZSTD)
-            fileName.endsWith(".tar.gz", ignoreCase = true) ->
-                PackageFileInfo(fileName.removeSuffix(".tar.gz"), CompressionFormat.TAR_GZ)
-            fileName.endsWith(".zip", ignoreCase = true) ->
-                PackageFileInfo(fileName.removeSuffix(".zip"), CompressionFormat.ZIP)
-            else -> null
-        }
+    private fun parsePackageFileName(fileName: String): PackageFileInfo? = when {
+        fileName.endsWith(".tar.xz", ignoreCase = true) ->
+            PackageFileInfo(fileName.removeSuffix(".tar.xz"), CompressionFormat.TAR_XZ)
+        fileName.endsWith(".tar.zst", ignoreCase = true) ->
+            PackageFileInfo(fileName.removeSuffix(".tar.zst"), CompressionFormat.TAR_ZSTD)
+        fileName.endsWith(".tar.gz", ignoreCase = true) ->
+            PackageFileInfo(fileName.removeSuffix(".tar.gz"), CompressionFormat.TAR_GZ)
+        fileName.endsWith(".zip", ignoreCase = true) ->
+            PackageFileInfo(fileName.removeSuffix(".zip"), CompressionFormat.ZIP)
+        else -> null
     }
 
     private data class PackageFileInfo(
@@ -93,13 +91,16 @@ class BundledPackagesInstaller(
     )
 
     private enum class CompressionFormat {
-        TAR_XZ, TAR_ZSTD, TAR_GZ, ZIP;
+        TAR_XZ,
+        TAR_ZSTD,
+        TAR_GZ,
+        ZIP;
 
         fun toTarExtractorType(): TarExtractor.CompressionType? = when (this) {
             TAR_XZ -> TarExtractor.CompressionType.XZ
             TAR_ZSTD -> TarExtractor.CompressionType.ZSTD
             TAR_GZ -> TarExtractor.CompressionType.GZIP
-            ZIP -> null  // ZIP 单独处理
+            ZIP -> null // ZIP 单独处理
         }
     }
 
@@ -239,12 +240,10 @@ class BundledPackagesInstaller(
     /**
      * 计算包大小
      */
-    private fun calculatePackageSize(dir: File): Long {
-        return dir.walkTopDown()
-            .filter { it.isFile }
-            .map { it.length() }
-            .sum()
-    }
+    private fun calculatePackageSize(dir: File): Long = dir.walkTopDown()
+        .filter { it.isFile }
+        .map { it.length() }
+        .sum()
 
     /**
      * 包元数据（对应 package.json）

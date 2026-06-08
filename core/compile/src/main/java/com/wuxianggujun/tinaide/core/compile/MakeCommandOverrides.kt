@@ -11,19 +11,15 @@ internal object MakeCommandOverrides {
     const val MIN_SYSROOT_API_LEVEL: Int = 21
     const val MAX_SYSROOT_API_LEVEL: Int = 35
 
-    fun isValidSysrootApiLevel(apiLevel: Int): Boolean {
-        return apiLevel in MIN_SYSROOT_API_LEVEL..MAX_SYSROOT_API_LEVEL
-    }
+    fun isValidSysrootApiLevel(apiLevel: Int): Boolean = apiLevel in MIN_SYSROOT_API_LEVEL..MAX_SYSROOT_API_LEVEL
 
     fun buildVariableValue(
         shellCommand: String,
         extraArgs: List<String>
-    ): String {
-        return if (extraArgs.isEmpty()) {
-            shellCommand
-        } else {
-            "$shellCommand ${extraArgs.joinToString(" ")}"
-        }
+    ): String = if (extraArgs.isEmpty()) {
+        shellCommand
+    } else {
+        "$shellCommand ${extraArgs.joinToString(" ")}"
     }
 
     fun buildVariableAssignment(
@@ -38,9 +34,7 @@ internal object MakeCommandOverrides {
     fun buildRawVariableAssignment(
         variable: String,
         value: String
-    ): String {
-        return "$variable=$value"
-    }
+    ): String = "$variable=$value"
 
     data class FlagSplit(
         val compileFlags: List<String>,

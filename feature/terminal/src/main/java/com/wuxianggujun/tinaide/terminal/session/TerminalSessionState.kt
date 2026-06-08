@@ -10,10 +10,13 @@ import java.util.UUID
 enum class SessionStatus {
     /** 正在启动 */
     STARTING,
+
     /** 运行中 */
     RUNNING,
+
     /** 已退出 */
     EXITED,
+
     /** 错误 */
     ERROR
 }
@@ -47,51 +50,39 @@ data class TerminalSessionState(
     /**
      * 更新会话状态
      */
-    fun withStatus(newStatus: SessionStatus): TerminalSessionState {
-        return copy(status = newStatus)
-    }
+    fun withStatus(newStatus: SessionStatus): TerminalSessionState = copy(status = newStatus)
 
     /**
      * 标记为已退出
      */
-    fun withExited(code: Int): TerminalSessionState {
-        return copy(
-            status = SessionStatus.EXITED,
-            exitCode = code
-        )
-    }
+    fun withExited(code: Int): TerminalSessionState = copy(
+        status = SessionStatus.EXITED,
+        exitCode = code
+    )
 
     /**
      * 标记为错误
      */
-    fun withError(message: String): TerminalSessionState {
-        return copy(
-            status = SessionStatus.ERROR,
-            errorMessage = message,
-            session = null
-        )
-    }
+    fun withError(message: String): TerminalSessionState = copy(
+        status = SessionStatus.ERROR,
+        errorMessage = message,
+        session = null
+    )
 
     /**
      * 更新标题
      */
-    fun withTitle(newTitle: String): TerminalSessionState {
-        return copy(title = newTitle)
-    }
+    fun withTitle(newTitle: String): TerminalSessionState = copy(title = newTitle)
 
     /**
      * 更新 Shell PID
      */
-    fun withShellPid(pid: Int): TerminalSessionState {
-        return copy(shellPid = pid)
-    }
+    fun withShellPid(pid: Int): TerminalSessionState = copy(shellPid = pid)
 
     /**
      * Run 模式下：程序正常结束后记录退出码（shell 仍在阻塞，Activity 据此切换到"等待关闭"态）。
      */
-    fun withRunEnded(code: Int): TerminalSessionState {
-        return copy(runExitCode = code)
-    }
+    fun withRunEnded(code: Int): TerminalSessionState = copy(runExitCode = code)
 
     /**
      * 检查会话是否可以接收输入
@@ -118,12 +109,10 @@ data class TerminalSessionState(
             id: String = UUID.randomUUID().toString(),
             title: String = "Terminal",
             backend: TerminalBackend = TerminalBackend.HOST
-        ): TerminalSessionState {
-            return TerminalSessionState(
-                id = id,
-                title = title,
-                backend = backend
-            )
-        }
+        ): TerminalSessionState = TerminalSessionState(
+            id = id,
+            title = title,
+            backend = backend
+        )
     }
 }

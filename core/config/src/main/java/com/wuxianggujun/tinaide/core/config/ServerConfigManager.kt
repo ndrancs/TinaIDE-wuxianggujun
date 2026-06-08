@@ -160,22 +160,20 @@ object ServerConfigManager {
         }
     }
 
-    private fun getDefaultConfig(): ServerConfigResponse {
-        return ServerConfigResponse(
-            version = 0,
-            updatedAt = null,
-            configRefreshIntervalSecs = 300,
-            features = FeatureFlags(
-                feedbackEnabled = true,
-                pluginMarketEnabled = true,
-                packageManagerEnabled = true,
-                developerOptionsEnabled = true
-            ),
-            client = ClientConfig(
-                minClientVersion = "1.0.0",
-                recommendedClientVersion = "1.0.0",
-                forceUpdate = false
-            )
+    private fun getDefaultConfig(): ServerConfigResponse = ServerConfigResponse(
+        version = 0,
+        updatedAt = null,
+        configRefreshIntervalSecs = 300,
+        features = FeatureFlags(
+            feedbackEnabled = true,
+            pluginMarketEnabled = true,
+            packageManagerEnabled = true,
+            developerOptionsEnabled = true
+        ),
+        client = ClientConfig(
+            minClientVersion = "1.0.0",
+            recommendedClientVersion = "1.0.0",
+            forceUpdate = false
         )
-    }
+    )
 }

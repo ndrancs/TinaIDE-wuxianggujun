@@ -55,24 +55,24 @@ object Prefs {
     private const val CONFIG_PREFS_NAME = "tinaide_config"
 
     @Volatile
-    private var _configManager: IConfigManager? = null
+    private var configManagerRef: IConfigManager? = null
 
     @Volatile
-    private var _appContext: Context? = null
+    private var appContextRef: Context? = null
 
     fun initialize(context: Context, configManager: IConfigManager) {
-        if (_configManager != null) return
-        _appContext = context.applicationContext
-        _configManager = configManager
+        if (configManagerRef != null) return
+        appContextRef = context.applicationContext
+        configManagerRef = configManager
     }
 
     private val configManager: IConfigManager
-        get() = checkNotNull(_configManager) {
+        get() = checkNotNull(configManagerRef) {
             "Prefs not initialized. Call Prefs.initialize(context, configManager) in TinaApplication.onCreate()."
         }
 
     private val appContext: Context
-        get() = checkNotNull(_appContext) {
+        get() = checkNotNull(appContextRef) {
             "Prefs not initialized. Call Prefs.initialize(context, configManager) in TinaApplication.onCreate()."
         }
 
@@ -245,12 +245,10 @@ object Prefs {
         return prefs.getString(ConfigKeys.Theme.key, AppTheme.LIGHT.name) ?: AppTheme.LIGHT.name
     }
 
-    fun resolveNightMode(themeName: String): Int {
-        return when (themeName) {
-            AppTheme.DARK.name, AppTheme.GRAY.name -> AppCompatDelegate.MODE_NIGHT_YES
-            AppTheme.AUTO.name -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-            else -> AppCompatDelegate.MODE_NIGHT_NO
-        }
+    fun resolveNightMode(themeName: String): Int = when (themeName) {
+        AppTheme.DARK.name, AppTheme.GRAY.name -> AppCompatDelegate.MODE_NIGHT_YES
+        AppTheme.AUTO.name -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        else -> AppCompatDelegate.MODE_NIGHT_NO
     }
 
     fun applyNightMode(themeName: String) {
@@ -286,9 +284,9 @@ object Prefs {
      * 编辑器设置 StateFlow，用于响应式更新已打开的编辑器
      */
     val editorSettingsFlow: StateFlow<EditorSettings>
-        get() = _editorSettingsState.asStateFlow()
+        get() = editorSettingsState.asStateFlow()
 
-    private val _editorSettingsState: MutableStateFlow<EditorSettings> by lazy {
+    private val editorSettingsState: MutableStateFlow<EditorSettings> by lazy {
         MutableStateFlow(readEditorSettings())
     }
 
@@ -298,9 +296,9 @@ object Prefs {
      * 注意：这是“编辑器主题”，与 AppTheme（整体应用主题）不同。
      */
     val editorThemeFlow: StateFlow<String>
-        get() = _editorThemeState.asStateFlow()
+        get() = editorThemeState.asStateFlow()
 
-    private val _editorThemeState: MutableStateFlow<String> by lazy {
+    private val editorThemeState: MutableStateFlow<String> by lazy {
         MutableStateFlow(editorTheme)
     }
 
@@ -308,9 +306,9 @@ object Prefs {
      * LSP 辅助能力设置 StateFlow，用于响应式更新已打开的编辑器。
      */
     val lspAssistSettingsFlow: StateFlow<LspAssistSettings>
-        get() = _lspAssistSettingsState.asStateFlow()
+        get() = lspAssistSettingsState.asStateFlow()
 
-    private val _lspAssistSettingsState: MutableStateFlow<LspAssistSettings> by lazy {
+    private val lspAssistSettingsState: MutableStateFlow<LspAssistSettings> by lazy {
         MutableStateFlow(readLspAssistSettings())
     }
 
@@ -318,9 +316,9 @@ object Prefs {
      * LSP Folding Range 开关 StateFlow，用于即时刷新折叠数据源。
      */
     val lspFoldingRangeEnabledFlow: StateFlow<Boolean>
-        get() = _lspFoldingRangeEnabledState.asStateFlow()
+        get() = lspFoldingRangeEnabledState.asStateFlow()
 
-    private val _lspFoldingRangeEnabledState: MutableStateFlow<Boolean> by lazy {
+    private val lspFoldingRangeEnabledState: MutableStateFlow<Boolean> by lazy {
         MutableStateFlow(lspFoldingRangeEnabled)
     }
 
@@ -329,114 +327,106 @@ object Prefs {
      * 修改后需要重新连接 LSP 才能生效。
      */
     val clangdSettingsFlow: StateFlow<ClangdSettings>
-        get() = _clangdSettingsState.asStateFlow()
+        get() = clangdSettingsState.asStateFlow()
 
-    private val _clangdSettingsState: MutableStateFlow<ClangdSettings> by lazy {
+    private val clangdSettingsState: MutableStateFlow<ClangdSettings> by lazy {
         MutableStateFlow(readClangdSettings())
     }
 
     /** 开发者诊断日志设置 StateFlow，用于开发者选项页实时同步。 */
     val devDiagnosticsSettingsFlow: StateFlow<DeveloperDiagnosticsSettings>
-        get() = _devDiagnosticsSettingsState.asStateFlow()
+        get() = devDiagnosticsSettingsState.asStateFlow()
 
-    private val _devDiagnosticsSettingsState: MutableStateFlow<DeveloperDiagnosticsSettings> by lazy {
+    private val devDiagnosticsSettingsState: MutableStateFlow<DeveloperDiagnosticsSettings> by lazy {
         MutableStateFlow(readDeveloperDiagnosticsSettings())
     }
 
     /** 编辑器 LSP 总开关 StateFlow，用于测试页/开发者选项即时切换。 */
     val devEditorLspEnabledFlow: StateFlow<Boolean>
-        get() = _devEditorLspEnabledState.asStateFlow()
+        get() = devEditorLspEnabledState.asStateFlow()
 
-    private val _devEditorLspEnabledState: MutableStateFlow<Boolean> by lazy {
+    private val devEditorLspEnabledState: MutableStateFlow<Boolean> by lazy {
         MutableStateFlow(devEditorLspEnabled)
     }
 
     /** 内置 CMake LSP 开关 StateFlow，用于测试页/开发者选项即时切换。 */
     val devBuiltinCmakeLspEnabledFlow: StateFlow<Boolean>
-        get() = _devBuiltinCmakeLspEnabledState.asStateFlow()
+        get() = devBuiltinCmakeLspEnabledState.asStateFlow()
 
-    private val _devBuiltinCmakeLspEnabledState: MutableStateFlow<Boolean> by lazy {
+    private val devBuiltinCmakeLspEnabledState: MutableStateFlow<Boolean> by lazy {
         MutableStateFlow(devBuiltinCmakeLspEnabled)
     }
 
-    private fun readEditorSettings(): EditorSettings {
-        return EditorSettings(
-            fontSize = editorFontSize,
-            tabSize = editorTabSize,
-            wordWrap = editorWordWrap,
-            showLineNumbers = editorShowLineNumbers,
-            autoIndent = editorAutoIndent,
-            rainbowBrackets = editorRainbowBrackets,
-            rainbowBracketsMaxLines = editorRainbowBracketsMaxLines,
-            fontPath = editorFontPath,
-            codeFolding = editorCodeFolding,
-            renderWhitespace = editorRenderWhitespace,
-            insertSpacesForTabs = editorInsertSpacesForTabs,
-            scrollFlingEnabled = editorScrollFlingEnabled,
-            singleDirectionDragging = editorSingleDirectionDragging,
-            singleDirectionFling = editorSingleDirectionFling
-        )
-    }
+    private fun readEditorSettings(): EditorSettings = EditorSettings(
+        fontSize = editorFontSize,
+        tabSize = editorTabSize,
+        wordWrap = editorWordWrap,
+        showLineNumbers = editorShowLineNumbers,
+        autoIndent = editorAutoIndent,
+        rainbowBrackets = editorRainbowBrackets,
+        rainbowBracketsMaxLines = editorRainbowBracketsMaxLines,
+        fontPath = editorFontPath,
+        codeFolding = editorCodeFolding,
+        renderWhitespace = editorRenderWhitespace,
+        insertSpacesForTabs = editorInsertSpacesForTabs,
+        scrollFlingEnabled = editorScrollFlingEnabled,
+        singleDirectionDragging = editorSingleDirectionDragging,
+        singleDirectionFling = editorSingleDirectionFling
+    )
 
-    private fun readLspAssistSettings(): LspAssistSettings {
-        return LspAssistSettings(
-            signatureHelpEnabled = lspSignatureHelpEnabled,
-            inlayHintsEnabled = lspInlayHintsEnabled,
-            semanticTokensEnabled = lspSemanticTokensEnabled,
-        )
-    }
+    private fun readLspAssistSettings(): LspAssistSettings = LspAssistSettings(
+        signatureHelpEnabled = lspSignatureHelpEnabled,
+        inlayHintsEnabled = lspInlayHintsEnabled,
+        semanticTokensEnabled = lspSemanticTokensEnabled,
+    )
 
-    private fun readClangdSettings(): ClangdSettings {
-        return ClangdSettings(
-            backgroundIndex = clangdBackgroundIndex,
-            clangTidy = clangdClangTidy,
-            headerInsertion = ClangdSettings.HeaderInsertionMode.fromValue(clangdHeaderInsertion),
-            completionStyle = ClangdSettings.CompletionStyle.fromValue(clangdCompletionStyle),
-            functionArgPlaceholders = clangdFunctionArgPlaceholders,
-        )
-    }
+    private fun readClangdSettings(): ClangdSettings = ClangdSettings(
+        backgroundIndex = clangdBackgroundIndex,
+        clangTidy = clangdClangTidy,
+        headerInsertion = ClangdSettings.HeaderInsertionMode.fromValue(clangdHeaderInsertion),
+        completionStyle = ClangdSettings.CompletionStyle.fromValue(clangdCompletionStyle),
+        functionArgPlaceholders = clangdFunctionArgPlaceholders,
+    )
 
     private fun notifyClangdSettingsChanged() {
-        _clangdSettingsState.value = readClangdSettings()
+        clangdSettingsState.value = readClangdSettings()
     }
 
-    private fun readDeveloperDiagnosticsSettings(): DeveloperDiagnosticsSettings {
-        return DeveloperDiagnosticsSettings(
-            diagnosticsEnabled = devDiagnosticsEnabled,
-            lspCompileCommandsSelectionLogEnabled = devLspCompileCommandsSelectionLogEnabled,
-            lspClangdStartupLogEnabled = devLspClangdStartupLogEnabled,
-            editorTouchDiagnosticsEnabled = editorTouchDiagnosticsEnabled,
-            gestureTraceEnabled = devGestureTraceEnabled,
-            editorInternalTouchLogEnabled = devEditorTouchInternalLogEnabled,
-            editorScaleLogEnabled = devEditorTouchScaleLogEnabled,
-            editorFocusLogEnabled = devEditorTouchFocusLogEnabled,
-            editorScrollLogEnabled = devEditorTouchScrollLogEnabled,
-            editorFlingLogEnabled = devEditorTouchFlingLogEnabled
-        )
-    }
+    private fun readDeveloperDiagnosticsSettings(): DeveloperDiagnosticsSettings = DeveloperDiagnosticsSettings(
+        diagnosticsEnabled = devDiagnosticsEnabled,
+        lspCompileCommandsSelectionLogEnabled = devLspCompileCommandsSelectionLogEnabled,
+        lspClangdStartupLogEnabled = devLspClangdStartupLogEnabled,
+        editorTouchDiagnosticsEnabled = editorTouchDiagnosticsEnabled,
+        gestureTraceEnabled = devGestureTraceEnabled,
+        editorInternalTouchLogEnabled = devEditorTouchInternalLogEnabled,
+        editorScaleLogEnabled = devEditorTouchScaleLogEnabled,
+        editorFocusLogEnabled = devEditorTouchFocusLogEnabled,
+        editorScrollLogEnabled = devEditorTouchScrollLogEnabled,
+        editorFlingLogEnabled = devEditorTouchFlingLogEnabled
+    )
 
     private fun notifyDeveloperDiagnosticsSettingsChanged() {
-        _devDiagnosticsSettingsState.value = readDeveloperDiagnosticsSettings()
+        devDiagnosticsSettingsState.value = readDeveloperDiagnosticsSettings()
     }
 
     private fun notifyDevEditorLspEnabledChanged() {
-        _devEditorLspEnabledState.value = devEditorLspEnabled
+        devEditorLspEnabledState.value = devEditorLspEnabled
     }
 
     private fun notifyDevBuiltinCmakeLspEnabledChanged() {
-        _devBuiltinCmakeLspEnabledState.value = devBuiltinCmakeLspEnabled
+        devBuiltinCmakeLspEnabledState.value = devBuiltinCmakeLspEnabled
     }
 
     private fun notifyLspAssistSettingsChanged() {
-        _lspAssistSettingsState.value = readLspAssistSettings()
+        lspAssistSettingsState.value = readLspAssistSettings()
     }
 
     private fun notifyLspFoldingRangeEnabledChanged() {
-        _lspFoldingRangeEnabledState.value = lspFoldingRangeEnabled
+        lspFoldingRangeEnabledState.value = lspFoldingRangeEnabled
     }
 
     private fun notifyEditorSettingsChanged() {
-        _editorSettingsState.value = readEditorSettings()
+        editorSettingsState.value = readEditorSettings()
     }
 
     /**
@@ -735,9 +725,9 @@ object Prefs {
 
     /** 开发者选项启用状态的 StateFlow */
     val developerOptionsEnabledFlow: StateFlow<Boolean>
-        get() = _developerOptionsEnabledState.asStateFlow()
+        get() = developerOptionsEnabledState.asStateFlow()
 
-    private val _developerOptionsEnabledState: MutableStateFlow<Boolean> by lazy {
+    private val developerOptionsEnabledState: MutableStateFlow<Boolean> by lazy {
         MutableStateFlow(developerOptionsEnabled)
     }
 
@@ -757,11 +747,14 @@ object Prefs {
 
     private val debugToolbarPositionState: MutableStateFlow<DebugToolbarPosition> by lazy {
         val state = MutableStateFlow(readDebugToolbarPositionFromConfig())
-        configManager.addListener(ConfigKeys.DebugToolbarPosition.key, object : ConfigChangeListener {
-            override fun onConfigChanged(key: String, newValue: Any?) {
-                state.value = readDebugToolbarPositionFromConfig()
+        configManager.addListener(
+            ConfigKeys.DebugToolbarPosition.key,
+            object : ConfigChangeListener {
+                override fun onConfigChanged(key: String, newValue: Any?) {
+                    state.value = readDebugToolbarPositionFromConfig()
+                }
             }
-        })
+        )
         state
     }
 
@@ -804,7 +797,7 @@ object Prefs {
 
     fun setEditorTheme(theme: String) {
         sharedPrefs.edit().putString("editor_theme", theme).apply()
-        _editorThemeState.value = theme
+        editorThemeState.value = theme
     }
 
     fun setEditorRainbowBrackets(enabled: Boolean) {
@@ -850,6 +843,7 @@ object Prefs {
         sharedPrefs.edit().putBoolean("editor_single_direction_fling", enabled).apply()
         notifyEditorSettingsChanged()
     }
+
     /**
      * 设置编辑器硬件加速开关
      * 注意：修改后需要重新打开文件才能生效
@@ -1018,7 +1012,7 @@ object Prefs {
      */
     fun setDeveloperOptionsEnabled(enabled: Boolean) {
         sharedPrefs.edit().putBoolean("developer_options_enabled", enabled).apply()
-        _developerOptionsEnabledState.value = enabled
+        developerOptionsEnabledState.value = enabled
     }
 
     // ========== 调试配置写入 ==========
@@ -1031,5 +1025,4 @@ object Prefs {
         val value = configManager.get(ConfigKeys.DebugToolbarPosition)
         return DebugToolbarPosition.fromString(value)
     }
-
 }

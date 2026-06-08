@@ -7,9 +7,9 @@ import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
 import com.wuxianggujun.tinaide.core.ndk.AndroidNativeToolchainManager
 import com.wuxianggujun.tinaide.core.util.NativeExecutableRunner
-import timber.log.Timber
 import java.io.File
 import java.util.concurrent.TimeUnit
+import timber.log.Timber
 
 /**
  * 原生代码格式化服务（不使用 PRoot）
@@ -44,10 +44,11 @@ class NativeCodeFormatter(
      */
     private val supportedExtensions: Set<String> =
         CxxFileSupport.editorRelatedExtensions + setOf(
-            "java",   // Java
-            "js", "ts", // JavaScript/TypeScript
-            "json",   // JSON
-            "proto"   // Protocol Buffers
+            "java", // Java
+            "js",
+            "ts", // JavaScript/TypeScript
+            "json", // JSON
+            "proto" // Protocol Buffers
         )
 
     // ========== 公开 API ==========
@@ -108,11 +109,9 @@ class NativeCodeFormatter(
     /**
      * 获取 clang-format 版本
      */
-    suspend fun getVersion(): String? {
-        return when (val result = checkAvailability()) {
-            is AvailabilityResult.Available -> result.version
-            is AvailabilityResult.NotAvailable -> null
-        }
+    suspend fun getVersion(): String? = when (val result = checkAvailability()) {
+        is AvailabilityResult.Available -> result.version
+        is AvailabilityResult.NotAvailable -> null
     }
 
     /**
@@ -270,9 +269,7 @@ class NativeCodeFormatter(
     /**
      * 获取用户设置的默认格式化风格
      */
-    fun getUserDefaultStyle(): FormatStyle {
-        return FormatStyle.fromString(Prefs.codeFormatStyle)
-    }
+    fun getUserDefaultStyle(): FormatStyle = FormatStyle.fromString(Prefs.codeFormatStyle)
 
     /**
      * 检查指定目录或其父目录中是否存在 .clang-format 文件
@@ -304,23 +301,17 @@ class NativeCodeFormatter(
     /**
      * 将内置配置文件部署到项目目录
      */
-    fun deployConfigToProject(style: FormatStyle, projectDir: File, overwrite: Boolean = false): Boolean {
-        return configManager.deployConfig(style, projectDir, overwrite)
-    }
+    fun deployConfigToProject(style: FormatStyle, projectDir: File, overwrite: Boolean = false): Boolean = configManager.deployConfig(style, projectDir, overwrite)
 
     /**
      * 获取内置配置文件的内容
      */
-    fun getBuiltinConfigContent(style: FormatStyle): String? {
-        return configManager.readConfigContent(style)
-    }
+    fun getBuiltinConfigContent(style: FormatStyle): String? = configManager.readConfigContent(style)
 
     /**
      * 获取所有可用的内置配置
      */
-    fun getAvailableConfigs(): List<ClangFormatConfigManager.ConfigInfo> {
-        return configManager.availableConfigs
-    }
+    fun getAvailableConfigs(): List<ClangFormatConfigManager.ConfigInfo> = configManager.availableConfigs
 
     // ========== 私有方法 ==========
 
@@ -356,23 +347,21 @@ class NativeCodeFormatter(
     /**
      * 构建 --style 参数
      */
-    private fun buildStyleArgument(style: FormatStyle): String {
-        return when (style) {
-            FormatStyle.FILE -> "--style=file"
-            is FormatStyle.Custom -> "--style=${style.config}"
-            else -> {
-                val styleName = when (style) {
-                    FormatStyle.LLVM -> "LLVM"
-                    FormatStyle.GOOGLE -> "Google"
-                    FormatStyle.CHROMIUM -> "Chromium"
-                    FormatStyle.MOZILLA -> "Mozilla"
-                    FormatStyle.WEBKIT -> "WebKit"
-                    FormatStyle.MICROSOFT -> "Microsoft"
-                    FormatStyle.GNU -> "GNU"
-                    else -> "LLVM"
-                }
-                "--style=$styleName"
+    private fun buildStyleArgument(style: FormatStyle): String = when (style) {
+        FormatStyle.FILE -> "--style=file"
+        is FormatStyle.Custom -> "--style=${style.config}"
+        else -> {
+            val styleName = when (style) {
+                FormatStyle.LLVM -> "LLVM"
+                FormatStyle.GOOGLE -> "Google"
+                FormatStyle.CHROMIUM -> "Chromium"
+                FormatStyle.MOZILLA -> "Mozilla"
+                FormatStyle.WEBKIT -> "WebKit"
+                FormatStyle.MICROSOFT -> "Microsoft"
+                FormatStyle.GNU -> "GNU"
+                else -> "LLVM"
             }
+            "--style=$styleName"
         }
     }
 
@@ -384,71 +373,69 @@ class NativeCodeFormatter(
         workingDir: File,
         timeout: Long,
         stdin: String? = null
-    ): CommandResult {
-        return try {
-            // 使用 NativeExecutableRunner 构建命令，自动处理 linker64 启动逻辑
-            val executable = command[0]
-            val args = command.drop(1)
-            val fullCommand = com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.buildCommand(
-                executable = executable,
-                args = args
+    ): CommandResult = try {
+        // 使用 NativeExecutableRunner 构建命令，自动处理 linker64 启动逻辑
+        val executable = command[0]
+        val args = command.drop(1)
+        val fullCommand = com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.buildCommand(
+            executable = executable,
+            args = args
+        )
+
+        val processBuilder = ProcessBuilder(fullCommand).apply {
+            directory(workingDir)
+            com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.configureEnvironment(
+                this,
+                nativeLibDir,
+                toolchainManager.getBinDir().absolutePath,
+                tmpDir = appContext.cacheDir.absolutePath,
+                homeDir = appContext.filesDir.absolutePath
             )
-
-            val processBuilder = ProcessBuilder(fullCommand).apply {
-                directory(workingDir)
-                com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.configureEnvironment(
-                    this,
-                    nativeLibDir,
-                    toolchainManager.getBinDir().absolutePath,
-                    tmpDir = appContext.cacheDir.absolutePath,
-                    homeDir = appContext.filesDir.absolutePath
-                )
-                NativeExecutableRunner.applyRecommendedTinaExec(
-                    environment = environment(),
-                    context = appContext,
-                    fullCommand = fullCommand
-                )
-                redirectErrorStream(true)
-            }
-
-            val process = processBuilder.start()
-            val output = StringBuilder()
-
-            // 写入 stdin（如果有）
-            if (stdin != null) {
-                process.outputStream.bufferedWriter().use { writer ->
-                    writer.write(stdin)
-                }
-            }
-
-            // 读取输出
-            process.inputStream.bufferedReader().use { reader ->
-                reader.lineSequence().forEach { line ->
-                    output.appendLine(line)
-                    Timber.tag(TAG).v(line)
-                }
-            }
-
-            // 等待进程结束
-            val finished = process.waitFor(timeout, TimeUnit.MILLISECONDS)
-            val exitCode = if (finished) {
-                process.exitValue()
-            } else {
-                process.destroy()
-                -1
-            }
-
-            CommandResult(
-                exitCode = exitCode,
-                output = output.toString()
+            NativeExecutableRunner.applyRecommendedTinaExec(
+                environment = environment(),
+                context = appContext,
+                fullCommand = fullCommand
             )
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to execute native command")
-            CommandResult(
-                exitCode = -1,
-                output = "Exception: ${e.message}"
-            )
+            redirectErrorStream(true)
         }
+
+        val process = processBuilder.start()
+        val output = StringBuilder()
+
+        // 写入 stdin（如果有）
+        if (stdin != null) {
+            process.outputStream.bufferedWriter().use { writer ->
+                writer.write(stdin)
+            }
+        }
+
+        // 读取输出
+        process.inputStream.bufferedReader().use { reader ->
+            reader.lineSequence().forEach { line ->
+                output.appendLine(line)
+                Timber.tag(TAG).v(line)
+            }
+        }
+
+        // 等待进程结束
+        val finished = process.waitFor(timeout, TimeUnit.MILLISECONDS)
+        val exitCode = if (finished) {
+            process.exitValue()
+        } else {
+            process.destroy()
+            -1
+        }
+
+        CommandResult(
+            exitCode = exitCode,
+            output = output.toString()
+        )
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Failed to execute native command")
+        CommandResult(
+            exitCode = -1,
+            output = "Exception: ${e.message}"
+        )
     }
 
     private data class CommandResult(

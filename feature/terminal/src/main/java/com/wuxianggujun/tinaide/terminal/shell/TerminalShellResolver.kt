@@ -7,10 +7,10 @@ import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
 import com.wuxianggujun.tinaide.terminal.preferences.TerminalPreferences
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 
 enum class TerminalBackend {
     PROOT,
@@ -48,9 +48,7 @@ class TerminalShellResolver(
         }.getOrNull() ?: UnavailableLinuxEnvironmentProvider
     }
 
-    private fun resolvePRootEnvironment(): PRootEnvironment? {
-        return linuxEnvironmentProvider.get() as? PRootEnvironment
-    }
+    private fun resolvePRootEnvironment(): PRootEnvironment? = linuxEnvironmentProvider.get() as? PRootEnvironment
 
     /**
      * 根据用户配置和系统状态决定使用的后端
@@ -58,19 +56,17 @@ class TerminalShellResolver(
      * 设置页的可用性探测仍使用全局偏好来选择探测后端。
      * 终端会话启动流程直接传入 TerminalBackend，不经过此方法。
      */
-    private fun resolveBackend(): TerminalBackend {
-        return when (terminalPrefs.terminalBackendMode) {
-            TerminalPreferences.BackendMode.AUTO -> {
-                // 自动模式：默认 HOST（PRoot 由用户在新建标签时主动选择）
-                TerminalBackend.HOST
-            }
-            TerminalPreferences.BackendMode.PROOT -> {
-                // 强制 PRoot 模式：如果未安装 PRoot，回退到 HOST
-                if (isPRootInstalled()) TerminalBackend.PROOT else TerminalBackend.HOST
-            }
-            TerminalPreferences.BackendMode.HOST -> {
-                TerminalBackend.HOST
-            }
+    private fun resolveBackend(): TerminalBackend = when (terminalPrefs.terminalBackendMode) {
+        TerminalPreferences.BackendMode.AUTO -> {
+            // 自动模式：默认 HOST（PRoot 由用户在新建标签时主动选择）
+            TerminalBackend.HOST
+        }
+        TerminalPreferences.BackendMode.PROOT -> {
+            // 强制 PRoot 模式：如果未安装 PRoot，回退到 HOST
+            if (isPRootInstalled()) TerminalBackend.PROOT else TerminalBackend.HOST
+        }
+        TerminalPreferences.BackendMode.HOST -> {
+            TerminalBackend.HOST
         }
     }
 
@@ -98,11 +94,10 @@ class TerminalShellResolver(
         )
     }
 
-    suspend fun isShellAvailable(shellType: TerminalPreferences.ShellType): Boolean =
-        withContext(Dispatchers.IO) {
-            val backend = resolveBackend()
-            isShellAvailable(backend, shellType)
-        }
+    suspend fun isShellAvailable(shellType: TerminalPreferences.ShellType): Boolean = withContext(Dispatchers.IO) {
+        val backend = resolveBackend()
+        isShellAvailable(backend, shellType)
+    }
 
     /**
      * 使用指定后端解析 Shell（per-session backend）
@@ -314,13 +309,11 @@ class TerminalShellResolver(
         }
     }
 
-    private fun guestShellCandidates(shellType: TerminalPreferences.ShellType): List<String> {
-        return when (shellType) {
-            TerminalPreferences.ShellType.ZSH -> listOf("/usr/bin/zsh", "/bin/zsh")
-            TerminalPreferences.ShellType.BASH -> listOf("/usr/bin/bash", "/bin/bash")
-            TerminalPreferences.ShellType.SH -> listOf("/bin/sh", "/usr/bin/sh")
-            TerminalPreferences.ShellType.AUTO -> emptyList()
-        }
+    private fun guestShellCandidates(shellType: TerminalPreferences.ShellType): List<String> = when (shellType) {
+        TerminalPreferences.ShellType.ZSH -> listOf("/usr/bin/zsh", "/bin/zsh")
+        TerminalPreferences.ShellType.BASH -> listOf("/usr/bin/bash", "/bin/bash")
+        TerminalPreferences.ShellType.SH -> listOf("/bin/sh", "/usr/bin/sh")
+        TerminalPreferences.ShellType.AUTO -> emptyList()
     }
 
     private fun hostShellCandidates(shellType: TerminalPreferences.ShellType): List<String> {
@@ -367,6 +360,3 @@ class TerminalShellResolver(
         return Strings.shell_error_format.strOr(context, prefix, configured.value, hint)
     }
 }
-
-
-

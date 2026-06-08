@@ -2,20 +2,20 @@ package com.wuxianggujun.tinaide.core.packages.backend
 
 import android.content.Context
 import com.wuxianggujun.tinaide.core.common.io.TarExtractor
-import com.wuxianggujun.tinaide.core.packages.api.PackageApiClient
 import com.wuxianggujun.tinaide.core.network.ApiResult
 import com.wuxianggujun.tinaide.core.network.registry.GitHubRegistryHttpClientFactory
+import com.wuxianggujun.tinaide.core.packages.api.PackageApiClient
 import com.wuxianggujun.tinaide.core.packages.download.DownloadError
 import com.wuxianggujun.tinaide.core.packages.download.DownloadResult
 import com.wuxianggujun.tinaide.core.packages.download.ResumableDownloader
 import com.wuxianggujun.tinaide.core.packages.model.*
-import timber.log.Timber
 import java.io.File
 import java.io.FileInputStream
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipFile
+import timber.log.Timber
 
 class DownloadPackageBackend(
     private val context: Context,
@@ -79,7 +79,7 @@ class DownloadPackageBackend(
             .filter { it.url.isNotBlank() }
             .sortedByDescending { it.priority }
 
-        val targetFile = File(downloadDir, "${packageId}-${version}.zip")
+        val targetFile = File(downloadDir, "$packageId-$version.zip")
         var lastError: DownloadError? = null
 
         for (source in sortedSources) {
@@ -117,9 +117,11 @@ class DownloadPackageBackend(
 
                     if (extractResult.isSuccess) {
                         targetFile.delete()
-                        progress(InstallProgressEvent.Completed(
-                            InstallResult.Success(packageId, version, Platform.ANDROID)
-                        ))
+                        progress(
+                            InstallProgressEvent.Completed(
+                                InstallResult.Success(packageId, version, Platform.ANDROID)
+                            )
+                        )
                         return InstallResult.Success(packageId, version, Platform.ANDROID)
                     } else {
                         val error = InstallError.ExtractionFailed(
@@ -157,30 +159,28 @@ class DownloadPackageBackend(
         archiveFormat: ArchiveFormat,
         extractPath: String,
         progress: (InstallProgressEvent) -> Unit
-    ): Result<Unit> {
-        return try {
-            val targetDir = File(installDir, extractPath)
-            if (targetDir.exists()) {
-                targetDir.deleteRecursively()
-            }
-            targetDir.mkdirs()
+    ): Result<Unit> = try {
+        val targetDir = File(installDir, extractPath)
+        if (targetDir.exists()) {
+            targetDir.deleteRecursively()
+        }
+        targetDir.mkdirs()
 
-            when (archiveFormat) {
-                ArchiveFormat.ZIP -> extractZip(archiveFile, targetDir, progress)
-                ArchiveFormat.TAR -> {
-                    TarExtractor.extract(archiveFile, targetDir) { pct ->
-                        progress(InstallProgressEvent.Extracting(pct))
-                    }
+        when (archiveFormat) {
+            ArchiveFormat.ZIP -> extractZip(archiveFile, targetDir, progress)
+            ArchiveFormat.TAR -> {
+                TarExtractor.extract(archiveFile, targetDir) { pct ->
+                    progress(InstallProgressEvent.Extracting(pct))
                 }
             }
-
-            Timber.tag(TAG).d("Extracted to ${targetDir.absolutePath}")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Extraction failed")
-            File(installDir, extractPath).deleteRecursively()
-            Result.failure(e)
         }
+
+        Timber.tag(TAG).d("Extracted to ${targetDir.absolutePath}")
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Extraction failed")
+        File(installDir, extractPath).deleteRecursively()
+        Result.failure(e)
     }
 
     private fun extractZip(
@@ -236,7 +236,7 @@ class DownloadPackageBackend(
         }
 
         return ArchiveTarget(
-            file = File(downloadDir, "${packageId}-${version}${suffixAndFormat.first}"),
+            file = File(downloadDir, "$packageId-${version}${suffixAndFormat.first}"),
             formatHint = suffixAndFormat.second
         )
     }
@@ -335,9 +335,7 @@ class DownloadPackageBackend(
         return targetDir.exists() && targetDir.listFiles()?.isNotEmpty() == true
     }
 
-    fun getInstallPath(packageId: String): File {
-        return File(installDir, packageId)
-    }
+    fun getInstallPath(packageId: String): File = File(installDir, packageId)
 
     fun clearDownloadCache() {
         downloader.clearTempFiles()

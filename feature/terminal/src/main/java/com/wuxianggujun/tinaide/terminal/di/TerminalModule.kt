@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide.terminal.di
 
-import com.wuxianggujun.tinaide.core.terminal.ILocaleInstaller
 import com.wuxianggujun.tinaide.core.terminal.IGuestDevPackagesInstaller
+import com.wuxianggujun.tinaide.core.terminal.ILocaleInstaller
 import com.wuxianggujun.tinaide.core.terminal.IShellInstaller
 import com.wuxianggujun.tinaide.core.terminal.IShellResolver
 import com.wuxianggujun.tinaide.core.terminal.ITerminalPreferences

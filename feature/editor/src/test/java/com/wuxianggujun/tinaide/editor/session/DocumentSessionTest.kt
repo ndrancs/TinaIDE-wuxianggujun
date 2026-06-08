@@ -75,14 +75,12 @@ class DocumentSessionTest {
     private fun createSession(
         file: File,
         scope: CoroutineScope = TestScope(StandardTestDispatcher())
-    ): DocumentSession {
-        return DocumentSession(
-            context = RuntimeEnvironment.getApplication(),
-            tabId = "tab-id",
-            file = file,
-            coroutineScope = scope
-        )
-    }
+    ): DocumentSession = DocumentSession(
+        context = RuntimeEnvironment.getApplication(),
+        tabId = "tab-id",
+        file = file,
+        coroutineScope = scope
+    )
 
     private class FakeEditorBinding(
         text: String,

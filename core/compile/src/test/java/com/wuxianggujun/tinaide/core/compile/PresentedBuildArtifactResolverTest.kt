@@ -67,53 +67,47 @@ class PresentedBuildArtifactResolverTest {
         assertThat(result.exportedPath).isNull()
     }
 
-    private fun createWorkspaceArtifact(projectRoot: File, fileName: String): File {
-        return File(projectRoot.parentFile, "workspace-build").apply { mkdirs() }
-            .resolve(fileName)
-            .apply { writeText("artifact-$fileName") }
-    }
+    private fun createWorkspaceArtifact(projectRoot: File, fileName: String): File = File(projectRoot.parentFile, "workspace-build").apply { mkdirs() }
+        .resolve(fileName)
+        .apply { writeText("artifact-$fileName") }
 
-    private fun createArtifact(file: File, variant: String, kind: ArtifactKind): Artifact {
-        return Artifact(
-            id = ArtifactId(
-                projectId = "project-id",
-                targetName = file.nameWithoutExtension,
-                variant = variant,
-            ),
-            absolutePath = file.absolutePath,
-            kind = kind,
-            contentHash = "deadbeef",
-            fingerprint = testFingerprint(file.absolutePath),
-            sources = emptyList(),
-            compiledAt = 1L,
-            buildTimeMs = 2L,
-        )
-    }
+    private fun createArtifact(file: File, variant: String, kind: ArtifactKind): Artifact = Artifact(
+        id = ArtifactId(
+            projectId = "project-id",
+            targetName = file.nameWithoutExtension,
+            variant = variant,
+        ),
+        absolutePath = file.absolutePath,
+        kind = kind,
+        contentHash = "deadbeef",
+        fingerprint = testFingerprint(file.absolutePath),
+        sources = emptyList(),
+        compiledAt = 1L,
+        buildTimeMs = 2L,
+    )
 
-    private fun testFingerprint(expectedOutputPath: String): BuildFingerprint {
-        return BuildFingerprint(
-            compilerType = "clang",
-            compilerPath = "/toolchains/clang",
-            toolchainId = "builtin",
-            sysrootApiLevel = 28,
-            buildType = "debug",
-            cmakeBuildType = null,
-            cmakeGenerator = null,
-            cFlags = "",
-            cppFlags = "",
-            ldFlags = "",
-            ldLibs = "",
-            cmakeExtraArgs = "",
-            cppStandard = "c++17",
-            optimizationLevel = "O0",
-            generateDebugInfo = true,
-            preferSharedLibraryForRun = false,
-            parallelJobs = 1,
-            resolvedRunMode = "native",
-            artifactKind = "EXECUTABLE",
-            expectedOutputPath = expectedOutputPath,
-            trackedInputsHash = "tracked",
-            extraEnvHash = null,
-        )
-    }
+    private fun testFingerprint(expectedOutputPath: String): BuildFingerprint = BuildFingerprint(
+        compilerType = "clang",
+        compilerPath = "/toolchains/clang",
+        toolchainId = "builtin",
+        sysrootApiLevel = 28,
+        buildType = "debug",
+        cmakeBuildType = null,
+        cmakeGenerator = null,
+        cFlags = "",
+        cppFlags = "",
+        ldFlags = "",
+        ldLibs = "",
+        cmakeExtraArgs = "",
+        cppStandard = "c++17",
+        optimizationLevel = "O0",
+        generateDebugInfo = true,
+        preferSharedLibraryForRun = false,
+        parallelJobs = 1,
+        resolvedRunMode = "native",
+        artifactKind = "EXECUTABLE",
+        expectedOutputPath = expectedOutputPath,
+        trackedInputsHash = "tracked",
+        extraEnvHash = null,
+    )
 }

@@ -22,19 +22,17 @@ abstract class TerminalDatabase : RoomDatabase() {
 
     companion object {
         @Volatile
-        private var INSTANCE: TerminalDatabase? = null
+        private var instanceRef: TerminalDatabase? = null
 
-        fun getInstance(context: Context): TerminalDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    TerminalDatabase::class.java,
-                    "tinaide_terminal.db"
-                )
-                    .build()
-                INSTANCE = instance
-                instance
-            }
+        fun getInstance(context: Context): TerminalDatabase = instanceRef ?: synchronized(this) {
+            val instance = Room.databaseBuilder(
+                context.applicationContext,
+                TerminalDatabase::class.java,
+                "tinaide_terminal.db"
+            )
+                .build()
+            instanceRef = instance
+            instance
         }
     }
 }

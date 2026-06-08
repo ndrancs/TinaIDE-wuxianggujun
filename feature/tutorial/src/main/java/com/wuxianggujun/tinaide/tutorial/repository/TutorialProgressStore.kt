@@ -7,12 +7,12 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import com.wuxianggujun.tinaide.tutorial.data.ProgressStatus
 import com.wuxianggujun.tinaide.tutorial.data.TutorialProgress
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import kotlinx.serialization.encodeToString
 
 /**
@@ -43,16 +43,12 @@ class TutorialProgressStore(private val context: Context) {
     /**
      * 获取特定教程的进度
      */
-    suspend fun getProgress(tutorialId: String): TutorialProgress? {
-        return allProgressFlow.first()[tutorialId]
-    }
+    suspend fun getProgress(tutorialId: String): TutorialProgress? = allProgressFlow.first()[tutorialId]
 
     /**
      * 获取所有教程进度
      */
-    suspend fun getAllProgress(): Map<String, TutorialProgress> {
-        return allProgressFlow.first()
-    }
+    suspend fun getAllProgress(): Map<String, TutorialProgress> = allProgressFlow.first()
 
     /**
      * 保存教程进度
@@ -150,9 +146,7 @@ class TutorialProgressStore(private val context: Context) {
     /**
      * 检查是否已完成新手引导
      */
-    suspend fun hasCompletedOnboarding(): Boolean {
-        return dataStore.data.first()[KEY_ONBOARDING_COMPLETED] == true
-    }
+    suspend fun hasCompletedOnboarding(): Boolean = dataStore.data.first()[KEY_ONBOARDING_COMPLETED] == true
 
     /**
      * 设置新手引导完成状态
@@ -193,16 +187,12 @@ class TutorialProgressStore(private val context: Context) {
     /**
      * 获取已完成的教程数量
      */
-    suspend fun getCompletedCount(): Int {
-        return getAllProgress().values.count { it.status == ProgressStatus.COMPLETED }
-    }
+    suspend fun getCompletedCount(): Int = getAllProgress().values.count { it.status == ProgressStatus.COMPLETED }
 
     /**
      * 获取进行中的教程数量
      */
-    suspend fun getInProgressCount(): Int {
-        return getAllProgress().values.count { it.status == ProgressStatus.IN_PROGRESS }
-    }
+    suspend fun getInProgressCount(): Int = getAllProgress().values.count { it.status == ProgressStatus.IN_PROGRESS }
 
     /**
      * 解析进度 Map JSON

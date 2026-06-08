@@ -18,7 +18,5 @@ object AiConfigStrategy {
      * 开源版不再做 VIP 守卫。这里保留纯函数入口，方便以后集中处理
      * 备份恢复、脚本调用等非 UI 路径的配置归一化。
      */
-    fun normalizeForOpenSource(config: AiConfig): AiConfig {
-        return config
-    }
+    fun normalizeForOpenSource(config: AiConfig): AiConfig = config
 }

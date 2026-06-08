@@ -2,9 +2,9 @@ package com.wuxianggujun.tinaide.core.compile
 
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.storage.ProjectDirStructure
-import org.junit.Test
 import java.io.File
 import java.nio.file.Files
+import org.junit.Test
 
 class BuildArtifactExporterTest {
 

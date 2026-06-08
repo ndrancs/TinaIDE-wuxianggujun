@@ -7,10 +7,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
@@ -103,7 +103,7 @@ class EditorPopupComposeSmokeTest {
             )
         }
 
-        assertThat(composeRule.onNodeWithTag(completionPopupTag).fetchSemanticsNode()).isNotNull()
+        assertThat(composeRule.onNodeWithTag(COMPLETION_POPUP_TAG).fetchSemanticsNode()).isNotNull()
         assertThat(composeRule.onNodeWithTag(completionPopupRowTag(0)).fetchSemanticsNode()).isNotNull()
         assertThat(composeRule.onNodeWithTag(completionPopupRowTag(1)).fetchSemanticsNode()).isNotNull()
         assertThat(
@@ -439,13 +439,13 @@ class EditorPopupComposeSmokeTest {
         }
 
         assertThat(
-            composeRule.onNodeWithTag(selectionContextMenuTag).fetchSemanticsNode()
+            composeRule.onNodeWithTag(SELECTION_CONTEXT_MENU_TAG).fetchSemanticsNode()
         ).isNotNull()
 
-        composeRule.onNodeWithTag(selectionContextMenuTextGroupTag).performClick()
-        composeRule.onNodeWithTag(selectionContextMenuCopyActionTag).performClick()
-        composeRule.onNodeWithTag(selectionContextMenuTextGroupTag).performClick()
-        composeRule.onNodeWithTag(selectionContextMenuHoverActionTag).performClick()
+        composeRule.onNodeWithTag(SELECTION_CONTEXT_MENU_TEXT_GROUP_TAG).performClick()
+        composeRule.onNodeWithTag(SELECTION_CONTEXT_MENU_COPY_ACTION_TAG).performClick()
+        composeRule.onNodeWithTag(SELECTION_CONTEXT_MENU_TEXT_GROUP_TAG).performClick()
+        composeRule.onNodeWithTag(SELECTION_CONTEXT_MENU_HOVER_ACTION_TAG).performClick()
 
         assertThat(events).containsExactly("copy", "hover").inOrder()
     }

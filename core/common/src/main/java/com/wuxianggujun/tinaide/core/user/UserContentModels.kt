@@ -21,8 +21,8 @@ data class FavoritePlugin(
  */
 data class DownloadHistoryItem(
     val id: String,
-    val itemType: String,  // 项目类型（plugin, template, snippet 等）
-    val itemId: String,    // 项目 ID
+    val itemType: String, // 项目类型（plugin, template, snippet 等）
+    val itemId: String, // 项目 ID
     val version: String?,
     val downloadedAt: String,
     val fileSize: Long?,

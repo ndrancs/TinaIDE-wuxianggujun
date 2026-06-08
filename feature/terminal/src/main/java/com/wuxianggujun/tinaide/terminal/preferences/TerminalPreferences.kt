@@ -5,14 +5,14 @@ import android.content.SharedPreferences
 import android.graphics.Typeface
 import androidx.annotation.StringRes
 import com.wuxianggujun.tinaide.core.font.AppFontManager
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.str
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.terminal.ITerminalPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
 
 /**
  * 终端设置持久化
@@ -36,7 +36,7 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
                 instance ?: TerminalPreferences(appContext).also { instance = it }
             }
         }
-        
+
         private const val KEY_FONT_SIZE = "font_size"
         private const val KEY_THEME_NAME = "theme_name"
         private const val KEY_LOCALE = "locale"
@@ -51,35 +51,35 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
         val DEFAULT_FONT_SIZE = AppFontManager.DEFAULT_TERMINAL_FONT_SIZE
         val MIN_FONT_SIZE = AppFontManager.MIN_FONT_SIZE
         val MAX_FONT_SIZE = AppFontManager.TERMINAL_MAX_FONT_SIZE
-        
+
         const val DEFAULT_THEME = "Default"
         const val DEFAULT_LOCALE = "C.UTF-8"
 
         // 字体类型常量
-        const val FONT_TYPE_BUILTIN = "builtin"   // 使用内置字体
-        const val FONT_TYPE_SYSTEM = "system"     // 使用系统等宽字体
-        const val FONT_TYPE_CUSTOM = "custom"     // 使用自定义字体
+        const val FONT_TYPE_BUILTIN = "builtin" // 使用内置字体
+        const val FONT_TYPE_SYSTEM = "system" // 使用系统等宽字体
+        const val FONT_TYPE_CUSTOM = "custom" // 使用自定义字体
 
         const val DEFAULT_FONT_NAME = FONT_TYPE_BUILTIN
 
         // 光标闪烁常量（与 TerminalView 保持一致）
-        const val CURSOR_BLINK_RATE_MIN = 100     // 最小闪烁率 100ms
-        const val CURSOR_BLINK_RATE_MAX = 2000    // 最大闪烁率 2000ms
+        const val CURSOR_BLINK_RATE_MIN = 100 // 最小闪烁率 100ms
+        const val CURSOR_BLINK_RATE_MAX = 2000 // 最大闪烁率 2000ms
         const val DEFAULT_CURSOR_BLINK_RATE = 500 // 默认闪烁率 500ms
         const val DEFAULT_CURSOR_BLINK_ENABLED = false // 默认不启用光标闪烁
-        
+
         // Shell 类型常量
-        const val SHELL_TYPE_AUTO = "auto"        // 自动检测
-        const val SHELL_TYPE_SH = "sh"            // Bourne Shell
-        const val SHELL_TYPE_BASH = "bash"        // Bash
-        const val SHELL_TYPE_ZSH = "zsh"          // Zsh
+        const val SHELL_TYPE_AUTO = "auto" // 自动检测
+        const val SHELL_TYPE_SH = "sh" // Bourne Shell
+        const val SHELL_TYPE_BASH = "bash" // Bash
+        const val SHELL_TYPE_ZSH = "zsh" // Zsh
 
         const val DEFAULT_SHELL_TYPE = SHELL_TYPE_AUTO
 
         // 终端后端模式常量
-        const val BACKEND_AUTO = "auto"           // 自动（已安装 PRoot 则用 PRoot，否则用 HOST）
-        const val BACKEND_PROOT = "proot"         // 强制使用 PRoot Linux 环境
-        const val BACKEND_HOST = "host"           // 强制使用 Android 原生环境
+        const val BACKEND_AUTO = "auto" // 自动（已安装 PRoot 则用 PRoot，否则用 HOST）
+        const val BACKEND_PROOT = "proot" // 强制使用 PRoot Linux 环境
+        const val BACKEND_HOST = "host" // 强制使用 Android 原生环境
 
         const val DEFAULT_BACKEND = BACKEND_AUTO
     }
@@ -100,11 +100,10 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
             get() = displayNameResId.str()
 
         companion object {
-            fun fromValue(value: String): TerminalLocale =
-                entries.find { it.value == value } ?: C_UTF8
+            fun fromValue(value: String): TerminalLocale = entries.find { it.value == value } ?: C_UTF8
         }
     }
-    
+
     /**
      * 支持的 Shell 类型
      */
@@ -115,8 +114,7 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
         ZSH("zsh");
 
         companion object {
-            fun fromValue(value: String): ShellType =
-                entries.find { it.value == value } ?: AUTO
+            fun fromValue(value: String): ShellType = entries.find { it.value == value } ?: AUTO
         }
     }
 
@@ -133,8 +131,7 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
         HOST("host");
 
         companion object {
-            fun fromValue(value: String): BackendMode =
-                entries.find { it.value == value } ?: AUTO
+            fun fromValue(value: String): BackendMode = entries.find { it.value == value } ?: AUTO
         }
     }
 
@@ -161,7 +158,7 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
         prefs.getString(KEY_FONT_NAME, DEFAULT_FONT_NAME) ?: DEFAULT_FONT_NAME
     )
     override val fontNameFlow: StateFlow<String> = _fontName.asStateFlow()
-    
+
     // 自定义字体路径 StateFlow
     private val _customFontPath = MutableStateFlow(
         prefs.getString(KEY_CUSTOM_FONT_PATH, "") ?: ""
@@ -179,7 +176,7 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
         prefs.getInt(KEY_CURSOR_BLINK_RATE, DEFAULT_CURSOR_BLINK_RATE)
     )
     override val cursorBlinkRateFlow: StateFlow<Int> = _cursorBlinkRate.asStateFlow()
-    
+
     // Shell 类型 StateFlow
     private val _shellType = MutableStateFlow(
         prefs.getString(KEY_SHELL_TYPE, DEFAULT_SHELL_TYPE) ?: DEFAULT_SHELL_TYPE
@@ -215,7 +212,7 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
 
     /**
      * 终端语言环境 (locale)
-     * 
+     *
      * 设置后需要重启终端生效。
      * 注意：使用非 C.UTF-8 的 locale 依赖 guest Linux 环境中的 locale 支持。
      */
@@ -231,7 +228,7 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
      */
     val terminalLocale: TerminalLocale
         get() = TerminalLocale.fromValue(_locale.value)
-    
+
     /**
      * Shell 类型
      *
@@ -243,7 +240,7 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
             prefs.edit().putString(KEY_SHELL_TYPE, value).apply()
             _shellType.value = value
         }
-    
+
     /**
      * 获取当前 Shell 类型的枚举值
      */
@@ -316,63 +313,59 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
     /**
      * 获取当前配置的字体 Typeface
      */
-    fun getTypeface(): Typeface {
-        return when (_fontName.value) {
-            FONT_TYPE_BUILTIN -> AppFontManager.getMonospaceTypeface(context)
-            FONT_TYPE_SYSTEM -> Typeface.MONOSPACE
-            FONT_TYPE_CUSTOM -> {
-                val path = _customFontPath.value
-                if (path.isNotEmpty()) {
-                    AppFontManager.loadCustomFont(path) ?: run {
-                        Timber.tag(TAG).w("Failed to load custom font, falling back to built-in")
-                        // 自定义字体加载失败，重置为内置字体
-                        fontName = FONT_TYPE_BUILTIN
-                        AppFontManager.getMonospaceTypeface(context)
-                    }
-                } else {
-                    Timber.tag(TAG).w("Custom font selected but no path set, resetting to built-in")
-                    // 没有设置自定义字体路径，重置为内置字体
+    fun getTypeface(): Typeface = when (_fontName.value) {
+        FONT_TYPE_BUILTIN -> AppFontManager.getMonospaceTypeface(context)
+        FONT_TYPE_SYSTEM -> Typeface.MONOSPACE
+        FONT_TYPE_CUSTOM -> {
+            val path = _customFontPath.value
+            if (path.isNotEmpty()) {
+                AppFontManager.loadCustomFont(path) ?: run {
+                    Timber.tag(TAG).w("Failed to load custom font, falling back to built-in")
+                    // 自定义字体加载失败，重置为内置字体
                     fontName = FONT_TYPE_BUILTIN
                     AppFontManager.getMonospaceTypeface(context)
                 }
-            }
-            else -> {
-                // 未知的字体类型，重置为内置字体
-                Timber.tag(TAG).w("Unknown font type: ${_fontName.value}, resetting to built-in")
+            } else {
+                Timber.tag(TAG).w("Custom font selected but no path set, resetting to built-in")
+                // 没有设置自定义字体路径，重置为内置字体
                 fontName = FONT_TYPE_BUILTIN
                 AppFontManager.getMonospaceTypeface(context)
             }
+        }
+        else -> {
+            // 未知的字体类型，重置为内置字体
+            Timber.tag(TAG).w("Unknown font type: ${_fontName.value}, resetting to built-in")
+            fontName = FONT_TYPE_BUILTIN
+            AppFontManager.getMonospaceTypeface(context)
         }
     }
 
     /**
      * 获取当前字体的显示名称
      */
-    override fun getFontDisplayName(): String {
-        return when (_fontName.value) {
-            FONT_TYPE_BUILTIN -> {
-                if (AppFontManager.hasBuiltInFont(context)) {
-                    AppFontManager.getCurrentFontName(context)
-                } else {
-                    Strings.terminal_font_builtin_not_installed.strOr(context)
-                }
-            }
-            FONT_TYPE_SYSTEM -> Strings.terminal_font_system_mono.strOr(context)
-            FONT_TYPE_CUSTOM -> {
-                val path = _customFontPath.value
-                if (path.isNotEmpty()) {
-                    java.io.File(path).name
-                } else {
-                    Strings.terminal_font_custom_not_set.strOr(context)
-                }
-            }
-            else -> {
-                // 未知的字体类型，显示为内置字体
-                Strings.terminal_font_builtin.strOr(context)
+    override fun getFontDisplayName(): String = when (_fontName.value) {
+        FONT_TYPE_BUILTIN -> {
+            if (AppFontManager.hasBuiltInFont(context)) {
+                AppFontManager.getCurrentFontName(context)
+            } else {
+                Strings.terminal_font_builtin_not_installed.strOr(context)
             }
         }
+        FONT_TYPE_SYSTEM -> Strings.terminal_font_system_mono.strOr(context)
+        FONT_TYPE_CUSTOM -> {
+            val path = _customFontPath.value
+            if (path.isNotEmpty()) {
+                java.io.File(path).name
+            } else {
+                Strings.terminal_font_custom_not_set.strOr(context)
+            }
+        }
+        else -> {
+            // 未知的字体类型，显示为内置字体
+            Strings.terminal_font_builtin.strOr(context)
+        }
     }
-    
+
     /**
      * 设置自定义字体
      *
@@ -397,9 +390,7 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
     /**
      * 获取自定义字体路径
      */
-    override fun getCustomFontPath(): String {
-        return _customFontPath.value
-    }
+    override fun getCustomFontPath(): String = _customFontPath.value
 
     /**
      * 重置为默认设置
@@ -417,4 +408,3 @@ class TerminalPreferences(private val context: Context) : ITerminalPreferences {
         Timber.tag(TAG).i("Terminal preferences reset to defaults")
     }
 }
-

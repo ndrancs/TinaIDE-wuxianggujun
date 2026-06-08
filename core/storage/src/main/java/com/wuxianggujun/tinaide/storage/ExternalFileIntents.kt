@@ -19,9 +19,7 @@ private const val FILE_PROVIDER_AUTHORITY_SUFFIX = ".fileprovider"
 
 object ExternalFileIntents {
 
-    fun fileProviderAuthority(context: Context): String {
-        return "${context.packageName}$FILE_PROVIDER_AUTHORITY_SUFFIX"
-    }
+    fun fileProviderAuthority(context: Context): String = "${context.packageName}$FILE_PROVIDER_AUTHORITY_SUFFIX"
 
     fun getShareableUri(context: Context, file: File): Uri {
         val authority = fileProviderAuthority(context)
@@ -181,34 +179,32 @@ object ExternalFileIntents {
         }
     }
 
-    suspend fun ensureShareableFile(context: Context, file: File): Result<File> {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                // 尝试直接通过 FileProvider 生成 Uri（若路径不在 provider 映射中会抛异常）
-                getShareableUri(context, file)
-                file
-            }.recoverCatching { error ->
-                if (error.isFileProviderConfigurationError()) {
-                    throw IllegalStateException(
-                        Strings.file_provider_config_invalid.strOr(context),
-                        error
-                    )
-                }
-
-                Timber.tag(TAG).w(
-                    error,
-                    "File is outside FileProvider paths; copying to cache exports: source=%s",
-                    file.absolutePath
+    suspend fun ensureShareableFile(context: Context, file: File): Result<File> = withContext(Dispatchers.IO) {
+        runCatching {
+            // 尝试直接通过 FileProvider 生成 Uri（若路径不在 provider 映射中会抛异常）
+            getShareableUri(context, file)
+            file
+        }.recoverCatching { error ->
+            if (error.isFileProviderConfigurationError()) {
+                throw IllegalStateException(
+                    Strings.file_provider_config_invalid.strOr(context),
+                    error
                 )
-                copyToCacheExports(context, file).also { copiedFile ->
-                    getShareableUri(context, copiedFile)
-                    Timber.tag(TAG).i(
-                        "Prepared shareable cache file: source=%s target=%s size=%d",
-                        file.absolutePath,
-                        copiedFile.absolutePath,
-                        copiedFile.length()
-                    )
-                }
+            }
+
+            Timber.tag(TAG).w(
+                error,
+                "File is outside FileProvider paths; copying to cache exports: source=%s",
+                file.absolutePath
+            )
+            copyToCacheExports(context, file).also { copiedFile ->
+                getShareableUri(context, copiedFile)
+                Timber.tag(TAG).i(
+                    "Prepared shareable cache file: source=%s target=%s size=%d",
+                    file.absolutePath,
+                    copiedFile.absolutePath,
+                    copiedFile.length()
+                )
             }
         }
     }
@@ -248,8 +244,10 @@ object ExternalFileIntents {
         while (current != null) {
             val message = current.message.orEmpty()
             if (message.contains(FILE_PROVIDER_META_DATA, ignoreCase = true) ||
-                (message.contains("meta-data", ignoreCase = true) &&
-                    message.contains("provider", ignoreCase = true))
+                (
+                    message.contains("meta-data", ignoreCase = true) &&
+                        message.contains("provider", ignoreCase = true)
+                    )
             ) {
                 return true
             }

@@ -6,9 +6,9 @@ import com.wuxianggujun.tinaide.core.proot.PRootBootstrap
  * 安装阶段
  */
 enum class InstallPhase {
-    INSTALLING,   // 安装中
-    COMPLETED,    // 安装完成
-    FAILED        // 安装失败
+    INSTALLING, // 安装中
+    COMPLETED, // 安装完成
+    FAILED // 安装失败
 }
 
 /**
@@ -33,9 +33,9 @@ data class EnvironmentConfigItem(
  * 配置项图标类型
  */
 enum class ConfigIconType {
-    CODE,      // <> 代码图标
-    FOLDER,    // 文件夹图标
-    SETTINGS   // 设置图标
+    CODE, // <> 代码图标
+    FOLDER, // 文件夹图标
+    SETTINGS // 设置图标
 }
 
 /**

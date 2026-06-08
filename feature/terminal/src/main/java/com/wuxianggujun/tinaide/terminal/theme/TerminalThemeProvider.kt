@@ -10,21 +10,15 @@ import com.wuxianggujun.tinaide.core.terminal.TerminalThemeData
  */
 class TerminalThemeProvider : ITerminalThemeProvider {
 
-    override fun getAllThemes(): List<TerminalThemeData> {
-        return TerminalTheme.allThemes.map { it.toData() }
-    }
+    override fun getAllThemes(): List<TerminalThemeData> = TerminalTheme.allThemes.map { it.toData() }
 
-    override fun getThemeByName(name: String): TerminalThemeData {
-        return TerminalTheme.fromName(name).toData()
-    }
+    override fun getThemeByName(name: String): TerminalThemeData = TerminalTheme.fromName(name).toData()
 
-    private fun TerminalTheme.toData(): TerminalThemeData {
-        return TerminalThemeData(
-            name = this.name,
-            defaultForeground = this.defaultForeground,
-            defaultBackground = this.defaultBackground,
-            cursorColor = this.cursorColor,
-            ansiColors = this.ansiColors
-        )
-    }
+    private fun TerminalTheme.toData(): TerminalThemeData = TerminalThemeData(
+        name = this.name,
+        defaultForeground = this.defaultForeground,
+        defaultBackground = this.defaultBackground,
+        cursorColor = this.cursorColor,
+        ansiColors = this.ansiColors
+    )
 }

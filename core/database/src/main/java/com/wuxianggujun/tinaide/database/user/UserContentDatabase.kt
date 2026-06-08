@@ -182,29 +182,27 @@ abstract class UserContentDatabase : RoomDatabase() {
         }
 
         @Volatile
-        private var INSTANCE: UserContentDatabase? = null
+        private var instanceRef: UserContentDatabase? = null
 
-        fun getInstance(context: Context): UserContentDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    UserContentDatabase::class.java,
-                    "user_content_database"
-                )
-                    .addMigrations(MIGRATION_2_3)
-                    .addMigrations(MIGRATION_3_4)
-                    .addMigrations(MIGRATION_4_5)
-                    .build()
-                INSTANCE = instance
-                instance
-            }
+        fun getInstance(context: Context): UserContentDatabase = instanceRef ?: synchronized(this) {
+            val instance = Room.databaseBuilder(
+                context.applicationContext,
+                UserContentDatabase::class.java,
+                "user_content_database"
+            )
+                .addMigrations(MIGRATION_2_3)
+                .addMigrations(MIGRATION_3_4)
+                .addMigrations(MIGRATION_4_5)
+                .build()
+            instanceRef = instance
+            instance
         }
 
         /**
          * 用于测试的实例清理
          */
         fun clearInstance() {
-            INSTANCE = null
+            instanceRef = null
         }
     }
 }

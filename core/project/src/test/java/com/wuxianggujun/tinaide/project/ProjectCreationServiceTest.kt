@@ -97,13 +97,12 @@ class ProjectCreationServiceTest {
         }
     }
 
-    private fun zipTemplateSpec(zipFile: File): ProjectTemplateSpec.Zip =
-        ProjectTemplateSpec.Zip(
-            id = "test:zip",
-            zipFile = zipFile,
-            buildSystem = ProjectBuildSystem.CMAKE,
-            primaryLanguage = ProjectLanguage.CPP
-        )
+    private fun zipTemplateSpec(zipFile: File): ProjectTemplateSpec.Zip = ProjectTemplateSpec.Zip(
+        id = "test:zip",
+        zipFile = zipFile,
+        buildSystem = ProjectBuildSystem.CMAKE,
+        primaryLanguage = ProjectLanguage.CPP
+    )
 
     private fun createTemplateZip(): File {
         val zipFile = Files.createTempFile("project-template", ".zip").toFile()

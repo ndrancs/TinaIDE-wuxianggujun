@@ -2,7 +2,6 @@ package com.wuxianggujun.tinaide.core.logging
 
 import android.annotation.SuppressLint
 import android.util.Log
-import timber.log.Timber
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileOutputStream
@@ -12,6 +11,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
+import timber.log.Timber
 
 /**
  * Timber 文件日志 Tree
@@ -62,6 +62,7 @@ class FileLoggingTree(
     // 当前日志文件和写入器
     @Volatile
     private var currentDate: String = ""
+
     @Volatile
     private var currentWriter: BufferedWriter? = null
 
@@ -79,9 +80,7 @@ class FileLoggingTree(
         cleanupOldLogs()
     }
 
-    override fun isLoggable(tag: String?, priority: Int): Boolean {
-        return priority >= minPriority
-    }
+    override fun isLoggable(tag: String?, priority: Int): Boolean = priority >= minPriority
 
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         val timestamp = timestampFormat.format(Date())
@@ -210,21 +209,19 @@ class FileLoggingTree(
     /**
      * 获取日志级别字符
      */
-    private fun getLevelChar(priority: Int): Char {
-        return when (priority) {
-            Log.VERBOSE -> 'V'
-            Log.DEBUG -> 'D'
-            Log.INFO -> 'I'
-            Log.WARN -> 'W'
-            Log.ERROR -> 'E'
-            Log.ASSERT -> 'A'
-            else -> '?'
-        }
+    private fun getLevelChar(priority: Int): Char = when (priority) {
+        Log.VERBOSE -> 'V'
+        Log.DEBUG -> 'D'
+        Log.INFO -> 'I'
+        Log.WARN -> 'W'
+        Log.ERROR -> 'E'
+        Log.ASSERT -> 'A'
+        else -> '?'
     }
 
     /**
      * 关闭日志树
-     * 
+     *
      * 应在 Application.onTerminate() 或适当时机调用
      */
     fun shutdown() {
@@ -249,11 +246,9 @@ class FileLoggingTree(
     /**
      * 获取所有日志文件
      */
-    fun getAllLogFiles(): List<File> {
-        return logDir.listFiles { file ->
-            file.isFile && file.name.startsWith(FILE_PREFIX) && file.name.endsWith(FILE_SUFFIX)
-        }?.sortedByDescending { it.name } ?: emptyList()
-    }
+    fun getAllLogFiles(): List<File> = logDir.listFiles { file ->
+        file.isFile && file.name.startsWith(FILE_PREFIX) && file.name.endsWith(FILE_SUFFIX)
+    }?.sortedByDescending { it.name } ?: emptyList()
 
     /**
      * 立即刷新缓冲区

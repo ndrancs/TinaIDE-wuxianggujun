@@ -9,7 +9,7 @@ enum class FileStatus(val symbol: String) {
     DELETED("D"),
     RENAMED("R"),
     COPIED("C"),
-    UNTRACKED("U"),  // 改为 U 更直观
+    UNTRACKED("U"),
     IGNORED("!")
 }
 
@@ -19,7 +19,7 @@ enum class FileStatus(val symbol: String) {
 data class GitFileStatus(
     val path: String,
     val status: FileStatus,
-    val oldPath: String? = null  // 用于重命名
+    val oldPath: String? = null
 )
 
 /**
@@ -70,22 +70,22 @@ data class DiffLine(
 )
 
 enum class DiffLineType {
-    CONTEXT,  // 未修改的行
-    ADDED,    // 新增的行
-    REMOVED   // 删除的行
+    CONTEXT,
+    ADDED,
+    REMOVED
 }
 
 /**
  * Git 提交信息
  */
 data class GitCommit(
-    val hash: String,           // 完整 hash
-    val shortHash: String,      // 短 hash
-    val author: String,         // 作者
-    val authorEmail: String,    // 作者邮箱
-    val date: String,           // 提交日期
-    val message: String,        // 提交信息（第一行）
-    val fullMessage: String     // 完整提交信息
+    val hash: String,
+    val shortHash: String,
+    val author: String,
+    val authorEmail: String,
+    val date: String,
+    val message: String,
+    val fullMessage: String
 )
 
 /**
@@ -101,19 +101,19 @@ data class GitBranch(
  * Git 远程仓库信息
  */
 data class GitRemote(
-    val name: String,        // 如 "origin"
-    val fetchUrl: String,    // fetch URL
-    val pushUrl: String      // push URL（可能与 fetch 不同）
+    val name: String,
+    val fetchUrl: String,
+    val pushUrl: String
 )
 
 /**
  * Git HTTPS 凭据（用户名 + Token/密码）
  */
 data class GitCredential(
-    val protocol: String,  // "https"
-    val host: String,      // "github.com"
+    val protocol: String,
+    val host: String,
     val username: String,
-    val password: String   // Token 或密码
+    val password: String
 )
 
 /**

@@ -35,9 +35,7 @@ enum class DistroArchitecture(val androidAbis: Set<String>) {
     I686(setOf("x86"));
 
     companion object {
-        fun fromAndroidAbi(abi: String): DistroArchitecture? {
-            return entries.firstOrNull { architecture -> abi in architecture.androidAbis }
-        }
+        fun fromAndroidAbi(abi: String): DistroArchitecture? = entries.firstOrNull { architecture -> abi in architecture.androidAbis }
     }
 }
 
@@ -48,13 +46,11 @@ enum class DistroArchiveFormat {
     TAR_XZ,
     TAR_ZST;
 
-    fun compressionType(): TarExtractor.CompressionType {
-        return when (this) {
-            TAR -> TarExtractor.CompressionType.NONE
-            TAR_GZ -> TarExtractor.CompressionType.GZIP
-            TAR_XZ -> TarExtractor.CompressionType.XZ
-            TAR_ZST -> TarExtractor.CompressionType.ZSTD
-        }
+    fun compressionType(): TarExtractor.CompressionType = when (this) {
+        TAR -> TarExtractor.CompressionType.NONE
+        TAR_GZ -> TarExtractor.CompressionType.GZIP
+        TAR_XZ -> TarExtractor.CompressionType.XZ
+        TAR_ZST -> TarExtractor.CompressionType.ZSTD
     }
 }
 
@@ -106,9 +102,7 @@ data class DistroRelease(
         require(displayName.isNotBlank()) { "Release display name must not be blank." }
     }
 
-    fun artifactFor(architecture: DistroArchitecture): DistroArtifact? {
-        return artifacts.firstOrNull { artifact -> artifact.architecture == architecture }
-    }
+    fun artifactFor(architecture: DistroArchitecture): DistroArtifact? = artifacts.firstOrNull { artifact -> artifact.architecture == architecture }
 }
 
 @Serializable
@@ -134,13 +128,9 @@ data class DistroDefinition(
         }
     }
 
-    fun defaultRelease(): DistroRelease? {
-        return releases.firstOrNull { release -> release.id == defaultReleaseId }
-    }
+    fun defaultRelease(): DistroRelease? = releases.firstOrNull { release -> release.id == defaultReleaseId }
 
-    fun release(releaseId: String?): DistroRelease? {
-        return if (releaseId.isNullOrBlank()) defaultRelease() else releases.firstOrNull { it.id == releaseId }
-    }
+    fun release(releaseId: String?): DistroRelease? = if (releaseId.isNullOrBlank()) defaultRelease() else releases.firstOrNull { it.id == releaseId }
 }
 
 data class ResolvedDistroArtifact(
@@ -149,6 +139,4 @@ data class ResolvedDistroArtifact(
     val artifact: DistroArtifact,
 )
 
-internal fun String.isSafeId(): Boolean {
-    return isNotBlank() && all { char -> char.isLetterOrDigit() || char == '-' || char == '_' || char == '.' }
-}
+internal fun String.isSafeId(): Boolean = isNotBlank() && all { char -> char.isLetterOrDigit() || char == '-' || char == '_' || char == '.' }

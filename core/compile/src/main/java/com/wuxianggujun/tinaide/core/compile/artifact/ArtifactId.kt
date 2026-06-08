@@ -15,5 +15,5 @@ data class ArtifactId(
     val targetName: String,
     val variant: String = "default",
 ) {
-    fun storageKey(): String = "${targetName}.${variant}"
+    fun storageKey(): String = "$targetName.$variant"
 }

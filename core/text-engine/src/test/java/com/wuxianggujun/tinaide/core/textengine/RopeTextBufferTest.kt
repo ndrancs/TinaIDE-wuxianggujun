@@ -96,4 +96,3 @@ class RopeTextBufferTest {
         assertThat(captured!!.endColumn).isEqualTo(3)
     }
 }
-

@@ -120,14 +120,12 @@ internal object EffectiveBuildConfigResolver {
         return configured.coerceIn(1, 8)
     }
 
-    private fun normalizeOptimizationLevel(value: String?): String {
-        return when (value?.trim()?.uppercase()) {
-            "O0" -> "O0"
-            "O1" -> "O1"
-            "O2" -> "O2"
-            "O3" -> "O3"
-            else -> "O2"
-        }
+    private fun normalizeOptimizationLevel(value: String?): String = when (value?.trim()?.uppercase()) {
+        "O0" -> "O0"
+        "O1" -> "O1"
+        "O2" -> "O2"
+        "O3" -> "O3"
+        else -> "O2"
     }
 
     private fun resolveRunMode(input: Input): LinuxRunModePolicy.RunMode {

@@ -322,16 +322,22 @@ internal class EditorBracketSnapshotCache {
         pairs.forEach { pair ->
             val openOffset = offsetBase + pair.openOffset
             val closeOffset = offsetBase + pair.closeOffset
-            pairIndex.put(openOffset, PairEntry(
-                mateOffset = closeOffset,
-                depth = pair.depth,
-                isOpen = true
-            ))
-            pairIndex.put(closeOffset, PairEntry(
-                mateOffset = openOffset,
-                depth = pair.depth,
-                isOpen = false
-            ))
+            pairIndex.put(
+                openOffset,
+                PairEntry(
+                    mateOffset = closeOffset,
+                    depth = pair.depth,
+                    isOpen = true
+                )
+            )
+            pairIndex.put(
+                closeOffset,
+                PairEntry(
+                    mateOffset = openOffset,
+                    depth = pair.depth,
+                    isOpen = false
+                )
+            )
         }
         return pairIndex
     }

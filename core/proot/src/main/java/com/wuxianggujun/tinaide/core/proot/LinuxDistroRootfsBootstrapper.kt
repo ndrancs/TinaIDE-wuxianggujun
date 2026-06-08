@@ -196,15 +196,13 @@ internal class LinuxDistroRootfsBootstrapper(
         linuxEnvironment: LinuxEnvironment,
         packageManager: RootfsPackageManager,
         group: GuestPackageCommandGroup,
-    ): String? {
-        return group.packageCandidates.firstOrNull { candidate ->
-            GuestSystemPackageManager.packageExists(
-                linuxEnvironment = linuxEnvironment,
-                packageManager = packageManager,
-                packageName = candidate,
-                timeoutMs = packageProbeTimeoutMs,
-            )
-        }
+    ): String? = group.packageCandidates.firstOrNull { candidate ->
+        GuestSystemPackageManager.packageExists(
+            linuxEnvironment = linuxEnvironment,
+            packageManager = packageManager,
+            packageName = candidate,
+            timeoutMs = packageProbeTimeoutMs,
+        )
     }
 
     companion object {

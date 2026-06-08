@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.TextButton
@@ -50,9 +50,7 @@ internal data class EditorPopupColors(
 @Composable
 internal fun rememberEditorPopupColors(
     colorScheme: EditorColorScheme
-): EditorPopupColors {
-    return remember(colorScheme) { resolveEditorPopupColors(colorScheme) }
-}
+): EditorPopupColors = remember(colorScheme) { resolveEditorPopupColors(colorScheme) }
 
 @Composable
 internal fun EditorPopupSurface(
@@ -202,10 +200,6 @@ internal fun resolveEditorPopupColors(scheme: EditorColorScheme): EditorPopupCol
     )
 }
 
-private fun mixColor(start: Color, end: Color, ratio: Float): Color {
-    return lerp(start, end, ratio.coerceIn(0f, 1f))
-}
+private fun mixColor(start: Color, end: Color, ratio: Float): Color = lerp(start, end, ratio.coerceIn(0f, 1f))
 
-private fun Color.perceivedBrightness(): Float {
-    return (red * 0.299f) + (green * 0.587f) + (blue * 0.114f)
-}
+private fun Color.perceivedBrightness(): Float = (red * 0.299f) + (green * 0.587f) + (blue * 0.114f)

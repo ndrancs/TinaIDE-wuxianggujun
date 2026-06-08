@@ -183,15 +183,13 @@ class MainActivityCommandOrderingTest {
         enabled: Boolean = true,
         disabledReason: MainActivityCommandText? = null,
         sourceName: String? = null,
-    ): MainActivityCommand {
-        return MainActivityCommand(
-            id = id,
-            title = MainActivityCommandText.Literal(id),
-            category = category,
-            enabled = enabled,
-            disabledReason = disabledReason,
-            sourceName = sourceName,
-            execute = {}
-        )
-    }
+    ): MainActivityCommand = MainActivityCommand(
+        id = id,
+        title = MainActivityCommandText.Literal(id),
+        category = category,
+        enabled = enabled,
+        disabledReason = disabledReason,
+        sourceName = sourceName,
+        execute = {}
+    )
 }

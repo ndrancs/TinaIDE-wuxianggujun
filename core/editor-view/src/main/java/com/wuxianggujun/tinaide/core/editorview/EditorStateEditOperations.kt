@@ -40,7 +40,11 @@ internal fun editorInsert(state: EditorState, text: String) {
 }
 
 private val AUTO_CLOSE_PAIR_MAP = mapOf(
-    '(' to ')', '[' to ']', '{' to '}', '"' to '"', '\'' to '\''
+    '(' to ')',
+    '[' to ']',
+    '{' to '}',
+    '"' to '"',
+    '\'' to '\''
 )
 
 private fun applySynchronizedSnippetGroupReplace(
@@ -140,7 +144,9 @@ internal fun editorBackspace(state: EditorState) {
 
         val deleteCount = if (offset >= 2 && state.textBuffer.charAt(offset - 1)?.let(Character::isLowSurrogate) == true) {
             2
-        } else 1
+        } else {
+            1
+        }
         val targetOffset = offset - deleteCount
         val targetPos = state.textBuffer.offsetToPosition(targetOffset)
 
@@ -229,7 +235,11 @@ internal fun editorDeleteForward(state: EditorState) {
         // Surrogate pair: delete both code units
         val deleteCount = if (offset < state.textBuffer.length - 1 &&
             state.textBuffer.charAt(offset)?.let(Character::isHighSurrogate) == true
-        ) 2 else 1
+        ) {
+            2
+        } else {
+            1
+        }
         if (applySynchronizedSnippetGroupReplace(
                 state = state,
                 startOffset = offset,
@@ -600,12 +610,20 @@ internal fun editorToggleLineComment(
 
     val range = state.selectionRange
     val curPos = state.cursorPosition
-    val startLine = (if (range != null && !range.isEmpty) {
-        state.textBuffer.offsetToPosition(range.start).line
-    } else curPos.line).coerceIn(0, lines.lastIndex.coerceAtLeast(0))
-    val endLine = (if (range != null && !range.isEmpty) {
-        state.textBuffer.offsetToPosition(range.end).line
-    } else curPos.line).coerceIn(0, lines.lastIndex.coerceAtLeast(0))
+    val startLine = (
+        if (range != null && !range.isEmpty) {
+            state.textBuffer.offsetToPosition(range.start).line
+        } else {
+            curPos.line
+        }
+        ).coerceIn(0, lines.lastIndex.coerceAtLeast(0))
+    val endLine = (
+        if (range != null && !range.isEmpty) {
+            state.textBuffer.offsetToPosition(range.end).line
+        } else {
+            curPos.line
+        }
+        ).coerceIn(0, lines.lastIndex.coerceAtLeast(0))
     val targetRange = startLine..endLine
 
     val shouldUncomment = targetRange

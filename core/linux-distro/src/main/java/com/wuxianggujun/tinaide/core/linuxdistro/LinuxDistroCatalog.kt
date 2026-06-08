@@ -36,7 +36,5 @@ class ManifestLinuxDistroCatalog(
 
     override fun listDistros(): List<DistroDefinition> = distros
 
-    override fun resolveDistro(distroId: String): DistroDefinition? {
-        return distroIndex[distroId]
-    }
+    override fun resolveDistro(distroId: String): DistroDefinition? = distroIndex[distroId]
 }

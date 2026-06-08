@@ -74,14 +74,12 @@ class AndroidGitCredentialManager(
         }
     }
 
-    override suspend fun listHttpsHosts(): List<String> {
-        return withContext(Dispatchers.IO) {
-            (prefs.getStringSet(KEY_HOSTS, emptySet()) ?: emptySet())
-                .map { it.trim() }
-                .filter { it.isNotBlank() }
-                .distinct()
-                .sorted()
-        }
+    override suspend fun listHttpsHosts(): List<String> = withContext(Dispatchers.IO) {
+        (prefs.getStringSet(KEY_HOSTS, emptySet()) ?: emptySet())
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
     }
 
     private fun keyUsername(host: String) = "https:$host:username"

@@ -51,16 +51,12 @@ class SpotlightTargetRegistry {
     /**
      * 获取目标的边界信息
      */
-    fun getTargetBounds(id: String): Rect? {
-        return _targets[id]?.bounds
-    }
+    fun getTargetBounds(id: String): Rect? = _targets[id]?.bounds
 
     /**
      * 获取目标信息
      */
-    fun getTarget(id: String): TargetInfo? {
-        return _targets[id]
-    }
+    fun getTarget(id: String): TargetInfo? = _targets[id]
 
     /**
      * 清除所有注册的目标
@@ -88,6 +84,4 @@ val LocalSpotlightRegistry = compositionLocalOf { SpotlightTargetRegistry() }
  * 创建并记住一个 SpotlightTargetRegistry 实例
  */
 @Composable
-fun rememberSpotlightRegistry(): SpotlightTargetRegistry {
-    return remember { SpotlightTargetRegistry() }
-}
+fun rememberSpotlightRegistry(): SpotlightTargetRegistry = remember { SpotlightTargetRegistry() }

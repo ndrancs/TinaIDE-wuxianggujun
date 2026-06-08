@@ -1,28 +1,28 @@
 package com.wuxianggujun.tinaide.core.lsp
 
 import android.content.Context
-import com.wuxianggujun.tinaide.core.util.NativeExecutableRunner
 import com.wuxianggujun.tinaide.core.i18n.AppStrings
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.lang.ProjectPathFilters
+import com.wuxianggujun.tinaide.core.util.NativeExecutableRunner
+import java.io.BufferedReader
+import java.io.File
+import java.io.InputStreamReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import java.io.BufferedReader
-import java.io.File
-import java.io.InputStreamReader
 import timber.log.Timber
 
 /**
  * rsync 同步状态
  */
 enum class RsyncSyncState {
-    IDLE,           // 空闲
-    SYNCING,        // 同步中
-    SUCCESS,        // 同步成功
-    ERROR           // 同步错误
+    IDLE, // 空闲
+    SYNCING, // 同步中
+    SUCCESS, // 同步成功
+    ERROR // 同步错误
 }
 
 /**
@@ -112,17 +112,15 @@ class RsyncSyncProvider(private val context: Context) {
     private fun createRsyncProcessBuilder(
         args: List<String>,
         workingDir: File = context.cacheDir
-    ): ProcessBuilder {
-        return NativeExecutableRunner.createProcessBuilder(
-            executable = rsyncBinaryPath,
-            args = args,
-            workingDir = workingDir,
-            nativeLibDir = context.applicationInfo.nativeLibraryDir,
-            tmpDir = context.cacheDir.absolutePath,
-            homeDir = context.filesDir.absolutePath,
-            tinaExecContext = context.applicationContext
-        ).redirectErrorStream(true)
-    }
+    ): ProcessBuilder = NativeExecutableRunner.createProcessBuilder(
+        executable = rsyncBinaryPath,
+        args = args,
+        workingDir = workingDir,
+        nativeLibDir = context.applicationInfo.nativeLibraryDir,
+        tmpDir = context.cacheDir.absolutePath,
+        homeDir = context.filesDir.absolutePath,
+        tinaExecContext = context.applicationContext
+    ).redirectErrorStream(true)
 
     /**
      * 检查 rsync 二进制是否可用
@@ -281,13 +279,13 @@ class RsyncSyncProvider(private val context: Context) {
     ): List<String> {
         val command = mutableListOf(
             rsyncBinaryPath,
-            "-avz",                    // archive, verbose, compress
-            "--progress",              // 显示进度
-            "--port=$remotePort"       // 指定端口
+            "-avz", // archive, verbose, compress
+            "--progress", // 显示进度
+            "--port=$remotePort" // 指定端口
         )
 
         if (delete) {
-            command.add("--delete")    // 删除远程多余文件
+            command.add("--delete") // 删除远程多余文件
         }
 
         // 添加排除模式

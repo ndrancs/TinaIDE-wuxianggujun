@@ -25,27 +25,23 @@ enum class ProjectTag(private val displayNameResId: Int) {
     fun getDisplayName(context: Context): String = context.getString(displayNameResId)
 
     companion object {
-        fun fromSourceLocation(sourceLocation: ProjectSourceLocation?): ProjectTag? {
-            return when (sourceLocation) {
-                ProjectSourceLocation.PUBLIC -> PUBLIC_SOURCE
-                ProjectSourceLocation.PRIVATE -> PRIVATE_SOURCE
-                null -> null
-            }
+        fun fromSourceLocation(sourceLocation: ProjectSourceLocation?): ProjectTag? = when (sourceLocation) {
+            ProjectSourceLocation.PUBLIC -> PUBLIC_SOURCE
+            ProjectSourceLocation.PRIVATE -> PRIVATE_SOURCE
+            null -> null
         }
 
-        fun fromLanguage(language: ProjectLanguage): ProjectTag? {
-            return when (language) {
-                ProjectLanguage.C, ProjectLanguage.CPP -> C_CPP
-                ProjectLanguage.JAVA -> JAVA
-                ProjectLanguage.KOTLIN -> KOTLIN
-                ProjectLanguage.PYTHON -> PYTHON
-                ProjectLanguage.RUST -> RUST
-                ProjectLanguage.GO -> GO
-                ProjectLanguage.JAVASCRIPT -> JAVASCRIPT
-                ProjectLanguage.TYPESCRIPT -> TYPESCRIPT
-                ProjectLanguage.SHELL -> SHELL
-                ProjectLanguage.MIXED, ProjectLanguage.UNKNOWN -> null
-            }
+        fun fromLanguage(language: ProjectLanguage): ProjectTag? = when (language) {
+            ProjectLanguage.C, ProjectLanguage.CPP -> C_CPP
+            ProjectLanguage.JAVA -> JAVA
+            ProjectLanguage.KOTLIN -> KOTLIN
+            ProjectLanguage.PYTHON -> PYTHON
+            ProjectLanguage.RUST -> RUST
+            ProjectLanguage.GO -> GO
+            ProjectLanguage.JAVASCRIPT -> JAVASCRIPT
+            ProjectLanguage.TYPESCRIPT -> TYPESCRIPT
+            ProjectLanguage.SHELL -> SHELL
+            ProjectLanguage.MIXED, ProjectLanguage.UNKNOWN -> null
         }
     }
 }

@@ -40,7 +40,5 @@ internal fun isTriggerCharacter(ch: Char?, charBefore: Char?): Boolean {
     return false
 }
 
-internal fun isCompletionPrefixExtension(oldPrefix: String, newPrefix: String): Boolean {
-    return newPrefix.length > oldPrefix.length
-        && newPrefix.startsWith(oldPrefix, ignoreCase = true)
-}
+internal fun isCompletionPrefixExtension(oldPrefix: String, newPrefix: String): Boolean = newPrefix.length > oldPrefix.length &&
+    newPrefix.startsWith(oldPrefix, ignoreCase = true)

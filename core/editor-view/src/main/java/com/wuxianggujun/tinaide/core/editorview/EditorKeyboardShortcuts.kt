@@ -499,13 +499,9 @@ private fun findExactOccurrenceInRange(
     return null
 }
 
-private fun TextOccurrence.sameRangeAs(range: OffsetRange): Boolean {
-    return startOffset == range.start && endOffset == range.end
-}
+private fun TextOccurrence.sameRangeAs(range: OffsetRange): Boolean = startOffset == range.start && endOffset == range.end
 
-private fun KeyEvent.isEditorEnterKey(): Boolean {
-    return key == Key.Enter || nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_NUMPAD_ENTER
-}
+private fun KeyEvent.isEditorEnterKey(): Boolean = key == Key.Enter || nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_NUMPAD_ENTER
 
 private fun KeyEvent.requestsKeyboardContextMenu(): Boolean {
     if (isCtrlPressed || isAltPressed || isMetaPressed) return false
@@ -677,12 +673,10 @@ private fun restoreMovedLineSelection(
     }
 }
 
-private fun lineEndIncludingSeparator(state: EditorState, line: Int): Int {
-    return if (line + 1 < state.textBuffer.lineCount) {
-        state.textBuffer.getLineStart(line + 1)
-    } else {
-        state.textBuffer.length
-    }
+private fun lineEndIncludingSeparator(state: EditorState, line: Int): Int = if (line + 1 < state.textBuffer.lineCount) {
+    state.textBuffer.getLineStart(line + 1)
+} else {
+    state.textBuffer.length
 }
 
 private enum class WordBoundaryCharKind {
@@ -737,9 +731,7 @@ private fun deleteWordRange(
     }
 }
 
-private fun charKindBefore(state: EditorState, offset: Int): WordBoundaryCharKind {
-    return charKindAt(state, offset - 1)
-}
+private fun charKindBefore(state: EditorState, offset: Int): WordBoundaryCharKind = charKindAt(state, offset - 1)
 
 private fun charKindAt(state: EditorState, offset: Int): WordBoundaryCharKind {
     val char = state.textBuffer.charAt(offset) ?: return WordBoundaryCharKind.Whitespace

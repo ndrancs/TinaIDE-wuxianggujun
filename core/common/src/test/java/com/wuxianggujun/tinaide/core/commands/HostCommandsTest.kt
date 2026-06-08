@@ -56,8 +56,6 @@ class HostCommandsTest {
         assertThat(ruleCommands).containsExactlyElementsIn(HostCommands.getAllCommandIds()).inOrder()
     }
 
-    private fun findRepoRoot(): File {
-        return generateSequence(File("").absoluteFile) { file -> file.parentFile }
-            .first { file -> File(file, "settings.gradle.kts").isFile }
-    }
+    private fun findRepoRoot(): File = generateSequence(File("").absoluteFile) { file -> file.parentFile }
+        .first { file -> File(file, "settings.gradle.kts").isFile }
 }

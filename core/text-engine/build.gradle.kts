@@ -27,4 +27,3 @@ dependencies {
     implementation(libs.kotlinx.coroutines)
     implementation(libs.timber)
 }
-

@@ -2,8 +2,8 @@ package com.wuxianggujun.tinaide.core.editorview
 
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.textengine.RopeTextBuffer
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle

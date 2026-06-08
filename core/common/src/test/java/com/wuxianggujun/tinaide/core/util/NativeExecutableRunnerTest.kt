@@ -1,10 +1,10 @@
 package com.wuxianggujun.tinaide.core.util
 
 import com.google.common.truth.Truth.assertThat
+import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 /**
  * 启动策略回归测试：防止 SDK 门槛、direct exec、shell 转义这类历史漂移再次出现。

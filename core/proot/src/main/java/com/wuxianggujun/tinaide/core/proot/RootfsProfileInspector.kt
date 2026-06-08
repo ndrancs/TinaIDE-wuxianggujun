@@ -43,9 +43,7 @@ object RootfsProfileInspector {
         )
     }
 
-    fun hasShell(rootfsDir: File): Boolean {
-        return detectShellPath(rootfsDir) != null
-    }
+    fun hasShell(rootfsDir: File): Boolean = detectShellPath(rootfsDir) != null
 
     private fun parseOsRelease(rootfsDir: File): Map<String, String> {
         val content = RootfsFileChecks.readTextOrNull(rootfsDir, "/etc/os-release")
@@ -80,18 +78,16 @@ object RootfsProfileInspector {
         return candidates.firstOrNull { RootfsFileChecks.exists(rootfsDir, it) }
     }
 
-    private fun detectPackageManager(rootfsDir: File): RootfsPackageManager {
-        return when {
-            RootfsFileChecks.exists(rootfsDir, "/sbin/apk") ||
-                RootfsFileChecks.exists(rootfsDir, "/usr/sbin/apk") ||
-                RootfsFileChecks.exists(rootfsDir, "/usr/bin/apk") -> RootfsPackageManager.APK
-            RootfsFileChecks.exists(rootfsDir, "/usr/bin/apt-get") ||
-                RootfsFileChecks.exists(rootfsDir, "/bin/apt-get") -> RootfsPackageManager.APT
-            RootfsFileChecks.exists(rootfsDir, "/usr/bin/pacman") ||
-                RootfsFileChecks.exists(rootfsDir, "/bin/pacman") -> RootfsPackageManager.PACMAN
-            RootfsFileChecks.exists(rootfsDir, "/usr/bin/dnf") ||
-                RootfsFileChecks.exists(rootfsDir, "/bin/dnf") -> RootfsPackageManager.DNF
-            else -> RootfsPackageManager.UNKNOWN
-        }
+    private fun detectPackageManager(rootfsDir: File): RootfsPackageManager = when {
+        RootfsFileChecks.exists(rootfsDir, "/sbin/apk") ||
+            RootfsFileChecks.exists(rootfsDir, "/usr/sbin/apk") ||
+            RootfsFileChecks.exists(rootfsDir, "/usr/bin/apk") -> RootfsPackageManager.APK
+        RootfsFileChecks.exists(rootfsDir, "/usr/bin/apt-get") ||
+            RootfsFileChecks.exists(rootfsDir, "/bin/apt-get") -> RootfsPackageManager.APT
+        RootfsFileChecks.exists(rootfsDir, "/usr/bin/pacman") ||
+            RootfsFileChecks.exists(rootfsDir, "/bin/pacman") -> RootfsPackageManager.PACMAN
+        RootfsFileChecks.exists(rootfsDir, "/usr/bin/dnf") ||
+            RootfsFileChecks.exists(rootfsDir, "/bin/dnf") -> RootfsPackageManager.DNF
+        else -> RootfsPackageManager.UNKNOWN
     }
 }

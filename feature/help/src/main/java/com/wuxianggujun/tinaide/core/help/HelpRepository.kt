@@ -5,9 +5,9 @@ import androidx.annotation.ArrayRes
 import com.wuxianggujun.tinaide.core.i18n.Arrays
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.IOException
 
 /**
  * 帮助文档仓库
@@ -18,20 +18,17 @@ class HelpRepository(private val context: Context) {
     // 文档内容缓存
     private val contentCache = mutableMapOf<String, String>()
 
-    private fun keywords(@ArrayRes resId: Int): List<String> =
-        context.resources.getStringArray(resId).toList()
+    private fun keywords(@ArrayRes resId: Int): List<String> = context.resources.getStringArray(resId).toList()
 
     /**
      * 清理帮助文档中偶发的“`n+”伪换行标记，避免 Markdown 渲染异常。
      *
      * 这些标记通常来自生成/拷贝过程中的转义问题，优先在渲染/搜索前做一次兜底修复。
      */
-    private fun sanitizeHelpMarkdown(raw: String): String {
-        return raw
-            .replace("`n+- ", "`\n- ")
-            .replace("`n+-", "`\n- ")
-            .replace("`n+", "`\n")
-    }
+    private fun sanitizeHelpMarkdown(raw: String): String = raw
+        .replace("`n+- ", "`\n- ")
+        .replace("`n+-", "`\n- ")
+        .replace("`n+", "`\n")
 
     // 预定义的帮助文档列表
     private val documents: List<HelpDocument> = listOf(
@@ -370,8 +367,7 @@ class HelpRepository(private val context: Context) {
     /**
      * 按分类获取文档
      */
-    fun getDocumentsByCategory(category: HelpCategory): List<HelpDocument> =
-        documents.filter { it.category == category }.sortedBy { it.order }
+    fun getDocumentsByCategory(category: HelpCategory): List<HelpDocument> = documents.filter { it.category == category }.sortedBy { it.order }
 
     /**
      * 获取所有分类
@@ -402,25 +398,24 @@ class HelpRepository(private val context: Context) {
     /**
      * 加载文档内容
      */
-    suspend fun loadDocumentContent(document: HelpDocument): Result<String> =
-        withContext(Dispatchers.IO) {
-            // 检查缓存
-            contentCache[document.id]?.let {
-                return@withContext Result.success(it)
-            }
-
-            try {
-                val content = context.assets.open("help/${document.fileName}").bufferedReader()
-                    .use { it.readText() }
-                val sanitized = sanitizeHelpMarkdown(content)
-                contentCache[document.id] = sanitized
-                Result.success(sanitized)
-            } catch (e: IOException) {
-                // 如果 assets 中没有，尝试返回占位内容
-                val placeholder = sanitizeHelpMarkdown(generatePlaceholderContent(document))
-                Result.success(placeholder)
-            }
+    suspend fun loadDocumentContent(document: HelpDocument): Result<String> = withContext(Dispatchers.IO) {
+        // 检查缓存
+        contentCache[document.id]?.let {
+            return@withContext Result.success(it)
         }
+
+        try {
+            val content = context.assets.open("help/${document.fileName}").bufferedReader()
+                .use { it.readText() }
+            val sanitized = sanitizeHelpMarkdown(content)
+            contentCache[document.id] = sanitized
+            Result.success(sanitized)
+        } catch (e: IOException) {
+            // 如果 assets 中没有，尝试返回占位内容
+            val placeholder = sanitizeHelpMarkdown(generatePlaceholderContent(document))
+            Result.success(placeholder)
+        }
+    }
 
     /**
      * 搜索文档

@@ -1,9 +1,9 @@
 package com.wuxianggujun.tinaide.core.compile.strategy
 
 import com.google.common.truth.Truth.assertThat
-import org.junit.Test
 import java.io.File
 import kotlin.io.path.createTempDirectory
+import org.junit.Test
 
 class SingleFileStrategyDiagnosticsTest {
 

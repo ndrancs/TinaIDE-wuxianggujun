@@ -3,8 +3,8 @@ package com.wuxianggujun.tinaide.core.editorview
 import android.graphics.Paint
 import androidx.compose.foundation.gestures.TransformableState
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import com.wuxianggujun.tinaide.core.textengine.Position
 import kotlin.math.abs
@@ -390,13 +390,9 @@ internal class EditorGestureCoordinator(
         interactionController.syncSelectionToIme()
     }
 
-    private fun shouldBlockBasicGestures(): Boolean {
-        return gestureHandler.shouldBlockBasicGestures(isTransformInProgress())
-    }
+    private fun shouldBlockBasicGestures(): Boolean = gestureHandler.shouldBlockBasicGestures(isTransformInProgress())
 
-    private fun isTransformInProgress(): Boolean {
-        return transformableState.isTransformInProgress
-    }
+    private fun isTransformInProgress(): Boolean = transformableState.isTransformInProgress
 
     private fun showSelectionUi(position: Offset) {
         onContextMenuOffsetChange(IntOffset(position.x.toInt(), position.y.toInt()))

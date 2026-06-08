@@ -9,10 +9,10 @@ import com.wuxianggujun.tinaide.core.linuxdistro.AndroidAssetLinuxDistroManifest
 import com.wuxianggujun.tinaide.core.linuxdistro.DistroArchitecture
 import com.wuxianggujun.tinaide.core.linuxdistro.InstalledLinuxDistro
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroCatalog
+import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroIds
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroInstallLayout
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroInstallPhase
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroInstallProgress
-import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroIds
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroManager
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroRootfsConfig
 import com.wuxianggujun.tinaide.core.linuxdistro.loadCatalog
@@ -69,18 +69,14 @@ class SelfHostedLinuxDistroRuntime(
         )
     }
 
-    fun installedRootfsDir(distroId: String): File {
-        return File(layout().installedRootfsDir, distroId)
-    }
+    fun installedRootfsDir(distroId: String): File = File(layout().installedRootfsDir, distroId)
 
     fun listAvailableDistros() = manager.listAvailable()
 
     fun isDistroInstalled(distroId: String): Boolean = manager.isInstalled(distroId)
 
-    fun syncInstalledProfiles(): List<RootfsProfile> {
-        return manager.listInstalled(syncFromDisk = true)
-            .map { installation -> registerInstallation(installation, makeActive = false) }
-    }
+    fun syncInstalledProfiles(): List<RootfsProfile> = manager.listInstalled(syncFromDisk = true)
+        .map { installation -> registerInstallation(installation, makeActive = false) }
 
     suspend fun installDistro(
         distroId: String = DEFAULT_DISTRO_ID,
@@ -202,45 +198,39 @@ class SelfHostedLinuxDistroRuntime(
         )
     }
 
-    private fun messageFor(phase: Phase, displayName: String): String {
-        return when (phase) {
-            Phase.PREPARING -> Strings.linux_distro_install_phase_preparing.strOr(appContext)
-            Phase.RESOLVING_ARTIFACT -> Strings.linux_distro_install_phase_resolving.strOr(appContext)
-            Phase.DOWNLOADING -> Strings.linux_distro_install_phase_downloading.strOr(appContext, displayName)
-            Phase.VERIFYING -> Strings.linux_distro_install_phase_verifying.strOr(appContext)
-            Phase.EXTRACTING -> Strings.linux_distro_install_phase_extracting.strOr(appContext)
-            Phase.CONFIGURING -> Strings.linux_distro_install_phase_configuring.strOr(appContext)
-            Phase.BOOTSTRAPPING -> Strings.linux_distro_bootstrap_phase_checking_package_manager.strOr(appContext)
-            Phase.REGISTERING -> Strings.linux_distro_install_phase_registering.strOr(appContext)
-            Phase.COMPLETED -> Strings.linux_distro_install_phase_completed.strOr(appContext, displayName)
-        }
+    private fun messageFor(phase: Phase, displayName: String): String = when (phase) {
+        Phase.PREPARING -> Strings.linux_distro_install_phase_preparing.strOr(appContext)
+        Phase.RESOLVING_ARTIFACT -> Strings.linux_distro_install_phase_resolving.strOr(appContext)
+        Phase.DOWNLOADING -> Strings.linux_distro_install_phase_downloading.strOr(appContext, displayName)
+        Phase.VERIFYING -> Strings.linux_distro_install_phase_verifying.strOr(appContext)
+        Phase.EXTRACTING -> Strings.linux_distro_install_phase_extracting.strOr(appContext)
+        Phase.CONFIGURING -> Strings.linux_distro_install_phase_configuring.strOr(appContext)
+        Phase.BOOTSTRAPPING -> Strings.linux_distro_bootstrap_phase_checking_package_manager.strOr(appContext)
+        Phase.REGISTERING -> Strings.linux_distro_install_phase_registering.strOr(appContext)
+        Phase.COMPLETED -> Strings.linux_distro_install_phase_completed.strOr(appContext, displayName)
     }
 
-    private fun LinuxDistroRootfsBootstrapProgress.toDisplayMessage(): String {
-        return when (phase) {
-            LinuxDistroRootfsBootstrapPhase.CHECKING_PACKAGE_MANAGER ->
-                Strings.linux_distro_bootstrap_phase_checking_package_manager.strOr(appContext)
-            LinuxDistroRootfsBootstrapPhase.CHECKING_COMMANDS ->
-                Strings.linux_distro_bootstrap_phase_checking_commands.strOr(appContext)
-            LinuxDistroRootfsBootstrapPhase.UPDATING_INDEX ->
-                Strings.linux_distro_bootstrap_phase_updating_index.strOr(appContext)
-            LinuxDistroRootfsBootstrapPhase.RESOLVING_PACKAGES ->
-                Strings.linux_distro_bootstrap_phase_resolving_packages.strOr(appContext)
-            LinuxDistroRootfsBootstrapPhase.INSTALLING_PACKAGES ->
-                Strings.linux_distro_bootstrap_phase_installing_packages.strOr(
-                    appContext,
-                    packages.joinToString().ifBlank { "-" },
-                )
-            LinuxDistroRootfsBootstrapPhase.VERIFYING_COMMANDS ->
-                Strings.linux_distro_bootstrap_phase_verifying_commands.strOr(appContext)
-            LinuxDistroRootfsBootstrapPhase.COMPLETED ->
-                Strings.linux_distro_bootstrap_phase_completed.strOr(appContext)
-        }
+    private fun LinuxDistroRootfsBootstrapProgress.toDisplayMessage(): String = when (phase) {
+        LinuxDistroRootfsBootstrapPhase.CHECKING_PACKAGE_MANAGER ->
+            Strings.linux_distro_bootstrap_phase_checking_package_manager.strOr(appContext)
+        LinuxDistroRootfsBootstrapPhase.CHECKING_COMMANDS ->
+            Strings.linux_distro_bootstrap_phase_checking_commands.strOr(appContext)
+        LinuxDistroRootfsBootstrapPhase.UPDATING_INDEX ->
+            Strings.linux_distro_bootstrap_phase_updating_index.strOr(appContext)
+        LinuxDistroRootfsBootstrapPhase.RESOLVING_PACKAGES ->
+            Strings.linux_distro_bootstrap_phase_resolving_packages.strOr(appContext)
+        LinuxDistroRootfsBootstrapPhase.INSTALLING_PACKAGES ->
+            Strings.linux_distro_bootstrap_phase_installing_packages.strOr(
+                appContext,
+                packages.joinToString().ifBlank { "-" },
+            )
+        LinuxDistroRootfsBootstrapPhase.VERIFYING_COMMANDS ->
+            Strings.linux_distro_bootstrap_phase_verifying_commands.strOr(appContext)
+        LinuxDistroRootfsBootstrapPhase.COMPLETED ->
+            Strings.linux_distro_bootstrap_phase_completed.strOr(appContext)
     }
 
-    private fun resolveDisplayName(distroId: String): String {
-        return manager.resolveDistro(distroId)?.displayName ?: distroId
-    }
+    private fun resolveDisplayName(distroId: String): String = manager.resolveDistro(distroId)?.displayName ?: distroId
 
     companion object {
         private const val BOOTSTRAP_PROGRESS_START = 0.90f
@@ -273,15 +263,11 @@ class SelfHostedLinuxDistroRuntime(
             )
         }
 
-        fun defaultRuntimeDir(context: Context): File {
-            return File(ProjectPaths.getPRootRoot(context.applicationContext), "linux-distro")
-        }
+        fun defaultRuntimeDir(context: Context): File = File(ProjectPaths.getPRootRoot(context.applicationContext), "linux-distro")
 
-        fun defaultArchitecture(): DistroArchitecture {
-            return Build.SUPPORTED_ABIS
-                .asSequence()
-                .mapNotNull { abi -> DistroArchitecture.fromAndroidAbi(abi) }
-                .firstOrNull() ?: DistroArchitecture.AARCH64
-        }
+        fun defaultArchitecture(): DistroArchitecture = Build.SUPPORTED_ABIS
+            .asSequence()
+            .mapNotNull { abi -> DistroArchitecture.fromAndroidAbi(abi) }
+            .firstOrNull() ?: DistroArchitecture.AARCH64
     }
 }

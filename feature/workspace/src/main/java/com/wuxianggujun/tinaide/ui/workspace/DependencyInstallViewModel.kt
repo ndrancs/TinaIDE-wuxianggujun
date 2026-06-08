@@ -607,28 +607,24 @@ class DependencyInstallViewModel(
         )
     }
 
-    private fun LinuxDistroRootfsHealthProbe.toDisplayName(): String {
-        return when (this) {
-            LinuxDistroRootfsHealthProbe.ROOTFS_AVAILABLE ->
-                Strings.linux_distro_health_probe_rootfs_available.strOr(applicationContext)
-            LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_COMMANDS ->
-                Strings.linux_distro_health_probe_package_manager_commands.strOr(applicationContext)
-            LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_VERSION ->
-                Strings.linux_distro_health_probe_package_manager_version.strOr(applicationContext)
-            LinuxDistroRootfsHealthProbe.REQUIRED_BOOTSTRAP_COMMANDS ->
-                Strings.linux_distro_health_probe_required_commands.strOr(applicationContext)
-            LinuxDistroRootfsHealthProbe.OPTIONAL_BOOTSTRAP_COMMANDS ->
-                Strings.linux_distro_health_probe_optional_commands.strOr(applicationContext)
-            LinuxDistroRootfsHealthProbe.ARCHITECTURE ->
-                Strings.linux_distro_health_probe_architecture.strOr(applicationContext)
-            LinuxDistroRootfsHealthProbe.OS_RELEASE ->
-                Strings.linux_distro_health_probe_os_release.strOr(applicationContext)
-        }
+    private fun LinuxDistroRootfsHealthProbe.toDisplayName(): String = when (this) {
+        LinuxDistroRootfsHealthProbe.ROOTFS_AVAILABLE ->
+            Strings.linux_distro_health_probe_rootfs_available.strOr(applicationContext)
+        LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_COMMANDS ->
+            Strings.linux_distro_health_probe_package_manager_commands.strOr(applicationContext)
+        LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_VERSION ->
+            Strings.linux_distro_health_probe_package_manager_version.strOr(applicationContext)
+        LinuxDistroRootfsHealthProbe.REQUIRED_BOOTSTRAP_COMMANDS ->
+            Strings.linux_distro_health_probe_required_commands.strOr(applicationContext)
+        LinuxDistroRootfsHealthProbe.OPTIONAL_BOOTSTRAP_COMMANDS ->
+            Strings.linux_distro_health_probe_optional_commands.strOr(applicationContext)
+        LinuxDistroRootfsHealthProbe.ARCHITECTURE ->
+            Strings.linux_distro_health_probe_architecture.strOr(applicationContext)
+        LinuxDistroRootfsHealthProbe.OS_RELEASE ->
+            Strings.linux_distro_health_probe_os_release.strOr(applicationContext)
     }
 
-    private fun needsToolchainInstall(): Boolean {
-        return runCatching { !isToolchainReady() }.getOrDefault(true)
-    }
+    private fun needsToolchainInstall(): Boolean = runCatching { !isToolchainReady() }.getOrDefault(true)
 
     private fun isToolchainReady(): Boolean {
         val guestToolchainReady = if (installLinuxEnvironment) {
@@ -688,20 +684,18 @@ class DependencyInstallViewModel(
     private fun buildInitialPackageList(
         envReady: Boolean,
         toolchainReady: Boolean
-    ): List<PRootBootstrap.PackageInfo> {
-        return packageOrder.map { packageName ->
-            val status = when (packageName) {
-                PACKAGE_LINUX_DISTRO_RUNTIME, PACKAGE_LINUX_ROOTFS, PACKAGE_PROOT_GUEST_TOOLCHAIN -> {
-                    if (envReady) PRootBootstrap.PackageStatus.COMPLETED else PRootBootstrap.PackageStatus.PENDING
-                }
-                else -> if (toolchainReady) PRootBootstrap.PackageStatus.COMPLETED else PRootBootstrap.PackageStatus.PENDING
+    ): List<PRootBootstrap.PackageInfo> = packageOrder.map { packageName ->
+        val status = when (packageName) {
+            PACKAGE_LINUX_DISTRO_RUNTIME, PACKAGE_LINUX_ROOTFS, PACKAGE_PROOT_GUEST_TOOLCHAIN -> {
+                if (envReady) PRootBootstrap.PackageStatus.COMPLETED else PRootBootstrap.PackageStatus.PENDING
             }
-            PRootBootstrap.PackageInfo(
-                name = packageName,
-                displayName = packageDisplayName(packageName),
-                status = status
-            )
+            else -> if (toolchainReady) PRootBootstrap.PackageStatus.COMPLETED else PRootBootstrap.PackageStatus.PENDING
         }
+        PRootBootstrap.PackageInfo(
+            name = packageName,
+            displayName = packageDisplayName(packageName),
+            status = status
+        )
     }
 
     private fun defaultPackageInfo(
@@ -723,15 +717,12 @@ class DependencyInstallViewModel(
         )
     }
 
-    private fun packageDisplayName(packageName: String): String {
-        return when (packageName) {
-            PACKAGE_LINUX_DISTRO_RUNTIME -> Strings.linux_distro_package_runtime.strOr(applicationContext)
-            PACKAGE_LINUX_ROOTFS -> Strings.linux_package_rootfs.strOr(applicationContext)
-            PACKAGE_PROOT_GUEST_TOOLCHAIN -> Strings.proot_package_guest_toolchain.strOr(applicationContext)
-            PACKAGE_ANDROID_SYSROOT -> Strings.proot_package_android_sysroot.strOr(applicationContext)
-            PACKAGE_NATIVE_TOOLCHAIN -> Strings.proot_package_native_toolchain.strOr(applicationContext)
-            else -> packageName
-        }
+    private fun packageDisplayName(packageName: String): String = when (packageName) {
+        PACKAGE_LINUX_DISTRO_RUNTIME -> Strings.linux_distro_package_runtime.strOr(applicationContext)
+        PACKAGE_LINUX_ROOTFS -> Strings.linux_package_rootfs.strOr(applicationContext)
+        PACKAGE_PROOT_GUEST_TOOLCHAIN -> Strings.proot_package_guest_toolchain.strOr(applicationContext)
+        PACKAGE_ANDROID_SYSROOT -> Strings.proot_package_android_sysroot.strOr(applicationContext)
+        PACKAGE_NATIVE_TOOLCHAIN -> Strings.proot_package_native_toolchain.strOr(applicationContext)
+        else -> packageName
     }
-
 }

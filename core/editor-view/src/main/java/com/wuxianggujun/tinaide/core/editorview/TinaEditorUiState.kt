@@ -19,6 +19,7 @@ internal class TinaEditorUiState(
     var contextMenuOffset by mutableStateOf(IntOffset.Zero)
     var contextMenuKeyboardAction by mutableStateOf<EditorContextMenuActionId?>(null)
     var hoverOffset by mutableStateOf(IntOffset.Zero)
+
     /**
      * 双指缩放的手势焦点（Canvas 本地坐标）。
      *
@@ -35,11 +36,13 @@ internal class TinaEditorUiState(
     // 仅用于诊断：焦点更新时间与序列号（避免日志里“看不出是不是落后一帧”）。
     var transformGestureFocusUpdatedAtMs: Long = 0L
     var transformGestureFocusSeq: Long = 0L
+
     // ========== 缩放手势视觉变换 ==========
     // 在双指缩放手势期间，不实际改变字体大小，而是通过 Canvas scale 变换实现视觉缩放。
     // 手势结束后一次性应用最终字体大小并调整滚动位置。
     // 使用 mutableStateOf 以便 Canvas draw block 能观察到变化并触发重绘。
     var scaleGestureVisualScale by mutableStateOf(1f)
+
     // 缩放焦点（Canvas 本地坐标），在手势首帧锁定。
     // 不需要是 Compose state，因为只在 Canvas draw block 内读取（由 scaleGestureVisualScale 驱动重绘）。
     var scaleGestureVisualPivotX: Float = 0f

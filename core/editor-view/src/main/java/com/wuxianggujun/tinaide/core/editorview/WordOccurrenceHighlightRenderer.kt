@@ -6,7 +6,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import com.wuxianggujun.tinaide.core.textengine.TextScanKernel
 
 /**
  * Highlights all visible occurrences of the word under the cursor
@@ -19,8 +18,8 @@ internal class WordOccurrenceHighlightRenderer {
         val word: String
     )
 
-    private val HIGHLIGHT_COLOR = Color(0x30FFFFFF)
-    private val BORDER_COLOR = Color(0x40FFFFFF)
+    private val highlightColor = Color(0x30FFFFFF)
+    private val borderColor = Color(0x40FFFFFF)
 
     internal data class HighlightRect(
         val left: Float,
@@ -43,12 +42,12 @@ internal class WordOccurrenceHighlightRenderer {
         )
         for (rect in rects) {
             drawScope.drawRect(
-                color = HIGHLIGHT_COLOR,
+                color = highlightColor,
                 topLeft = Offset(rect.left, rect.top),
                 size = Size(rect.width, frameContext.state.lineHeightPx)
             )
             drawScope.drawRect(
-                color = BORDER_COLOR,
+                color = borderColor,
                 topLeft = Offset(rect.left, rect.top),
                 size = Size(rect.width, frameContext.state.lineHeightPx),
                 style = Stroke(width = 1f)

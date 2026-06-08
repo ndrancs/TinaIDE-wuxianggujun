@@ -1,14 +1,14 @@
 package com.wuxianggujun.tinaide.core.lsp
 
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.str
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.eclipse.lsp4j.jsonrpc.messages.Either3
-import java.io.File
 import timber.log.Timber
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.str
 
 /**
  * LSP 代码操作服务
@@ -159,17 +159,15 @@ class LspCodeActionService {
     private suspend fun executeCommand(
         executeCommandRequest: suspend (ExecuteCommandParams, Long) -> Any?,
         command: Command
-    ): Boolean {
-        return try {
-            executeCommandRequest(
-                ExecuteCommandParams(command.command, command.arguments),
-                TIMEOUT_SECONDS
-            )
-            true
-        } catch (e: Exception) {
-            Timber.tag(TAG).w("Failed to execute command: ${e.message}")
-            false
-        }
+    ): Boolean = try {
+        executeCommandRequest(
+            ExecuteCommandParams(command.command, command.arguments),
+            TIMEOUT_SECONDS
+        )
+        true
+    } catch (e: Exception) {
+        Timber.tag(TAG).w("Failed to execute command: ${e.message}")
+        false
     }
 
     /**
@@ -249,24 +247,22 @@ class LspCodeActionService {
         }
     }
 
-    private fun parsePrepareRenameResult(result: Any?): PrepareRenameResult? {
-        return when (result) {
-            null -> null
-            is Range -> PrepareRenameResult(canRename = true, range = result, placeholder = null)
-            is org.eclipse.lsp4j.PrepareRenameResult -> {
-                PrepareRenameResult(
-                    canRename = true,
-                    range = result.range,
-                    placeholder = result.placeholder
-                )
-            }
-            is org.eclipse.lsp4j.PrepareRenameDefaultBehavior -> {
-                PrepareRenameResult(canRename = true, range = null, placeholder = null)
-            }
-            is Either3<*, *, *> -> parseEither3PrepareRenameResult(result)
-            is Either<*, *> -> parseEitherPrepareRenameResult(result)
-            else -> null
+    private fun parsePrepareRenameResult(result: Any?): PrepareRenameResult? = when (result) {
+        null -> null
+        is Range -> PrepareRenameResult(canRename = true, range = result, placeholder = null)
+        is org.eclipse.lsp4j.PrepareRenameResult -> {
+            PrepareRenameResult(
+                canRename = true,
+                range = result.range,
+                placeholder = result.placeholder
+            )
         }
+        is org.eclipse.lsp4j.PrepareRenameDefaultBehavior -> {
+            PrepareRenameResult(canRename = true, range = null, placeholder = null)
+        }
+        is Either3<*, *, *> -> parseEither3PrepareRenameResult(result)
+        is Either<*, *> -> parseEitherPrepareRenameResult(result)
+        else -> null
     }
 
     private fun parseEither3PrepareRenameResult(result: Either3<*, *, *>): PrepareRenameResult? {

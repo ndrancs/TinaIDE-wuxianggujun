@@ -69,9 +69,7 @@ internal object MakeBuildOutputLocator {
         return file.canExecute() || hasElfMagic(file)
     }
 
-    private fun matchArtifact(file: File): File? {
-        return file.takeIf(::isRunnableArtifact)
-    }
+    private fun matchArtifact(file: File): File? = file.takeIf(::isRunnableArtifact)
 
     private fun findNewestArtifact(dir: File, recursive: Boolean = false): File? {
         if (!dir.isDirectory) return null
@@ -87,19 +85,17 @@ internal object MakeBuildOutputLocator {
             .maxByOrNull { it.lastModified() }
     }
 
-    private fun hasElfMagic(file: File): Boolean {
-        return runCatching {
-            file.inputStream().use { input ->
-                val header = ByteArray(4)
-                if (input.read(header) != 4) {
-                    false
-                } else {
-                    header[0] == 0x7F.toByte() &&
-                        header[1] == 'E'.code.toByte() &&
-                        header[2] == 'L'.code.toByte() &&
-                        header[3] == 'F'.code.toByte()
-                }
+    private fun hasElfMagic(file: File): Boolean = runCatching {
+        file.inputStream().use { input ->
+            val header = ByteArray(4)
+            if (input.read(header) != 4) {
+                false
+            } else {
+                header[0] == 0x7F.toByte() &&
+                    header[1] == 'E'.code.toByte() &&
+                    header[2] == 'L'.code.toByte() &&
+                    header[3] == 'F'.code.toByte()
             }
-        }.getOrDefault(false)
-    }
+        }
+    }.getOrDefault(false)
 }

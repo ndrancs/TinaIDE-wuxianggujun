@@ -1,8 +1,8 @@
 package com.wuxianggujun.tinaide.core.editorview
 
 import android.graphics.Typeface
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -73,7 +73,7 @@ class EditorOverlaysIntegrationTest {
         }
         composeRule.waitForIdle()
 
-        assertThat(composeRule.onNodeWithTag(completionPopupTag).fetchSemanticsNode()).isNotNull()
+        assertThat(composeRule.onNodeWithTag(COMPLETION_POPUP_TAG).fetchSemanticsNode()).isNotNull()
 
         composeRule.runOnIdle {
             state.scrollOffsetXPx = 148f
@@ -169,7 +169,7 @@ class EditorOverlaysIntegrationTest {
         val afterImeLayout = checkNotNull(completionLayout.value)
 
         assertThat(afterImeLayout.maxHeightPx).isLessThan(beforeImeLayout.maxHeightPx)
-        assertThat(composeRule.onNodeWithTag(completionPopupTag).fetchSemanticsNode()).isNotNull()
+        assertThat(composeRule.onNodeWithTag(COMPLETION_POPUP_TAG).fetchSemanticsNode()).isNotNull()
 
         composeRule.onNodeWithTag(completionPopupRowTag(1)).performClick()
         composeRule.waitForIdle()
@@ -222,7 +222,7 @@ class EditorOverlaysIntegrationTest {
         }
         composeRule.waitForIdle()
 
-        assertThat(composeRule.onNodeWithTag(signatureHelpPopupTag).fetchSemanticsNode()).isNotNull()
+        assertThat(composeRule.onNodeWithTag(SIGNATURE_HELP_POPUP_TAG).fetchSemanticsNode()).isNotNull()
 
         composeRule.runOnIdle {
             state.scrollOffsetPx = 92f
@@ -270,15 +270,15 @@ class EditorOverlaysIntegrationTest {
         }
         composeRule.waitForIdle()
 
-        assertThat(composeRule.onNodeWithTag(selectionContextMenuTag).fetchSemanticsNode()).isNotNull()
+        assertThat(composeRule.onNodeWithTag(SELECTION_CONTEXT_MENU_TAG).fetchSemanticsNode()).isNotNull()
 
         composeRule.runOnIdle {
             checkNotNull(session).ui.contextMenuOffset = IntOffset(248, 118)
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithTag(selectionContextMenuTextGroupTag).performClick()
-        composeRule.onNodeWithTag(selectionContextMenuSelectAllActionTag).performClick()
+        composeRule.onNodeWithTag(SELECTION_CONTEXT_MENU_TEXT_GROUP_TAG).performClick()
+        composeRule.onNodeWithTag(SELECTION_CONTEXT_MENU_SELECT_ALL_ACTION_TAG).performClick()
         composeRule.waitForIdle()
 
         composeRule.runOnIdle {
@@ -297,18 +297,16 @@ class EditorOverlaysIntegrationTest {
         EditorCompletionOverlay(session)
     }
 
-    private fun createState(buffer: RopeTextBuffer): EditorState {
-        return EditorState(
-            textBuffer = buffer,
-            config = EditorConfig(
-                wordWrap = false,
-                codeFolding = false,
-                tabSize = 4
-            )
-        ).apply {
-            typeface = Typeface.MONOSPACE
-            fontSizeSp = 14f
-        }
+    private fun createState(buffer: RopeTextBuffer): EditorState = EditorState(
+        textBuffer = buffer,
+        config = EditorConfig(
+            wordWrap = false,
+            codeFolding = false,
+            tabSize = 4
+        )
+    ).apply {
+        typeface = Typeface.MONOSPACE
+        fontSizeSp = 14f
     }
 
     private fun configureViewport(

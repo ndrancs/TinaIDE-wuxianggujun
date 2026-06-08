@@ -72,14 +72,12 @@ object ManifestPatcher {
         }
     }
 
-    private fun normalizeRequestedPermissions(permissions: List<String>): List<String> {
-        return permissions
-            .asSequence()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .toList()
-    }
+    private fun normalizeRequestedPermissions(permissions: List<String>): List<String> = permissions
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .distinct()
+        .toList()
 
     private data class PermissionAttributeOverride(
         val maxSdkVersion: Int? = null

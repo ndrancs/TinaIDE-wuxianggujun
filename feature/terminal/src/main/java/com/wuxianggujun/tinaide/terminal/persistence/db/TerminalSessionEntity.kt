@@ -33,13 +33,11 @@ data class TerminalStateEntity(
     val updatedAt: Long = System.currentTimeMillis()
 ) {
     companion object {
-        fun fromSnapshot(projectPath: String, snapshot: ProjectTerminalState): TerminalStateEntity {
-            return TerminalStateEntity(
-                projectPath = projectPath,
-                activeSessionId = snapshot.activeSessionId,
-                updatedAt = snapshot.updatedAt
-            )
-        }
+        fun fromSnapshot(projectPath: String, snapshot: ProjectTerminalState): TerminalStateEntity = TerminalStateEntity(
+            projectPath = projectPath,
+            activeSessionId = snapshot.activeSessionId,
+            updatedAt = snapshot.updatedAt
+        )
     }
 }
 
@@ -96,38 +94,34 @@ data class TerminalSessionEntity(
     @ColumnInfo(name = "created_at")
     val createdAt: Long = 0L
 ) {
-    fun toDomainModel(): TerminalSessionSnapshot {
-        return TerminalSessionSnapshot(
-            id = sessionId,
-            title = title,
-            backend = backend,
-            workingDirectory = workingDirectory,
-            cursorRow = cursorRow,
-            cursorColumn = cursorColumn,
-            rows = rows,
-            columns = columns,
-            transcript = transcript,
-            transcriptLines = transcriptLines,
-            createdAt = createdAt
-        )
-    }
+    fun toDomainModel(): TerminalSessionSnapshot = TerminalSessionSnapshot(
+        id = sessionId,
+        title = title,
+        backend = backend,
+        workingDirectory = workingDirectory,
+        cursorRow = cursorRow,
+        cursorColumn = cursorColumn,
+        rows = rows,
+        columns = columns,
+        transcript = transcript,
+        transcriptLines = transcriptLines,
+        createdAt = createdAt
+    )
 
     companion object {
-        fun fromDomainModel(projectPath: String, snapshot: TerminalSessionSnapshot): TerminalSessionEntity {
-            return TerminalSessionEntity(
-                projectPath = projectPath,
-                sessionId = snapshot.id,
-                title = snapshot.title,
-                backend = snapshot.backend,
-                workingDirectory = snapshot.workingDirectory,
-                cursorRow = snapshot.cursorRow,
-                cursorColumn = snapshot.cursorColumn,
-                rows = snapshot.rows,
-                columns = snapshot.columns,
-                transcript = snapshot.transcript,
-                transcriptLines = snapshot.transcriptLines,
-                createdAt = snapshot.createdAt
-            )
-        }
+        fun fromDomainModel(projectPath: String, snapshot: TerminalSessionSnapshot): TerminalSessionEntity = TerminalSessionEntity(
+            projectPath = projectPath,
+            sessionId = snapshot.id,
+            title = snapshot.title,
+            backend = snapshot.backend,
+            workingDirectory = snapshot.workingDirectory,
+            cursorRow = snapshot.cursorRow,
+            cursorColumn = snapshot.cursorColumn,
+            rows = snapshot.rows,
+            columns = snapshot.columns,
+            transcript = snapshot.transcript,
+            transcriptLines = snapshot.transcriptLines,
+            createdAt = snapshot.createdAt
+        )
     }
 }

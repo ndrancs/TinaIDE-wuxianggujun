@@ -66,30 +66,22 @@ object ProjectPaths {
      *
      * 典型路径：/data/data/<package>/files/projects
      */
-    fun getPrivateProjectsRoot(context: Context): File {
-        return File(context.filesDir, "projects")
-    }
+    fun getPrivateProjectsRoot(context: Context): File = File(context.filesDir, "projects")
 
     /**
      * 获取单个项目的私有源码目录
      */
-    fun getPrivateProjectDir(context: Context, projectName: String): File {
-        return File(getPrivateProjectsRoot(context), projectName)
-    }
+    fun getPrivateProjectDir(context: Context, projectName: String): File = File(getPrivateProjectsRoot(context), projectName)
 
     /**
      * 获取私有源码根目录路径（字符串）
      */
-    fun getPrivateProjectsRootPath(context: Context): String {
-        return getPrivateProjectsRoot(context).absolutePath
-    }
+    fun getPrivateProjectsRootPath(context: Context): String = getPrivateProjectsRoot(context).absolutePath
 
     /**
      * 判断给定路径是否位于私有源码根目录下。
      */
-    fun isUnderPrivateProjectsRoot(context: Context, path: File): Boolean {
-        return isUnderRoot(getPrivateProjectsRoot(context), path)
-    }
+    fun isUnderPrivateProjectsRoot(context: Context, path: File): Boolean = isUnderRoot(getPrivateProjectsRoot(context), path)
 
     // ============ 2. 公有源码目录 ============
 
@@ -110,16 +102,12 @@ object ProjectPaths {
     /**
      * 获取单个项目的公有源码目录。
      */
-    fun getPublicProjectDir(context: Context, projectName: String): File {
-        return File(getPublicProjectsRoot(context), projectName)
-    }
+    fun getPublicProjectDir(context: Context, projectName: String): File = File(getPublicProjectsRoot(context), projectName)
 
     /**
      * 判断给定路径是否位于默认公有源码根目录下。
      */
-    fun isUnderPublicProjectsRoot(context: Context, path: File): Boolean {
-        return isUnderRoot(getPublicProjectsRoot(context), path)
-    }
+    fun isUnderPublicProjectsRoot(context: Context, path: File): Boolean = isUnderRoot(getPublicProjectsRoot(context), path)
 
     // ============ 3. 私有构建工作区 ============
 
@@ -128,18 +116,14 @@ object ProjectPaths {
      *
      * 典型路径：/data/data/<package>/files/workspace
      */
-    fun getWorkspaceRoot(context: Context): File {
-        return File(context.filesDir, "workspace")
-    }
+    fun getWorkspaceRoot(context: Context): File = File(context.filesDir, "workspace")
 
     /**
      * 获取单个项目的私有构建工作区目录。
      *
      * 以稳定的 projectId 作为目录名，避免项目重命名后工作区抖动。
      */
-    fun getProjectWorkspaceDir(context: Context, projectId: String): File {
-        return File(getWorkspaceRoot(context), projectId)
-    }
+    fun getProjectWorkspaceDir(context: Context, projectId: String): File = File(getWorkspaceRoot(context), projectId)
 
     // ============ 4. 项目构建目录 ============
 
@@ -148,16 +132,12 @@ object ProjectPaths {
      *
      * 典型路径：<workspaceRoot>/build
      */
-    fun getProjectBuildDir(workspaceRoot: File): File {
-        return File(workspaceRoot, "build")
-    }
+    fun getProjectBuildDir(workspaceRoot: File): File = File(workspaceRoot, "build")
 
     /**
      * 获取项目默认 APK 输出目录。
      */
-    fun getProjectApkOutputDir(workspaceRoot: File): File {
-        return File(getProjectBuildDir(workspaceRoot), "apk")
-    }
+    fun getProjectApkOutputDir(workspaceRoot: File): File = File(getProjectBuildDir(workspaceRoot), "apk")
 
     // ============ 5. 私有目录（Ubuntu/工具链）============
 
@@ -170,23 +150,17 @@ object ProjectPaths {
      * - 可独立重置
      * - 卸载时自动清理
      */
-    fun getUbuntuRoot(context: Context): File {
-        return File(context.filesDir, "ubuntu")
-    }
+    fun getUbuntuRoot(context: Context): File = File(context.filesDir, "ubuntu")
 
     /**
      * 工具链根目录
      */
-    fun getToolchainRoot(context: Context): File {
-        return File(context.filesDir, "toolchain")
-    }
+    fun getToolchainRoot(context: Context): File = File(context.filesDir, "toolchain")
 
     /**
      * 同步元数据目录（私有）
      */
-    fun getSyncMetaRoot(context: Context): File {
-        return File(context.filesDir, "sync-meta")
-    }
+    fun getSyncMetaRoot(context: Context): File = File(context.filesDir, "sync-meta")
 
     // ============ 7. 终端状态目录 ============
 
@@ -208,9 +182,7 @@ object ProjectPaths {
     /**
      * 获取终端状态存储根目录路径（字符串）
      */
-    fun getTerminalStatesRootPath(context: Context): String {
-        return getTerminalStatesRoot(context).absolutePath
-    }
+    fun getTerminalStatesRootPath(context: Context): String = getTerminalStatesRoot(context).absolutePath
 
     // ============ 8. 日志目录 ============
 
@@ -231,18 +203,14 @@ object ProjectPaths {
      * 路径：/data/data/<package>/files/logs
      * 用途：存放不希望暴露到 Android/data 的敏感日志（例如：PRoot 命令与会话输出）。
      */
-    fun getInternalLogsRoot(context: Context): File {
-        return File(context.filesDir, "logs")
-    }
+    fun getInternalLogsRoot(context: Context): File = File(context.filesDir, "logs")
 
     /**
      * PRoot 日志目录（内部）
      *
      * 路径：/data/data/<package>/files/logs/proot
      */
-    fun getPRootLogsRoot(context: Context): File {
-        return File(getInternalLogsRoot(context), "proot")
-    }
+    fun getPRootLogsRoot(context: Context): File = File(getInternalLogsRoot(context), "proot")
 
     /**
      * 安装日志目录
@@ -298,9 +266,7 @@ object ProjectPaths {
      * 典型路径：/data/data/<package>/files/proot
      * 用途：PRoot 相关运行时文件
      */
-    fun getPRootRoot(context: Context): File {
-        return File(context.filesDir, "proot")
-    }
+    fun getPRootRoot(context: Context): File = File(context.filesDir, "proot")
 
     // ============ 11. 缓存目录 ============
 
@@ -310,9 +276,7 @@ object ProjectPaths {
      * 典型路径：/data/data/<package>/cache/exports
      * 用途：项目导出时的临时文件
      */
-    fun getExportCacheRoot(context: Context): File {
-        return File(context.cacheDir, "exports")
-    }
+    fun getExportCacheRoot(context: Context): File = File(context.cacheDir, "exports")
 
     /**
      * PRoot 临时目录
@@ -320,9 +284,7 @@ object ProjectPaths {
      * 典型路径：/data/data/<package>/cache/proot-tmp
      * 用途：PRoot 运行时临时文件
      */
-    fun getPRootTmpRoot(context: Context): File {
-        return File(context.cacheDir, "proot-tmp")
-    }
+    fun getPRootTmpRoot(context: Context): File = File(context.cacheDir, "proot-tmp")
 
     /**
      * 下载缓存目录
@@ -330,9 +292,7 @@ object ProjectPaths {
      * 典型路径：/data/data/<package>/cache/downloads
      * 用途：Linux rootfs 等大文件下载缓存
      */
-    fun getDownloadCacheRoot(context: Context): File {
-        return File(context.cacheDir, "downloads")
-    }
+    fun getDownloadCacheRoot(context: Context): File = File(context.cacheDir, "downloads")
 
     // ============ 12. 其他目录 ============
 
@@ -353,9 +313,7 @@ object ProjectPaths {
      * 典型路径：/data/data/<package>/files/config.json
      * 用途：应用配置持久化
      */
-    fun getConfigFile(context: Context): File {
-        return File(context.filesDir, "config.json")
-    }
+    fun getConfigFile(context: Context): File = File(context.filesDir, "config.json")
 
     // ============ 辅助方法 ============
 
@@ -364,9 +322,7 @@ object ProjectPaths {
      *
      * 典型路径：/data/data/<package>/files
      */
-    fun getPrivateFilesRoot(context: Context): File {
-        return context.filesDir
-    }
+    fun getPrivateFilesRoot(context: Context): File = context.filesDir
 
     /**
      * 获取外部应用专属目录根路径
@@ -374,18 +330,14 @@ object ProjectPaths {
      * 典型路径：/storage/emulated/0/Android/data/<package>/files
      * 如果外部存储不可用，回退到私有目录
      */
-    fun getExternalFilesRoot(context: Context): File {
-        return context.getExternalFilesDir(null) ?: context.filesDir
-    }
+    fun getExternalFilesRoot(context: Context): File = context.getExternalFilesDir(null) ?: context.filesDir
 
     /**
      * 获取缓存目录根路径
      *
      * 典型路径：/data/data/<package>/cache
      */
-    fun getCacheRoot(context: Context): File {
-        return context.cacheDir
-    }
+    fun getCacheRoot(context: Context): File = context.cacheDir
 
     /**
      * 确保目录存在

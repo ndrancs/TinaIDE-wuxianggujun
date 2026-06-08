@@ -14,20 +14,20 @@ import com.wuxianggujun.tinaide.project.ProjectCreationFailure
 import com.wuxianggujun.tinaide.project.ProjectCreationResult
 import com.wuxianggujun.tinaide.project.ProjectCreationService
 import com.wuxianggujun.tinaide.project.ProjectTemplateOption
-import kotlinx.coroutines.Dispatchers
+import java.io.File
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import timber.log.Timber
 
 data class NewProjectWizardState(
     val currentStep: Int = 0,
-    val selectedTemplateId: String = BuiltInProjectTemplates.defaultTemplateId,
+    val selectedTemplateId: String = BuiltInProjectTemplates.DEFAULT_TEMPLATE_ID,
     val projectName: String = "",
     val authorName: String = "",
     val sourceLocation: NewProjectSourceLocation = NewProjectSourceLocation.PUBLIC,

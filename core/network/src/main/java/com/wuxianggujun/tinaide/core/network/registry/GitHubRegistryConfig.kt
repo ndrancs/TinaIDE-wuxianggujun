@@ -35,13 +35,11 @@ object GitHubRegistryConfig {
         }
     }
 
-    private fun indexUrls(path: String): List<RegistryUrl> {
-        return REGISTRY_ENDPOINTS.map { endpoint ->
-            RegistryUrl(
-                endpoint = endpoint,
-                url = resolveRawUrl(path, endpoint.baseUrl),
-            )
-        }
+    private fun indexUrls(path: String): List<RegistryUrl> = REGISTRY_ENDPOINTS.map { endpoint ->
+        RegistryUrl(
+            endpoint = endpoint,
+            url = resolveRawUrl(path, endpoint.baseUrl),
+        )
     }
 }
 

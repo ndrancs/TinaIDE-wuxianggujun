@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide.database.di
 
-import com.wuxianggujun.tinaide.core.network.server.TinaServerConfig
 import com.wuxianggujun.tinaide.core.network.api.UserContentApiClient
+import com.wuxianggujun.tinaide.core.network.server.TinaServerConfig
 import com.wuxianggujun.tinaide.core.user.UserContentRepository
 import com.wuxianggujun.tinaide.database.impl.HybridUserContentRepository
 import com.wuxianggujun.tinaide.database.user.UserContentDatabase

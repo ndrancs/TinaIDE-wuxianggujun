@@ -3,8 +3,8 @@ package com.wuxianggujun.tinaide.core.packages.backend
 import com.wuxianggujun.tinaide.core.packages.model.*
 import com.wuxianggujun.tinaide.core.proot.GuestSystemPackageManager
 import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
-import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
+import timber.log.Timber
 
 class ApkPackageBackend(
     private val prootEnv: PRootEnvironment
@@ -113,11 +113,7 @@ class ApkPackageBackend(
         }
     }
 
-    suspend fun isPackageInstalled(systemPackage: String): Boolean {
-        return prootEnv.queryInstalledPackageVersions(listOf(systemPackage))[systemPackage] != null
-    }
+    suspend fun isPackageInstalled(systemPackage: String): Boolean = prootEnv.queryInstalledPackageVersions(listOf(systemPackage))[systemPackage] != null
 
-    suspend fun getInstalledVersion(systemPackage: String): String? {
-        return prootEnv.queryInstalledPackageVersions(listOf(systemPackage))[systemPackage]
-    }
+    suspend fun getInstalledVersion(systemPackage: String): String? = prootEnv.queryInstalledPackageVersions(listOf(systemPackage))[systemPackage]
 }

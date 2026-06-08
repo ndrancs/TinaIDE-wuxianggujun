@@ -542,9 +542,7 @@ class FileSystemCallbacksImpl(
         }
     }
 
-    override fun resolvePath(path: String): File {
-        return PathUtils.resolveProjectFile(path, projectRoot)
-    }
+    override fun resolvePath(path: String): File = PathUtils.resolveProjectFile(path, projectRoot)
 
     override fun toRelativePath(absolutePath: String): String = PathUtils.toRelativePath(absolutePath, projectRoot)
 

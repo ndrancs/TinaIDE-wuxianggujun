@@ -7,9 +7,7 @@ object TinaServerHttpClientFactory {
     fun anonymous(
         baseClient: OkHttpClient = OkHttpClientProvider.default,
         configure: OkHttpClient.Builder.() -> Unit = {}
-    ): OkHttpClient {
-        return baseClient.newBuilder()
-            .apply(configure)
-            .build()
-    }
+    ): OkHttpClient = baseClient.newBuilder()
+        .apply(configure)
+        .build()
 }

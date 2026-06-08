@@ -8,10 +8,10 @@ import com.wuxianggujun.tinaide.core.help.HelpDocument
 import com.wuxianggujun.tinaide.core.help.HelpRepository
 import com.wuxianggujun.tinaide.core.help.HelpSearchResult
 import kotlinx.coroutines.flow.MutableStateFlow
-import timber.log.Timber
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 /**
  * 帮助中心 ViewModel

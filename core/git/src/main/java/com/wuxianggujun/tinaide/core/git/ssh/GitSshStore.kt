@@ -1,13 +1,13 @@
 package com.wuxianggujun.tinaide.core.git.ssh
 
 import android.content.Context
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
 
 class GitSshStore(
     context: Context,
@@ -65,22 +65,26 @@ class GitSshStore(
 
         val keysArray = JSONArray()
         state.keys.forEach { key ->
-            keysArray.put(JSONObject().apply {
-                put("name", key.name)
-                put("type", key.type)
-                put("comment", key.comment ?: JSONObject.NULL)
-                put("createdAtEpochMs", key.createdAtEpochMs)
-            })
+            keysArray.put(
+                JSONObject().apply {
+                    put("name", key.name)
+                    put("type", key.type)
+                    put("comment", key.comment ?: JSONObject.NULL)
+                    put("createdAtEpochMs", key.createdAtEpochMs)
+                }
+            )
         }
         json.put("keys", keysArray)
 
         val bindingsArray = JSONArray()
         state.hostBindings.forEach { binding ->
-            bindingsArray.put(JSONObject().apply {
-                put("host", binding.host)
-                put("keyName", binding.keyName)
-                put("port", binding.port ?: JSONObject.NULL)
-            })
+            bindingsArray.put(
+                JSONObject().apply {
+                    put("host", binding.host)
+                    put("keyName", binding.keyName)
+                    put("port", binding.port ?: JSONObject.NULL)
+                }
+            )
         }
         json.put("hostBindings", bindingsArray)
 

@@ -495,12 +495,11 @@ class ExecutionCallbacksImpl(
 
     private fun detectBuildSystem(): BuildSystem = BuildSystemDetector.detect(File(projectRoot))
 
-    private fun firstSaveFailureMessage(saveResults: List<SaveResult>): String? =
-        saveResults
-            .filterIsInstance<SaveResult.Failure>()
-            .firstOrNull()
-            ?.message
-            ?.ifBlank { Strings.editor_error_save_failed.str() }
+    private fun firstSaveFailureMessage(saveResults: List<SaveResult>): String? = saveResults
+        .filterIsInstance<SaveResult.Failure>()
+        .firstOrNull()
+        ?.message
+        ?.ifBlank { Strings.editor_error_save_failed.str() }
 
     private fun failExecutionForSaveFailure(
         executionId: String,

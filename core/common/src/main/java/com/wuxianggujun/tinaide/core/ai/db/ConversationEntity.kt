@@ -23,5 +23,5 @@ data class ConversationEntity(
     val updatedAt: Long,
 
     @ColumnInfo(name = "tool_execution_mode")
-    val toolExecutionMode: String = "AUTO"  // AUTO 或 MANUAL
+    val toolExecutionMode: String = "AUTO"
 )

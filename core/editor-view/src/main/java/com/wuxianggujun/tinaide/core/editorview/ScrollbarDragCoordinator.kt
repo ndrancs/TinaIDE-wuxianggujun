@@ -6,10 +6,10 @@ import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.unit.Density
-import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.math.abs
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.abs
 import kotlin.math.sqrt
+import kotlinx.coroutines.withTimeoutOrNull
 
 internal data class ActiveScrollbarDrag(
     val pointerId: PointerId,
@@ -134,7 +134,9 @@ internal class ScrollbarDragCoordinator(
                 val dragOffsetInThumbPx = if (dragGeometry != null) {
                     (pointerAxisAtDown - dragGeometry.thumbStartPx)
                         .coerceIn(0f, dragGeometry.thumbLengthPx)
-                } else 0f
+                } else {
+                    0f
+                }
                 val canMapPointerToScroll = (
                     dragGeometry != null &&
                         dragGeometry.maxScrollOffsetPx > 0f &&

@@ -174,14 +174,12 @@ object NativeLibraryDependencyHints {
         ).filterTo(linkedSetOf()) { it.isNotBlank() }
     }
 
-    private fun normalizeLibraryNames(libraryNames: List<String>): List<String> {
-        return libraryNames.asSequence()
-            .map(::normalizeLibraryName)
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sorted()
-            .toList()
-    }
+    private fun normalizeLibraryNames(libraryNames: List<String>): List<String> = libraryNames.asSequence()
+        .map(::normalizeLibraryName)
+        .filter { it.isNotBlank() }
+        .distinct()
+        .sorted()
+        .toList()
 
     internal fun normalizeLibraryName(name: String): String {
         val trimmed = name.trim()
@@ -190,8 +188,6 @@ object NativeLibraryDependencyHints {
         return trimmed.substring(0, markerIndex + 3)
     }
 
-    private fun compactKey(value: String): String {
-        return value.lowercase()
-            .filter { it in 'a'..'z' || it in '0'..'9' }
-    }
+    private fun compactKey(value: String): String = value.lowercase()
+        .filter { it in 'a'..'z' || it in '0'..'9' }
 }

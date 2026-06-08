@@ -5,8 +5,8 @@ import android.os.Build
 import com.wuxianggujun.tinaide.exec.TinaExecPreloadMode
 import com.wuxianggujun.tinaide.exec.TinaExecRuntime
 import com.wuxianggujun.tinaide.exec.TinaExecSystemLinkerMode
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * Native 可执行文件启动器
@@ -83,14 +83,12 @@ object NativeExecutableRunner {
         executable: String,
         args: List<String> = emptyList(),
         preferLinker64: Boolean = shouldPreferLinker64()
-    ): List<String> {
-        return buildCommand(
-            executable = executable,
-            args = args,
-            kind = ExecutableKind.probe(File(executable)),
-            preferLinker64 = preferLinker64
-        )
-    }
+    ): List<String> = buildCommand(
+        executable = executable,
+        args = args,
+        kind = ExecutableKind.probe(File(executable)),
+        preferLinker64 = preferLinker64
+    )
 
     /**
      * 构建用于 ProcessBuilder 的完整命令（显式 kind 版本）。
@@ -128,14 +126,12 @@ object NativeExecutableRunner {
         executable: File,
         args: List<String> = emptyList(),
         preferLinker64: Boolean = shouldPreferLinker64()
-    ): List<String> {
-        return buildCommand(
-            executable = executable.absolutePath,
-            args = args,
-            kind = ExecutableKind.probe(executable),
-            preferLinker64 = preferLinker64
-        )
-    }
+    ): List<String> = buildCommand(
+        executable = executable.absolutePath,
+        args = args,
+        kind = ExecutableKind.probe(executable),
+        preferLinker64 = preferLinker64
+    )
 
     /**
      * 判断是否应该优先使用 linker64。
@@ -151,16 +147,12 @@ object NativeExecutableRunner {
      */
     fun shouldPreferLinker64(): Boolean = shouldPreferLinker64(Build.VERSION.SDK_INT)
 
-    internal fun shouldPreferLinker64(sdkInt: Int): Boolean {
-        return sdkInt >= LINKER64_PREFERRED_API_LEVEL
-    }
+    internal fun shouldPreferLinker64(sdkInt: Int): Boolean = sdkInt >= LINKER64_PREFERRED_API_LEVEL
 
-    internal fun describeLinker64PreferenceDecision(sdkInt: Int): String {
-        return if (shouldPreferLinker64(sdkInt)) {
-            "sdk>=$LINKER64_PREFERRED_API_LEVEL prefers linker64 for app-private ELF toolchain processes"
-        } else {
-            "sdk<$LINKER64_PREFERRED_API_LEVEL keeps direct exec unless caller overrides"
-        }
+    internal fun describeLinker64PreferenceDecision(sdkInt: Int): String = if (shouldPreferLinker64(sdkInt)) {
+        "sdk>=$LINKER64_PREFERRED_API_LEVEL prefers linker64 for app-private ELF toolchain processes"
+    } else {
+        "sdk<$LINKER64_PREFERRED_API_LEVEL keeps direct exec unless caller overrides"
     }
 
     fun describeLaunchMode(executable: String, fullCommand: List<String>): String {
@@ -202,9 +194,7 @@ object NativeExecutableRunner {
         executable: File,
         args: List<String> = emptyList(),
         preferLinker64: Boolean = shouldPreferLinker64()
-    ): String {
-        return buildShellSnippet(executable.absolutePath, args, preferLinker64)
-    }
+    ): String = buildShellSnippet(executable.absolutePath, args, preferLinker64)
 
     /**
      * [buildShellSnippet] 的显式 kind 重载。
@@ -233,9 +223,7 @@ object NativeExecutableRunner {
         return "'" + value.replace("'", "'\"'\"'") + "'"
     }
 
-    fun isCompilerLauncher(path: String): Boolean {
-        return isSystemLinkerLauncher(path)
-    }
+    fun isCompilerLauncher(path: String): Boolean = isSystemLinkerLauncher(path)
 
     /**
      * 为 ProcessBuilder 配置环境变量
@@ -328,14 +316,12 @@ object NativeExecutableRunner {
         context: Context,
         fullCommand: List<String>,
         systemLinkerMode: TinaExecSystemLinkerMode = TinaExecSystemLinkerMode.ENABLE
-    ): Boolean {
-        return TinaExecRuntime.applyLdPreload(
-            environment = environment,
-            context = context,
-            mode = resolveTinaExecPreloadMode(fullCommand),
-            systemLinkerMode = systemLinkerMode
-        )
-    }
+    ): Boolean = TinaExecRuntime.applyLdPreload(
+        environment = environment,
+        context = context,
+        mode = resolveTinaExecPreloadMode(fullCommand),
+        systemLinkerMode = systemLinkerMode
+    )
 
     /**
      * 创建并配置 ProcessBuilder
@@ -408,21 +394,19 @@ object NativeExecutableRunner {
         tinaExecContext: Context? = null,
         tinaExecMode: TinaExecPreloadMode? = null,
         tinaExecSystemLinkerMode: TinaExecSystemLinkerMode? = null
-    ): ProcessBuilder {
-        return createProcessBuilder(
-            executable.absolutePath,
-            args,
-            workingDir,
-            nativeLibDir,
-            toolchainBinDir,
-            tmpDir,
-            homeDir,
-            preferLinker64,
-            tinaExecContext,
-            tinaExecMode,
-            tinaExecSystemLinkerMode
-        )
-    }
+    ): ProcessBuilder = createProcessBuilder(
+        executable.absolutePath,
+        args,
+        workingDir,
+        nativeLibDir,
+        toolchainBinDir,
+        tmpDir,
+        homeDir,
+        preferLinker64,
+        tinaExecContext,
+        tinaExecMode,
+        tinaExecSystemLinkerMode
+    )
 
     /**
      * 打印 native 命令执行诊断信息（用于定位 ENOENT / 路径 / 环境变量问题）。
@@ -609,12 +593,10 @@ object NativeExecutableRunner {
         return value.take(maxLen) + "...(truncated)"
     }
 
-    private fun isSystemLinkerLauncher(path: String): Boolean {
-        return path == "/system/bin/linker64" ||
-            path == "/system/bin/linker" ||
-            path == "/apex/com.android.runtime/bin/linker64" ||
-            path == "/apex/com.android.runtime/bin/linker"
-    }
+    private fun isSystemLinkerLauncher(path: String): Boolean = path == "/system/bin/linker64" ||
+        path == "/system/bin/linker" ||
+        path == "/apex/com.android.runtime/bin/linker64" ||
+        path == "/apex/com.android.runtime/bin/linker"
 
     private fun isAlreadyLinkerWrapped(executable: String, args: List<String>): Boolean {
         if (!isSystemLinkerLauncher(executable) || args.isEmpty()) return false

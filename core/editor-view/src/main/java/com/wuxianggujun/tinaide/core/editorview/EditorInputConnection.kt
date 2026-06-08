@@ -12,11 +12,6 @@ import android.view.inputmethod.BaseInputConnection
 import android.view.inputmethod.CompletionInfo
 import android.view.inputmethod.CorrectionInfo
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.ExtractedText
-import android.view.inputmethod.ExtractedTextRequest
-import android.view.inputmethod.InputConnection
-import com.wuxianggujun.tinaide.core.config.Prefs
-import timber.log.Timber
 import android.view.inputmethod.EditorInfo.IME_ACTION_DONE
 import android.view.inputmethod.EditorInfo.IME_ACTION_GO
 import android.view.inputmethod.EditorInfo.IME_ACTION_NEXT
@@ -24,7 +19,12 @@ import android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
 import android.view.inputmethod.EditorInfo.IME_ACTION_SEND
 import android.view.inputmethod.EditorInfo.IME_ACTION_UNSPECIFIED
 import android.view.inputmethod.EditorInfo.IME_NULL
+import android.view.inputmethod.ExtractedText
+import android.view.inputmethod.ExtractedTextRequest
+import android.view.inputmethod.InputConnection
+import com.wuxianggujun.tinaide.core.config.Prefs
 import kotlin.math.abs
+import timber.log.Timber
 
 internal class EditorInputHostView(context: Context) : View(context) {
 
@@ -35,9 +35,7 @@ internal class EditorInputHostView(context: Context) : View(context) {
 
     override fun onCheckIsTextEditor(): Boolean = true
 
-    override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
-        return inputConnectionFactory?.invoke(outAttrs)
-    }
+    override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? = inputConnectionFactory?.invoke(outAttrs)
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (keyEventHandler?.invoke(event) == true) return true
@@ -64,6 +62,7 @@ internal class EditorInputConnection(
     private companion object {
         private const val IME_DIAG_TAG = "EditorImeDiag"
         private const val AOSP_META_SELECTING = 0x800
+
         // getExtractedText 默认窗口 4KB：覆盖大部分中文/emoji 输入法的候选词与重组上下文，
         // 远小于"整份文档"但足够让 IME 正常工作。
         private const val DEFAULT_EXTRACTED_WINDOW_CHARS = 4096
@@ -302,9 +301,7 @@ internal class EditorInputConnection(
         return true
     }
 
-    override fun sendKeyEvent(event: KeyEvent): Boolean {
-        return handleKeyEvent(event) || super.sendKeyEvent(event)
-    }
+    override fun sendKeyEvent(event: KeyEvent): Boolean = handleKeyEvent(event) || super.sendKeyEvent(event)
 
     internal fun handleKeyEvent(event: KeyEvent): Boolean {
         if (event.action != KeyEvent.ACTION_DOWN) return false
@@ -520,10 +517,8 @@ internal class EditorInputConnection(
         }
     }
 
-    private fun isInsertableCodePoint(codePoint: Int): Boolean {
-        return Character.isValidCodePoint(codePoint) &&
-            !Character.isISOControl(codePoint)
-    }
+    private fun isInsertableCodePoint(codePoint: Int): Boolean = Character.isValidCodePoint(codePoint) &&
+        !Character.isISOControl(codePoint)
 
     /**
      * 方向键移动后通知 IME 更新当前选区位置，确保输入法内部的 anchor/caret 感知与编辑器一致。
@@ -678,9 +673,7 @@ internal class EditorInputConnection(
         }
     }
 
-    override fun performPrivateCommand(action: String?, data: Bundle?): Boolean {
-        return false
-    }
+    override fun performPrivateCommand(action: String?, data: Bundle?): Boolean = false
 
     private fun applyReplacement(
         startOffset: Int,
@@ -791,13 +784,9 @@ internal class EditorInputConnection(
         return cursor to cursor
     }
 
-    private fun cursorOffset(): Int {
-        return state.cursorOffset.coerceIn(0, state.textBuffer.length)
-    }
+    private fun cursorOffset(): Int = state.cursorOffset.coerceIn(0, state.textBuffer.length)
 
-    private fun surroundingContextChars(): Int {
-        return state.config.imeWindowChars.coerceIn(64, 4096)
-    }
+    private fun surroundingContextChars(): Int = state.config.imeWindowChars.coerceIn(64, 4096)
 
     private fun copySelectedTextToClipboard(): Boolean {
         val (start, end) = selectionOffsets()
@@ -823,7 +812,5 @@ internal class EditorInputConnection(
         Timber.tag(IME_DIAG_TAG).d(message)
     }
 
-    private fun isImeDiagnosticsEnabled(): Boolean {
-        return runCatching { Prefs.devDiagnosticsEnabled }.getOrDefault(false)
-    }
+    private fun isImeDiagnosticsEnabled(): Boolean = runCatching { Prefs.devDiagnosticsEnabled }.getOrDefault(false)
 }

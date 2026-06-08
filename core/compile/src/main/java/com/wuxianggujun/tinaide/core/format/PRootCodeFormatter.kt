@@ -7,8 +7,8 @@ import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
 import com.wuxianggujun.tinaide.core.proot.PRootManager
 import com.wuxianggujun.tinaide.core.proot.ToolchainPathResolver
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * PRoot 代码格式化服务
@@ -41,10 +41,11 @@ class PRootCodeFormatter(
      */
     private val supportedExtensions: Set<String> =
         CxxFileSupport.editorRelatedExtensions + setOf(
-            "java",   // Java
-            "js", "ts", // JavaScript/TypeScript
-            "json",   // JSON
-            "proto"   // Protocol Buffers
+            "java", // Java
+            "js",
+            "ts", // JavaScript/TypeScript
+            "json", // JSON
+            "proto" // Protocol Buffers
         )
 
     // ========== 公开 API ==========
@@ -93,11 +94,9 @@ class PRootCodeFormatter(
     /**
      * 获取 clang-format 版本
      */
-    suspend fun getVersion(): String? {
-        return when (val result = checkAvailability()) {
-            is AvailabilityResult.Available -> result.version
-            is AvailabilityResult.NotAvailable -> null
-        }
+    suspend fun getVersion(): String? = when (val result = checkAvailability()) {
+        is AvailabilityResult.Available -> result.version
+        is AvailabilityResult.NotAvailable -> null
     }
 
     /**
@@ -254,9 +253,7 @@ class PRootCodeFormatter(
     /**
      * 获取用户设置的默认格式化风格
      */
-    fun getUserDefaultStyle(): FormatStyle {
-        return FormatStyle.fromString(Prefs.codeFormatStyle)
-    }
+    fun getUserDefaultStyle(): FormatStyle = FormatStyle.fromString(Prefs.codeFormatStyle)
 
     /**
      * 检查指定目录或其父目录中是否存在 .clang-format 文件
@@ -288,23 +285,17 @@ class PRootCodeFormatter(
     /**
      * 将内置配置文件部署到项目目录
      */
-    fun deployConfigToProject(style: FormatStyle, projectDir: File, overwrite: Boolean = false): Boolean {
-        return configManager.deployConfig(style, projectDir, overwrite)
-    }
+    fun deployConfigToProject(style: FormatStyle, projectDir: File, overwrite: Boolean = false): Boolean = configManager.deployConfig(style, projectDir, overwrite)
 
     /**
      * 获取内置配置文件的内容
      */
-    fun getBuiltinConfigContent(style: FormatStyle): String? {
-        return configManager.readConfigContent(style)
-    }
+    fun getBuiltinConfigContent(style: FormatStyle): String? = configManager.readConfigContent(style)
 
     /**
      * 获取所有可用的内置配置
      */
-    fun getAvailableConfigs(): List<ClangFormatConfigManager.ConfigInfo> {
-        return configManager.availableConfigs
-    }
+    fun getAvailableConfigs(): List<ClangFormatConfigManager.ConfigInfo> = configManager.availableConfigs
 
     // ========== 私有方法 ==========
 
@@ -328,48 +319,44 @@ class PRootCodeFormatter(
         fileName: String,
         style: FormatStyle,
         options: FormatOptions
-    ): List<String> {
-        return buildList {
-            add(pathResolver.getClangFormat())
+    ): List<String> = buildList {
+        add(pathResolver.getClangFormat())
 
-            // 风格设置
-            add(buildStyleArgument(style))
+        // 风格设置
+        add(buildStyleArgument(style))
 
-            // 假设文件名（用于推断语言）
-            add("--assume-filename=$fileName")
+        // 假设文件名（用于推断语言）
+        add("--assume-filename=$fileName")
 
-            // 排序 include
-            if (options.sortIncludes) {
-                add("--sort-includes")
-            }
-
-            // 额外参数
-            addAll(options.extraArgs)
+        // 排序 include
+        if (options.sortIncludes) {
+            add("--sort-includes")
         }
+
+        // 额外参数
+        addAll(options.extraArgs)
     }
 
     /**
      * 构建 --style 参数
      */
-    private fun buildStyleArgument(style: FormatStyle): String {
-        return when (style) {
-            FormatStyle.FILE -> "--style=file"
-            is FormatStyle.Custom -> "--style=${style.config}"
-            else -> {
-                // 直接使用 clang-format 内置风格名称
-                // 这比从 assets 读取配置文件更简单可靠
-                val styleName = when (style) {
-                    FormatStyle.LLVM -> "LLVM"
-                    FormatStyle.GOOGLE -> "Google"
-                    FormatStyle.CHROMIUM -> "Chromium"
-                    FormatStyle.MOZILLA -> "Mozilla"
-                    FormatStyle.WEBKIT -> "WebKit"
-                    FormatStyle.MICROSOFT -> "Microsoft"
-                    FormatStyle.GNU -> "GNU"
-                    else -> "LLVM"
-                }
-                "--style=$styleName"
+    private fun buildStyleArgument(style: FormatStyle): String = when (style) {
+        FormatStyle.FILE -> "--style=file"
+        is FormatStyle.Custom -> "--style=${style.config}"
+        else -> {
+            // 直接使用 clang-format 内置风格名称
+            // 这比从 assets 读取配置文件更简单可靠
+            val styleName = when (style) {
+                FormatStyle.LLVM -> "LLVM"
+                FormatStyle.GOOGLE -> "Google"
+                FormatStyle.CHROMIUM -> "Chromium"
+                FormatStyle.MOZILLA -> "Mozilla"
+                FormatStyle.WEBKIT -> "WebKit"
+                FormatStyle.MICROSOFT -> "Microsoft"
+                FormatStyle.GNU -> "GNU"
+                else -> "LLVM"
             }
+            "--style=$styleName"
         }
     }
 }

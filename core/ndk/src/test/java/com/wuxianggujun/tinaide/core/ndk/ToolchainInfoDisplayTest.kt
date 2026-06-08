@@ -8,8 +8,8 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(
@@ -51,14 +51,12 @@ class ToolchainInfoDisplayTest {
         id: String = "custom",
         name: String = "Custom",
         version: String? = "1.0",
-    ): ToolchainInfo {
-        return ToolchainInfo(
-            id = id,
-            name = name,
-            version = version,
-            type = ToolchainType.CUSTOM,
-            path = "/toolchains/$id",
-            installedAt = 100L
-        )
-    }
+    ): ToolchainInfo = ToolchainInfo(
+        id = id,
+        name = name,
+        version = version,
+        type = ToolchainType.CUSTOM,
+        path = "/toolchains/$id",
+        installedAt = 100L
+    )
 }

@@ -1,12 +1,12 @@
 package com.wuxianggujun.tinaide.core.lsp
 
-import timber.log.Timber
 import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
 import com.wuxianggujun.tinaide.core.util.ClangResourceDirLocator
 import com.wuxianggujun.tinaide.core.util.RootfsTargetDetector
 import com.wuxianggujun.tinaide.core.util.ToolchainBinaryLocator
 import com.wuxianggujun.tinaide.project.CppStandard
 import java.io.File
+import timber.log.Timber
 
 /**
  * 负责生成 clangd 需要的 compile_commands.json。
@@ -15,6 +15,7 @@ import java.io.File
 object CompileCommandsGenerator {
 
     private const val TAG = "CompileCommandsGen"
+
     // 保留作为 fallback，但优先使用自动检测
     private const val DEFAULT_TARGET_ANDROID = "aarch64-linux-android28"
 
@@ -252,26 +253,25 @@ object CompileCommandsGenerator {
         return 0
     }
 
-    private fun escape(value: String): String =
-        buildString(value.length) {
-            value.forEach { ch ->
-                when (ch) {
-                    '\\' -> append("\\\\")
-                    '"' -> append("\\\"")
-                    '\b' -> append("\\b")
-                    '\u000C' -> append("\\f")
-                    '\n' -> append("\\n")
-                    '\r' -> append("\\r")
-                    '\t' -> append("\\t")
-                    else -> {
-                        if (ch.code < 0x20) {
-                            append("\\u")
-                            append(ch.code.toString(16).padStart(4, '0'))
-                        } else {
-                            append(ch)
-                        }
+    private fun escape(value: String): String = buildString(value.length) {
+        value.forEach { ch ->
+            when (ch) {
+                '\\' -> append("\\\\")
+                '"' -> append("\\\"")
+                '\b' -> append("\\b")
+                '\u000C' -> append("\\f")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else -> {
+                    if (ch.code < 0x20) {
+                        append("\\u")
+                        append(ch.code.toString(16).padStart(4, '0'))
+                    } else {
+                        append(ch)
                     }
                 }
             }
         }
+    }
 }

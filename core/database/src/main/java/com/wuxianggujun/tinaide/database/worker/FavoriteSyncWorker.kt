@@ -2,17 +2,17 @@ package com.wuxianggujun.tinaide.database.worker
 
 import android.content.Context
 import androidx.work.CoroutineWorker
-import androidx.work.WorkerParameters
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.WorkerParameters
 import com.wuxianggujun.tinaide.core.network.ApiResult
 import com.wuxianggujun.tinaide.core.network.api.UserContentApiClient
 import com.wuxianggujun.tinaide.database.user.FavoriteDao
+import java.util.concurrent.TimeUnit
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 
 /**
  * 收藏同步 Worker
@@ -22,7 +22,8 @@ import java.util.concurrent.TimeUnit
 class FavoriteSyncWorker(
     context: Context,
     params: WorkerParameters
-) : CoroutineWorker(context, params), KoinComponent {
+) : CoroutineWorker(context, params),
+    KoinComponent {
 
     private val favoriteDao: FavoriteDao by inject()
     private val apiClient: UserContentApiClient by inject()

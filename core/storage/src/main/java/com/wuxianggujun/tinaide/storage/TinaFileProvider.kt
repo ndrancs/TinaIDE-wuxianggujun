@@ -76,9 +76,7 @@ class TinaFileProvider : FileProvider(R.xml.file_paths) {
         return if (file.delete()) 1 else 0
     }
 
-    private fun requireProviderContext(): Context {
-        return context ?: error("TinaFileProvider is not attached to a Context")
-    }
+    private fun requireProviderContext(): Context = context ?: error("TinaFileProvider is not attached to a Context")
 
     companion object {
         private const val ROOT_EXPORTS = "exports"
@@ -129,46 +127,44 @@ class TinaFileProvider : FileProvider(R.xml.file_paths) {
             return file
         }
 
-        private fun fileProviderRoots(context: Context): List<ProviderRoot> {
-            return buildList {
-                add(ProviderRoot(ROOT_EXPORTS, File(context.cacheDir, ROOT_EXPORTS)))
-                add(ProviderRoot(ROOT_CACHE, context.cacheDir))
-                ContextCompat.getExternalCacheDirs(context).firstOrNull()?.let { externalCacheDir ->
-                    add(ProviderRoot(ROOT_EXTERNAL_EXPORTS, File(externalCacheDir, ROOT_EXPORTS)))
-                }
-                add(ProviderRoot(ROOT_FILES, context.filesDir))
-                ContextCompat.getExternalFilesDirs(context, null).firstOrNull()?.let { externalFilesDir ->
-                    add(ProviderRoot(ROOT_EXTERNAL_FILES, externalFilesDir))
-                }
-            }.map { providerRoot ->
-                providerRoot.copy(directory = providerRoot.directory.canonicalFileOrThrow())
+        private fun fileProviderRoots(context: Context): List<ProviderRoot> = buildList {
+            add(ProviderRoot(ROOT_EXPORTS, File(context.cacheDir, ROOT_EXPORTS)))
+            add(ProviderRoot(ROOT_CACHE, context.cacheDir))
+            ContextCompat.getExternalCacheDirs(context).firstOrNull()?.let { externalCacheDir ->
+                add(ProviderRoot(ROOT_EXTERNAL_EXPORTS, File(externalCacheDir, ROOT_EXPORTS)))
             }
+            add(ProviderRoot(ROOT_FILES, context.filesDir))
+            ContextCompat.getExternalFilesDirs(context, null).firstOrNull()?.let { externalFilesDir ->
+                add(ProviderRoot(ROOT_EXTERNAL_FILES, externalFilesDir))
+            }
+        }.map { providerRoot ->
+            providerRoot.copy(directory = providerRoot.directory.canonicalFileOrThrow())
         }
 
-        private fun modeToMode(mode: String): Int {
-            return when (mode) {
-                "r" -> ParcelFileDescriptor.MODE_READ_ONLY
-                "w", "wt" -> ParcelFileDescriptor.MODE_WRITE_ONLY or
+        private fun modeToMode(mode: String): Int = when (mode) {
+            "r" -> ParcelFileDescriptor.MODE_READ_ONLY
+            "w", "wt" ->
+                ParcelFileDescriptor.MODE_WRITE_ONLY or
                     ParcelFileDescriptor.MODE_CREATE or
                     ParcelFileDescriptor.MODE_TRUNCATE
-                "wa" -> ParcelFileDescriptor.MODE_WRITE_ONLY or
+            "wa" ->
+                ParcelFileDescriptor.MODE_WRITE_ONLY or
                     ParcelFileDescriptor.MODE_CREATE or
                     ParcelFileDescriptor.MODE_APPEND
-                "rw" -> ParcelFileDescriptor.MODE_READ_WRITE or
+            "rw" ->
+                ParcelFileDescriptor.MODE_READ_WRITE or
                     ParcelFileDescriptor.MODE_CREATE
-                "rwt" -> ParcelFileDescriptor.MODE_READ_WRITE or
+            "rwt" ->
+                ParcelFileDescriptor.MODE_READ_WRITE or
                     ParcelFileDescriptor.MODE_CREATE or
                     ParcelFileDescriptor.MODE_TRUNCATE
-                else -> throw IllegalArgumentException("Invalid mode: $mode")
-            }
+            else -> throw IllegalArgumentException("Invalid mode: $mode")
         }
 
-        private fun File.canonicalFileOrThrow(): File {
-            return try {
-                canonicalFile
-            } catch (error: IOException) {
-                throw IllegalArgumentException("Failed to resolve canonical path: $absolutePath", error)
-            }
+        private fun File.canonicalFileOrThrow(): File = try {
+            canonicalFile
+        } catch (error: IOException) {
+            throw IllegalArgumentException("Failed to resolve canonical path: $absolutePath", error)
         }
 
         private fun File.isInside(root: File): Boolean {

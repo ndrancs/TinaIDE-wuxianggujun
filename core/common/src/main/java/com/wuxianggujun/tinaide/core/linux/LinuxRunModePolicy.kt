@@ -17,12 +17,10 @@ object LinuxRunModePolicy {
         PROOT(MODE_PROOT),
     }
 
-    fun parse(configuredMode: String?): RunMode {
-        return if (configuredMode.equals(MODE_PROOT, ignoreCase = true)) {
-            RunMode.PROOT
-        } else {
-            RunMode.NATIVE
-        }
+    fun parse(configuredMode: String?): RunMode = if (configuredMode.equals(MODE_PROOT, ignoreCase = true)) {
+        RunMode.PROOT
+    } else {
+        RunMode.NATIVE
     }
 
     fun resolve(configuredMode: String?, linuxEnvironmentAvailable: Boolean): RunMode {
@@ -34,8 +32,5 @@ object LinuxRunModePolicy {
         }
     }
 
-    fun resolveValue(configuredMode: String?, linuxEnvironmentAvailable: Boolean): String {
-        return resolve(configuredMode, linuxEnvironmentAvailable).value
-    }
+    fun resolveValue(configuredMode: String?, linuxEnvironmentAvailable: Boolean): String = resolve(configuredMode, linuxEnvironmentAvailable).value
 }
-

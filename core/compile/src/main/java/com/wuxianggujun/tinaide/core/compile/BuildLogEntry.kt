@@ -34,8 +34,6 @@ data class BuildLogEntry(
         /**
          * 从 BuildLogLevel 和消息创建条目
          */
-        fun create(level: BuildLogLevel, message: String): BuildLogEntry {
-            return BuildLogEntry(level, message)
-        }
+        fun create(level: BuildLogLevel, message: String): BuildLogEntry = BuildLogEntry(level, message)
     }
 }

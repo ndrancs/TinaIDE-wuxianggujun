@@ -25,6 +25,4 @@ internal fun resolveSignatureHelpAutoRefreshAction(
 internal fun hasActiveSignatureHelpContext(
     textBuffer: TextBuffer,
     cursorOffset: Int
-): Boolean {
-    return TextScanKernel.hasActiveSignatureHelpContext(textBuffer, cursorOffset)
-}
+): Boolean = TextScanKernel.hasActiveSignatureHelpContext(textBuffer, cursorOffset)

@@ -9,20 +9,15 @@ import java.io.File
  */
 object ToolchainBinaryLocator {
 
-    fun findClangdExecutable(rootfsDir: File): String? =
-        findBinary(rootfsDir, baseName = "clangd", includeLlvmBinDir = true)
+    fun findClangdExecutable(rootfsDir: File): String? = findBinary(rootfsDir, baseName = "clangd", includeLlvmBinDir = true)
 
-    fun findLldbExecutable(rootfsDir: File): String? =
-        findBinary(rootfsDir, baseName = "lldb", includeLlvmBinDir = true)
+    fun findLldbExecutable(rootfsDir: File): String? = findBinary(rootfsDir, baseName = "lldb", includeLlvmBinDir = true)
 
-    fun findClangExecutable(rootfsDir: File): String? =
-        findBinary(rootfsDir, baseName = "clang", includeLlvmBinDir = true)
+    fun findClangExecutable(rootfsDir: File): String? = findBinary(rootfsDir, baseName = "clang", includeLlvmBinDir = true)
 
-    fun findClangPlusPlusExecutable(rootfsDir: File): String? =
-        findBinary(rootfsDir, baseName = "clang++", includeLlvmBinDir = true)
+    fun findClangPlusPlusExecutable(rootfsDir: File): String? = findBinary(rootfsDir, baseName = "clang++", includeLlvmBinDir = true)
 
-    fun findClangFormatExecutable(rootfsDir: File): String? =
-        findBinary(rootfsDir, baseName = "clang-format", includeLlvmBinDir = true)
+    fun findClangFormatExecutable(rootfsDir: File): String? = findBinary(rootfsDir, baseName = "clang-format", includeLlvmBinDir = true)
 
     /**
      * 检测已安装的 LLVM 版本列表
@@ -52,7 +47,7 @@ object ToolchainBinaryLocator {
             }
             ?.sorted()
             ?.toList()
-            ?.reversed()  // 高版本优先
+            ?.reversed() // 高版本优先
             ?: emptyList()
     }
 
@@ -114,6 +109,5 @@ object ToolchainBinaryLocator {
         return null
     }
 
-    private fun hostFile(rootfsDir: File, guestPath: String): File =
-        File(rootfsDir, guestPath.trimStart('/'))
+    private fun hostFile(rootfsDir: File, guestPath: String): File = File(rootfsDir, guestPath.trimStart('/'))
 }

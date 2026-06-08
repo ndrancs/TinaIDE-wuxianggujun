@@ -8,8 +8,16 @@ import com.wuxianggujun.tinaide.core.symbol.FuzzySymbolMatch
 import com.wuxianggujun.tinaide.core.symbol.IProjectSymbolIndexService
 import com.wuxianggujun.tinaide.core.symbol.SymbolIndexStatus
 import com.wuxianggujun.tinaide.core.symbol.SymbolInfo
-import kotlinx.coroutines.CoroutineScope
+import java.io.Closeable
+import java.io.File
+import java.util.Locale
+import java.util.TreeMap
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -21,14 +29,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.Closeable
-import java.io.File
-import java.util.Locale
-import java.util.TreeMap
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 import timber.log.Timber
 
 /**
@@ -45,7 +45,9 @@ import timber.log.Timber
 class ProjectSymbolIndexService(
     private val context: Context? = null,
     providers: List<LanguageSymbolProvider> = listOf(CxxSymbolProvider()),
-) : ServiceLifecycle, Closeable, IProjectSymbolIndexService {
+) : ServiceLifecycle,
+    Closeable,
+    IProjectSymbolIndexService {
 
     companion object {
         private const val TAG = "ProjectSymbolIndex"
@@ -71,18 +73,18 @@ class ProjectSymbolIndexService(
         val lastIndexedAt: Long? = null,
         val lastError: String? = null,
         val revision: Long = 0L,
-        val cacheLoaded: Boolean = false,  // 是否从缓存加载
-        val cacheHitFiles: Int = 0,        // 缓存命中的文件数
+        val cacheLoaded: Boolean = false, // 是否从缓存加载
+        val cacheHitFiles: Int = 0, // 缓存命中的文件数
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = ReentrantReadWriteLock()
     private val revision = AtomicLong(0L)
 
-    private val _status = MutableStateFlow(IndexStatus())
-    private val _statusInternal: StateFlow<IndexStatus> = _status.asStateFlow()
+    private val mutableStatus = MutableStateFlow(IndexStatus())
+    private val statusInternal: StateFlow<IndexStatus> = mutableStatus.asStateFlow()
 
-    override val status: StateFlow<SymbolIndexStatus> = _statusInternal.map { it.toSymbolIndexStatus() }
+    override val status: StateFlow<SymbolIndexStatus> = statusInternal.map { it.toSymbolIndexStatus() }
         .stateIn(scope, SharingStarted.Eagerly, SymbolIndexStatus())
 
     @Volatile
@@ -159,9 +161,9 @@ class ProjectSymbolIndexService(
         scope.launch {
             val errorMessage = updateSingleFile(file, content)
             if (errorMessage != null) {
-                _status.value = _status.value.copy(lastError = errorMessage)
-            } else if (_status.value.lastError != null) {
-                _status.value = _status.value.copy(lastError = null)
+                mutableStatus.value = mutableStatus.value.copy(lastError = errorMessage)
+            } else if (mutableStatus.value.lastError != null) {
+                mutableStatus.value = mutableStatus.value.copy(lastError = null)
             }
         }
     }
@@ -173,9 +175,7 @@ class ProjectSymbolIndexService(
      * @param limit 返回数量限制
      * @return 匹配的符号列表
      */
-    override fun queryGlobals(prefix: String, limit: Int): List<SymbolInfo> {
-        return queryGlobalsInternal(prefix, limit).map { it.toSymbolInfo() }
-    }
+    override fun queryGlobals(prefix: String, limit: Int): List<SymbolInfo> = queryGlobalsInternal(prefix, limit).map { it.toSymbolInfo() }
 
     /**
      * 内部查询方法（返回 ProjectSymbol）
@@ -217,9 +217,7 @@ class ProjectSymbolIndexService(
      * @param limit 返回数量限制
      * @return 匹配的符号列表（按匹配分数降序排列）
      */
-    override fun queryGlobalsFuzzy(pattern: String, limit: Int): List<FuzzySymbolMatch> {
-        return queryGlobalsFuzzyInternal(pattern, limit).map { it.toFuzzySymbolMatch() }
-    }
+    override fun queryGlobalsFuzzy(pattern: String, limit: Int): List<FuzzySymbolMatch> = queryGlobalsFuzzyInternal(pattern, limit).map { it.toFuzzySymbolMatch() }
 
     /**
      * 内部模糊查询方法（返回 FuzzySymbolResult）
@@ -264,7 +262,7 @@ class ProjectSymbolIndexService(
         scope.launch {
             runCatching {
                 val files = collectProjectFiles(projectRoot)
-                _status.value = _status.value.copy(
+                mutableStatus.value = mutableStatus.value.copy(
                     projectRoot = projectRoot.absolutePath,
                     isIndexing = true,
                     indexedFiles = 0,
@@ -307,7 +305,7 @@ class ProjectSymbolIndexService(
                         cacheHitCount = validPathSet.size
                         filesToIndex = invalidFiles
 
-                        _status.value = _status.value.copy(
+                        mutableStatus.value = mutableStatus.value.copy(
                             cacheLoaded = true,
                             cacheHitFiles = cacheHitCount,
                             indexedFiles = cacheHitCount,
@@ -323,28 +321,28 @@ class ProjectSymbolIndexService(
                     val readResult = runCatching { file.readText() }
                     if (readResult.isFailure) {
                         val error = readResult.exceptionOrNull()
-                        _status.value = _status.value.copy(
+                        mutableStatus.value = mutableStatus.value.copy(
                             lastError = "Read file failed: ${file.name} (${error?.messageOrClass() ?: "unknown"})"
                         )
                         done++
                         if (done % 20 == 0) {
-                            _status.value = _status.value.copy(indexedFiles = done)
+                            mutableStatus.value = mutableStatus.value.copy(indexedFiles = done)
                         }
                         continue
                     }
                     val text = readResult.getOrThrow()
                     val fileError = updateSingleFile(file, text)
                     if (fileError != null) {
-                        _status.value = _status.value.copy(lastError = fileError)
+                        mutableStatus.value = mutableStatus.value.copy(lastError = fileError)
                     }
                     done++
                     if (done % 20 == 0) {
-                        _status.value = _status.value.copy(indexedFiles = done)
+                        mutableStatus.value = mutableStatus.value.copy(indexedFiles = done)
                     }
                 }
 
                 val now = System.currentTimeMillis()
-                _status.value = _status.value.copy(
+                mutableStatus.value = mutableStatus.value.copy(
                     isIndexing = false,
                     indexedFiles = done,
                     lastIndexedAt = now,
@@ -355,7 +353,7 @@ class ProjectSymbolIndexService(
                 saveIndexCache(projectRoot.absolutePath)
             }.onFailure { e ->
                 Timber.tag(TAG).w(e, "Index failed: ${e.message}")
-                _status.value = _status.value.copy(
+                mutableStatus.value = mutableStatus.value.copy(
                     isIndexing = false,
                     lastError = e.messageOrClass(),
                 )
@@ -424,24 +422,22 @@ class ProjectSymbolIndexService(
         data class Failure(val cause: Throwable) : ParseResult
     }
 
-    private suspend fun parseWithTimeout(content: String, parserState: ProviderParserState): ParseResult {
-        return try {
-            val tree = withTimeoutOrNull(PARSE_TIMEOUT_MS) {
-                synchronized(parserState.lock) {
-                    parserState.parser.parseString(content)
-                }
+    private suspend fun parseWithTimeout(content: String, parserState: ProviderParserState): ParseResult = try {
+        val tree = withTimeoutOrNull(PARSE_TIMEOUT_MS) {
+            synchronized(parserState.lock) {
+                parserState.parser.parseString(content)
             }
-            if (tree == null) {
-                Timber.tag(TAG).w("Parse timeout after %d ms", PARSE_TIMEOUT_MS)
-                ParseResult.Timeout
-            } else {
-                ParseResult.Success(tree)
-            }
-        } catch (t: Throwable) {
-            if (t is CancellationException) throw t
-            Timber.tag(TAG).w(t, "Parse failed with exception")
-            ParseResult.Failure(t)
         }
+        if (tree == null) {
+            Timber.tag(TAG).w("Parse timeout after %d ms", PARSE_TIMEOUT_MS)
+            ParseResult.Timeout
+        } else {
+            ParseResult.Success(tree)
+        }
+    } catch (t: Throwable) {
+        if (t is CancellationException) throw t
+        Timber.tag(TAG).w(t, "Parse failed with exception")
+        ParseResult.Failure(t)
     }
 
     private suspend fun updateSingleFile(file: File, content: String): String? {
@@ -516,7 +512,7 @@ class ProjectSymbolIndexService(
 
     private fun bumpRevisionLocked() {
         val newRev = revision.incrementAndGet()
-        _status.value = _status.value.copy(revision = newRev)
+        mutableStatus.value = mutableStatus.value.copy(revision = newRev)
     }
 
     private fun applyFileSnapshotLocked(snapshot: FileSnapshot) {
@@ -543,7 +539,7 @@ class ProjectSymbolIndexService(
             globalSymbolsByLower.clear()
             fileTimestamps.clear()
             val newRev = revision.incrementAndGet()
-            _status.value = IndexStatus(
+            mutableStatus.value = IndexStatus(
                 projectRoot = activeProjectRoot?.absolutePath,
                 isIndexing = false,
                 indexedFiles = 0,
@@ -581,9 +577,7 @@ class ProjectSymbolIndexService(
         return out
     }
 
-    private fun isSupportedFile(file: File): Boolean {
-        return file.extension.lowercase(Locale.ROOT) in parserStateByExt
-    }
+    private fun isSupportedFile(file: File): Boolean = file.extension.lowercase(Locale.ROOT) in parserStateByExt
 
     private fun isUnderRoot(file: File, root: File): Boolean {
         val rp = root.absolutePath.trimEnd(File.separatorChar) + File.separator
@@ -630,7 +624,7 @@ data class ProjectSymbol(
                 else -> fileName
             }
         }
-    
+
     val displayDocumentation: String?
         get() = documentation?.takeIf { it.isNotBlank() }
 }
@@ -666,12 +660,10 @@ private data class FileSnapshot(
     val globals: List<ProjectSymbol>,
 ) {
     companion object {
-        fun fromCached(snapshot: SymbolIndexCache.CachedFileSnapshot): FileSnapshot {
-            return FileSnapshot(
-                filePath = snapshot.filePath,
-                globals = snapshot.globals,
-            )
-        }
+        fun fromCached(snapshot: SymbolIndexCache.CachedFileSnapshot): FileSnapshot = FileSnapshot(
+            filePath = snapshot.filePath,
+            globals = snapshot.globals,
+        )
 
         fun from(file: File, globals: List<GlobalSymbol>): FileSnapshot {
             val filePath = file.absolutePath
@@ -699,74 +691,64 @@ private data class FileSnapshot(
 /**
  * 将内部 IndexStatus 转换为接口 SymbolIndexStatus
  */
-private fun ProjectSymbolIndexService.IndexStatus.toSymbolIndexStatus(): SymbolIndexStatus {
-    return SymbolIndexStatus(
-        projectRoot = projectRoot,
-        isIndexing = isIndexing,
-        indexedFiles = indexedFiles,
-        totalFiles = totalFiles,
-        lastIndexedAt = lastIndexedAt,
-        lastError = lastError,
-        revision = revision,
-        cacheLoaded = cacheLoaded,
-        cacheHitFiles = cacheHitFiles,
-    )
-}
+private fun ProjectSymbolIndexService.IndexStatus.toSymbolIndexStatus(): SymbolIndexStatus = SymbolIndexStatus(
+    projectRoot = projectRoot,
+    isIndexing = isIndexing,
+    indexedFiles = indexedFiles,
+    totalFiles = totalFiles,
+    lastIndexedAt = lastIndexedAt,
+    lastError = lastError,
+    revision = revision,
+    cacheLoaded = cacheLoaded,
+    cacheHitFiles = cacheHitFiles,
+)
 
 /**
  * 将内部 ProjectSymbol 转换为接口 SymbolInfo
  */
-private fun ProjectSymbol.toSymbolInfo(): SymbolInfo {
-    return SymbolInfo(
-        name = name,
-        kind = kind.toCoreSymbolKind(),
-        detail = detail,
-        filePath = filePath,
-        location = location?.let {
-            com.wuxianggujun.tinaide.core.symbol.SymbolLocation(
-                startLine = it.line,
-                startColumn = it.column,
-                endLine = it.line,
-                endColumn = it.column,
-            )
-        },
-        signature = signature,
-        documentation = documentation,
-    )
-}
+private fun ProjectSymbol.toSymbolInfo(): SymbolInfo = SymbolInfo(
+    name = name,
+    kind = kind.toCoreSymbolKind(),
+    detail = detail,
+    filePath = filePath,
+    location = location?.let {
+        com.wuxianggujun.tinaide.core.symbol.SymbolLocation(
+            startLine = it.line,
+            startColumn = it.column,
+            endLine = it.line,
+            endColumn = it.column,
+        )
+    },
+    signature = signature,
+    documentation = documentation,
+)
 
 /**
  * 将 feature:editor 层的 SymbolKind 转换为 core:common 层的 SymbolKind
  */
-private fun com.wuxianggujun.tinaide.editor.symbol.SymbolKind.toCoreSymbolKind(): com.wuxianggujun.tinaide.core.symbol.SymbolKind {
-    return when (this) {
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Class -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.CLASS
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Struct -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.STRUCT
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Enum -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.ENUM
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Namespace -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.NAMESPACE
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Function -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.FUNCTION
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Method -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.METHOD
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Field -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.FIELD
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Variable -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.VARIABLE
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Constant -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.CONSTANT
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Interface -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.INTERFACE
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Module -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.MODULE
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Property -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.PROPERTY
-        com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Trait -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.INTERFACE // Trait 映射到 INTERFACE
-    }
+private fun com.wuxianggujun.tinaide.editor.symbol.SymbolKind.toCoreSymbolKind(): com.wuxianggujun.tinaide.core.symbol.SymbolKind = when (this) {
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Class -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.CLASS
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Struct -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.STRUCT
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Enum -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.ENUM
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Namespace -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.NAMESPACE
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Function -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.FUNCTION
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Method -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.METHOD
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Field -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.FIELD
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Variable -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.VARIABLE
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Constant -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.CONSTANT
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Interface -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.INTERFACE
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Module -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.MODULE
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Property -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.PROPERTY
+    com.wuxianggujun.tinaide.editor.symbol.SymbolKind.Trait -> com.wuxianggujun.tinaide.core.symbol.SymbolKind.INTERFACE // Trait 映射到 INTERFACE
 }
 
 /**
  * 将内部 FuzzySymbolResult 转换为接口 FuzzySymbolMatch
  */
-private fun FuzzySymbolResult.toFuzzySymbolMatch(): FuzzySymbolMatch {
-    return FuzzySymbolMatch(
-        symbol = symbol.toSymbolInfo(),
-        score = score,
-        matchedIndices = matchedIndices,
-    )
-}
+private fun FuzzySymbolResult.toFuzzySymbolMatch(): FuzzySymbolMatch = FuzzySymbolMatch(
+    symbol = symbol.toSymbolInfo(),
+    score = score,
+    matchedIndices = matchedIndices,
+)
 
-private fun Throwable.messageOrClass(): String {
-    return message?.takeIf { it.isNotBlank() } ?: this::class.java.simpleName
-}
+private fun Throwable.messageOrClass(): String = message?.takeIf { it.isNotBlank() } ?: this::class.java.simpleName

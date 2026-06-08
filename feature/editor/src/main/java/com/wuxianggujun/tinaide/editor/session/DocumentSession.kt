@@ -130,14 +130,19 @@ class DocumentSession(
 
     // FileObserver 相关字段
     private var fileObserver: FileObserver? = null
+
     @Volatile
     private var isSavingInternally: Boolean = false
+
     @Volatile
     private var fileLastModifiedOnOpen: Long = if (file.exists()) file.lastModified() else 0L
+
     @Volatile
     private var fileSizeOnOpen: Long = if (file.exists()) file.length() else 0L
+
     @Volatile
     private var lastInternalWriteMarker: FileWriteMarker? = readCurrentWriteMarker()
+
     @Volatile
     private var lastObservedWriteMarker: FileWriteMarker? = readCurrentWriteMarker()
 
@@ -437,8 +442,11 @@ class DocumentSession(
                 marker.fileSize != fileSizeOnOpen
             if (changed) {
                 _state.update { current ->
-                    if (current.hasExternalModification) current
-                    else current.copy(hasExternalModification = true)
+                    if (current.hasExternalModification) {
+                        current
+                    } else {
+                        current.copy(hasExternalModification = true)
+                    }
                 }
             }
         }
@@ -568,4 +576,3 @@ class DocumentSession(
         return delta in 0..INTERNAL_WRITE_SUPPRESS_WINDOW_MS
     }
 }
-

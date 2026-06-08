@@ -159,12 +159,14 @@ object TextScanKernel {
     }
 
     fun scanLineWhitespace(lineText: String, tabSize: Int): LineWhitespaceInfo {
-        if (lineText.isEmpty()) return LineWhitespaceInfo(
-            leadingWhitespaceEnd = 0,
-            leadingIndentColumns = 0,
-            trailingWhitespaceStart = 0,
-            outdentRemoveCount = 0
-        )
+        if (lineText.isEmpty()) {
+            return LineWhitespaceInfo(
+                leadingWhitespaceEnd = 0,
+                leadingIndentColumns = 0,
+                trailingWhitespaceStart = 0,
+                outdentRemoveCount = 0
+            )
+        }
         return backend.scanLineWhitespace(lineText, tabSize.coerceAtLeast(1))
     }
 
@@ -172,9 +174,7 @@ object TextScanKernel {
 
     fun whitespaceMarkerIsTab(marker: Int): Boolean = (marker and WHITESPACE_MARKER_TAB_FLAG) != 0
 
-    fun isWordChar(char: Char): Boolean {
-        return char == '_' || char.isLetterOrDigit()
-    }
+    fun isWordChar(char: Char): Boolean = char == '_' || char.isLetterOrDigit()
 }
 
 data class BracketScanResult(
@@ -291,8 +291,7 @@ private class NativeTextScanBackend private constructor() : TextScanBackend {
         }
     }
 
-    override fun hasActiveSignatureHelpContext(textBeforeCursor: String): Boolean =
-        NativeTextScanKernel.nativeHasActiveSignatureHelpContext(textBeforeCursor)
+    override fun hasActiveSignatureHelpContext(textBeforeCursor: String): Boolean = NativeTextScanKernel.nativeHasActiveSignatureHelpContext(textBeforeCursor)
 
     override fun computeBracketInfo(
         startDepth: Int,
@@ -314,14 +313,11 @@ private class NativeTextScanBackend private constructor() : TextScanBackend {
         return result
     }
 
-    override fun advanceBracketDepth(startDepth: Int, lineText: String): Int =
-        NativeTextScanKernel.nativeAdvanceBracketDepth(startDepth, lineText)
+    override fun advanceBracketDepth(startDepth: Int, lineText: String): Int = NativeTextScanKernel.nativeAdvanceBracketDepth(startDepth, lineText)
 
-    override fun advanceBracketDepth(startDepth: Int, lineText: String, endColumn: Int): Int =
-        NativeTextScanKernel.nativeAdvanceBracketDepthPrefix(startDepth, lineText, endColumn)
+    override fun advanceBracketDepth(startDepth: Int, lineText: String, endColumn: Int): Int = NativeTextScanKernel.nativeAdvanceBracketDepthPrefix(startDepth, lineText, endColumn)
 
-    override fun computeLineBoundaryBracketDepths(startDepth: Int, text: String): IntArray =
-        NativeTextScanKernel.nativeComputeLineBoundaryBracketDepths(startDepth, text)
+    override fun computeLineBoundaryBracketDepths(startDepth: Int, text: String): IntArray = NativeTextScanKernel.nativeComputeLineBoundaryBracketDepths(startDepth, text)
 
     override fun findMatchingBracket(text: String, cursorOffset: Int): BracketPairMatchResult? {
         val raw = NativeTextScanKernel.nativeFindMatchingBracket(text, cursorOffset)
@@ -458,29 +454,21 @@ private class NativeTextScanBackend private constructor() : TextScanBackend {
         return WordBounds(start = raw[0], end = raw[1])
     }
 
-    override fun findWordPrefixStart(lineText: String, column: Int): Int =
-        NativeTextScanKernel.nativeFindWordPrefixStart(lineText, column)
+    override fun findWordPrefixStart(lineText: String, column: Int): Int = NativeTextScanKernel.nativeFindWordPrefixStart(lineText, column)
 
-    override fun findWholeWordMatches(lineText: String, word: String): IntArray =
-        NativeTextScanKernel.nativeFindWholeWordMatches(lineText, word)
+    override fun findWholeWordMatches(lineText: String, word: String): IntArray = NativeTextScanKernel.nativeFindWholeWordMatches(lineText, word)
 
-    override fun findWhitespaceMarkers(lineText: String, boundaryOnly: Boolean): IntArray =
-        NativeTextScanKernel.nativeFindWhitespaceMarkers(lineText, boundaryOnly)
+    override fun findWhitespaceMarkers(lineText: String, boundaryOnly: Boolean): IntArray = NativeTextScanKernel.nativeFindWhitespaceMarkers(lineText, boundaryOnly)
 
-    override fun findTabColumns(lineText: String): IntArray =
-        NativeTextScanKernel.nativeFindTabColumns(lineText)
+    override fun findTabColumns(lineText: String): IntArray = NativeTextScanKernel.nativeFindTabColumns(lineText)
 
-    override fun measureVisualColumns(lineText: String, tabSize: Int): Int =
-        NativeTextScanKernel.nativeMeasureVisualColumns(lineText, tabSize)
+    override fun measureVisualColumns(lineText: String, tabSize: Int): Int = NativeTextScanKernel.nativeMeasureVisualColumns(lineText, tabSize)
 
-    override fun measureVisualColumns(lineText: String, tabSize: Int, endColumn: Int): Int =
-        NativeTextScanKernel.nativeMeasureVisualColumnsPrefix(lineText, tabSize, endColumn)
+    override fun measureVisualColumns(lineText: String, tabSize: Int, endColumn: Int): Int = NativeTextScanKernel.nativeMeasureVisualColumnsPrefix(lineText, tabSize, endColumn)
 
-    override fun findWrapSegmentStarts(lineText: String, wrapColumns: Int, tabSize: Int): IntArray =
-        NativeTextScanKernel.nativeFindWrapSegmentStarts(lineText, wrapColumns, tabSize)
+    override fun findWrapSegmentStarts(lineText: String, wrapColumns: Int, tabSize: Int): IntArray = NativeTextScanKernel.nativeFindWrapSegmentStarts(lineText, wrapColumns, tabSize)
 
-    override fun buildVisualColumnPrefix(lineText: String, tabSize: Int): IntArray =
-        NativeTextScanKernel.nativeBuildVisualColumnPrefix(lineText, tabSize)
+    override fun buildVisualColumnPrefix(lineText: String, tabSize: Int): IntArray = NativeTextScanKernel.nativeBuildVisualColumnPrefix(lineText, tabSize)
 
     override fun scanLineWhitespace(lineText: String, tabSize: Int): LineWhitespaceInfo {
         val raw = NativeTextScanKernel.nativeScanLineWhitespace(lineText, tabSize)
@@ -1199,8 +1187,7 @@ private class KotlinTextScanBackend : TextScanBackend {
     }
 }
 
-private fun encodeWhitespaceMarker(column: Int, isTab: Boolean): Int =
-    (column shl 1) or if (isTab) WHITESPACE_MARKER_TAB_FLAG else 0
+private fun encodeWhitespaceMarker(column: Int, isTab: Boolean): Int = (column shl 1) or if (isTab) WHITESPACE_MARKER_TAB_FLAG else 0
 
 private fun Char.isRenderableWhitespace(): Boolean = this == ' ' || this == '\t'
 
@@ -1311,12 +1298,10 @@ private fun matchingOpenBracket(ch: Char): Char? = when (ch) {
 
 private fun resolveSignatureHelpParenKind(
     tokens: List<SignatureHelpScanToken>
-): SignatureHelpContextKind {
-    return when {
-        endsWithSignatureHelpCallableExpression(tokens) -> SignatureHelpContextKind.CallParen
-        endsWithSignatureHelpControlKeyword(tokens) -> SignatureHelpContextKind.ControlParen
-        else -> SignatureHelpContextKind.OtherParen
-    }
+): SignatureHelpContextKind = when {
+    endsWithSignatureHelpCallableExpression(tokens) -> SignatureHelpContextKind.CallParen
+    endsWithSignatureHelpControlKeyword(tokens) -> SignatureHelpContextKind.ControlParen
+    else -> SignatureHelpContextKind.OtherParen
 }
 
 private fun endsWithSignatureHelpControlKeyword(
@@ -1471,6 +1456,4 @@ private fun popLastSignatureHelpBrace(
     }
 }
 
-private fun Char.isSignatureHelpIdentifierChar(): Boolean {
-    return isLetterOrDigit() || this == '_'
-}
+private fun Char.isSignatureHelpIdentifierChar(): Boolean = isLetterOrDigit() || this == '_'

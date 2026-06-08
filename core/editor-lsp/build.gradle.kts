@@ -1,7 +1,6 @@
 plugins {
     id("tina.android.library")
 }
-
 android {
     namespace = "com.wuxianggujun.tinaide.core.editorlsp"
 }
@@ -15,4 +14,3 @@ dependencies {
     implementation(libs.timber)
     api(libs.lsp4j)
 }
-

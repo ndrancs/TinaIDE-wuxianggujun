@@ -4,22 +4,22 @@ import android.content.Context
 import com.wuxianggujun.tinaide.core.common.io.TarExtractor
 import com.wuxianggujun.tinaide.core.i18n.AppStrings
 import com.wuxianggujun.tinaide.core.i18n.Strings
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import timber.log.Timber
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.Properties
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 /**
  * Android Sysroot 管理器
- * 
+ *
  * 功能：
  * - 从 assets 解压统一的 sysroot 包
  * - 管理 sysroot 路径和版本
  * - 为编译器提供正确的编译参数
- * 
+ *
  * Sysroot 结构：
  * ```
  * android-sysroot/
@@ -35,22 +35,22 @@ import java.util.Properties
  * ```
  */
 class AndroidSysrootManager(private val context: Context) {
-    
+
     companion object {
         private const val TAG = "SysrootManager"
-        
+
         // Assets 中的 sysroot 包名
         private const val SYSROOT_ASSET_ARM64 = "android-sysroot/android-sysroot-arm64-all.tar.xz"
         private const val SYSROOT_ASSET_X86_64 = "android-sysroot/android-sysroot-x86_64-all.tar.xz"
-        
+
         // 解压后的目录名
         private const val SYSROOT_DIR_NAME = "android-sysroot"
-        
+
         // 支持的架构
         enum class Arch(val triple: String, val assetPath: String) {
             ARM64("aarch64-linux-android", SYSROOT_ASSET_ARM64),
             X86_64("x86_64-linux-android", SYSROOT_ASSET_X86_64);
-            
+
             companion object {
                 fun current(): Arch {
                     val abi = android.os.Build.SUPPORTED_ABIS[0]
@@ -63,26 +63,26 @@ class AndroidSysrootManager(private val context: Context) {
             }
         }
     }
-    
+
     // Sysroot 根目录
     private val sysrootBaseDir: File
         get() = File(context.filesDir, SYSROOT_DIR_NAME)
-    
+
     /**
      * 检查 sysroot 是否已安装
      */
     fun isInstalled(arch: Arch = Arch.current()): Boolean {
         val sysrootDir = getSysrootDir(arch)
         if (!sysrootDir.exists()) return false
-        
+
         // 检查关键目录是否存在
         val includeDir = File(sysrootDir, "usr/include")
         val libDir = File(sysrootDir, "usr/lib/${arch.triple}")
         val versionFile = File(sysrootDir, ".version")
-        
+
         return includeDir.exists() && libDir.exists() && versionFile.exists()
     }
-    
+
     /**
      * 从外部文件导入 sysroot
      *
@@ -192,14 +192,14 @@ class AndroidSysrootManager(private val context: Context) {
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             Timber.tag(TAG).i("Starting sysroot installation: %s", arch)
-            
+
             // 检查 assets 文件是否存在
             val assetExists = try {
                 context.assets.open(arch.assetPath).use { true }
             } catch (e: Exception) {
                 false
             }
-            
+
             if (!assetExists) {
                 return@withContext Result.failure(
                     IllegalStateException(
@@ -210,11 +210,11 @@ class AndroidSysrootManager(private val context: Context) {
                     )
                 )
             }
-            
+
             // 创建临时目录
             val tempDir = File(context.cacheDir, "sysroot-install-${System.currentTimeMillis()}")
             tempDir.mkdirs()
-            
+
             try {
                 // 1. 复制 tar.xz 到临时目录
                 onProgress?.invoke(0.1f)
@@ -225,7 +225,7 @@ class AndroidSysrootManager(private val context: Context) {
                     }
                 }
                 Timber.tag(TAG).i("Copied tar.xz file: %d bytes", tarFile.length())
-                
+
                 // 2. 解压 tar.xz（复用 TarExtractor）
                 onProgress?.invoke(0.3f)
                 try {
@@ -236,7 +236,7 @@ class AndroidSysrootManager(private val context: Context) {
                     Timber.tag(TAG).e(e, "Failed to extract tar.xz")
                     return@withContext Result.failure(e)
                 }
-                
+
                 // 3. 移动到最终位置
                 onProgress?.invoke(0.9f)
                 val extractedDir = File(tempDir, SYSROOT_DIR_NAME)
@@ -250,25 +250,25 @@ class AndroidSysrootManager(private val context: Context) {
                         )
                     )
                 }
-                
+
                 val targetDir = getSysrootDir(arch)
                 targetDir.parentFile?.mkdirs()
-                
+
                 // 删除旧的 sysroot
                 if (targetDir.exists()) {
                     targetDir.deleteRecursively()
                 }
-                
+
                 // 移动到目标位置
                 if (!extractedDir.renameTo(targetDir)) {
                     // 如果 rename 失败，尝试复制
                     extractedDir.copyRecursively(targetDir, overwrite = true)
                     extractedDir.deleteRecursively()
                 }
-                
+
                 onProgress?.invoke(1.0f)
                 Timber.tag(TAG).i("Sysroot installation complete: %s", targetDir)
-                
+
                 Result.success(Unit)
             } finally {
                 // 清理临时目录
@@ -283,10 +283,8 @@ class AndroidSysrootManager(private val context: Context) {
     /**
      * 获取 sysroot 目录
      */
-    fun getSysrootDir(arch: Arch = Arch.current()): File {
-        return sysrootBaseDir
-    }
-    
+    fun getSysrootDir(arch: Arch = Arch.current()): File = sysrootBaseDir
+
     /**
      * 获取 sysroot 路径（用于编译器 --sysroot 参数）
      */
@@ -294,7 +292,7 @@ class AndroidSysrootManager(private val context: Context) {
         val dir = getSysrootDir(arch)
         return if (dir.exists()) dir.absolutePath else null
     }
-    
+
     /**
      * 获取指定 API 级别的库路径
      */
@@ -303,7 +301,7 @@ class AndroidSysrootManager(private val context: Context) {
         val libDir = File(sysroot, "usr/lib/${arch.triple}/$apiLevel")
         return if (libDir.exists()) libDir.absolutePath else null
     }
-    
+
     /**
      * 获取头文件路径
      */
@@ -312,7 +310,7 @@ class AndroidSysrootManager(private val context: Context) {
         val includeDir = File(sysroot, "usr/include")
         return if (includeDir.exists()) includeDir.absolutePath else null
     }
-    
+
     /**
      * 获取编译器参数
      *
@@ -342,18 +340,18 @@ class AndroidSysrootManager(private val context: Context) {
             add("-L$libPath")
         }
     }
-    
+
     /**
      * 获取 sysroot 版本信息
      */
     fun getVersion(arch: Arch = Arch.current()): SysrootVersion? {
         val versionFile = File(getSysrootDir(arch), ".version")
         if (!versionFile.exists()) return null
-        
+
         return try {
             val props = Properties()
             FileInputStream(versionFile).use { props.load(it) }
-            
+
             SysrootVersion(
                 arch = props.getProperty("ARCH"),
                 abi = props.getProperty("ABI"),
@@ -366,7 +364,7 @@ class AndroidSysrootManager(private val context: Context) {
             null
         }
     }
-    
+
     /**
      * 卸载 sysroot
      */
@@ -378,7 +376,7 @@ class AndroidSysrootManager(private val context: Context) {
             true
         }
     }
-    
+
     /**
      * Sysroot 版本信息
      */

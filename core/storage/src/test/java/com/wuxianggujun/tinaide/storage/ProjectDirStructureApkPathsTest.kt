@@ -1,10 +1,10 @@
 package com.wuxianggujun.tinaide.storage
 
 import com.google.common.truth.Truth.assertThat
+import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 class ProjectDirStructureApkPathsTest {
 

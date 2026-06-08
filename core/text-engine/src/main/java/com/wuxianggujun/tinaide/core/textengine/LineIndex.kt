@@ -25,8 +25,7 @@ class LineIndex : AutoCloseable {
 
     fun offsetToLine(offset: Int): Int = backend.offsetToLine(offset)
 
-    fun positionToOffset(line: Int, column: Int, textLength: Int): Int =
-        backend.positionToOffset(line, column, textLength)
+    fun positionToOffset(line: Int, column: Int, textLength: Int): Int = backend.positionToOffset(line, column, textLength)
 
     /**
      * 增量更新索引。
@@ -79,17 +78,13 @@ private class NativeLineIndexBackend private constructor(
         NativeLineIndexKernel.nativeRebuild(requireHandle(), text)
     }
 
-    override fun getLineStart(line: Int): Int =
-        NativeLineIndexKernel.nativeGetLineStart(requireHandle(), line)
+    override fun getLineStart(line: Int): Int = NativeLineIndexKernel.nativeGetLineStart(requireHandle(), line)
 
-    override fun getLineEnd(line: Int, textLength: Int): Int =
-        NativeLineIndexKernel.nativeGetLineEnd(requireHandle(), line, textLength)
+    override fun getLineEnd(line: Int, textLength: Int): Int = NativeLineIndexKernel.nativeGetLineEnd(requireHandle(), line, textLength)
 
-    override fun offsetToLine(offset: Int): Int =
-        NativeLineIndexKernel.nativeOffsetToLine(requireHandle(), offset)
+    override fun offsetToLine(offset: Int): Int = NativeLineIndexKernel.nativeOffsetToLine(requireHandle(), offset)
 
-    override fun positionToOffset(line: Int, column: Int, textLength: Int): Int =
-        NativeLineIndexKernel.nativePositionToOffset(requireHandle(), line, column, textLength)
+    override fun positionToOffset(line: Int, column: Int, textLength: Int): Int = NativeLineIndexKernel.nativePositionToOffset(requireHandle(), line, column, textLength)
 
     override fun applyChange(startOffset: Int, oldText: String, newText: String) {
         NativeLineIndexKernel.nativeApplyChange(requireHandle(), startOffset, oldText, newText)

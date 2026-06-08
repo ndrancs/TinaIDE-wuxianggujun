@@ -1,15 +1,15 @@
 package com.wuxianggujun.tinaide.core.common.io
 
 import android.system.Os
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
-import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
-import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
+import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream
 
 /**
  * 通用 Tar 解压工具
@@ -34,10 +34,10 @@ object TarExtractor {
     private const val GZIP_MAGIC_1 = 0x1F
     private const val GZIP_MAGIC_2 = 0x8B
     private const val XZ_MAGIC_1 = 0xFD
-    private const val XZ_MAGIC_2 = 0x37  // '7'
-    private const val XZ_MAGIC_3 = 0x7A  // 'z'
-    private const val XZ_MAGIC_4 = 0x58  // 'X'
-    private const val XZ_MAGIC_5 = 0x5A  // 'Z'
+    private const val XZ_MAGIC_2 = 0x37 // '7'
+    private const val XZ_MAGIC_3 = 0x7A // 'z'
+    private const val XZ_MAGIC_4 = 0x58 // 'X'
+    private const val XZ_MAGIC_5 = 0x5A // 'Z'
     private const val XZ_MAGIC_6 = 0x00
     private const val ZSTD_MAGIC_1 = 0x28
     private const val ZSTD_MAGIC_2 = 0xB5
@@ -48,10 +48,10 @@ object TarExtractor {
      * 压缩格式
      */
     enum class CompressionType {
-        NONE,   // 纯 tar
-        GZIP,   // tar.gz
-        XZ,     // tar.xz
-        ZSTD    // tar.zst
+        NONE, // 纯 tar
+        GZIP, // tar.gz
+        XZ, // tar.xz
+        ZSTD // tar.zst
     }
 
     enum class SymlinkPolicy {
@@ -135,7 +135,8 @@ object TarExtractor {
 
         // 检查 gzip magic: 1F 8B
         if (header[0].toInt() and 0xFF == GZIP_MAGIC_1 &&
-            header[1].toInt() and 0xFF == GZIP_MAGIC_2) {
+            header[1].toInt() and 0xFF == GZIP_MAGIC_2
+        ) {
             return CompressionType.GZIP
         }
 
@@ -144,7 +145,8 @@ object TarExtractor {
             header[0].toInt() and 0xFF == ZSTD_MAGIC_1 &&
             header[1].toInt() and 0xFF == ZSTD_MAGIC_2 &&
             header[2].toInt() and 0xFF == ZSTD_MAGIC_3 &&
-            header[3].toInt() and 0xFF == ZSTD_MAGIC_4) {
+            header[3].toInt() and 0xFF == ZSTD_MAGIC_4
+        ) {
             return CompressionType.ZSTD
         }
 
@@ -155,7 +157,8 @@ object TarExtractor {
             header[2].toInt() and 0xFF == XZ_MAGIC_3 &&
             header[3].toInt() and 0xFF == XZ_MAGIC_4 &&
             header[4].toInt() and 0xFF == XZ_MAGIC_5 &&
-            header[5].toInt() and 0xFF == XZ_MAGIC_6) {
+            header[5].toInt() and 0xFF == XZ_MAGIC_6
+        ) {
             return CompressionType.XZ
         }
 
@@ -168,13 +171,11 @@ object TarExtractor {
     private fun wrapWithDecompressor(
         input: BufferedInputStream,
         compressionType: CompressionType
-    ): TarArchiveInputStream {
-        return when (compressionType) {
-            CompressionType.GZIP -> TarArchiveInputStream(GzipCompressorInputStream(input))
-            CompressionType.XZ -> TarArchiveInputStream(XZCompressorInputStream(input))
-            CompressionType.ZSTD -> TarArchiveInputStream(ZstdCompressorInputStream(input))
-            CompressionType.NONE -> TarArchiveInputStream(input)
-        }
+    ): TarArchiveInputStream = when (compressionType) {
+        CompressionType.GZIP -> TarArchiveInputStream(GzipCompressorInputStream(input))
+        CompressionType.XZ -> TarArchiveInputStream(XZCompressorInputStream(input))
+        CompressionType.ZSTD -> TarArchiveInputStream(ZstdCompressorInputStream(input))
+        CompressionType.NONE -> TarArchiveInputStream(input)
     }
 
     /**
@@ -303,4 +304,3 @@ object TarExtractor {
         if (perms and 0b010_010_010 != 0) file.setWritable(true, false)
     }
 }
-

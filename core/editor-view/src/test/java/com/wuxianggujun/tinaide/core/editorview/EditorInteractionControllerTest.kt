@@ -9,9 +9,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -366,37 +366,31 @@ class EditorInteractionControllerTest {
     private fun createController(
         state: EditorState,
         scope: TestScope
-    ): EditorInteractionController {
-        return EditorInteractionController(
-            state = state,
-            coroutineScope = scope,
-            focusRequester = FocusRequester(),
-            keyboardController = null,
-            inputMethodManager = null
-        )
-    }
+    ): EditorInteractionController = EditorInteractionController(
+        state = state,
+        coroutineScope = scope,
+        focusRequester = FocusRequester(),
+        keyboardController = null,
+        inputMethodManager = null
+    )
 
     private fun launchEventBridge(
         scope: TestScope,
         state: EditorState,
         controller: EditorInteractionController,
         allowAutoSignatureHelpRefresh: Boolean
-    ): Job {
-        return scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            state.events.collect { event ->
-                controller.onEditorEvent(
-                    event = event,
-                    allowAutoSignatureHelpRefresh = allowAutoSignatureHelpRefresh
-                )
-            }
+    ): Job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+        state.events.collect { event ->
+            controller.onEditorEvent(
+                event = event,
+                allowAutoSignatureHelpRefresh = allowAutoSignatureHelpRefresh
+            )
         }
     }
 
-    private fun sampleSignatureHelpResult(): SignatureHelpResult {
-        return SignatureHelpResult(
-            signatures = listOf("print(String value)"),
-            activeSignature = 0,
-            activeParameter = 0
-        )
-    }
+    private fun sampleSignatureHelpResult(): SignatureHelpResult = SignatureHelpResult(
+        signatures = listOf("print(String value)"),
+        activeSignature = 0,
+        activeParameter = 0
+    )
 }

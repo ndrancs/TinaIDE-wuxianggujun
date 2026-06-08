@@ -44,24 +44,24 @@ object ApiEnvelopeParser {
         body: String,
         httpCode: Int,
         tag: String? = null
-    ): ApiResult<T> {
-        return when (val parsed = parse<T>(body)) {
-            is ApiEnvelopeParseResult.Success -> ApiResult.Success(parsed.data)
-            is ApiEnvelopeParseResult.ApiError -> ApiResult.Error(
-                httpCode,
-                formatApiError(parsed.apiCode, parsed.message)
-            )
-            is ApiEnvelopeParseResult.InvalidFormat -> {
-                if (tag != null) {
-                    Timber.tag(tag).e(
-                        "Invalid API envelope (http=%d): %s", httpCode, parsed.reason
-                    )
-                }
-                ApiResult.Error(
-                    if (httpCode in 200..299) -1 else httpCode,
-                    Strings.error_response_parse_failed.str()
+    ): ApiResult<T> = when (val parsed = parse<T>(body)) {
+        is ApiEnvelopeParseResult.Success -> ApiResult.Success(parsed.data)
+        is ApiEnvelopeParseResult.ApiError -> ApiResult.Error(
+            httpCode,
+            formatApiError(parsed.apiCode, parsed.message)
+        )
+        is ApiEnvelopeParseResult.InvalidFormat -> {
+            if (tag != null) {
+                Timber.tag(tag).e(
+                    "Invalid API envelope (http=%d): %s",
+                    httpCode,
+                    parsed.reason
                 )
             }
+            ApiResult.Error(
+                if (httpCode in 200..299) -1 else httpCode,
+                Strings.error_response_parse_failed.str()
+            )
         }
     }
 

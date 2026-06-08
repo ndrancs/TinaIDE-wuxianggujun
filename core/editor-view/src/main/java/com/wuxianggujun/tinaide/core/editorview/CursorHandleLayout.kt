@@ -17,12 +17,10 @@ internal data class CursorHandleLayout(
         return dx * dx + dy * dy <= hitRadiusPx * hitRadiusPx
     }
 
-    fun viewportDragAnchor(scrollOffsetXPx: Float): Offset {
-        return Offset(
-            x = cursorX - scrollOffsetXPx,
-            y = cursorBottom
-        )
-    }
+    fun viewportDragAnchor(scrollOffsetXPx: Float): Offset = Offset(
+        x = cursorX - scrollOffsetXPx,
+        y = cursorBottom
+    )
 }
 
 internal fun resolveCursorHandleLayout(
@@ -73,6 +71,7 @@ internal fun resolveCursorHandleLayout(
 }
 
 private const val CURSOR_STROKE_INSET_PX = 2f
+
 // 单光标句柄比选区句柄略小一些，并且圆点再下垂一点，
 // 视觉上更接近 Sora 那种“细竖线 + 下坠小圆滴”的感觉。
 private const val CURSOR_HANDLE_RADIUS_RATIO = 0.30f

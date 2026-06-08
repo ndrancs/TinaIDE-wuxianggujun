@@ -3,20 +3,6 @@ package com.wuxianggujun.tinaide.core.lsp
 import com.wuxianggujun.tinaide.core.i18n.AppStrings
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.network.OkHttpClientProvider
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
-import okio.ByteString
-import org.json.JSONObject
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -25,17 +11,30 @@ import java.io.PipedOutputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import okio.ByteString
+import org.json.JSONObject
 import timber.log.Timber
 
 /**
  * 连接状态
  */
 enum class ConnectionState {
-    DISCONNECTED,   // 未连接
-    CONNECTING,     // 连接中
-    CONNECTED,      // 已连接
-    RECONNECTING,   // 重连中
-    FAILED          // 连接失败
+    DISCONNECTED, // 未连接
+    CONNECTING, // 连接中
+    CONNECTED, // 已连接
+    RECONNECTING, // 重连中
+    FAILED // 连接失败
 }
 
 /**
@@ -85,8 +84,8 @@ class RemoteLspConnectionProvider(
 
     companion object {
         private const val TAG = "RemoteLsp"
-        private const val PIPE_BUFFER_SIZE = 64 * 1024  // 64KB 缓冲区
-        private const val BASE_RECONNECT_DELAY_MS = 1000L  // 基础重连延迟
+        private const val PIPE_BUFFER_SIZE = 64 * 1024 // 64KB 缓冲区
+        private const val BASE_RECONNECT_DELAY_MS = 1000L // 基础重连延迟
         private const val MAX_RECONNECT_DELAY_MS = 30_000L // 最大重连延迟
     }
 

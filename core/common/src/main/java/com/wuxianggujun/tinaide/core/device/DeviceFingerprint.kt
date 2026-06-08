@@ -27,4 +27,3 @@ object DeviceFingerprint {
         return java.util.UUID.nameUUIDFromBytes(deviceInfo.toByteArray()).toString()
     }
 }
-

@@ -61,7 +61,5 @@ class CommandParserTest {
         assertThat(parsed.sources).isEmpty()
     }
 
-    private fun parseSingleCommand(source: String): CommandInvocation {
-        return CMakeParser.parseCommands("$source\n").getOrThrow().single()
-    }
+    private fun parseSingleCommand(source: String): CommandInvocation = CMakeParser.parseCommands("$source\n").getOrThrow().single()
 }

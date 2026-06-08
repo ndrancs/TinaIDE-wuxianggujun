@@ -37,8 +37,7 @@ class AiConfigStrategyTest {
 
     // AiConfig 的所有子配置都有无依赖 Context 的默认值,此处直接 new 即可。
 
-    private fun sampleConfig(accessMode: AiAccessMode): AiConfig =
-        AiConfig(accessMode = accessMode)
+    private fun sampleConfig(accessMode: AiAccessMode): AiConfig = AiConfig(accessMode = accessMode)
 
     @Test
     fun `normalizeForOpenSource leaves BYOK untouched`() {

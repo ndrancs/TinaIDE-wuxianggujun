@@ -7,11 +7,8 @@ data class Position(
     val line: Int,
     val column: Int
 ) : Comparable<Position> {
-    override fun compareTo(other: Position): Int {
-        return when {
-            line != other.line -> line.compareTo(other.line)
-            else -> column.compareTo(other.column)
-        }
+    override fun compareTo(other: Position): Int = when {
+        line != other.line -> line.compareTo(other.line)
+        else -> column.compareTo(other.column)
     }
 }
-

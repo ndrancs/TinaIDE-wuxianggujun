@@ -1,12 +1,12 @@
 package com.wuxianggujun.tinaide.core.ndk
 
 import android.content.Context
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
-import timber.log.Timber
 import java.io.File
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import timber.log.Timber
 
 /**
  * 工具链配置信息
@@ -23,8 +23,8 @@ data class ToolchainInfo(
 
 @Serializable
 enum class ToolchainType {
-    BUILTIN,  // 内置工具链（从 assets）
-    CUSTOM    // 用户导入的工具链
+    BUILTIN, // 内置工具链（从 assets）
+    CUSTOM // 用户导入的工具链
 }
 
 /**
@@ -58,18 +58,16 @@ class ToolchainConfigManager(private val context: Context) {
     /**
      * 读取配置
      */
-    fun readConfig(): InstalledToolchainConfig {
-        return try {
-            if (configFile.exists()) {
-                val text = configFile.readText(Charsets.UTF_8)
-                json.decodeFromString<InstalledToolchainConfig>(text)
-            } else {
-                InstalledToolchainConfig(activeToolchain = null, toolchains = emptyList())
-            }
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to read toolchain config")
+    fun readConfig(): InstalledToolchainConfig = try {
+        if (configFile.exists()) {
+            val text = configFile.readText(Charsets.UTF_8)
+            json.decodeFromString<InstalledToolchainConfig>(text)
+        } else {
             InstalledToolchainConfig(activeToolchain = null, toolchains = emptyList())
         }
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Failed to read toolchain config")
+        InstalledToolchainConfig(activeToolchain = null, toolchains = emptyList())
     }
 
     /**
@@ -187,5 +185,4 @@ class ToolchainConfigManager(private val context: Context) {
             Result.failure(e)
         }
     }
-
 }

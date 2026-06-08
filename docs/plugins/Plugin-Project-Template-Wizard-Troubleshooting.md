@@ -36,7 +36,7 @@
 ```text
 插件教程快捷操作
 └── NewProjectWizardActivity
-    ├── BuiltInProjectTemplates.defaultTemplateId
+    ├── BuiltInProjectTemplates.DEFAULT_TEMPLATE_ID
     ├── PluginManager.listProjectTemplateOptions()
     └── NewProjectWizardScreen
         ├── TemplateSelectionStep

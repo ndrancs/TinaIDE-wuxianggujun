@@ -127,13 +127,11 @@ data class KeyboardShortcut(
     /**
      * 检查按键事件是否匹配此快捷键
      */
-    fun matches(event: KeyEvent): Boolean {
-        return event.action == KeyEvent.ACTION_DOWN &&
-                event.keyCode == keyCode &&
-                event.isCtrlPressed == ctrl &&
-                event.isShiftPressed == shift &&
-                event.isAltPressed == alt
-    }
+    fun matches(event: KeyEvent): Boolean = event.action == KeyEvent.ACTION_DOWN &&
+        event.keyCode == keyCode &&
+        event.isCtrlPressed == ctrl &&
+        event.isShiftPressed == shift &&
+        event.isAltPressed == alt
 
     /**
      * 获取快捷键的显示文本
@@ -150,95 +148,89 @@ data class KeyboardShortcut(
     /**
      * 序列化为 JSON 字符串
      */
-    fun toJson(): String {
-        return JSONObject().apply {
-            put("keyCode", keyCode)
-            put("ctrl", ctrl)
-            put("shift", shift)
-            put("alt", alt)
-        }.toString()
-    }
+    fun toJson(): String = JSONObject().apply {
+        put("keyCode", keyCode)
+        put("ctrl", ctrl)
+        put("shift", shift)
+        put("alt", alt)
+    }.toString()
 
     companion object {
         /**
          * 从 JSON 字符串反序列化
          */
-        fun fromJson(json: String): KeyboardShortcut? {
-            return try {
-                val obj = JSONObject(json)
-                KeyboardShortcut(
-                    keyCode = obj.getInt("keyCode"),
-                    ctrl = obj.optBoolean("ctrl", false),
-                    shift = obj.optBoolean("shift", false),
-                    alt = obj.optBoolean("alt", false)
-                )
-            } catch (e: Exception) {
-                null
-            }
+        fun fromJson(json: String): KeyboardShortcut? = try {
+            val obj = JSONObject(json)
+            KeyboardShortcut(
+                keyCode = obj.getInt("keyCode"),
+                ctrl = obj.optBoolean("ctrl", false),
+                shift = obj.optBoolean("shift", false),
+                alt = obj.optBoolean("alt", false)
+            )
+        } catch (e: Exception) {
+            null
         }
 
         /**
          * 获取按键名称
          */
-        fun getKeyName(keyCode: Int): String {
-            return when (keyCode) {
-                KeyEvent.KEYCODE_A -> "A"
-                KeyEvent.KEYCODE_B -> "B"
-                KeyEvent.KEYCODE_C -> "C"
-                KeyEvent.KEYCODE_D -> "D"
-                KeyEvent.KEYCODE_E -> "E"
-                KeyEvent.KEYCODE_F -> "F"
-                KeyEvent.KEYCODE_G -> "G"
-                KeyEvent.KEYCODE_H -> "H"
-                KeyEvent.KEYCODE_I -> "I"
-                KeyEvent.KEYCODE_J -> "J"
-                KeyEvent.KEYCODE_K -> "K"
-                KeyEvent.KEYCODE_L -> "L"
-                KeyEvent.KEYCODE_M -> "M"
-                KeyEvent.KEYCODE_N -> "N"
-                KeyEvent.KEYCODE_O -> "O"
-                KeyEvent.KEYCODE_P -> "P"
-                KeyEvent.KEYCODE_Q -> "Q"
-                KeyEvent.KEYCODE_R -> "R"
-                KeyEvent.KEYCODE_S -> "S"
-                KeyEvent.KEYCODE_T -> "T"
-                KeyEvent.KEYCODE_U -> "U"
-                KeyEvent.KEYCODE_V -> "V"
-                KeyEvent.KEYCODE_W -> "W"
-                KeyEvent.KEYCODE_X -> "X"
-                KeyEvent.KEYCODE_Y -> "Y"
-                KeyEvent.KEYCODE_Z -> "Z"
-                KeyEvent.KEYCODE_0 -> "0"
-                KeyEvent.KEYCODE_1 -> "1"
-                KeyEvent.KEYCODE_2 -> "2"
-                KeyEvent.KEYCODE_3 -> "3"
-                KeyEvent.KEYCODE_4 -> "4"
-                KeyEvent.KEYCODE_5 -> "5"
-                KeyEvent.KEYCODE_6 -> "6"
-                KeyEvent.KEYCODE_7 -> "7"
-                KeyEvent.KEYCODE_8 -> "8"
-                KeyEvent.KEYCODE_9 -> "9"
-                KeyEvent.KEYCODE_TAB -> "Tab"
-                KeyEvent.KEYCODE_ENTER -> "Enter"
-                KeyEvent.KEYCODE_ESCAPE -> "Esc"
-                KeyEvent.KEYCODE_DEL -> "Backspace"
-                KeyEvent.KEYCODE_FORWARD_DEL -> "Delete"
-                KeyEvent.KEYCODE_DPAD_LEFT -> "Left"
-                KeyEvent.KEYCODE_DPAD_RIGHT -> "Right"
-                KeyEvent.KEYCODE_F1 -> "F1"
-                KeyEvent.KEYCODE_F2 -> "F2"
-                KeyEvent.KEYCODE_F3 -> "F3"
-                KeyEvent.KEYCODE_F4 -> "F4"
-                KeyEvent.KEYCODE_F5 -> "F5"
-                KeyEvent.KEYCODE_F6 -> "F6"
-                KeyEvent.KEYCODE_F7 -> "F7"
-                KeyEvent.KEYCODE_F8 -> "F8"
-                KeyEvent.KEYCODE_F9 -> "F9"
-                KeyEvent.KEYCODE_F10 -> "F10"
-                KeyEvent.KEYCODE_F11 -> "F11"
-                KeyEvent.KEYCODE_F12 -> "F12"
-                else -> "Key($keyCode)"
-            }
+        fun getKeyName(keyCode: Int): String = when (keyCode) {
+            KeyEvent.KEYCODE_A -> "A"
+            KeyEvent.KEYCODE_B -> "B"
+            KeyEvent.KEYCODE_C -> "C"
+            KeyEvent.KEYCODE_D -> "D"
+            KeyEvent.KEYCODE_E -> "E"
+            KeyEvent.KEYCODE_F -> "F"
+            KeyEvent.KEYCODE_G -> "G"
+            KeyEvent.KEYCODE_H -> "H"
+            KeyEvent.KEYCODE_I -> "I"
+            KeyEvent.KEYCODE_J -> "J"
+            KeyEvent.KEYCODE_K -> "K"
+            KeyEvent.KEYCODE_L -> "L"
+            KeyEvent.KEYCODE_M -> "M"
+            KeyEvent.KEYCODE_N -> "N"
+            KeyEvent.KEYCODE_O -> "O"
+            KeyEvent.KEYCODE_P -> "P"
+            KeyEvent.KEYCODE_Q -> "Q"
+            KeyEvent.KEYCODE_R -> "R"
+            KeyEvent.KEYCODE_S -> "S"
+            KeyEvent.KEYCODE_T -> "T"
+            KeyEvent.KEYCODE_U -> "U"
+            KeyEvent.KEYCODE_V -> "V"
+            KeyEvent.KEYCODE_W -> "W"
+            KeyEvent.KEYCODE_X -> "X"
+            KeyEvent.KEYCODE_Y -> "Y"
+            KeyEvent.KEYCODE_Z -> "Z"
+            KeyEvent.KEYCODE_0 -> "0"
+            KeyEvent.KEYCODE_1 -> "1"
+            KeyEvent.KEYCODE_2 -> "2"
+            KeyEvent.KEYCODE_3 -> "3"
+            KeyEvent.KEYCODE_4 -> "4"
+            KeyEvent.KEYCODE_5 -> "5"
+            KeyEvent.KEYCODE_6 -> "6"
+            KeyEvent.KEYCODE_7 -> "7"
+            KeyEvent.KEYCODE_8 -> "8"
+            KeyEvent.KEYCODE_9 -> "9"
+            KeyEvent.KEYCODE_TAB -> "Tab"
+            KeyEvent.KEYCODE_ENTER -> "Enter"
+            KeyEvent.KEYCODE_ESCAPE -> "Esc"
+            KeyEvent.KEYCODE_DEL -> "Backspace"
+            KeyEvent.KEYCODE_FORWARD_DEL -> "Delete"
+            KeyEvent.KEYCODE_DPAD_LEFT -> "Left"
+            KeyEvent.KEYCODE_DPAD_RIGHT -> "Right"
+            KeyEvent.KEYCODE_F1 -> "F1"
+            KeyEvent.KEYCODE_F2 -> "F2"
+            KeyEvent.KEYCODE_F3 -> "F3"
+            KeyEvent.KEYCODE_F4 -> "F4"
+            KeyEvent.KEYCODE_F5 -> "F5"
+            KeyEvent.KEYCODE_F6 -> "F6"
+            KeyEvent.KEYCODE_F7 -> "F7"
+            KeyEvent.KEYCODE_F8 -> "F8"
+            KeyEvent.KEYCODE_F9 -> "F9"
+            KeyEvent.KEYCODE_F10 -> "F10"
+            KeyEvent.KEYCODE_F11 -> "F11"
+            KeyEvent.KEYCODE_F12 -> "F12"
+            else -> "Key($keyCode)"
         }
     }
 }
@@ -322,39 +314,29 @@ object KeyboardShortcutManager {
     /**
      * 获取所有快捷键配置
      */
-    fun getAllShortcuts(): Map<ShortcutAction, KeyboardShortcut> {
-        return ShortcutAction.entries.associateWith { getShortcut(it) }
-    }
+    fun getAllShortcuts(): Map<ShortcutAction, KeyboardShortcut> = ShortcutAction.entries.associateWith { getShortcut(it) }
 
     /**
      * 根据按键事件查找匹配的动作
      */
-    fun findActionForEvent(event: KeyEvent): ShortcutAction? {
-        return ShortcutAction.entries.find { action ->
-            getShortcut(action).matches(event)
-        }
+    fun findActionForEvent(event: KeyEvent): ShortcutAction? = ShortcutAction.entries.find { action ->
+        getShortcut(action).matches(event)
     }
 
     /**
      * 检查快捷键是否与其他动作冲突
      */
-    fun hasConflict(shortcut: KeyboardShortcut, excludeAction: ShortcutAction? = null): ShortcutAction? {
-        return ShortcutAction.entries.find { action ->
-            action != excludeAction && getShortcut(action) == shortcut
-        }
+    fun hasConflict(shortcut: KeyboardShortcut, excludeAction: ShortcutAction? = null): ShortcutAction? = ShortcutAction.entries.find { action ->
+        action != excludeAction && getShortcut(action) == shortcut
     }
 
     /**
      * 获取默认快捷键
      */
-    fun getDefaultShortcut(action: ShortcutAction): KeyboardShortcut {
-        return defaultShortcuts[action]!!
-    }
+    fun getDefaultShortcut(action: ShortcutAction): KeyboardShortcut = defaultShortcuts[action]!!
 
     /**
      * 检查指定动作的快捷键是否已被修改
      */
-    fun isModified(action: ShortcutAction): Boolean {
-        return getShortcut(action) != defaultShortcuts[action]
-    }
+    fun isModified(action: ShortcutAction): Boolean = getShortcut(action) != defaultShortcuts[action]
 }

@@ -19,8 +19,6 @@ enum class FeedbackCategory(
     OTHER("other", Strings.feedback_category_other);
 
     companion object {
-        fun fromValue(value: String): FeedbackCategory {
-            return values().find { it.value == value } ?: OTHER
-        }
+        fun fromValue(value: String): FeedbackCategory = values().find { it.value == value } ?: OTHER
     }
 }

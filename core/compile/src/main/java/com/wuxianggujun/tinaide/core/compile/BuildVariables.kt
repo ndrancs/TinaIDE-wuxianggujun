@@ -8,9 +8,9 @@ import java.io.File
 
 /**
  * 构建变量系统
- * 
+ *
  * 支持类似 CLion/IDE 的变量替换功能，用于运行配置中的路径和参数。
- * 
+ *
  * 支持的变量：
  * - $ProjectDir$ - 项目根目录的绝对路径
  * - $ProjectName$ - 项目名称
@@ -26,7 +26,7 @@ import java.io.File
  * - $SourceFileDir$ - 指定的源文件所在目录
  */
 object BuildVariables {
-    
+
     // 变量名常量
     const val PROJECT_DIR = "\$ProjectDir\$"
     const val PROJECT_NAME = "\$ProjectName\$"
@@ -40,7 +40,7 @@ object BuildVariables {
     const val SOURCE_FILE_NAME = "\$SourceFileName\$"
     const val SOURCE_FILE_NAME_WITHOUT_EXT = "\$SourceFileNameWithoutExtension\$"
     const val SOURCE_FILE_DIR = "\$SourceFileDir\$"
-    
+
     /**
      * 所有支持的变量列表（用于 UI 显示）
      */
@@ -58,7 +58,7 @@ object BuildVariables {
         VariableInfo(SOURCE_FILE_NAME_WITHOUT_EXT, Strings.build_var_desc_source_file_name_no_ext),
         VariableInfo(SOURCE_FILE_DIR, Strings.build_var_desc_source_file_dir)
     )
-    
+
     /**
      * 变量信息
      */
@@ -68,7 +68,7 @@ object BuildVariables {
     ) {
         fun getDescription(context: Context): String = context.getString(descriptionResId)
     }
-    
+
     /**
      * 构建上下文 - 包含变量替换所需的所有信息
      */
@@ -82,42 +82,38 @@ object BuildVariables {
         /**
          * 获取实际的构建目录
          */
-        fun getEffectiveBuildDir(): File {
-            return buildDir ?: File(projectDir, "build")
-        }
-        
+        fun getEffectiveBuildDir(): File = buildDir ?: File(projectDir, "build")
+
         /**
          * 获取实际的源文件（优先使用指定的源文件，否则使用当前文件）
          */
-        fun getEffectiveSourceFile(): File? {
-            return sourceFile ?: currentFile
-        }
+        fun getEffectiveSourceFile(): File? = sourceFile ?: currentFile
     }
-    
+
     /**
      * 替换字符串中的所有变量
-     * 
+     *
      * @param input 包含变量的输入字符串
      * @param context 构建上下文
      * @return 替换后的字符串
      */
     fun expand(input: String, context: BuildContext): String {
         if (input.isBlank()) return input
-        
+
         var result = input
-        
+
         // 项目相关变量
         result = result.replace(PROJECT_DIR, context.projectDir.absolutePath)
         result = result.replace(PROJECT_NAME, context.projectName)
         result = result.replace(BUILD_DIR, context.getEffectiveBuildDir().absolutePath)
-        
+
         // 当前文件相关变量
         context.currentFile?.let { file ->
             result = result.replace(CURRENT_FILE, file.absolutePath)
             result = result.replace(CURRENT_FILE_NAME, file.name)
             result = result.replace(CURRENT_FILE_NAME_WITHOUT_EXT, file.nameWithoutExtension)
             result = result.replace(CURRENT_FILE_DIR, file.parentFile?.absolutePath ?: "")
-            
+
             // 计算相对路径
             val relativePath = try {
                 file.relativeTo(context.projectDir).path
@@ -126,7 +122,7 @@ object BuildVariables {
             }
             result = result.replace(CURRENT_FILE_RELATIVE_PATH, relativePath)
         }
-        
+
         // 源文件相关变量
         context.sourceFile?.let { file ->
             result = result.replace(SOURCE_FILE, file.absolutePath)
@@ -134,58 +130,54 @@ object BuildVariables {
             result = result.replace(SOURCE_FILE_NAME_WITHOUT_EXT, file.nameWithoutExtension)
             result = result.replace(SOURCE_FILE_DIR, file.parentFile?.absolutePath ?: "")
         }
-        
+
         return result
     }
-    
+
     /**
      * 替换参数列表中的所有变量
      */
-    fun expandArgs(args: List<String>, context: BuildContext): List<String> {
-        return args.map { expand(it, context) }
-    }
-    
+    fun expandArgs(args: List<String>, context: BuildContext): List<String> = args.map { expand(it, context) }
+
     /**
      * 检查字符串是否包含变量
      */
-    fun containsVariables(input: String): Boolean {
-        return input.contains("\$") && ALL_VARIABLES.any { input.contains(it.name) }
-    }
-    
+    fun containsVariables(input: String): Boolean = input.contains("\$") && ALL_VARIABLES.any { input.contains(it.name) }
+
     /**
      * 获取字符串中使用的所有变量
      */
-    fun getUsedVariables(input: String): List<VariableInfo> {
-        return ALL_VARIABLES.filter { input.contains(it.name) }
-    }
-    
+    fun getUsedVariables(input: String): List<VariableInfo> = ALL_VARIABLES.filter { input.contains(it.name) }
+
     /**
      * 验证变量是否可以在给定上下文中解析
-     * 
+     *
      * @return 无法解析的变量列表
      */
     fun validateVariables(input: String, context: BuildContext): List<String> {
         val unresolved = mutableListOf<String>()
-        
-        if (input.contains(CURRENT_FILE) || 
+
+        if (input.contains(CURRENT_FILE) ||
             input.contains(CURRENT_FILE_NAME) ||
             input.contains(CURRENT_FILE_NAME_WITHOUT_EXT) ||
             input.contains(CURRENT_FILE_DIR) ||
-            input.contains(CURRENT_FILE_RELATIVE_PATH)) {
+            input.contains(CURRENT_FILE_RELATIVE_PATH)
+        ) {
             if (context.currentFile == null) {
                 unresolved.add(Strings.build_var_unresolved_current_file.str())
             }
         }
-        
+
         if (input.contains(SOURCE_FILE) ||
             input.contains(SOURCE_FILE_NAME) ||
             input.contains(SOURCE_FILE_NAME_WITHOUT_EXT) ||
-            input.contains(SOURCE_FILE_DIR)) {
+            input.contains(SOURCE_FILE_DIR)
+        ) {
             if (context.sourceFile == null) {
                 unresolved.add(Strings.build_var_unresolved_source_file.str())
             }
         }
-        
+
         return unresolved
     }
 }

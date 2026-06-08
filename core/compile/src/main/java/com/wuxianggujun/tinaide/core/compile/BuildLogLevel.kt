@@ -27,9 +27,7 @@ enum class BuildLogLevel(
     /**
      * 获取本地化的显示名称
      */
-    fun getDisplayName(context: Context): String {
-        return displayNameResId?.let { context.getString(it) } ?: displayName
-    }
+    fun getDisplayName(context: Context): String = displayNameResId?.let { context.getString(it) } ?: displayName
 
     companion object {
         private val NINJA_PROGRESS_REGEX = Regex("""^\[\d+/\d+]""")
@@ -39,13 +37,13 @@ enum class BuildLogLevel(
          */
         fun detect(text: String): BuildLogLevel {
             val upperText = text.uppercase()
-            
+
             // 英文关键词
             val hasError = upperText.contains("ERROR") || upperText.contains("FAIL")
             val hasWarn = upperText.contains("WARN")
             val hasSuccess = upperText.contains("SUCCESS")
             val hasProgress = NINJA_PROGRESS_REGEX.containsMatchIn(text.trimStart())
-             
+
             return when {
                 hasError -> ERROR
                 hasWarn -> WARN
@@ -57,4 +55,3 @@ enum class BuildLogLevel(
         }
     }
 }
-

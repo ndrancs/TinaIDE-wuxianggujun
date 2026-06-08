@@ -1,9 +1,9 @@
 package com.wuxianggujun.tinaide.project
 
 import com.google.common.truth.Truth.assertThat
-import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Path
+import org.junit.Test
 
 class ExternalZipTemplateInstallTest {
 

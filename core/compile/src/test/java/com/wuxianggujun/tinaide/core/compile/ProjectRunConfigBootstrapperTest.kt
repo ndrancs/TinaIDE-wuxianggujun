@@ -78,11 +78,7 @@ class ProjectRunConfigBootstrapperTest {
         }
     }
 
-    private fun createTempProjectRoot(): File {
-        return Files.createTempDirectory("project-run-config-bootstrapper-test").toFile()
-    }
+    private fun createTempProjectRoot(): File = Files.createTempDirectory("project-run-config-bootstrapper-test").toFile()
 
-    private fun runConfigFile(projectRoot: File): File {
-        return File(projectRoot, ".tinaide/run_configs.json")
-    }
+    private fun runConfigFile(projectRoot: File): File = File(projectRoot, ".tinaide/run_configs.json")
 }

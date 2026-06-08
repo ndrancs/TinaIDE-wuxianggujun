@@ -49,16 +49,14 @@ class FingerprintCalculator {
      * - CLANG/GCC:路径依赖工具链 id 与 sysroot,这里用 "<toolchain>:<id>" 表达,避免引入 Context
      * - 具体物理路径变化由 toolchainId + sysrootApiLevel 的联合指纹捕获
      */
-    private fun resolveCompilerPath(options: BuildOptions): String {
-        return when (options.compilerType.name) {
-            "CUSTOM" -> buildString {
-                append("custom:")
-                append(options.customCCompiler.orEmpty())
-                append("|")
-                append(options.customCppCompiler.orEmpty())
-            }
-            else -> "${options.compilerType.name.lowercase()}:${options.toolchainId ?: "default"}"
+    private fun resolveCompilerPath(options: BuildOptions): String = when (options.compilerType.name) {
+        "CUSTOM" -> buildString {
+            append("custom:")
+            append(options.customCCompiler.orEmpty())
+            append("|")
+            append(options.customCppCompiler.orEmpty())
         }
+        else -> "${options.compilerType.name.lowercase()}:${options.toolchainId ?: "default"}"
     }
 
     private fun hashTrackedInputs(files: List<File>, projectRoot: File): String {
@@ -77,6 +75,5 @@ class FingerprintCalculator {
             }
     }
 
-    private fun normalizePath(file: File, baseDir: File): String =
-        file.absoluteFile.relativeToOrSelf(baseDir.absoluteFile).path.replace(File.separatorChar, '/')
+    private fun normalizePath(file: File, baseDir: File): String = file.absoluteFile.relativeToOrSelf(baseDir.absoluteFile).path.replace(File.separatorChar, '/')
 }

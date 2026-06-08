@@ -328,17 +328,16 @@ class ExecutionCallbacksImplTest {
         bottomPanelController = mockk<BottomPanelController>(relaxed = true)
     )
 
-    private suspend fun ExecutionCallbacksImpl.awaitTerminalResult(executionId: String): ExecutionResult =
-        withTimeout(2_000) {
-            while (true) {
-                val result = getExecutionResult(executionId)
-                if (result != null && result.status.isTerminalForTest()) {
-                    return@withTimeout result
-                }
-                delay(10)
+    private suspend fun ExecutionCallbacksImpl.awaitTerminalResult(executionId: String): ExecutionResult = withTimeout(2_000) {
+        while (true) {
+            val result = getExecutionResult(executionId)
+            if (result != null && result.status.isTerminalForTest()) {
+                return@withTimeout result
             }
-            error("Timed out waiting for execution result: $executionId")
+            delay(10)
         }
+        error("Timed out waiting for execution result: $executionId")
+    }
 
     private fun ExecutionStatus.isTerminalForTest(): Boolean = this in setOf(
         ExecutionStatus.SUCCESS,

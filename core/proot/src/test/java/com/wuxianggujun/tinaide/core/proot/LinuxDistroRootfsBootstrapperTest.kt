@@ -159,62 +159,40 @@ class LinuxDistroRootfsBootstrapperTest {
             return success()
         }
 
-        private fun commandAvailability(command: String): LinuxExecutionResult {
-            return if (command in availableCommands) success() else failure()
+        private fun commandAvailability(command: String): LinuxExecutionResult = if (command in availableCommands) success() else failure()
+
+        private fun packageAvailability(packageName: String): LinuxExecutionResult = if (packageName in existingPackages) success() else failure()
+
+        private fun apkSearch(packageName: String): LinuxExecutionResult = if (packageName in existingPackages) {
+            success(stdout = "$packageName-1.0-r0")
+        } else {
+            success(stdout = "")
         }
 
-        private fun packageAvailability(packageName: String): LinuxExecutionResult {
-            return if (packageName in existingPackages) success() else failure()
-        }
+        private fun success(stdout: String = ""): LinuxExecutionResult = LinuxExecutionResult(
+            exitCode = 0,
+            stdout = stdout,
+            stderr = "",
+            durationMs = 1L,
+        )
 
-        private fun apkSearch(packageName: String): LinuxExecutionResult {
-            return if (packageName in existingPackages) {
-                success(stdout = "$packageName-1.0-r0")
-            } else {
-                success(stdout = "")
-            }
-        }
-
-        private fun success(stdout: String = ""): LinuxExecutionResult {
-            return LinuxExecutionResult(
-                exitCode = 0,
-                stdout = stdout,
-                stderr = "",
-                durationMs = 1L,
-            )
-        }
-
-        private fun failure(): LinuxExecutionResult {
-            return LinuxExecutionResult(
-                exitCode = 1,
-                stdout = "",
-                stderr = "not found",
-                durationMs = 1L,
-            )
-        }
+        private fun failure(): LinuxExecutionResult = LinuxExecutionResult(
+            exitCode = 1,
+            stdout = "",
+            stderr = "not found",
+            durationMs = 1L,
+        )
     }
 }
 
-private fun List<String>.isExecutablePathProbe(): Boolean {
-    return size >= 3 && this[0] == "/bin/test" && this[1] == "-x"
-}
+private fun List<String>.isExecutablePathProbe(): Boolean = size >= 3 && this[0] == "/bin/test" && this[1] == "-x"
 
-private fun List<String>.extractExecutablePathProbeName(): String {
-    return getOrNull(2).orEmpty()
-}
+private fun List<String>.extractExecutablePathProbeName(): String = getOrNull(2).orEmpty()
 
-private fun List<String>.isCommandProbe(): Boolean {
-    return size >= 3 && this[0] == "/bin/sh" && this[1] == "-lc" && this[2].contains("command -v")
-}
+private fun List<String>.isCommandProbe(): Boolean = size >= 3 && this[0] == "/bin/sh" && this[1] == "-lc" && this[2].contains("command -v")
 
-private fun List<String>.extractCommandProbeName(): String {
-    return Regex("command -v '([^']+)'").find(this[2])?.groupValues?.get(1).orEmpty()
-}
+private fun List<String>.extractCommandProbeName(): String = Regex("command -v '([^']+)'").find(this[2])?.groupValues?.get(1).orEmpty()
 
-private fun List<String>.isAptPackageProbe(): Boolean {
-    return size >= 3 && this[0] == "/bin/sh" && this[1] == "-lc" && this[2].startsWith("apt-cache show ")
-}
+private fun List<String>.isAptPackageProbe(): Boolean = size >= 3 && this[0] == "/bin/sh" && this[1] == "-lc" && this[2].startsWith("apt-cache show ")
 
-private fun List<String>.extractAptPackageName(): String {
-    return Regex("apt-cache show '([^']+)'").find(this[2])?.groupValues?.get(1).orEmpty()
-}
+private fun List<String>.extractAptPackageName(): String = Regex("apt-cache show '([^']+)'").find(this[2])?.groupValues?.get(1).orEmpty()

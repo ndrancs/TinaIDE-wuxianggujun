@@ -3,10 +3,10 @@ package com.wuxianggujun.tinaide.core.format
 import android.content.Context
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
-import timber.log.Timber
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
+import timber.log.Timber
 
 /**
  * Clang-Format 配置文件管理器
@@ -92,9 +92,7 @@ class ClangFormatConfigManager(private val context: Context) {
     /**
      * 根据风格名称获取配置信息
      */
-    fun getConfigByName(name: String): ConfigInfo? {
-        return availableConfigs.find { it.name.equals(name, ignoreCase = true) }
-    }
+    fun getConfigByName(name: String): ConfigInfo? = availableConfigs.find { it.name.equals(name, ignoreCase = true) }
 
     /**
      * 根据 FormatStyle 获取配置信息
@@ -208,9 +206,7 @@ class ClangFormatConfigManager(private val context: Context) {
     /**
      * 检查目录中是否存在 .clang-format 文件
      */
-    fun hasConfigFile(directory: File): Boolean {
-        return File(directory, CONFIG_FILE_NAME).let { it.exists() && it.isFile }
-    }
+    fun hasConfigFile(directory: File): Boolean = File(directory, CONFIG_FILE_NAME).let { it.exists() && it.isFile }
 
     /**
      * 读取目录中的 .clang-format 文件内容

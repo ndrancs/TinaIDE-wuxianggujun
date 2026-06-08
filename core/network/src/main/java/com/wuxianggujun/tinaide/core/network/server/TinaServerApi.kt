@@ -48,10 +48,8 @@ class TinaServerApi private constructor(
         fun getInstance(
             baseUrl: String,
             client: OkHttpClient = OkHttpClientProvider.default
-        ): TinaServerApi {
-            return instance ?: synchronized(this) {
-                instance ?: TinaServerApi(baseUrl.trimEnd('/'), client).also { instance = it }
-            }
+        ): TinaServerApi = instance ?: synchronized(this) {
+            instance ?: TinaServerApi(baseUrl.trimEnd('/'), client).also { instance = it }
         }
 
         fun resetInstance() {
@@ -165,17 +163,11 @@ class TinaServerApi private constructor(
         }
     }
 
-    suspend fun submitFeedback(request: FeedbackRequest): ApiResult<FeedbackResponse> {
-        return post("/api/feedbacks", request)
-    }
+    suspend fun submitFeedback(request: FeedbackRequest): ApiResult<FeedbackResponse> = post("/api/feedbacks", request)
 
-    suspend fun healthCheck(): ApiResult<HealthResponse> {
-        return get("/health", expectEnvelope = false)
-    }
+    suspend fun healthCheck(): ApiResult<HealthResponse> = get("/health", expectEnvelope = false)
 
-    suspend fun getAiModels(): ApiResult<AiModelsListResponse> {
-        return get("/api/ai/models", expectEnvelope = false)
-    }
+    suspend fun getAiModels(): ApiResult<AiModelsListResponse> = get("/api/ai/models", expectEnvelope = false)
 
     private suspend inline fun <reified T> get(
         path: String,

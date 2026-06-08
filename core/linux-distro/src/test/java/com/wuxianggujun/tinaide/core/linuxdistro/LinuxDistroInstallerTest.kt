@@ -32,11 +32,11 @@ class LinuxDistroInstallerTest {
         val catalog = ManifestLinuxDistroCatalog(manifest)
 
         val aarch64 = catalog.listInstallableDefaultArtifacts(DistroArchitecture.AARCH64)
-        val x86_64 = catalog.listInstallableDefaultArtifacts(DistroArchitecture.X86_64)
+        val x86Artifacts = catalog.listInstallableDefaultArtifacts(DistroArchitecture.X86_64)
 
         assertThat(aarch64.map { it.distro.id }).containsExactly("alpine")
         assertThat(aarch64.single().artifact.architecture).isEqualTo(DistroArchitecture.AARCH64)
-        assertThat(x86_64).isEmpty()
+        assertThat(x86Artifacts).isEmpty()
     }
 
     @Test
@@ -316,19 +316,17 @@ class LinuxDistroInstallerTest {
         )
     }
 
-    private fun installedLinuxDistro(tempDir: File): InstalledLinuxDistro {
-        return InstalledLinuxDistro(
-            distroId = "alpine",
-            releaseId = "3.20",
-            architecture = DistroArchitecture.AARCH64,
-            displayName = "Alpine Linux",
-            packageManager = DistroPackageManager.APK,
-            rootfsPath = File(tempDir, "rootfs").absolutePath,
-            archivePath = File(tempDir, "alpine.tar.gz").absolutePath,
-            checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "0".repeat(64)),
-            installedAtEpochMillis = 1_800_000_000_000L,
-        )
-    }
+    private fun installedLinuxDistro(tempDir: File): InstalledLinuxDistro = InstalledLinuxDistro(
+        distroId = "alpine",
+        releaseId = "3.20",
+        architecture = DistroArchitecture.AARCH64,
+        displayName = "Alpine Linux",
+        packageManager = DistroPackageManager.APK,
+        rootfsPath = File(tempDir, "rootfs").absolutePath,
+        archivePath = File(tempDir, "alpine.tar.gz").absolutePath,
+        checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "0".repeat(64)),
+        installedAtEpochMillis = 1_800_000_000_000L,
+    )
 
     private fun sampleManifest(checksum: String): String = """
         {
@@ -401,9 +399,7 @@ class LinuxDistroInstallerTest {
           ]
         }
     """.trimIndent()
-    private fun sha256(content: String): String {
-        return MessageDigest.getInstance("SHA-256")
-            .digest(content.toByteArray(Charsets.UTF_8))
-            .joinToString(separator = "") { byte -> "%02x".format(byte) }
-    }
+    private fun sha256(content: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(content.toByteArray(Charsets.UTF_8))
+        .joinToString(separator = "") { byte -> "%02x".format(byte) }
 }

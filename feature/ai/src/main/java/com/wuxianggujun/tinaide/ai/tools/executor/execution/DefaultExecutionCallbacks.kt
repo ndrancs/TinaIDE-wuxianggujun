@@ -14,32 +14,26 @@ class DefaultExecutionCallbacks : ExecutionCallbacks {
     private val executionStatusMap = ConcurrentHashMap<String, ExecutionStatus>()
     private val executionResultMap = ConcurrentHashMap<String, ExecutionResult>()
 
-    override fun runProject(request: RunRequest): ExecutionResult {
-        return failedResult(
-            localizedToolText(
-                Strings.ai_tool_error_default_run_callback_unavailable,
-                "Project execution is unavailable because no run callback is registered."
-            )
+    override fun runProject(request: RunRequest): ExecutionResult = failedResult(
+        localizedToolText(
+            Strings.ai_tool_error_default_run_callback_unavailable,
+            "Project execution is unavailable because no run callback is registered."
         )
-    }
+    )
 
-    override fun runTests(request: TestRequest): ExecutionResult {
-        return failedResult(
-            localizedToolText(
-                Strings.ai_tool_error_default_test_callback_unavailable,
-                "Test execution is unavailable because no test callback is registered."
-            )
+    override fun runTests(request: TestRequest): ExecutionResult = failedResult(
+        localizedToolText(
+            Strings.ai_tool_error_default_test_callback_unavailable,
+            "Test execution is unavailable because no test callback is registered."
         )
-    }
+    )
 
-    override fun buildProject(request: BuildRequest): ExecutionResult {
-        return failedResult(
-            localizedToolText(
-                Strings.ai_tool_error_default_build_callback_unavailable,
-                "Build execution is unavailable because no build callback is registered."
-            )
+    override fun buildProject(request: BuildRequest): ExecutionResult = failedResult(
+        localizedToolText(
+            Strings.ai_tool_error_default_build_callback_unavailable,
+            "Build execution is unavailable because no build callback is registered."
         )
-    }
+    )
 
     private fun failedResult(errorOutput: String): ExecutionResult {
         val executionId = UUID.randomUUID().toString()

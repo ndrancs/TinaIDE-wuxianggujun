@@ -28,8 +28,10 @@ data class Tutorial(
 enum class TutorialType {
     /** 交互式引导 - 遮罩高亮步骤式教程 */
     INTERACTIVE,
+
     /** 图文教程 - Markdown 内容 */
     ARTICLE,
+
     /** 视频教程 */
     VIDEO
 }
@@ -40,6 +42,7 @@ enum class TutorialType {
 enum class TutorialSource {
     /** 本地内置 */
     LOCAL,
+
     /** 远程获取 */
     REMOTE
 }
@@ -79,9 +82,7 @@ enum class TutorialCategory(
     );
 
     companion object {
-        fun fromString(value: String): TutorialCategory? {
-            return entries.find { it.name.equals(value, ignoreCase = true) }
-        }
+        fun fromString(value: String): TutorialCategory? = entries.find { it.name.equals(value, ignoreCase = true) }
     }
 }
 
@@ -107,12 +108,16 @@ data class TutorialStep(
 enum class StepAction {
     /** 点击目标 */
     CLICK,
+
     /** 长按 */
     LONG_PRESS,
+
     /** 滑动 */
     SWIPE,
+
     /** 输入文本 */
     INPUT,
+
     /** 仅查看，无需操作 */
     NONE
 }
@@ -125,6 +130,7 @@ enum class TooltipPosition {
     BOTTOM,
     LEFT,
     RIGHT,
+
     /** 自动计算最佳位置 */
     AUTO
 }

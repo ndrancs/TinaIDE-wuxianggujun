@@ -34,22 +34,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wuxianggujun.tinaide.core.i18n.Drawables
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.proot.PRootBootstrap
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogActionRow
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogContentColumn
-import com.wuxianggujun.tinaide.ui.compose.components.TinaOverlayPanelSurface
-import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
-import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButtonLarge
 import com.wuxianggujun.tinaide.ui.compose.components.TinaOutlinedButton
+import com.wuxianggujun.tinaide.ui.compose.components.TinaOverlayPanelSurface
+import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButtonLarge
+import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
 import com.wuxianggujun.tinaide.ui.workspace.model.*
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
+import kotlinx.coroutines.launch
 
 /**
  * 安装内容相关 Compose 组件
- * 
+ *
  * 包含：
  * - InstallHeader: 安装页面头部
  * - InstallingContent: 安装中内容
@@ -151,7 +151,7 @@ fun InstallingContent(
             onBack = onBack,
             onCancel = onCancel,
         )
-        
+
         // 紧凑进度区域
         CompactProgressHeader(
             progress = animatedProgress,
@@ -170,7 +170,7 @@ fun InstallingContent(
                 .weight(1f)
                 .padding(horizontal = 16.dp)
         )
-        
+
         // 底部智能提示（仅在需要时显示）
         AnimatedVisibility(
             visible = isPaused || overallProgress < 0.3f || overallProgress > 0.8f,
@@ -258,7 +258,7 @@ private fun CompactProgressHeader(
 ) {
     val completedCount = packageList.count { it.status == PRootBootstrap.PackageStatus.COMPLETED }
     val totalCount = packageList.size
-    
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -286,7 +286,7 @@ private fun CompactProgressHeader(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
-                
+
                 // 进度条（渐变色）
                 LinearProgressIndicator(
                     progress = { progress },
@@ -298,7 +298,7 @@ private fun CompactProgressHeader(
                     trackColor = Color.Transparent,
                 )
             }
-            
+
             // 百分比
             Text(
                 text = "${(progress * 100).roundToInt()}%",
@@ -311,7 +311,7 @@ private fun CompactProgressHeader(
                 }
             )
         }
-        
+
         // 第二行：状态 + 包统计
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -327,7 +327,7 @@ private fun CompactProgressHeader(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
-            
+
             // 包统计徽章
             if (totalCount > 0) {
                 Surface(
@@ -603,7 +603,7 @@ fun InstallCompletedContent(
                 }
             }
         }
-        
+
         // 底部区域
         Column(
             modifier = Modifier
@@ -726,7 +726,7 @@ fun EnvironmentConfigCard(
                         }
                     }
                 }
-                
+
                 Column {
                     Text(
                         text = item.title,
@@ -741,7 +741,7 @@ fun EnvironmentConfigCard(
                     )
                 }
             }
-            
+
             // 绿色圆点状态指示
             Box(
                 modifier = Modifier
@@ -825,7 +825,9 @@ fun InstallFailedContent(
         val mainError = lines.firstOrNull()?.trim() ?: errorMessage
         val additionalInfo = if (lines.size > 1) {
             lines.drop(1).joinToString("\n").trim()
-        } else ""
+        } else {
+            ""
+        }
         Pair(mainError, additionalInfo)
     }
 
@@ -886,7 +888,7 @@ fun InstallFailedContent(
             // 失败图标 - 新设计：倾斜的红色圆角矩形（使用 MD3 主题色）
             val errorColor = MaterialTheme.colorScheme.error
             val errorContainerColor = MaterialTheme.colorScheme.errorContainer
-            
+
             Box(
                 modifier = Modifier
                     .size(140.dp)
@@ -1111,7 +1113,7 @@ fun InstallFailedContent(
                     },
                     icon = rememberWorkspacePainter(Drawables.ic_menu_exit)
                 )
-                
+
                 // 提示信息
                 Text(
                     text = stringResource(Strings.hint_abi_mismatch_uninstall),

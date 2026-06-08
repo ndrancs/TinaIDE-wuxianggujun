@@ -71,27 +71,25 @@ class PackageDialogStateTest {
         assertThat(complete.totalCount).isEqualTo(1)
     }
 
-    private fun packageInstallPlan(packageId: String): PackageInstallPlan {
-        return PackageInstallPlan(
-            packageId = packageId,
-            packageName = packageId,
-            platform = Platform.ANDROID,
-            packages = listOf(
-                PackageInstallPlanItem(
-                    packageId = "sdl3",
-                    packageName = "SDL3",
-                    version = "3.2.0",
-                    isRoot = false,
-                    isAlreadyInstalled = false
-                ),
-                PackageInstallPlanItem(
-                    packageId = packageId,
-                    packageName = packageId,
-                    version = "1.0.0",
-                    isRoot = true,
-                    isAlreadyInstalled = false
-                )
+    private fun packageInstallPlan(packageId: String): PackageInstallPlan = PackageInstallPlan(
+        packageId = packageId,
+        packageName = packageId,
+        platform = Platform.ANDROID,
+        packages = listOf(
+            PackageInstallPlanItem(
+                packageId = "sdl3",
+                packageName = "SDL3",
+                version = "3.2.0",
+                isRoot = false,
+                isAlreadyInstalled = false
+            ),
+            PackageInstallPlanItem(
+                packageId = packageId,
+                packageName = packageId,
+                version = "1.0.0",
+                isRoot = true,
+                isAlreadyInstalled = false
             )
         )
-    }
+    )
 }

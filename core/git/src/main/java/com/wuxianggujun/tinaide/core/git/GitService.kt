@@ -4,16 +4,19 @@ import android.content.Context
 import com.wuxianggujun.tinaide.core.git.ssh.GitSshManager
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.str
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.eclipse.jgit.api.CreateBranchCommand
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.ProgressMonitor
 import org.eclipse.jgit.api.ListBranchCommand
 import org.eclipse.jgit.api.MergeResult
 import org.eclipse.jgit.api.RebaseCommand
 import org.eclipse.jgit.api.RebaseResult
 import org.eclipse.jgit.api.ResetCommand
+import org.eclipse.jgit.lib.ProgressMonitor
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.transport.RefSpec
@@ -21,9 +24,6 @@ import org.eclipse.jgit.transport.SshTransport
 import org.eclipse.jgit.transport.URIish
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import timber.log.Timber
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 /**
  * Git 服务 — 纯 JGit 实现
@@ -149,56 +149,53 @@ class GitService(context: Context) {
 
     // ── Diff ──
 
-    suspend fun getDiff(projectPath: String, filePath: String, staged: Boolean = false): GitResult<String> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    val git = Git(repo)
-                    val outputStream = java.io.ByteArrayOutputStream()
-                    val diffCommand = git.diff().setOutputStream(outputStream)
+    suspend fun getDiff(projectPath: String, filePath: String, staged: Boolean = false): GitResult<String> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                val git = Git(repo)
+                val outputStream = java.io.ByteArrayOutputStream()
+                val diffCommand = git.diff().setOutputStream(outputStream)
 
-                    diffCommand.setPathFilter(org.eclipse.jgit.treewalk.filter.PathFilter.create(filePath))
-                    if (staged) diffCommand.setCached(true)
+                diffCommand.setPathFilter(org.eclipse.jgit.treewalk.filter.PathFilter.create(filePath))
+                if (staged) diffCommand.setCached(true)
 
-                    diffCommand.call()
-                    GitResult.Success(outputStream.toString(Charsets.UTF_8.name()))
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_get_diff_failed.str())
-            }
+                diffCommand.call()
+                GitResult.Success(outputStream.toString(Charsets.UTF_8.name()))
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_get_diff_failed.str())
         }
+    }
 
     // ── Stage / Unstage ──
 
-    suspend fun stageFile(projectPath: String, filePath: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    val git = Git(repo)
-                    val file = File(repo.workTree, filePath)
-                    if (file.exists()) {
-                        git.add().addFilepattern(filePath).call()
-                    } else {
-                        git.rm().addFilepattern(filePath).call()
-                    }
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_stage_failed.str())
-            }
+    suspend fun stageFile(projectPath: String, filePath: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                val git = Git(repo)
+                val file = File(repo.workTree, filePath)
+                if (file.exists()) {
+                    git.add().addFilepattern(filePath).call()
+                } else {
+                    git.rm().addFilepattern(filePath).call()
+                }
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_stage_failed.str())
         }
+    }
 
-    suspend fun unstageFile(projectPath: String, filePath: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    Git(repo).reset().addPath(filePath).call()
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_unstage_failed.str())
-            }
+    suspend fun unstageFile(projectPath: String, filePath: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                Git(repo).reset().addPath(filePath).call()
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_unstage_failed.str())
         }
+    }
 
     suspend fun stageAll(projectPath: String): GitResult<Unit> = withContext(Dispatchers.IO) {
         try {
@@ -226,34 +223,32 @@ class GitService(context: Context) {
 
     // ── Commit ──
 
-    suspend fun commit(projectPath: String, message: String): GitResult<String> =
-        withContext(Dispatchers.IO) {
-            try {
-                if (message.isBlank()) {
-                    return@withContext GitResult.Error(Strings.git_error_commit_message_empty.str())
-                }
-                openRepo(projectPath)?.use { repo ->
-                    val revCommit = Git(repo).commit().setMessage(message).call()
-                    GitResult.Success(revCommit.id.abbreviate(7).name())
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_commit_failed.str())
+    suspend fun commit(projectPath: String, message: String): GitResult<String> = withContext(Dispatchers.IO) {
+        try {
+            if (message.isBlank()) {
+                return@withContext GitResult.Error(Strings.git_error_commit_message_empty.str())
             }
+            openRepo(projectPath)?.use { repo ->
+                val revCommit = Git(repo).commit().setMessage(message).call()
+                GitResult.Success(revCommit.id.abbreviate(7).name())
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_commit_failed.str())
         }
+    }
 
     // ── Discard ──
 
-    suspend fun discardChanges(projectPath: String, filePath: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    Git(repo).checkout().addPath(filePath).call()
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_discard_failed.str())
-            }
+    suspend fun discardChanges(projectPath: String, filePath: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                Git(repo).checkout().addPath(filePath).call()
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_discard_failed.str())
         }
+    }
 
     // ── Init ──
 
@@ -485,31 +480,30 @@ class GitService(context: Context) {
 
     // ── 提交历史 ──
 
-    suspend fun getCommitHistory(projectPath: String, maxCount: Int = 50): GitResult<List<GitCommit>> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    val git = Git(repo)
-                    val log = git.log().setMaxCount(maxCount).call()
-                    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    suspend fun getCommitHistory(projectPath: String, maxCount: Int = 50): GitResult<List<GitCommit>> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                val git = Git(repo)
+                val log = git.log().setMaxCount(maxCount).call()
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
-                    val commits = log.map { revCommit ->
-                        GitCommit(
-                            hash = revCommit.name,
-                            shortHash = revCommit.abbreviate(7).name(),
-                            author = revCommit.authorIdent.name,
-                            authorEmail = revCommit.authorIdent.emailAddress,
-                            date = dateFormat.format(revCommit.authorIdent.whenAsInstant),
-                            message = revCommit.shortMessage,
-                            fullMessage = revCommit.fullMessage
-                        )
-                    }
-                    GitResult.Success(commits)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_get_history_failed.str())
-            }
+                val commits = log.map { revCommit ->
+                    GitCommit(
+                        hash = revCommit.name,
+                        shortHash = revCommit.abbreviate(7).name(),
+                        author = revCommit.authorIdent.name,
+                        authorEmail = revCommit.authorIdent.emailAddress,
+                        date = dateFormat.format(revCommit.authorIdent.whenAsInstant),
+                        message = revCommit.shortMessage,
+                        fullMessage = revCommit.fullMessage
+                    )
+                }
+                GitResult.Success(commits)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_get_history_failed.str())
         }
+    }
 
     // ── 远程仓库管理 ──
 
@@ -532,47 +526,44 @@ class GitService(context: Context) {
         }
     }
 
-    suspend fun addRemote(projectPath: String, name: String, url: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    Git(repo).remoteAdd()
-                        .setName(name)
-                        .setUri(URIish(url))
-                        .call()
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_add_remote_failed.str())
-            }
+    suspend fun addRemote(projectPath: String, name: String, url: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                Git(repo).remoteAdd()
+                    .setName(name)
+                    .setUri(URIish(url))
+                    .call()
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_add_remote_failed.str())
         }
+    }
 
-    suspend fun removeRemote(projectPath: String, name: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    Git(repo).remoteRemove().setRemoteName(name).call()
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_remove_remote_failed.str())
-            }
+    suspend fun removeRemote(projectPath: String, name: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                Git(repo).remoteRemove().setRemoteName(name).call()
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_remove_remote_failed.str())
         }
+    }
 
-    suspend fun setRemoteUrl(projectPath: String, name: String, url: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    Git(repo).remoteSetUrl()
-                        .setRemoteName(name)
-                        .setRemoteUri(URIish(url))
-                        .call()
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_update_remote_url_failed.str())
-            }
+    suspend fun setRemoteUrl(projectPath: String, name: String, url: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                Git(repo).remoteSetUrl()
+                    .setRemoteName(name)
+                    .setRemoteUri(URIish(url))
+                    .call()
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_update_remote_url_failed.str())
         }
+    }
 
     // ── SSH 密钥解锁 ──
 
@@ -580,172 +571,163 @@ class GitService(context: Context) {
      * 缓存 SSH 密钥的 passphrase，供后续远程操作使用。
      * passphrase 仅保存在内存中，不持久化。
      */
-    suspend fun unlockSshKey(keyName: String, passphrase: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                val keyFile = File(sshManager.getSshDir(), keyName)
-                if (!keyFile.exists()) {
-                    return@withContext GitResult.Error(Strings.git_error_ssh_key_unlock_failed.str())
-                }
-                sshManager.cachePassphrase(keyName, passphrase)
-                Timber.tag(TAG).d("SSH key passphrase cached for: $keyName")
-                GitResult.Success(Unit)
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_ssh_key_unlock_failed.str())
+    suspend fun unlockSshKey(keyName: String, passphrase: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val keyFile = File(sshManager.getSshDir(), keyName)
+            if (!keyFile.exists()) {
+                return@withContext GitResult.Error(Strings.git_error_ssh_key_unlock_failed.str())
             }
+            sshManager.cachePassphrase(keyName, passphrase)
+            Timber.tag(TAG).d("SSH key passphrase cached for: $keyName")
+            GitResult.Success(Unit)
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_ssh_key_unlock_failed.str())
         }
+    }
 
     // ── 冲突处理 ──
 
-    suspend fun getUnmergedFiles(projectPath: String): GitResult<List<String>> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    val status = Git(repo).status().call()
-                    GitResult.Success(status.conflicting.sorted().toList())
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_get_conflict_files_failed.str())
-            }
+    suspend fun getUnmergedFiles(projectPath: String): GitResult<List<String>> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                val status = Git(repo).status().call()
+                GitResult.Success(status.conflicting.sorted().toList())
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_get_conflict_files_failed.str())
         }
+    }
 
-    suspend fun getConflictKind(projectPath: String): GitResult<GitConflictKind> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    val mergeHead = File(repo.directory, "MERGE_HEAD")
-                    val rebaseDir = File(repo.directory, "rebase-merge")
-                    val rebaseApplyDir = File(repo.directory, "rebase-apply")
+    suspend fun getConflictKind(projectPath: String): GitResult<GitConflictKind> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                val mergeHead = File(repo.directory, "MERGE_HEAD")
+                val rebaseDir = File(repo.directory, "rebase-merge")
+                val rebaseApplyDir = File(repo.directory, "rebase-apply")
 
-                    val kind = when {
-                        rebaseDir.exists() || rebaseApplyDir.exists() -> GitConflictKind.REBASE
-                        mergeHead.exists() -> GitConflictKind.MERGE
-                        else -> GitConflictKind.NONE
+                val kind = when {
+                    rebaseDir.exists() || rebaseApplyDir.exists() -> GitConflictKind.REBASE
+                    mergeHead.exists() -> GitConflictKind.MERGE
+                    else -> GitConflictKind.NONE
+                }
+                GitResult.Success(kind)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_get_conflict_status_failed.str())
+        }
+    }
+
+    suspend fun abortMergeOrRebase(projectPath: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                val git = Git(repo)
+                val mergeHead = File(repo.directory, "MERGE_HEAD")
+                val rebaseDir = File(repo.directory, "rebase-merge")
+                val rebaseApplyDir = File(repo.directory, "rebase-apply")
+
+                when {
+                    rebaseDir.exists() || rebaseApplyDir.exists() -> {
+                        git.rebase().setOperation(RebaseCommand.Operation.ABORT).call()
                     }
-                    GitResult.Success(kind)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_get_conflict_status_failed.str())
-            }
-        }
-
-    suspend fun abortMergeOrRebase(projectPath: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    val git = Git(repo)
-                    val mergeHead = File(repo.directory, "MERGE_HEAD")
-                    val rebaseDir = File(repo.directory, "rebase-merge")
-                    val rebaseApplyDir = File(repo.directory, "rebase-apply")
-
-                    when {
-                        rebaseDir.exists() || rebaseApplyDir.exists() -> {
-                            git.rebase().setOperation(RebaseCommand.Operation.ABORT).call()
-                        }
-                        mergeHead.exists() -> {
-                            git.reset().setMode(ResetCommand.ResetType.HARD).setRef("HEAD").call()
-                            mergeHead.delete()
-                        }
-                        else -> {
-                            return@use GitResult.Error(Strings.git_error_no_in_progress_merge_or_rebase.str())
-                        }
+                    mergeHead.exists() -> {
+                        git.reset().setMode(ResetCommand.ResetType.HARD).setRef("HEAD").call()
+                        mergeHead.delete()
                     }
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_abort_operation_failed.str())
-            }
-        }
-
-    suspend fun markConflictsResolved(projectPath: String, files: List<String>): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    val git = Git(repo)
-                    files.forEach { filePath ->
-                        git.add().addFilepattern(filePath).call()
+                    else -> {
+                        return@use GitResult.Error(Strings.git_error_no_in_progress_merge_or_rebase.str())
                     }
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_mark_resolved_failed.str())
-            }
+                }
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_abort_operation_failed.str())
         }
+    }
 
-    suspend fun acceptOurs(projectPath: String, file: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                if (file.isBlank()) return@withContext GitResult.Error(Strings.git_error_file_path_empty.str())
-                openRepo(projectPath)?.use { repo ->
-                    val git = Git(repo)
-                    git.checkout().setStage(org.eclipse.jgit.api.CheckoutCommand.Stage.OURS).addPath(file).call()
-                    git.add().addFilepattern(file).call()
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_checkout_ours_failed.str())
-            }
+    suspend fun markConflictsResolved(projectPath: String, files: List<String>): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                val git = Git(repo)
+                files.forEach { filePath ->
+                    git.add().addFilepattern(filePath).call()
+                }
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_mark_resolved_failed.str())
         }
+    }
 
-    suspend fun acceptTheirs(projectPath: String, file: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                if (file.isBlank()) return@withContext GitResult.Error(Strings.git_error_file_path_empty.str())
-                openRepo(projectPath)?.use { repo ->
-                    val git = Git(repo)
-                    git.checkout().setStage(org.eclipse.jgit.api.CheckoutCommand.Stage.THEIRS).addPath(file).call()
-                    git.add().addFilepattern(file).call()
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_checkout_theirs_failed.str())
-            }
+    suspend fun acceptOurs(projectPath: String, file: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (file.isBlank()) return@withContext GitResult.Error(Strings.git_error_file_path_empty.str())
+            openRepo(projectPath)?.use { repo ->
+                val git = Git(repo)
+                git.checkout().setStage(org.eclipse.jgit.api.CheckoutCommand.Stage.OURS).addPath(file).call()
+                git.add().addFilepattern(file).call()
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_checkout_ours_failed.str())
         }
+    }
 
-    suspend fun continueAfterResolve(projectPath: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    val git = Git(repo)
-                    val rebaseDir = File(repo.directory, "rebase-merge")
-                    val rebaseApplyDir = File(repo.directory, "rebase-apply")
-                    val mergeHead = File(repo.directory, "MERGE_HEAD")
+    suspend fun acceptTheirs(projectPath: String, file: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (file.isBlank()) return@withContext GitResult.Error(Strings.git_error_file_path_empty.str())
+            openRepo(projectPath)?.use { repo ->
+                val git = Git(repo)
+                git.checkout().setStage(org.eclipse.jgit.api.CheckoutCommand.Stage.THEIRS).addPath(file).call()
+                git.add().addFilepattern(file).call()
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_checkout_theirs_failed.str())
+        }
+    }
 
-                    when {
-                        rebaseDir.exists() || rebaseApplyDir.exists() -> {
-                            val result = git.rebase().setOperation(RebaseCommand.Operation.CONTINUE).call()
-                            if (result.status == RebaseResult.Status.CONFLICTS) {
-                                return@use GitResult.Error(Strings.git_error_rebase_continue_failed.str())
-                            }
-                        }
-                        mergeHead.exists() -> {
-                            git.commit().setMessage("Merge conflict resolved").call()
-                        }
-                        else -> {
-                            return@use GitResult.Error(Strings.git_error_no_in_progress_merge_or_rebase.str())
+    suspend fun continueAfterResolve(projectPath: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                val git = Git(repo)
+                val rebaseDir = File(repo.directory, "rebase-merge")
+                val rebaseApplyDir = File(repo.directory, "rebase-apply")
+                val mergeHead = File(repo.directory, "MERGE_HEAD")
+
+                when {
+                    rebaseDir.exists() || rebaseApplyDir.exists() -> {
+                        val result = git.rebase().setOperation(RebaseCommand.Operation.CONTINUE).call()
+                        if (result.status == RebaseResult.Status.CONFLICTS) {
+                            return@use GitResult.Error(Strings.git_error_rebase_continue_failed.str())
                         }
                     }
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_continue_operation_failed.str())
-            }
-        }
-
-    suspend fun rebaseSkip(projectPath: String): GitResult<Unit> =
-        withContext(Dispatchers.IO) {
-            try {
-                openRepo(projectPath)?.use { repo ->
-                    val result = Git(repo).rebase().setOperation(RebaseCommand.Operation.SKIP).call()
-                    if (result.status == RebaseResult.Status.CONFLICTS) {
-                        return@use GitResult.Error(Strings.git_error_rebase_skip_failed.str())
+                    mergeHead.exists() -> {
+                        git.commit().setMessage("Merge conflict resolved").call()
                     }
-                    GitResult.Success(Unit)
-                } ?: notARepo()
-            } catch (e: Exception) {
-                GitResult.Error(e.message ?: Strings.git_error_rebase_skip_failed.str())
-            }
+                    else -> {
+                        return@use GitResult.Error(Strings.git_error_no_in_progress_merge_or_rebase.str())
+                    }
+                }
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_continue_operation_failed.str())
         }
+    }
+
+    suspend fun rebaseSkip(projectPath: String): GitResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            openRepo(projectPath)?.use { repo ->
+                val result = Git(repo).rebase().setOperation(RebaseCommand.Operation.SKIP).call()
+                if (result.status == RebaseResult.Status.CONFLICTS) {
+                    return@use GitResult.Error(Strings.git_error_rebase_skip_failed.str())
+                }
+                GitResult.Success(Unit)
+            } ?: notARepo()
+        } catch (e: Exception) {
+            GitResult.Error(e.message ?: Strings.git_error_rebase_skip_failed.str())
+        }
+    }
 
     // ── 内部工具方法 ──
 
@@ -790,8 +772,8 @@ class GitService(context: Context) {
     private fun isSshUrl(url: String): Boolean {
         val trimmed = url.trim()
         return trimmed.startsWith("ssh://") ||
-                trimmed.startsWith("git+ssh://") ||
-                trimmed.startsWith("git@") ||
-                (trimmed.contains("@") && trimmed.contains(":") && !trimmed.startsWith("https://") && !trimmed.startsWith("http://"))
+            trimmed.startsWith("git+ssh://") ||
+            trimmed.startsWith("git@") ||
+            (trimmed.contains("@") && trimmed.contains(":") && !trimmed.startsWith("https://") && !trimmed.startsWith("http://"))
     }
 }

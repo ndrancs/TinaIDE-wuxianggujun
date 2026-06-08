@@ -8,5 +8,5 @@ package com.wuxianggujun.tinaide.core.config.ai
  */
 enum class AiAccessMode {
     TINA_GATEWAY,
-    CUSTOM_BYOK;
+    CUSTOM_BYOK
 }

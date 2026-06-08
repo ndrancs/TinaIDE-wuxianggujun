@@ -40,7 +40,6 @@ class EditorSelectionContextMenuCoordinatorTest {
         assertThat(hoverOffset).isEqualTo(IntOffset(48, 96))
     }
 
-
     @Test
     fun availableKeyboardActions_shouldSkipDisabledTextActions() = runTest {
         val state = createState("abc")
@@ -99,27 +98,24 @@ class EditorSelectionContextMenuCoordinatorTest {
         coroutineScope: CoroutineScope,
         copyTextToClipboard: (String) -> Unit = {},
         onContextMenuVisibilityChanged: (Boolean) -> Unit = {}
-    ): EditorSelectionContextMenuCoordinator {
-        return EditorSelectionContextMenuCoordinator(
+    ): EditorSelectionContextMenuCoordinator = EditorSelectionContextMenuCoordinator(
+        state = state,
+        interactionController = EditorInteractionController(
             state = state,
-            interactionController = EditorInteractionController(
-                state = state,
-                coroutineScope = coroutineScope,
-                focusRequester = FocusRequester(),
-                keyboardController = null,
-                inputMethodManager = null
-            ),
-            readClipboardText = { null },
-            copyTextToClipboard = copyTextToClipboard,
-            onContextMenuVisibilityChanged = onContextMenuVisibilityChanged,
-            onContextMenuOffsetChanged = {},
-            onHoverOffsetChanged = {}
-        )
-    }
+            coroutineScope = coroutineScope,
+            focusRequester = FocusRequester(),
+            keyboardController = null,
+            inputMethodManager = null
+        ),
+        readClipboardText = { null },
+        copyTextToClipboard = copyTextToClipboard,
+        onContextMenuVisibilityChanged = onContextMenuVisibilityChanged,
+        onContextMenuOffsetChanged = {},
+        onHoverOffsetChanged = {}
+    )
 
     private fun createState(text: String): EditorState {
         val buffer = RopeTextBuffer().apply { insert(0, text) }
         return EditorState(buffer)
     }
-
 }

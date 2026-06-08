@@ -20,8 +20,8 @@ object FuzzyMatcher {
      */
     data class MatchResult(
         val matched: Boolean,
-        val score: Int,           // 分数越高越好
-        val matchedIndices: List<Int> = emptyList(),  // 匹配的字符索引（用于高亮）
+        val score: Int, // 分数越高越好
+        val matchedIndices: List<Int> = emptyList(), // 匹配的字符索引（用于高亮）
     ) {
         companion object {
             val NO_MATCH = MatchResult(matched = false, score = 0)
@@ -32,10 +32,10 @@ object FuzzyMatcher {
      * 匹配模式
      */
     enum class MatchMode {
-        PREFIX,      // 前缀匹配
-        CAMEL_CASE,  // 驼峰匹配
+        PREFIX, // 前缀匹配
+        CAMEL_CASE, // 驼峰匹配
         SUBSEQUENCE, // 子序列匹配
-        CONTAINS,    // 包含匹配
+        CONTAINS, // 包含匹配
     }
 
     // 分数权重
@@ -96,7 +96,7 @@ object FuzzyMatcher {
         if (containsIndex >= 0) {
             return MatchResult(
                 matched = true,
-                score = SCORE_CONTAINS_MATCH - containsIndex,  // 越靠前分数越高
+                score = SCORE_CONTAINS_MATCH - containsIndex, // 越靠前分数越高
                 matchedIndices = (containsIndex until containsIndex + pattern.length).toList()
             )
         }
@@ -141,8 +141,8 @@ object FuzzyMatcher {
 
         return if (patternIdx == patternLower.length) {
             val score = SCORE_CAMEL_CASE_MATCH +
-                    (consecutiveCount * SCORE_CONSECUTIVE_BONUS) +
-                    (if (matchedIndices.firstOrNull() == 0) SCORE_START_BONUS else 0)
+                (consecutiveCount * SCORE_CONSECUTIVE_BONUS) +
+                (if (matchedIndices.firstOrNull() == 0) SCORE_START_BONUS else 0)
             MatchResult(matched = true, score = score, matchedIndices = matchedIndices)
         } else {
             MatchResult.NO_MATCH
@@ -176,9 +176,9 @@ object FuzzyMatcher {
 
         return if (patternIdx == patternLower.length) {
             val score = SCORE_SUBSEQUENCE_MATCH +
-                    (consecutiveCount * SCORE_CONSECUTIVE_BONUS) +
-                    (if (matchedIndices.firstOrNull() == 0) SCORE_START_BONUS else 0) -
-                    (matchedIndices.lastOrNull()?.minus(matchedIndices.firstOrNull() ?: 0) ?: 0)  // 跨度越小分数越高
+                (consecutiveCount * SCORE_CONSECUTIVE_BONUS) +
+                (if (matchedIndices.firstOrNull() == 0) SCORE_START_BONUS else 0) -
+                (matchedIndices.lastOrNull()?.minus(matchedIndices.firstOrNull() ?: 0) ?: 0) // 跨度越小分数越高
             MatchResult(matched = true, score = score, matchedIndices = matchedIndices)
         } else {
             MatchResult.NO_MATCH
@@ -194,7 +194,7 @@ object FuzzyMatcher {
         if (text.isEmpty()) return emptyList()
 
         val boundaries = mutableListOf<Int>()
-        boundaries.add(0)  // 第一个字符总是边界
+        boundaries.add(0) // 第一个字符总是边界
 
         for (i in 1 until text.length) {
             val prev = text[i - 1]

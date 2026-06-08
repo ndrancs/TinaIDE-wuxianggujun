@@ -63,7 +63,5 @@ class BasicLinuxDistroRootfsConfigurator : LinuxDistroRootfsConfigurator {
         return value
     }
 
-    private fun shellSingleQuoted(value: String): String {
-        return "'" + value.replace("'", "'\\''") + "'"
-    }
+    private fun shellSingleQuoted(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 }

@@ -12,8 +12,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.CoroutineScope
 import kotlin.math.max
+import kotlinx.coroutines.CoroutineScope
 
 internal data class EditorSessionCoreRuntime(
     val ui: TinaEditorUiState,

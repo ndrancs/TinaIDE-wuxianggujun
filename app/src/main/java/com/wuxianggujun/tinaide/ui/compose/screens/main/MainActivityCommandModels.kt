@@ -11,9 +11,7 @@ import java.net.URLEncoder
 internal const val PLUGIN_TOOLBAR_COMMAND_PREFIX = "pluginToolbar:"
 private const val PLUGIN_TOOLBAR_COMMAND_ENCODING_VERSION = "v2"
 
-internal fun String.pluginToolbarPluginIdOrNull(): String? {
-    return pluginToolbarCommandKeyOrNull()?.pluginId
-}
+internal fun String.pluginToolbarPluginIdOrNull(): String? = pluginToolbarCommandKeyOrNull()?.pluginId
 
 internal data class PluginToolbarCommandKey(
     val pluginId: String,
@@ -25,17 +23,15 @@ internal fun buildPluginToolbarCommandId(
     pluginId: String,
     group: String,
     commandId: String,
-): String {
-    return listOf(
-        PLUGIN_TOOLBAR_COMMAND_ENCODING_VERSION,
-        pluginId.encodePluginToolbarCommandPart(),
-        group.encodePluginToolbarCommandPart(),
-        commandId.encodePluginToolbarCommandPart()
-    ).joinToString(
-        separator = ":",
-        prefix = PLUGIN_TOOLBAR_COMMAND_PREFIX
-    )
-}
+): String = listOf(
+    PLUGIN_TOOLBAR_COMMAND_ENCODING_VERSION,
+    pluginId.encodePluginToolbarCommandPart(),
+    group.encodePluginToolbarCommandPart(),
+    commandId.encodePluginToolbarCommandPart()
+).joinToString(
+    separator = ":",
+    prefix = PLUGIN_TOOLBAR_COMMAND_PREFIX
+)
 
 internal fun String.pluginToolbarCommandKeyOrNull(): PluginToolbarCommandKey? {
     if (!startsWith(PLUGIN_TOOLBAR_COMMAND_PREFIX)) return null
@@ -71,15 +67,11 @@ private fun String.legacyPluginToolbarCommandKeyOrNull(): PluginToolbarCommandKe
     )
 }
 
-private fun String.encodePluginToolbarCommandPart(): String {
-    return URLEncoder.encode(this, Charsets.UTF_8.name())
-}
+private fun String.encodePluginToolbarCommandPart(): String = URLEncoder.encode(this, Charsets.UTF_8.name())
 
-private fun String.decodePluginToolbarCommandPartOrNull(): String? {
-    return runCatching {
-        URLDecoder.decode(this, Charsets.UTF_8.name())
-    }.getOrNull()
-}
+private fun String.decodePluginToolbarCommandPartOrNull(): String? = runCatching {
+    URLDecoder.decode(this, Charsets.UTF_8.name())
+}.getOrNull()
 
 internal sealed interface MainActivityCommandText {
     fun resolve(context: Context): String
@@ -109,14 +101,12 @@ internal enum class MainActivityCommandCategory(
     PLUGIN(Strings.menu_section_plugin, 90)
 }
 
-internal fun HostCommandCategory.toMainActivityCommandCategory(): MainActivityCommandCategory {
-    return when (this) {
-        HostCommandCategory.FILE -> MainActivityCommandCategory.FILE
-        HostCommandCategory.CODE -> MainActivityCommandCategory.CODE
-        HostCommandCategory.BUILD -> MainActivityCommandCategory.BUILD
-        HostCommandCategory.VIEW -> MainActivityCommandCategory.VIEW
-        HostCommandCategory.TERMINAL -> MainActivityCommandCategory.TERMINAL
-    }
+internal fun HostCommandCategory.toMainActivityCommandCategory(): MainActivityCommandCategory = when (this) {
+    HostCommandCategory.FILE -> MainActivityCommandCategory.FILE
+    HostCommandCategory.CODE -> MainActivityCommandCategory.CODE
+    HostCommandCategory.BUILD -> MainActivityCommandCategory.BUILD
+    HostCommandCategory.VIEW -> MainActivityCommandCategory.VIEW
+    HostCommandCategory.TERMINAL -> MainActivityCommandCategory.TERMINAL
 }
 
 internal enum class MainActivityCommandSource {
@@ -178,9 +168,7 @@ internal fun orderMainActivityCommands(
         .toList()
 }
 
-private fun MainActivityCommand.isVisibleInCommandPalette(): Boolean {
-    return enabled || disabledReason != null
-}
+private fun MainActivityCommand.isVisibleInCommandPalette(): Boolean = enabled || disabledReason != null
 
 internal fun groupMainActivityCommands(
     commands: List<MainActivityCommand>,
@@ -218,12 +206,10 @@ internal fun groupMainActivityCommands(
 private fun MainActivityCommand.groupTitleRes(
     pinnedCommandIdSet: Set<String>,
     recentCommandIdSet: Set<String>,
-): Int {
-    return when (id) {
-        in pinnedCommandIdSet -> Strings.command_palette_pinned
-        in recentCommandIdSet -> Strings.command_palette_quick_actions
-        else -> category.titleRes
-    }
+): Int = when (id) {
+    in pinnedCommandIdSet -> Strings.command_palette_pinned
+    in recentCommandIdSet -> Strings.command_palette_quick_actions
+    else -> category.titleRes
 }
 
 private data class MainActivityCommandGroupBuilder(
@@ -231,6 +217,4 @@ private data class MainActivityCommandGroupBuilder(
     val commands: MutableList<MainActivityCommand>
 )
 
-private fun List<String>.rankByCommandId(): Map<String, Int> {
-    return distinct().mapIndexed { index, commandId -> commandId to index }.toMap()
-}
+private fun List<String>.rankByCommandId(): Map<String, Int> = distinct().mapIndexed { index, commandId -> commandId to index }.toMap()

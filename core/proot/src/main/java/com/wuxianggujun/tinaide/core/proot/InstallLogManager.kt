@@ -1,18 +1,18 @@
 package com.wuxianggujun.tinaide.core.proot
 
 import android.content.Context
-import timber.log.Timber
 import com.wuxianggujun.tinaide.core.proot.InstallLogEntry
 import com.wuxianggujun.tinaide.core.proot.InstallLogLevel
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import timber.log.Timber
 
 /**
  * 安装日志管理器
@@ -30,12 +30,12 @@ class InstallLogManager(context: Context) {
         private const val INSTALL_LOG_PREFIX = "install_"
         private const val INSTALL_LOG_SUFFIX = ".log"
         private const val MAX_LOG_LINES = 1000
-        private const val MAX_LOG_FILES = 10  // 最多保留的安装日志文件数量
+        private const val MAX_LOG_FILES = 10 // 最多保留的安装日志文件数量
     }
-    
+
     private val _logs = MutableStateFlow<List<InstallLogEntry>>(emptyList())
     val logs: StateFlow<List<InstallLogEntry>> = _logs.asStateFlow()
-    
+
     private var logFile: File? = null
     private var logDir: File? = null
 
@@ -57,7 +57,7 @@ class InstallLogManager(context: Context) {
         // 加载已有日志（如果存在）
         loadExistingLogs()
     }
-    
+
     /**
      * 清理旧的安装日志文件
      */
@@ -66,7 +66,7 @@ class InstallLogManager(context: Context) {
             val logFiles = logsDir.listFiles { file ->
                 file.name.startsWith(INSTALL_LOG_PREFIX) && file.name.endsWith(INSTALL_LOG_SUFFIX)
             }?.sortedByDescending { it.lastModified() } ?: return
-            
+
             if (logFiles.size >= MAX_LOG_FILES) {
                 // 保留最新的 MAX_LOG_FILES - 1 个，为新文件留出空间
                 logFiles.drop(MAX_LOG_FILES - 1).forEach { file ->
@@ -79,7 +79,7 @@ class InstallLogManager(context: Context) {
             Timber.tag(TAG).e(e, "Failed to clean old install logs")
         }
     }
-    
+
     /**
      * 加载已有日志
      */
@@ -98,7 +98,7 @@ class InstallLogManager(context: Context) {
             }
         }
     }
-    
+
     /**
      * 解析日志行
      */
@@ -106,7 +106,7 @@ class InstallLogManager(context: Context) {
         // 格式: [时间戳] [级别] 消息
         val regex = Regex("^\\[(\\d+)\\] \\[(\\w+)\\] (.+)$")
         val match = regex.find(line) ?: return null
-        
+
         return try {
             val level = when (match.groupValues[2]) {
                 "INFO" -> InstallLogLevel.INFO
@@ -127,7 +127,7 @@ class InstallLogManager(context: Context) {
             null
         }
     }
-    
+
     /**
      * 清空日志
      */
@@ -135,42 +135,42 @@ class InstallLogManager(context: Context) {
         _logs.value = emptyList()
         logFile?.delete()
     }
-    
+
     /**
      * 记录信息日志
      */
     fun info(message: String) {
         log(InstallLogLevel.INFO, message)
     }
-    
+
     /**
      * 记录成功日志
      */
     fun success(message: String) {
         log(InstallLogLevel.SUCCESS, message)
     }
-    
+
     /**
      * 记录警告日志
      */
     fun warning(message: String) {
         log(InstallLogLevel.WARN, message)
     }
-    
+
     /**
      * 记录错误日志
      */
     fun error(message: String) {
         log(InstallLogLevel.ERROR, message)
     }
-    
+
     /**
      * 记录命令日志
      */
     fun command(message: String) {
         log(InstallLogLevel.COMMAND, "> $message")
     }
-    
+
     /**
      * 记录日志
      */
@@ -180,7 +180,7 @@ class InstallLogManager(context: Context) {
             message = message,
             tag = "Install"
         )
-        
+
         // 更新内存中的日志
         val currentLogs = _logs.value.toMutableList()
         currentLogs.add(entry)
@@ -188,11 +188,11 @@ class InstallLogManager(context: Context) {
             currentLogs.removeAt(0)
         }
         _logs.value = currentLogs
-        
+
         // 写入文件
         appendToFile(entry)
     }
-    
+
     /**
      * 追加日志到文件
      */
@@ -216,12 +216,10 @@ class InstallLogManager(context: Context) {
         }
     }
 
-    private fun escapeLogMessage(message: String): String {
-        return message
-            .replace("\\", "\\\\")
-            .replace("\r", "\\r")
-            .replace("\n", "\\n")
-    }
+    private fun escapeLogMessage(message: String): String = message
+        .replace("\\", "\\\\")
+        .replace("\r", "\\r")
+        .replace("\n", "\\n")
 
     private fun unescapeLogMessage(message: String): String {
         if (!message.contains('\\')) return message
@@ -258,23 +256,19 @@ class InstallLogManager(context: Context) {
         }
         return out.toString()
     }
-    
+
     /**
      * 获取日志文件路径
      */
-    fun getLogFilePath(): String? {
-        return logFile?.absolutePath
-    }
-    
+    fun getLogFilePath(): String? = logFile?.absolutePath
+
     /**
      * 获取完整日志文本
      */
-    fun getFullLogText(): String {
-        return _logs.value.joinToString("\n") { entry ->
-            "[${entry.formattedTime}] ${entry.message}"
-        }
+    fun getFullLogText(): String = _logs.value.joinToString("\n") { entry ->
+        "[${entry.formattedTime}] ${entry.message}"
     }
-    
+
     /**
      * 导出日志到指定文件
      */
@@ -284,21 +278,21 @@ class InstallLogManager(context: Context) {
             val exportDir = com.wuxianggujun.tinaide.storage.ProjectPaths.ensureDir(
                 com.wuxianggujun.tinaide.storage.ProjectPaths.getInstallLogsRoot(context)
             )
-            
+
             val exportFile = File(exportDir, fileName)
             val content = buildString {
                 appendLine("=== TinaIDE Install Log ===")
                 appendLine("Export time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())}")
                 appendLine()
-                
+
                 _logs.value.forEach { entry ->
                     appendLine("[${entry.formattedFullTime}] [${entry.level.displayName}] ${entry.message}")
                 }
-                
+
                 appendLine()
                 appendLine("--- End of Log ---")
             }
-            
+
             exportFile.writeText(content)
             exportFile
         } catch (e: Exception) {

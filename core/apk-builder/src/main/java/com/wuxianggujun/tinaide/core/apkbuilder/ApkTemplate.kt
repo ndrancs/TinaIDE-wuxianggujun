@@ -1,8 +1,8 @@
 package com.wuxianggujun.tinaide.core.apkbuilder
 
 import android.content.Context
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * Manages template APK extraction from assets and caching.

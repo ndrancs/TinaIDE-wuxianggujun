@@ -170,10 +170,8 @@ class DefaultCompletionProvider(
         return collapseDisplayDuplicates(merged).take(resultLimit)
     }
 
-    private fun completionComparator(prefix: String): Comparator<CompletionItem> {
-        return compareByDescending<CompletionItem> { it.label.startsWith(prefix, ignoreCase = true) }
-            .thenBy { it.label }
-    }
+    private fun completionComparator(prefix: String): Comparator<CompletionItem> = compareByDescending<CompletionItem> { it.label.startsWith(prefix, ignoreCase = true) }
+        .thenBy { it.label }
 
     private fun collapseDisplayDuplicates(items: List<CompletionItem>): List<CompletionItem> {
         if (items.size < 2) return items

@@ -81,10 +81,8 @@ class EditorMouseHoverCoordinatorTest {
         assertThat(dismissCount).isEqualTo(1)
     }
 
-    private fun hoverTarget(line: Int, column: Int): EditorMouseHoverTarget {
-        return EditorMouseHoverTarget(
-            position = Position(line, column),
-            anchorInViewportPx = IntOffset(column * 10, line * 10)
-        )
-    }
+    private fun hoverTarget(line: Int, column: Int): EditorMouseHoverTarget = EditorMouseHoverTarget(
+        position = Position(line, column),
+        anchorInViewportPx = IntOffset(column * 10, line * 10)
+    )
 }

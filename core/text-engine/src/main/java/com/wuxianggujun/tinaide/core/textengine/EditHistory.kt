@@ -145,4 +145,3 @@ class DefaultEditHistory(
         lastRecordTimeMs = Long.MIN_VALUE
     }
 }
-

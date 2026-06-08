@@ -30,11 +30,7 @@ object LinuxDistroManifestParser {
         encodeDefaults = true
     }
 
-    fun decode(text: String): LinuxDistroManifest {
-        return json.decodeFromString(LinuxDistroManifest.serializer(), text)
-    }
+    fun decode(text: String): LinuxDistroManifest = json.decodeFromString(LinuxDistroManifest.serializer(), text)
 
-    fun decode(inputStream: InputStream): LinuxDistroManifest {
-        return inputStream.bufferedReader(Charsets.UTF_8).use { reader -> decode(reader.readText()) }
-    }
+    fun decode(inputStream: InputStream): LinuxDistroManifest = inputStream.bufferedReader(Charsets.UTF_8).use { reader -> decode(reader.readText()) }
 }

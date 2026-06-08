@@ -10,14 +10,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import org.koin.androidx.compose.koinViewModel
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.data.model.FeedbackCategory
-import com.wuxianggujun.tinaide.ui.compose.viewmodel.FeedbackViewModel
-import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
+import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaSpacing
 import com.wuxianggujun.tinaide.ui.compose.components.TinaTextField
-import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
+import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
+import com.wuxianggujun.tinaide.ui.compose.viewmodel.FeedbackViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -70,7 +70,7 @@ fun FeedbackScreen(
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(bottom = TinaSpacing.md)
             )
-            
+
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(TinaSpacing.md),
                 verticalArrangement = Arrangement.spacedBy(TinaSpacing.md),
@@ -89,11 +89,13 @@ fun FeedbackScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
-                        } else null
+                        } else {
+                            null
+                        }
                     )
                 }
             }
-            
+
             // 标题输入
             TinaTextField(
                 value = uiState.title,
@@ -165,7 +167,7 @@ fun FeedbackScreen(
                 },
                 isError = uiState.contentError != null
             )
-            
+
             Spacer(modifier = Modifier.height(TinaSpacing.xxxl))
 
             // 提交按钮
@@ -179,7 +181,7 @@ fun FeedbackScreen(
                 enabled = uiState.canSubmit,
                 modifier = Modifier.fillMaxWidth()
             )
-            
+
             // 提示信息
             if (!uiState.isSubmitting && !uiState.submitSuccess) {
                 Text(

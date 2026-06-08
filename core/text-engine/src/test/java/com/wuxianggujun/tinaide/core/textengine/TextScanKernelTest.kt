@@ -371,8 +371,7 @@ class TextScanKernelTest {
             )
     }
 
-    private fun decodeWhitespaceMarkers(markers: IntArray): List<Pair<Int, Boolean>> =
-        markers.map { marker ->
-            TextScanKernel.whitespaceMarkerColumn(marker) to TextScanKernel.whitespaceMarkerIsTab(marker)
-        }
+    private fun decodeWhitespaceMarkers(markers: IntArray): List<Pair<Int, Boolean>> = markers.map { marker ->
+        TextScanKernel.whitespaceMarkerColumn(marker) to TextScanKernel.whitespaceMarkerIsTab(marker)
+    }
 }

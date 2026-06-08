@@ -4,10 +4,10 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 
 class LineNumberRenderer(
     private val horizontalPaddingPx: Float,
@@ -17,8 +17,7 @@ class LineNumberRenderer(
         private const val CACHED_NUMBER_LIMIT = 1024
         private val numberStrings = Array(CACHED_NUMBER_LIMIT) { it.toString() }
 
-        fun intToString(n: Int): String =
-            if (n in 0 until CACHED_NUMBER_LIMIT) numberStrings[n] else n.toString()
+        fun intToString(n: Int): String = if (n in 0 until CACHED_NUMBER_LIMIT) numberStrings[n] else n.toString()
     }
 
     private var cachedDigitWidthTextSize = 0f

@@ -77,7 +77,7 @@ class GuestDevelopmentPackagesInstaller(
             val packageManager = linuxEnvironment.resolveGuestPackageManager()
             val plan = buildDevelopmentPackagesPlan(packageManager)
                 ?: return@withContext GuestDevPackagesInstallResult.Error(
-                Strings.dev_packages_error_unsupported_package_manager.strOr(
+                    Strings.dev_packages_error_unsupported_package_manager.strOr(
                         context,
                         packageManager.displayName()
                     )
@@ -142,12 +142,10 @@ class GuestDevelopmentPackagesInstaller(
     private suspend fun findMissingDevelopmentCommandGroups(
         linuxEnvironment: LinuxEnvironment,
         plan: DevelopmentPackagesPlan,
-    ): List<List<String>> {
-        return GuestSystemPackageManager.findMissingCommandGroups(
-            linuxEnvironment = linuxEnvironment,
-            commandGroups = plan.commandGroups,
-        )
-    }
+    ): List<List<String>> = GuestSystemPackageManager.findMissingCommandGroups(
+        linuxEnvironment = linuxEnvironment,
+        commandGroups = plan.commandGroups,
+    )
 }
 
 internal data class DevelopmentPackagesPlan(
@@ -157,35 +155,31 @@ internal data class DevelopmentPackagesPlan(
 
 internal fun buildDevelopmentPackagesPlan(
     packageManager: RootfsPackageManager,
-): DevelopmentPackagesPlan? {
-    return when (packageManager) {
-        RootfsPackageManager.APK -> DevelopmentPackagesPlan(
-            packages = listOf("build-base", "git", "curl", "pkgconf", "cmake"),
-            commandGroups = buildDevelopmentCommandGroups(),
-        )
-        RootfsPackageManager.APT -> DevelopmentPackagesPlan(
-            packages = listOf("build-essential", "git", "curl", "pkg-config", "cmake"),
-            commandGroups = buildDevelopmentCommandGroups(),
-        )
-        RootfsPackageManager.PACMAN -> DevelopmentPackagesPlan(
-            packages = listOf("base-devel", "git", "curl", "pkgconf", "cmake"),
-            commandGroups = buildDevelopmentCommandGroups(),
-        )
-        RootfsPackageManager.DNF -> DevelopmentPackagesPlan(
-            packages = listOf("gcc", "gcc-c++", "make", "git", "curl", "pkgconf-pkg-config", "cmake"),
-            commandGroups = buildDevelopmentCommandGroups(),
-        )
-        RootfsPackageManager.UNKNOWN -> null
-    }
+): DevelopmentPackagesPlan? = when (packageManager) {
+    RootfsPackageManager.APK -> DevelopmentPackagesPlan(
+        packages = listOf("build-base", "git", "curl", "pkgconf", "cmake"),
+        commandGroups = buildDevelopmentCommandGroups(),
+    )
+    RootfsPackageManager.APT -> DevelopmentPackagesPlan(
+        packages = listOf("build-essential", "git", "curl", "pkg-config", "cmake"),
+        commandGroups = buildDevelopmentCommandGroups(),
+    )
+    RootfsPackageManager.PACMAN -> DevelopmentPackagesPlan(
+        packages = listOf("base-devel", "git", "curl", "pkgconf", "cmake"),
+        commandGroups = buildDevelopmentCommandGroups(),
+    )
+    RootfsPackageManager.DNF -> DevelopmentPackagesPlan(
+        packages = listOf("gcc", "gcc-c++", "make", "git", "curl", "pkgconf-pkg-config", "cmake"),
+        commandGroups = buildDevelopmentCommandGroups(),
+    )
+    RootfsPackageManager.UNKNOWN -> null
 }
 
-private fun buildDevelopmentCommandGroups(): List<List<String>> {
-    return listOf(
-        listOf("cc", "gcc", "clang"),
-        listOf("make"),
-        listOf("git"),
-        listOf("curl"),
-        listOf("cmake"),
-        listOf("pkg-config", "pkgconf"),
-    )
-}
+private fun buildDevelopmentCommandGroups(): List<List<String>> = listOf(
+    listOf("cc", "gcc", "clang"),
+    listOf("make"),
+    listOf("git"),
+    listOf("curl"),
+    listOf("cmake"),
+    listOf("pkg-config", "pkgconf"),
+)

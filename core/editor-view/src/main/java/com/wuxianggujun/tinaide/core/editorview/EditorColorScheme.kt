@@ -52,7 +52,7 @@ data class EditorColorScheme(
             Color(0xFF179FFF), // cornflower blue
             Color(0xFF00C9A7), // medium spring green
             Color(0xFFFF6B6B), // light coral
-            Color(0xFFC0A0FF)  // light purple
+            Color(0xFFC0A0FF) // light purple
         )
 
         fun builtinGray(): EditorColorScheme {
@@ -450,26 +450,24 @@ data class EditorSyntaxColors(
     val comment: Color,
     val operator: Color,
     val punctuation: Color,
-    val constant: Color = type,           // 命名常量：cmake VERSION/SHARED，Kotlin SCREAMING_CASE
-    val builtin: Color = type,            // 内置标识符：内置函数/类型/变量
+    val constant: Color = type, // 命名常量：cmake VERSION/SHARED，Kotlin SCREAMING_CASE
+    val builtin: Color = type, // 内置标识符：内置函数/类型/变量
     val deprecated: Color = Color(0xFFA0A0A0)
 ) {
-    fun colorOf(highlightType: HighlightType): Color {
-        return when (highlightType) {
-            HighlightType.KEYWORD -> keyword
-            HighlightType.FUNCTION -> function
-            HighlightType.VARIABLE -> variable
-            HighlightType.PROPERTY -> property
-            HighlightType.TYPE -> type
-            HighlightType.STRING -> string
-            HighlightType.NUMBER -> number
-            HighlightType.COMMENT -> comment
-            HighlightType.OPERATOR -> operator
-            HighlightType.PUNCTUATION -> punctuation
-            HighlightType.CONSTANT -> constant
-            HighlightType.BUILTIN -> builtin
-            HighlightType.DEFAULT -> defaultText
-        }
+    fun colorOf(highlightType: HighlightType): Color = when (highlightType) {
+        HighlightType.KEYWORD -> keyword
+        HighlightType.FUNCTION -> function
+        HighlightType.VARIABLE -> variable
+        HighlightType.PROPERTY -> property
+        HighlightType.TYPE -> type
+        HighlightType.STRING -> string
+        HighlightType.NUMBER -> number
+        HighlightType.COMMENT -> comment
+        HighlightType.OPERATOR -> operator
+        HighlightType.PUNCTUATION -> punctuation
+        HighlightType.CONSTANT -> constant
+        HighlightType.BUILTIN -> builtin
+        HighlightType.DEFAULT -> defaultText
     }
 
     fun colorOfSemantic(

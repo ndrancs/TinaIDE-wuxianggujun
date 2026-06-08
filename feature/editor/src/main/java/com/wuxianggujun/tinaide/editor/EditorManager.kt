@@ -5,6 +5,8 @@ import com.wuxianggujun.tinaide.core.ServiceLifecycle
 import com.wuxianggujun.tinaide.core.config.ConfigChangeListener
 import com.wuxianggujun.tinaide.core.config.ConfigKeys
 import com.wuxianggujun.tinaide.core.config.IConfigManager
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.editor.session.AutoSaveScheduler
 import com.wuxianggujun.tinaide.editor.session.DocumentSession
 import com.wuxianggujun.tinaide.editor.session.DocumentSessionState
@@ -16,7 +18,6 @@ import com.wuxianggujun.tinaide.editor.session.SaveReason
 import com.wuxianggujun.tinaide.editor.session.SaveResult
 import com.wuxianggujun.tinaide.editor.symbol.ProjectSymbolIndexService
 import com.wuxianggujun.tinaide.file.IProjectContext
-import timber.log.Timber
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
@@ -35,15 +36,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
+import timber.log.Timber
 
 class EditorManager(
     private val context: Context,
     private val configManager: IConfigManager,
     private val projectContextProvider: () -> IProjectContext? = { null },
     private val projectSymbolIndexServiceProvider: () -> ProjectSymbolIndexService? = { null },
-) : IEditorManager, ServiceLifecycle {
+) : IEditorManager,
+    ServiceLifecycle {
 
     companion object {
         private const val TAG = "EditorManager"
@@ -242,8 +243,7 @@ class EditorManager(
 
     override fun getSession(tabId: String): DocumentSession? = synchronized(stateLock) { sessions[tabId] }
 
-    override fun getSessionState(tabId: String): StateFlow<DocumentSessionState>? =
-        synchronized(stateLock) { sessions[tabId]?.state }
+    override fun getSessionState(tabId: String): StateFlow<DocumentSessionState>? = synchronized(stateLock) { sessions[tabId]?.state }
 
     override suspend fun save(tabId: String, reason: SaveReason): SaveResult {
         val session = synchronized(stateLock) { sessions[tabId] }
@@ -391,15 +391,15 @@ class EditorManager(
                 .map { state -> state.isDirty to state.lastError }
                 .distinctUntilChanged()
                 .collect { (isDirty, lastError) ->
-                if (isDirty) {
-                    autoSaveScheduler.schedule(session)
-                } else {
-                    autoSaveScheduler.cancel(session)
+                    if (isDirty) {
+                        autoSaveScheduler.schedule(session)
+                    } else {
+                        autoSaveScheduler.cancel(session)
+                    }
+                    if (lastError != null) {
+                        Timber.tag(TAG).w("Session %s error: %s", session.tabId, lastError)
+                    }
                 }
-                if (lastError != null) {
-                    Timber.tag(TAG).w("Session %s error: %s", session.tabId, lastError)
-                }
-            }
         }
         val previous = synchronized(stateLock) {
             sessionStateJobs.put(session.tabId, job)
@@ -430,17 +430,12 @@ class EditorManager(
 
     // ========== 外部文件修改相关方法 ==========
 
-    override suspend fun forceOverwrite(tabId: String, reason: SaveReason): SaveResult {
-        return synchronized(stateLock) { sessions[tabId] }?.forceOverwrite(reason)
-            ?: SaveResult.Failure(Strings.editor_error_not_initialized.strOr(context))
-    }
+    override suspend fun forceOverwrite(tabId: String, reason: SaveReason): SaveResult = synchronized(stateLock) { sessions[tabId] }?.forceOverwrite(reason)
+        ?: SaveResult.Failure(Strings.editor_error_not_initialized.strOr(context))
 
-    override fun reloadFromDisk(tabId: String): Boolean {
-        return synchronized(stateLock) { sessions[tabId] }?.reloadFromDisk() ?: false
-    }
+    override fun reloadFromDisk(tabId: String): Boolean = synchronized(stateLock) { sessions[tabId] }?.reloadFromDisk() ?: false
 
     override fun acknowledgeExternalModification(tabId: String) {
         synchronized(stateLock) { sessions[tabId] }?.acknowledgeExternalModification()
     }
 }
-

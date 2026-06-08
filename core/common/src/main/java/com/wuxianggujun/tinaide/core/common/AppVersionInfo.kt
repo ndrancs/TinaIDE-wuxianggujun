@@ -38,28 +38,26 @@ object AppVersionInfoReader {
         )
     }
 
-    private fun readBaseVersionCode(context: Context): Long? {
-        return runCatching {
-            val applicationInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.packageManager.getApplicationInfo(
-                    context.packageName,
-                    PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                context.packageManager.getApplicationInfo(
-                    context.packageName,
-                    PackageManager.GET_META_DATA,
-                )
-            }
-            when (val value = applicationInfo.metaData?.get(METADATA_BASE_VERSION_CODE)) {
-                is Int -> value.toLong()
-                is Long -> value
-                is String -> value.toLongOrNull()
-                else -> null
-            }?.takeIf { it > 0L }
-        }.getOrNull()
-    }
+    private fun readBaseVersionCode(context: Context): Long? = runCatching {
+        val applicationInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.packageManager.getApplicationInfo(
+                context.packageName,
+                PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            context.packageManager.getApplicationInfo(
+                context.packageName,
+                PackageManager.GET_META_DATA,
+            )
+        }
+        when (val value = applicationInfo.metaData?.get(METADATA_BASE_VERSION_CODE)) {
+            is Int -> value.toLong()
+            is Long -> value
+            is String -> value.toLongOrNull()
+            else -> null
+        }?.takeIf { it > 0L }
+    }.getOrNull()
 
     private fun inferBaseVersionCode(packageVersionCode: Long): Long {
         val abiSuffix = packageVersionCode % ABI_VERSION_CODE_MULTIPLIER

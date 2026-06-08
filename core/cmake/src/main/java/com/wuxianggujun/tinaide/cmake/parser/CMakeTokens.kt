@@ -26,13 +26,9 @@ data class Token(
     val length: Int get() = text.length
 
     companion object {
-        fun unquoted(text: String, start: Int = 0): Token {
-            return Token(text, false, start, start + text.length)
-        }
+        fun unquoted(text: String, start: Int = 0): Token = Token(text, false, start, start + text.length)
 
-        fun quoted(text: String, start: Int = 0): Token {
-            return Token(text, true, start, start + text.length)
-        }
+        fun quoted(text: String, start: Int = 0): Token = Token(text, true, start, start + text.length)
     }
 }
 
@@ -102,9 +98,7 @@ data class CMakeDocument(
     /**
      * 获取所有命令调用
      */
-    fun commands(): List<CommandInvocation> {
-        return elements.filterIsInstance<FileElement.Command>().map { it.invocation }
-    }
+    fun commands(): List<CommandInvocation> = elements.filterIsInstance<FileElement.Command>().map { it.invocation }
 
     /**
      * 按命令名称过滤

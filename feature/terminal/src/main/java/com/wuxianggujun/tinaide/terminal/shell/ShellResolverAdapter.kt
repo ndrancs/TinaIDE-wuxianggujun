@@ -39,7 +39,5 @@ class ShellResolverAdapter(
         )
     }
 
-    override fun isPRootInstalled(): Boolean {
-        return resolver.isPRootInstalled()
-    }
+    override fun isPRootInstalled(): Boolean = resolver.isPRootInstalled()
 }

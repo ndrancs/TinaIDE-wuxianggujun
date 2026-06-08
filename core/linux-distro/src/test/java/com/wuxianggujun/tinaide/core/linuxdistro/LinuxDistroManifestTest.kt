@@ -85,28 +85,26 @@ class LinuxDistroManifestTest {
             .isNotNull()
     }
 
-    private fun distro(id: String): DistroDefinition {
-        return DistroDefinition(
-            id = id,
-            family = DistroFamily.ALPINE,
-            displayName = "Alpine",
-            packageManager = DistroPackageManager.APK,
-            defaultReleaseId = "3.20",
-            releases = listOf(
-                DistroRelease(
-                    id = "3.20",
-                    version = "3.20",
-                    displayName = "Alpine 3.20",
-                    artifacts = listOf(
-                        DistroArtifact(
-                            architecture = DistroArchitecture.AARCH64,
-                            url = "https://example.test/rootfs.tar.gz",
-                            format = DistroArchiveFormat.TAR_GZ,
-                            checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "abc123")
-                        )
+    private fun distro(id: String): DistroDefinition = DistroDefinition(
+        id = id,
+        family = DistroFamily.ALPINE,
+        displayName = "Alpine",
+        packageManager = DistroPackageManager.APK,
+        defaultReleaseId = "3.20",
+        releases = listOf(
+            DistroRelease(
+                id = "3.20",
+                version = "3.20",
+                displayName = "Alpine 3.20",
+                artifacts = listOf(
+                    DistroArtifact(
+                        architecture = DistroArchitecture.AARCH64,
+                        url = "https://example.test/rootfs.tar.gz",
+                        format = DistroArchiveFormat.TAR_GZ,
+                        checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "abc123")
                     )
                 )
             )
         )
-    }
+    )
 }

@@ -1,6 +1,15 @@
 package com.wuxianggujun.tinaide.core.lsp
 
 import android.os.Process
+import java.io.File
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.Function
+import kotlin.math.max
 import org.eclipse.lsp4j.CallHierarchyIncomingCall
 import org.eclipse.lsp4j.CallHierarchyIncomingCallsParams
 import org.eclipse.lsp4j.CallHierarchyItem
@@ -12,15 +21,17 @@ import org.eclipse.lsp4j.Command
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionList
 import org.eclipse.lsp4j.CompletionParams
-import org.eclipse.lsp4j.CompletionTriggerKind
 import org.eclipse.lsp4j.DefinitionParams
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
+import org.eclipse.lsp4j.DidChangeWatchedFilesCapabilities
+import org.eclipse.lsp4j.DidChangeWatchedFilesParams
 import org.eclipse.lsp4j.DidCloseTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
 import org.eclipse.lsp4j.DocumentSymbol
 import org.eclipse.lsp4j.DocumentSymbolParams
 import org.eclipse.lsp4j.ExecuteCommandParams
+import org.eclipse.lsp4j.FileEvent
 import org.eclipse.lsp4j.FoldingRange
 import org.eclipse.lsp4j.FoldingRangeRequestParams
 import org.eclipse.lsp4j.Hover
@@ -37,11 +48,13 @@ import org.eclipse.lsp4j.PrepareRenameParams
 import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.ReferenceParams
+import org.eclipse.lsp4j.Registration
+import org.eclipse.lsp4j.RegistrationParams
 import org.eclipse.lsp4j.RenameParams
-import org.eclipse.lsp4j.ShowMessageRequestParams
 import org.eclipse.lsp4j.SemanticTokens
 import org.eclipse.lsp4j.SemanticTokensParams
 import org.eclipse.lsp4j.SemanticTokensRangeParams
+import org.eclipse.lsp4j.ShowMessageRequestParams
 import org.eclipse.lsp4j.SignatureHelp
 import org.eclipse.lsp4j.SignatureHelpParams
 import org.eclipse.lsp4j.SymbolInformation
@@ -49,20 +62,13 @@ import org.eclipse.lsp4j.TextDocumentContentChangeEvent
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import org.eclipse.lsp4j.TextDocumentItem
 import org.eclipse.lsp4j.TypeDefinitionParams
+import org.eclipse.lsp4j.Unregistration
+import org.eclipse.lsp4j.UnregistrationParams
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier
 import org.eclipse.lsp4j.WorkspaceEdit
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.WorkspaceSymbol
 import org.eclipse.lsp4j.WorkspaceSymbolParams
-import org.eclipse.lsp4j.DidChangeWatchedFilesCapabilities
-import org.eclipse.lsp4j.DidChangeWatchedFilesParams
-import org.eclipse.lsp4j.DidChangeWatchedFilesRegistrationOptions
-import org.eclipse.lsp4j.FileChangeType
-import org.eclipse.lsp4j.FileEvent
-import org.eclipse.lsp4j.Registration
-import org.eclipse.lsp4j.RegistrationParams
-import org.eclipse.lsp4j.Unregistration
-import org.eclipse.lsp4j.UnregistrationParams
 import org.eclipse.lsp4j.jsonrpc.Endpoint
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.jsonrpc.messages.Either
@@ -70,15 +76,6 @@ import org.eclipse.lsp4j.launch.LSPLauncher
 import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageServer
 import timber.log.Timber
-import java.io.File
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.function.Function
-import kotlin.math.max
 
 /**
  * 基于 lsp4j Launcher 的原生 LSP 会话实现。
@@ -96,7 +93,8 @@ class LspClientSession(
     private val registrationConsumer: (registrations: List<Registration>) -> Unit = {},
     private val unregistrationConsumer: (unregistrations: List<Unregistration>) -> Unit = {},
     private val tag: String = "LspClientSession",
-) : LspSession, AutoCloseable {
+) : LspSession,
+    AutoCloseable {
 
     companion object {
         private const val INITIALIZE_TIMEOUT_SECONDS = 15L
@@ -118,6 +116,7 @@ class LspClientSession(
     private var version: Int = 0
     private var semanticTokenTypes: List<String> = emptyList()
     private var semanticTokenModifiers: List<String> = emptyList()
+
     @Volatile
     private var staticServerSupportsCallHierarchy: Boolean = false
     private val capabilityLock = Any()
@@ -127,9 +126,10 @@ class LspClientSession(
         get() = synchronized(lock) { currentDocumentUri }
 
     override val supportsCallHierarchy: Boolean
-        get() = staticServerSupportsCallHierarchy || synchronized(capabilityLock) {
-            dynamicCallHierarchyRegistrationIds.isNotEmpty()
-        }
+        get() = staticServerSupportsCallHierarchy ||
+            synchronized(capabilityLock) {
+                dynamicCallHierarchyRegistrationIds.isNotEmpty()
+            }
 
     @Volatile
     var isConnected: Boolean = false
@@ -347,16 +347,12 @@ class LspClientSession(
         return server.textDocumentService.semanticTokensRange(params)
     }
 
-    fun semanticTokenLegendTypes(): List<String> {
-        return synchronized(lock) {
-            semanticTokenTypes
-        }
+    fun semanticTokenLegendTypes(): List<String> = synchronized(lock) {
+        semanticTokenTypes
     }
 
-    fun semanticTokenLegendModifiers(): List<String> {
-        return synchronized(lock) {
-            semanticTokenModifiers
-        }
+    fun semanticTokenLegendModifiers(): List<String> = synchronized(lock) {
+        semanticTokenModifiers
     }
 
     override fun hover(params: HoverParams): CompletableFuture<Hover>? {
@@ -394,7 +390,6 @@ class LspClientSession(
         if (!isConnected) return null
         return server.textDocumentService.implementation(params)
     }
-
 
     override fun prepareCallHierarchy(params: CallHierarchyPrepareParams): CompletableFuture<List<CallHierarchyItem>>? {
         val server = synchronized(lock) { languageServer } ?: return null
@@ -740,9 +735,7 @@ class LspClientSession(
 
         override fun showMessage(messageParams: MessageParams) = Unit
 
-        override fun showMessageRequest(requestParams: ShowMessageRequestParams): CompletableFuture<MessageActionItem> {
-            return CompletableFuture.completedFuture(MessageActionItem("OK"))
-        }
+        override fun showMessageRequest(requestParams: ShowMessageRequestParams): CompletableFuture<MessageActionItem> = CompletableFuture.completedFuture(MessageActionItem("OK"))
 
         override fun logMessage(message: MessageParams) = Unit
 

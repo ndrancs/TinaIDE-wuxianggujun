@@ -12,15 +12,14 @@ import com.wuxianggujun.tinaide.core.textengine.Position
 import com.wuxianggujun.tinaide.core.textengine.TextBuffer
 import com.wuxianggujun.tinaide.core.textengine.TextChange
 import com.wuxianggujun.tinaide.core.textengine.TextScanKernel
-import java.util.LinkedHashMap
-import kotlin.math.abs
+import com.wuxianggujun.tinaide.core.treesitter.SyntaxHighlighter
+import com.wuxianggujun.tinaide.core.treesitter.TreeSitterFoldingProvider.FoldRegion
 import java.io.File
+import java.util.LinkedHashMap
+import kotlin.math.floor
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlin.math.floor
-import com.wuxianggujun.tinaide.core.treesitter.SyntaxHighlighter
-import com.wuxianggujun.tinaide.core.treesitter.TreeSitterFoldingProvider.FoldRegion
 import timber.log.Timber
 
 sealed interface EditorCompletionFetchResult {
@@ -70,7 +69,8 @@ class EditorState(
     val file: File? = null,
     val projectRootPath: String? = null,
     config: EditorConfig = EditorConfig()
-) : EditorStateSnapshot, EditorEditOperations {
+) : EditorStateSnapshot,
+    EditorEditOperations {
     private companion object {
         private const val SLOW_OPERATION_THRESHOLD_MS = 16L
         private const val SLOW_OPERATION_LOG_INTERVAL_MS = 800L
@@ -131,6 +131,7 @@ class EditorState(
     var scrollOffsetXPx by mutableStateOf(0f)
     var viewportHeightPx by mutableStateOf(1f)
     var viewportWidthPx by mutableStateOf(1f)
+
     // 文本区起始位置（canvas 坐标）。用于处理“行号栏是否跟随横向滚动”的坐标收敛。
     var contentStartXPx by mutableStateOf(0f)
     var lineHeightPx by mutableStateOf(1f)
@@ -408,7 +409,8 @@ class EditorState(
         if (semanticTokens.isEmpty() && semanticTokensByLine.isEmpty()) return
         semanticTokens = emptyList()
         semanticTokensByLine = emptyMap()
-        semanticTokensVersion++; bumpStylingVersion()
+        semanticTokensVersion++
+        bumpStylingVersion()
     }
 
     fun replaceSemanticTokens(tokens: List<SemanticToken>) {
@@ -416,7 +418,8 @@ class EditorState(
         if (semanticTokens == tokens && semanticTokensByLine == groupedByLine) return
         semanticTokens = tokens
         semanticTokensByLine = groupedByLine
-        semanticTokensVersion++; bumpStylingVersion()
+        semanticTokensVersion++
+        bumpStylingVersion()
     }
 
     fun mergeSemanticTokens(tokens: List<SemanticToken>) {
@@ -437,7 +440,8 @@ class EditorState(
 
         semanticTokensByLine = mergedByLine
         semanticTokens = mergedByLine.values.flatten()
-        semanticTokensVersion++; bumpStylingVersion()
+        semanticTokensVersion++
+        bumpStylingVersion()
     }
 
     internal fun applyTextChangeToSemanticTokens(change: TextChange) {
@@ -482,7 +486,8 @@ class EditorState(
 
         semanticTokensByLine = updatedByLine
         semanticTokens = updatedByLine.values.flatten()
-        semanticTokensVersion++; bumpStylingVersion()
+        semanticTokensVersion++
+        bumpStylingVersion()
     }
 
     // ========== 代码折叠（按行隐藏） ==========
@@ -737,9 +742,7 @@ class EditorState(
         return layout.endColumnForSegment(segmentIndex).coerceIn(0, lineText.length)
     }
 
-    internal fun isVisualLineContinuation(visualLine: Int): Boolean {
-        return visualLineStartColumn(visualLine) > 0
-    }
+    internal fun isVisualLineContinuation(visualLine: Int): Boolean = visualLineStartColumn(visualLine) > 0
 
     internal fun isDocLineHidden(docLine: Int): Boolean {
         val map = lineMap()
@@ -975,7 +978,11 @@ class EditorState(
         if (cursorOffset <= 0) return
         val step = if (cursorOffset >= 2 &&
             textBuffer.charAt(cursorOffset - 1)?.let(Character::isLowSurrogate) == true
-        ) 2 else 1
+        ) {
+            2
+        } else {
+            1
+        }
         moveCursorToWithOptionalSelection(
             offset = skipFoldBackwardIfHidden(cursorOffset - step),
             extendSelection = extendSelection
@@ -993,7 +1000,11 @@ class EditorState(
         if (cursorOffset >= textBuffer.length) return
         val step = if (cursorOffset < textBuffer.length - 1 &&
             textBuffer.charAt(cursorOffset)?.let(Character::isHighSurrogate) == true
-        ) 2 else 1
+        ) {
+            2
+        } else {
+            1
+        }
         moveCursorToWithOptionalSelection(
             offset = skipFoldForwardIfHidden(cursorOffset + step),
             extendSelection = extendSelection
@@ -1163,22 +1174,18 @@ class EditorState(
         }
     }
 
-    override fun replaceSelection(replacement: String): Boolean {
-        return editorReplaceSelection(this, replacement)
-    }
+    override fun replaceSelection(replacement: String): Boolean = editorReplaceSelection(this, replacement)
 
     override fun replaceRange(
         startOffset: Int,
         endOffset: Int,
         replacement: String
-    ): Boolean {
-        return editorReplaceRange(
-            state = this,
-            startOffset = startOffset,
-            endOffset = endOffset,
-            replacement = replacement
-        )
-    }
+    ): Boolean = editorReplaceRange(
+        state = this,
+        startOffset = startOffset,
+        endOffset = endOffset,
+        replacement = replacement
+    )
 
     fun clearSelection() {
         val oldSelection = selectionRange
@@ -1256,13 +1263,9 @@ class EditorState(
     fun canUndo(): Boolean = textBuffer.canUndo()
     fun canRedo(): Boolean = textBuffer.canRedo()
 
-    override fun undo(): Boolean {
-        return editorUndo(this)
-    }
+    override fun undo(): Boolean = editorUndo(this)
 
-    override fun redo(): Boolean {
-        return editorRedo(this)
-    }
+    override fun redo(): Boolean = editorRedo(this)
 
     suspend fun requestCompletion(triggerChar: Char? = null) {
         val provider = onRequestCompletion ?: return
@@ -1548,12 +1551,10 @@ class EditorState(
         return selectedIndex?.coerceIn(0, normalizedResult.signatures.lastIndex)
     }
 
-    private fun currentSignatureHelpResult(): SignatureHelpResult? {
-        return when (val ui = signatureHelpUiState) {
-            is SignatureHelpUiState.Visible -> ui.result
-            is SignatureHelpUiState.Loading -> ui.previousResult
-            SignatureHelpUiState.Hidden -> null
-        }
+    private fun currentSignatureHelpResult(): SignatureHelpResult? = when (val ui = signatureHelpUiState) {
+        is SignatureHelpUiState.Visible -> ui.result
+        is SignatureHelpUiState.Loading -> ui.previousResult
+        SignatureHelpUiState.Hidden -> null
     }
 
     internal fun startSnippetSession(session: SnippetSession) {
@@ -1669,19 +1670,15 @@ class EditorState(
         replaceText: String,
         caseSensitive: Boolean = false,
         useRegex: Boolean = false
-    ): Int {
-        return editorReplaceAll(
-            state = this,
-            findText = findText,
-            replaceText = replaceText,
-            caseSensitive = caseSensitive,
-            useRegex = useRegex
-        )
-    }
+    ): Int = editorReplaceAll(
+        state = this,
+        findText = findText,
+        replaceText = replaceText,
+        caseSensitive = caseSensitive,
+        useRegex = useRegex
+    )
 
-    fun toggleLineComment(commentToken: String): Boolean {
-        return editorToggleLineComment(this, commentToken)
-    }
+    fun toggleLineComment(commentToken: String): Boolean = editorToggleLineComment(this, commentToken)
 
     private var cachedMaxScrollPxVersion = -1L
     private var cachedMaxScrollPxLineHeight = 0f
@@ -2043,7 +2040,7 @@ class EditorState(
                 bottom - (viewportHeightPx - paddingY)
             }
 
-        else -> scrollOffsetPx
+            else -> scrollOffsetPx
         }.coerceIn(0f, maxScrollPx())
 
         // 开启 wordWrap 时不再进行横向滚动对齐（横向滚动被禁用）。
@@ -2129,8 +2126,11 @@ class EditorState(
 
         Timber.tag("EditorState").d(
             "setFoldRegions: input=%d, normalized=%d, decorations=%d, docVersion=%d, bufVersion=%d",
-            regions.size, normalized.size, foldRegionByStartLine.size,
-            documentVersion, textBuffer.version
+            regions.size,
+            normalized.size,
+            foldRegionByStartLine.size,
+            documentVersion,
+            textBuffer.version
         )
     }
 
@@ -2168,17 +2168,11 @@ class EditorState(
         clampScroll()
     }
 
-    internal fun isFoldCollapsedAtLine(line: Int): Boolean {
-        return line in collapsedFoldStartLines
-    }
+    internal fun isFoldCollapsedAtLine(line: Int): Boolean = line in collapsedFoldStartLines
 
-    internal fun isFoldingDataValid(): Boolean {
-        return config.codeFolding && foldRegionsDocumentVersion == textBuffer.version
-    }
+    internal fun isFoldingDataValid(): Boolean = config.codeFolding && foldRegionsDocumentVersion == textBuffer.version
 
-    internal fun isCollapsedFoldStart(line: Int): Boolean {
-        return isFoldingDataValid() && line in collapsedFoldStartLines
-    }
+    internal fun isCollapsedFoldStart(line: Int): Boolean = isFoldingDataValid() && line in collapsedFoldStartLines
 
     internal fun collapsedFoldEndLine(startLine: Int): Int {
         if (!isCollapsedFoldStart(startLine)) return -1
@@ -2304,13 +2298,9 @@ class EditorState(
         }
     }
 
-    private fun resolveVisualLineForDocLine(docLine: Int): Int {
-        return visualLineForDocLine(docLine)
-    }
+    private fun resolveVisualLineForDocLine(docLine: Int): Int = visualLineForDocLine(docLine)
 
-    internal fun visualLineCount(): Int {
-        return visualLineMap().visualLineCount.coerceAtLeast(0)
-    }
+    internal fun visualLineCount(): Int = visualLineMap().visualLineCount.coerceAtLeast(0)
 
     private fun resolveVisibleIndexForDocLine(docLine: Int): Int {
         val map = lineMap()
@@ -2364,8 +2354,13 @@ class EditorState(
         val docLineCount = textBuffer.lineCount.coerceAtLeast(0)
 
         val epoch = visualLineMapEpoch(
-            currentVersion, foldDataVersion, foldingEnabled,
-            wordWrapEnabled, wrapColumns, tabSize, docLineCount
+            currentVersion,
+            foldDataVersion,
+            foldingEnabled,
+            wordWrapEnabled,
+            wrapColumns,
+            tabSize,
+            docLineCount
         )
         val cached = visualLineMapCache
         if (cached != null && epoch == visualLineMapCacheEpoch) {
@@ -2615,14 +2610,9 @@ class EditorState(
         )
     }
 
-    private fun lineVisualColumnsForWidth(lineText: String): Int {
-        return TextScanKernel.measureVisualColumns(lineText, config.tabSize)
-    }
+    private fun lineVisualColumnsForWidth(lineText: String): Int = TextScanKernel.measureVisualColumns(lineText, config.tabSize)
 
-    internal fun isWordChar(c: Char): Boolean {
-        return TextScanKernel.isWordChar(c)
-    }
-
+    internal fun isWordChar(c: Char): Boolean = TextScanKernel.isWordChar(c)
 
     internal fun completionQueryFromCursor(): String {
         val offset = cursorOffset.coerceIn(0, textBuffer.length)
@@ -2656,9 +2646,10 @@ class EditorState(
             when {
                 primaryCandidates.any { candidate ->
                     candidate.matchesCompletionQuery(query, caseSensitive)
-                } || aliasCandidates.any { candidate ->
-                    candidate.matchesCompletionQuery(query, caseSensitive)
-                } -> {
+                } ||
+                    aliasCandidates.any { candidate ->
+                        candidate.matchesCompletionQuery(query, caseSensitive)
+                    } -> {
                     exactMatch.add(item)
                 }
 
@@ -2676,18 +2667,21 @@ class EditorState(
 
                 primaryCandidates.any { candidate ->
                     candidate.containsCompletionQuery(query, caseSensitive)
-                } || aliasCandidates.any { candidate ->
-                    candidate.containsCompletionQuery(query, caseSensitive)
-                } -> {
+                } ||
+                    aliasCandidates.any { candidate ->
+                        candidate.containsCompletionQuery(query, caseSensitive)
+                    } -> {
                     contains.add(item)
                 }
             }
         }
         val relevanceComparator = completionComparator(query = query, caseSensitive = caseSensitive)
-        return (exactMatch.sortedWith(relevanceComparator) +
-            exactPrefix.sortedWith(relevanceComparator) +
-            fuzzyPrefix.sortedWith(kindComparator) +
-            contains.sortedWith(relevanceComparator))
+        return (
+            exactMatch.sortedWith(relevanceComparator) +
+                exactPrefix.sortedWith(relevanceComparator) +
+                fuzzyPrefix.sortedWith(kindComparator) +
+                contains.sortedWith(relevanceComparator)
+            )
             .distinctBy { it.completionDedupKey() }
             .take(160)
     }
@@ -2695,15 +2689,13 @@ class EditorState(
     private fun completionComparator(
         query: String,
         caseSensitive: Boolean
-    ): Comparator<EditorCompletionItem> {
-        return compareByDescending<EditorCompletionItem> { it.label.matchesCompletionQuery(query, caseSensitive) }
-            .thenByDescending { it.insertText.matchesCompletionQuery(query, caseSensitive) }
-            .thenBy { completionPrefixPenalty(it, query, caseSensitive) }
-            .thenBy { kindSortPriority(it.kind) }
-            .thenBy { shortestCompletionLength(it, caseSensitive) }
-            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.label }
-            .thenBy { it.label }
-    }
+    ): Comparator<EditorCompletionItem> = compareByDescending<EditorCompletionItem> { it.label.matchesCompletionQuery(query, caseSensitive) }
+        .thenByDescending { it.insertText.matchesCompletionQuery(query, caseSensitive) }
+        .thenBy { completionPrefixPenalty(it, query, caseSensitive) }
+        .thenBy { kindSortPriority(it.kind) }
+        .thenBy { shortestCompletionLength(it, caseSensitive) }
+        .thenBy(String.CASE_INSENSITIVE_ORDER) { it.label }
+        .thenBy { it.label }
 
     private val kindComparator = compareBy<EditorCompletionItem> { kindSortPriority(it.kind) }
 
@@ -2725,10 +2717,8 @@ class EditorState(
     private fun shortestCompletionLength(
         item: EditorCompletionItem,
         caseSensitive: Boolean
-    ): Int {
-        return (item.primaryCompletionCandidates() + item.aliasCompletionCandidates(caseSensitive)).asSequence()
-            .minOfOrNull { it.length } ?: Int.MAX_VALUE
-    }
+    ): Int = (item.primaryCompletionCandidates() + item.aliasCompletionCandidates(caseSensitive)).asSequence()
+        .minOfOrNull { it.length } ?: Int.MAX_VALUE
 
     private fun String?.matchesCompletionQuery(query: String, caseSensitive: Boolean): Boolean {
         val value = this ?: return false
@@ -2757,27 +2747,23 @@ class EditorState(
         }
     }
 
-    private fun kindSortPriority(kind: EditorCompletionKind): Int {
-        return when (kind) {
-            EditorCompletionKind.VARIABLE, EditorCompletionKind.FIELD,
-            EditorCompletionKind.PROPERTY, EditorCompletionKind.CONSTANT -> 0
-            EditorCompletionKind.FUNCTION, EditorCompletionKind.METHOD,
-            EditorCompletionKind.CONSTRUCTOR -> 1
-            EditorCompletionKind.CLASS, EditorCompletionKind.INTERFACE,
-            EditorCompletionKind.STRUCT, EditorCompletionKind.ENUM -> 2
-            EditorCompletionKind.MODULE -> 3
-            EditorCompletionKind.SNIPPET -> 4
-            EditorCompletionKind.KEYWORD -> 5
-            else -> 6
-        }
+    private fun kindSortPriority(kind: EditorCompletionKind): Int = when (kind) {
+        EditorCompletionKind.VARIABLE, EditorCompletionKind.FIELD,
+        EditorCompletionKind.PROPERTY, EditorCompletionKind.CONSTANT -> 0
+        EditorCompletionKind.FUNCTION, EditorCompletionKind.METHOD,
+        EditorCompletionKind.CONSTRUCTOR -> 1
+        EditorCompletionKind.CLASS, EditorCompletionKind.INTERFACE,
+        EditorCompletionKind.STRUCT, EditorCompletionKind.ENUM -> 2
+        EditorCompletionKind.MODULE -> 3
+        EditorCompletionKind.SNIPPET -> 4
+        EditorCompletionKind.KEYWORD -> 5
+        else -> 6
     }
 
-    private fun EditorCompletionItem.primaryCompletionCandidates(): List<String> {
-        return buildList(2) {
-            add(label)
-            if (insertText != label) {
-                add(insertText)
-            }
+    private fun EditorCompletionItem.primaryCompletionCandidates(): List<String> = buildList(2) {
+        add(label)
+        if (insertText != label) {
+            add(insertText)
         }
     }
 
@@ -2838,9 +2824,7 @@ class EditorState(
         return result
     }
 
-    internal fun <T> traceSlowOperation(operation: String, block: () -> T): T {
-        return traceIfSlow(operation, block)
-    }
+    internal fun <T> traceSlowOperation(operation: String, block: () -> T): T = traceIfSlow(operation, block)
 
     internal fun emitTextChanged(reason: String) {
         textVersion = textBuffer.version

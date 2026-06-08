@@ -4,19 +4,19 @@ import android.content.Context
 import com.wuxianggujun.tinaide.core.proot.InteractiveProcess
 import com.wuxianggujun.tinaide.core.proot.PRootManager
 import com.wuxianggujun.tinaide.core.proot.ToolchainPathResolver
+import java.io.Closeable
+import java.io.InputStream
+import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.io.Closeable
-import java.io.InputStream
-import java.nio.charset.StandardCharsets
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 /**
@@ -67,47 +67,45 @@ class PRootDebugger(
         arguments: List<String> = emptyList(),
         workingDirectory: String,
         environment: Map<String, String> = emptyMap(),
-    ): Result<Unit> {
-        return try {
-            commandMutex.withLock {
-                check(process == null) { "Debugger already started" }
+    ): Result<Unit> = try {
+        commandMutex.withLock {
+            check(process == null) { "Debugger already started" }
 
-                startupPromptSeen = CompletableDeferred()
+            startupPromptSeen = CompletableDeferred()
 
-                val command = buildList {
-                    add(pathResolver.getLldb())
-                    add("--no-use-colors")
-                    add("--no-lldbinit")
-                    add(programPath)
-                    if (arguments.isNotEmpty()) {
-                        add("--")
-                        addAll(arguments)
-                    }
-                }
-
-                process = prootManager.startInteractive(
-                    command = command,
-                    workDir = workingDirectory,
-                    extraEnv = environment.filterKeys { key -> envNamePattern.matches(key) },
-                )
-
-                startPumpsIfNeeded(process!!)
-
-                withTimeout(15_000) {
-                    startupPromptSeen?.await()
+            val command = buildList {
+                add(pathResolver.getLldb())
+                add("--no-use-colors")
+                add("--no-lldbinit")
+                add(programPath)
+                if (arguments.isNotEmpty()) {
+                    add("--")
+                    addAll(arguments)
                 }
             }
 
-            // 注意：不能在持有 Mutex 时再次调用 sendCommand（Mutex 非可重入）
-            sendCommand("settings set auto-confirm true").getOrThrow()
-            sendCommand("settings set stop-line-count-before 0").getOrThrow()
-            sendCommand("settings set stop-line-count-after 0").getOrThrow()
+            process = prootManager.startInteractive(
+                command = command,
+                workDir = workingDirectory,
+                extraEnv = environment.filterKeys { key -> envNamePattern.matches(key) },
+            )
 
-            Result.success(Unit)
-        } catch (t: Throwable) {
-            safeDestroy()
-            Result.failure(t)
+            startPumpsIfNeeded(process!!)
+
+            withTimeout(15_000) {
+                startupPromptSeen?.await()
+            }
         }
+
+        // 注意：不能在持有 Mutex 时再次调用 sendCommand（Mutex 非可重入）
+        sendCommand("settings set auto-confirm true").getOrThrow()
+        sendCommand("settings set stop-line-count-before 0").getOrThrow()
+        sendCommand("settings set stop-line-count-after 0").getOrThrow()
+
+        Result.success(Unit)
+    } catch (t: Throwable) {
+        safeDestroy()
+        Result.failure(t)
     }
 
     suspend fun sendCommand(
@@ -195,12 +193,12 @@ class PRootDebugger(
                 }
 
                 // 命令响应 prompt
-                    pendingResponse?.let { resp ->
-                        if (!resp.isCompleted) {
-                            // response 内容来自 captureBuffer（更完整，含 stderr）
-                            val responseText = captureBuffer?.toString().orEmpty()
-                            resp.complete(responseText)
-                        }
+                pendingResponse?.let { resp ->
+                    if (!resp.isCompleted) {
+                        // response 内容来自 captureBuffer（更完整，含 stderr）
+                        val responseText = captureBuffer?.toString().orEmpty()
+                        resp.complete(responseText)
+                    }
                     pendingResponse = null
                     captureBuffer = null
                 }

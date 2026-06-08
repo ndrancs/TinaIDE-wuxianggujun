@@ -26,15 +26,13 @@ object LinuxDistroRootfsProfileMapper {
         )
     }
 
-    fun DistroPackageManager.toRootfsPackageManager(): RootfsPackageManager {
-        return when (this) {
-            DistroPackageManager.APK -> RootfsPackageManager.APK
-            DistroPackageManager.APT -> RootfsPackageManager.APT
-            DistroPackageManager.PACMAN -> RootfsPackageManager.PACMAN
-            DistroPackageManager.DNF -> RootfsPackageManager.DNF
-            DistroPackageManager.ZYPPER,
-            DistroPackageManager.XBPS,
-            DistroPackageManager.UNKNOWN -> RootfsPackageManager.UNKNOWN
-        }
+    fun DistroPackageManager.toRootfsPackageManager(): RootfsPackageManager = when (this) {
+        DistroPackageManager.APK -> RootfsPackageManager.APK
+        DistroPackageManager.APT -> RootfsPackageManager.APT
+        DistroPackageManager.PACMAN -> RootfsPackageManager.PACMAN
+        DistroPackageManager.DNF -> RootfsPackageManager.DNF
+        DistroPackageManager.ZYPPER,
+        DistroPackageManager.XBPS,
+        DistroPackageManager.UNKNOWN -> RootfsPackageManager.UNKNOWN
     }
 }

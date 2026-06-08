@@ -2,6 +2,7 @@ package com.wuxianggujun.tinaide.core.lsp
 
 import com.wuxianggujun.tinaide.core.util.NativeExecutableRunner
 import com.wuxianggujun.tinaide.project.NativeBuildFlagTokenizer
+import java.io.File
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -12,7 +13,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import java.io.File
 
 /**
  * 为 clangd 准备可消费的 compile_commands。
@@ -127,9 +127,7 @@ object CompileCommandsNormalizer {
         args.add(insertionIndex, "-resource-dir")
     }
 
-    private fun findResourceDirIndex(args: List<String>): Int {
-        return args.indexOfFirst { it == "-resource-dir" || it.startsWith("-resource-dir=") }
-    }
+    private fun findResourceDirIndex(args: List<String>): Int = args.indexOfFirst { it == "-resource-dir" || it.startsWith("-resource-dir=") }
 
     private fun findResourceDirInsertionIndex(args: List<String>, filePath: String): Int {
         val separatorIndex = args.indexOf("--")
@@ -185,7 +183,5 @@ object CompileCommandsNormalizer {
         return normalized == "/system/bin/sh" || normalized.endsWith("/bin/sh")
     }
 
-    private fun isCompilerLauncher(path: String): Boolean {
-        return NativeExecutableRunner.isCompilerLauncher(path)
-    }
+    private fun isCompilerLauncher(path: String): Boolean = NativeExecutableRunner.isCompilerLauncher(path)
 }

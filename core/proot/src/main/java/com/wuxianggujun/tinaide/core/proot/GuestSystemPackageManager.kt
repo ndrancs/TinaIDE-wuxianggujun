@@ -31,59 +31,53 @@ internal data class GuestPackageManagerSpec(
 )
 
 internal object GuestPackageManagerSpecs {
-    fun resolve(packageManager: RootfsPackageManager): GuestPackageManagerSpec? {
-        return specs[packageManager]
-    }
+    fun resolve(packageManager: RootfsPackageManager): GuestPackageManagerSpec? = specs[packageManager]
 
-    fun require(packageManager: RootfsPackageManager): GuestPackageManagerSpec {
-        return resolve(packageManager) ?: error("Unsupported package manager: $packageManager")
-    }
+    fun require(packageManager: RootfsPackageManager): GuestPackageManagerSpec = resolve(packageManager) ?: error("Unsupported package manager: $packageManager")
 
     private val aptEnvironment = mapOf("DEBIAN_FRONTEND" to "noninteractive")
 
     private fun defaultBootstrapGroups(
         xzPackage: String,
         caCertificatesPackage: String = "ca-certificates",
-    ): List<GuestPackageCommandGroup> {
-        return listOf(
-            GuestPackageCommandGroup(
-                id = "bash",
-                commands = listOf("bash"),
-                packageCandidates = listOf("bash"),
-            ),
-            GuestPackageCommandGroup(
-                id = "curl",
-                commands = listOf("curl"),
-                packageCandidates = listOf("curl"),
-            ),
-            GuestPackageCommandGroup(
-                id = "tar",
-                commands = listOf("tar"),
-                packageCandidates = listOf("tar"),
-            ),
-            GuestPackageCommandGroup(
-                id = "xz",
-                commands = listOf("xz"),
-                packageCandidates = listOf(xzPackage),
-            ),
-            GuestPackageCommandGroup(
-                id = "file",
-                commands = listOf("file"),
-                packageCandidates = listOf("file"),
-            ),
-            GuestPackageCommandGroup(
-                id = "ca-certificates",
-                commands = listOf("update-ca-certificates"),
-                packageCandidates = listOf(caCertificatesPackage),
-            ),
-            GuestPackageCommandGroup(
-                id = "proot",
-                commands = listOf("proot"),
-                packageCandidates = listOf("proot"),
-                required = false,
-            ),
-        )
-    }
+    ): List<GuestPackageCommandGroup> = listOf(
+        GuestPackageCommandGroup(
+            id = "bash",
+            commands = listOf("bash"),
+            packageCandidates = listOf("bash"),
+        ),
+        GuestPackageCommandGroup(
+            id = "curl",
+            commands = listOf("curl"),
+            packageCandidates = listOf("curl"),
+        ),
+        GuestPackageCommandGroup(
+            id = "tar",
+            commands = listOf("tar"),
+            packageCandidates = listOf("tar"),
+        ),
+        GuestPackageCommandGroup(
+            id = "xz",
+            commands = listOf("xz"),
+            packageCandidates = listOf(xzPackage),
+        ),
+        GuestPackageCommandGroup(
+            id = "file",
+            commands = listOf("file"),
+            packageCandidates = listOf("file"),
+        ),
+        GuestPackageCommandGroup(
+            id = "ca-certificates",
+            commands = listOf("update-ca-certificates"),
+            packageCandidates = listOf(caCertificatesPackage),
+        ),
+        GuestPackageCommandGroup(
+            id = "proot",
+            commands = listOf("proot"),
+            packageCandidates = listOf("proot"),
+            required = false,
+        ),
+    )
 
     private val specs = mapOf(
         RootfsPackageManager.APK to GuestPackageManagerSpec(
@@ -220,13 +214,11 @@ object GuestSystemPackageManager {
         linuxEnvironment: LinuxEnvironment,
         commandGroups: List<List<String>>,
         timeoutMs: Long = 10_000L,
-    ): Boolean {
-        return findMissingCommandGroups(
-            linuxEnvironment = linuxEnvironment,
-            commandGroups = commandGroups,
-            timeoutMs = timeoutMs,
-        ).isEmpty()
-    }
+    ): Boolean = findMissingCommandGroups(
+        linuxEnvironment = linuxEnvironment,
+        commandGroups = commandGroups,
+        timeoutMs = timeoutMs,
+    ).isEmpty()
 
     suspend fun findMissingCommandGroups(
         linuxEnvironment: LinuxEnvironment,
@@ -248,13 +240,9 @@ object GuestSystemPackageManager {
         return missingGroups
     }
 
-    fun isPackageManagerSupported(packageManager: RootfsPackageManager): Boolean {
-        return GuestPackageManagerSpecs.resolve(packageManager) != null
-    }
+    fun isPackageManagerSupported(packageManager: RootfsPackageManager): Boolean = GuestPackageManagerSpecs.resolve(packageManager) != null
 
-    internal fun bootstrapCommandGroups(packageManager: RootfsPackageManager): List<GuestPackageCommandGroup> {
-        return GuestPackageManagerSpecs.resolve(packageManager)?.bootstrapCommandGroups.orEmpty()
-    }
+    internal fun bootstrapCommandGroups(packageManager: RootfsPackageManager): List<GuestPackageCommandGroup> = GuestPackageManagerSpecs.resolve(packageManager)?.bootstrapCommandGroups.orEmpty()
 
     internal suspend fun findMissingPackageManagerCommands(
         linuxEnvironment: LinuxEnvironment,
@@ -344,10 +332,12 @@ object GuestSystemPackageManager {
         }
 
         return when (packageManager) {
-            RootfsPackageManager.APK -> result.isSuccess && result.stdout.lineSequence()
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-                .any { line -> line.isApkExactSearchMatch(normalized) }
+            RootfsPackageManager.APK ->
+                result.isSuccess &&
+                    result.stdout.lineSequence()
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .any { line -> line.isApkExactSearchMatch(normalized) }
             else -> result.exitCode == 0
         }
     }
@@ -379,15 +369,13 @@ object GuestSystemPackageManager {
         }
     }
 
-    private fun unsupportedResult(packageManager: RootfsPackageManager): LinuxExecutionResult {
-        return LinuxExecutionResult(
-            exitCode = -1,
-            stdout = "",
-            stderr = "Unsupported package manager: $packageManager",
-            durationMs = 0L,
-            timedOut = false,
-        )
-    }
+    private fun unsupportedResult(packageManager: RootfsPackageManager): LinuxExecutionResult = LinuxExecutionResult(
+        exitCode = -1,
+        stdout = "",
+        stderr = "Unsupported package manager: $packageManager",
+        durationMs = 0L,
+        timedOut = false,
+    )
 
     private suspend fun isCommandAvailable(
         linuxEnvironment: LinuxEnvironment,
@@ -410,7 +398,5 @@ object GuestSystemPackageManager {
         ).exitCode == 0
     }
 
-    private fun shellEscape(value: String): String {
-        return "'" + value.replace("'", "'\\''") + "'"
-    }
+    private fun shellEscape(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 }

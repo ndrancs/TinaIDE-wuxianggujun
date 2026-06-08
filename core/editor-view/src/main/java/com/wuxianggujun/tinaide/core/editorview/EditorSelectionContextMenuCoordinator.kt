@@ -27,28 +27,24 @@ internal class EditorSelectionContextMenuCoordinator(
     private val onContextMenuOffsetChanged: (IntOffset) -> Unit,
     private val onHoverOffsetChanged: (IntOffset) -> Unit
 ) {
-    fun selectedText(): String? {
-        return state.selectedText()
-    }
+    fun selectedText(): String? = state.selectedText()
 
-    fun availableKeyboardActions(): List<EditorContextMenuActionId> {
-        return mutableListOf<EditorContextMenuActionId>().apply {
-            if (selectedText() != null) {
-                add(EditorContextMenuActionId.Copy)
-                add(EditorContextMenuActionId.Cut)
-            }
-            add(EditorContextMenuActionId.Paste)
-            add(EditorContextMenuActionId.SelectAll)
-            if (state.onRequestPeekDefinition != null) add(EditorContextMenuActionId.PeekDefinition)
-            if (state.onRequestGotoDefinition != null) add(EditorContextMenuActionId.GotoDefinition)
-            if (state.onRequestFindReferences != null) add(EditorContextMenuActionId.FindReferences)
-            if (state.onRequestGotoTypeDefinition != null) add(EditorContextMenuActionId.GotoTypeDefinition)
-            if (state.onRequestGotoImplementation != null) add(EditorContextMenuActionId.GotoImplementation)
-            if (state.onRequestCodeActions != null) add(EditorContextMenuActionId.CodeActions)
-            if (state.onRequestRenameSymbol != null) add(EditorContextMenuActionId.RenameSymbol)
-            if (state.onRequestSwitchHeaderSource != null) add(EditorContextMenuActionId.SwitchHeaderSource)
-            if (state.onRequestHover != null) add(EditorContextMenuActionId.Hover)
+    fun availableKeyboardActions(): List<EditorContextMenuActionId> = mutableListOf<EditorContextMenuActionId>().apply {
+        if (selectedText() != null) {
+            add(EditorContextMenuActionId.Copy)
+            add(EditorContextMenuActionId.Cut)
         }
+        add(EditorContextMenuActionId.Paste)
+        add(EditorContextMenuActionId.SelectAll)
+        if (state.onRequestPeekDefinition != null) add(EditorContextMenuActionId.PeekDefinition)
+        if (state.onRequestGotoDefinition != null) add(EditorContextMenuActionId.GotoDefinition)
+        if (state.onRequestFindReferences != null) add(EditorContextMenuActionId.FindReferences)
+        if (state.onRequestGotoTypeDefinition != null) add(EditorContextMenuActionId.GotoTypeDefinition)
+        if (state.onRequestGotoImplementation != null) add(EditorContextMenuActionId.GotoImplementation)
+        if (state.onRequestCodeActions != null) add(EditorContextMenuActionId.CodeActions)
+        if (state.onRequestRenameSymbol != null) add(EditorContextMenuActionId.RenameSymbol)
+        if (state.onRequestSwitchHeaderSource != null) add(EditorContextMenuActionId.SwitchHeaderSource)
+        if (state.onRequestHover != null) add(EditorContextMenuActionId.Hover)
     }
 
     fun performKeyboardAction(

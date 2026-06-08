@@ -73,7 +73,5 @@ object HostCommands {
 
     fun getAllCommandIds(): List<String> = HostCommandCatalog.getAllCommandIds()
 
-    fun getCommandsByCategory(category: String): List<String> {
-        return HostCommandCatalog.getCommandsByCategory(category)
-    }
+    fun getCommandsByCategory(category: String): List<String> = HostCommandCatalog.getCommandsByCategory(category)
 }

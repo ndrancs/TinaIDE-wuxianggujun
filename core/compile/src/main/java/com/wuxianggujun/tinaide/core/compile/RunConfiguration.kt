@@ -1,9 +1,9 @@
 package com.wuxianggujun.tinaide.core.compile
 
-import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
-import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.str
+import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
+import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import com.wuxianggujun.tinaide.project.CppStandard
 import com.wuxianggujun.tinaide.project.ProjectApkExportType
 import com.wuxianggujun.tinaide.project.ProjectMetadataStore
@@ -26,13 +26,13 @@ enum class SourceFileMode {
      * - 单文件项目：优先查找 main.cpp/main.c，否则使用第一个源文件
      */
     AUTO,
-    
+
     /**
      * 使用当前编辑的文件
      * 编译并运行当前在编辑器中打开的文件
      */
     CURRENT_FILE,
-    
+
     /**
      * 使用指定的源文件
      * 编译并运行用户指定的源文件路径
@@ -54,20 +54,20 @@ enum class SourceFileMode {
  */
 @Serializable
 data class RunConfiguration(
-    val id: String = UUID.randomUUID().toString(),  // 唯一标识
-    val name: String = "Debug",                      // 配置名称
-    val args: String = "",                           // 命令行参数（支持变量）
-    val workDir: String = "",                        // 工作目录（相对路径，支持变量）
+    val id: String = UUID.randomUUID().toString(), // 唯一标识
+    val name: String = "Debug", // 配置名称
+    val args: String = "", // 命令行参数（支持变量）
+    val workDir: String = "", // 工作目录（相对路径，支持变量）
     val buildType: BuildType = BuildType.DEBUG,
     val outputMode: OutputMode = OutputMode.TERMINAL,
-    val targetName: String = "",                     // CMake 构建目标（留空表示默认目标）
-    
+    val targetName: String = "", // CMake 构建目标（留空表示默认目标）
+
     // 单文件编译相关配置
-    val sourceFileMode: SourceFileMode = SourceFileMode.AUTO,  // 源文件选择模式
-    val sourceFilePath: String = "",                 // 指定的源文件路径（相对于项目根目录，支持变量）
-    
+    val sourceFileMode: SourceFileMode = SourceFileMode.AUTO, // 源文件选择模式
+    val sourceFilePath: String = "", // 指定的源文件路径（相对于项目根目录，支持变量）
+
     // 编译器配置
-    val compilerType: CompilerType = CompilerType.CLANG,  // 编译器类型（默认 Clang）
+    val compilerType: CompilerType = CompilerType.CLANG, // 编译器类型（默认 Clang）
 
     /**
      * 工具链 ID（仅当 compilerType == CLANG 时使用）
@@ -120,14 +120,12 @@ data class RunConfiguration(
      */
     val enableFloatingLog: Boolean = false
 ) {
-    fun normalized(): RunConfiguration {
-        return copy(
-            toolchainId = toolchainId?.trim()?.takeIf { it.isNotEmpty() },
-            customCCompiler = normalizeCompilerPath(customCCompiler),
-            customCppCompiler = normalizeCompilerPath(customCppCompiler),
-            singleFileCppStandard = normalizeSingleFileCppStandard(singleFileCppStandard)
-        )
-    }
+    fun normalized(): RunConfiguration = copy(
+        toolchainId = toolchainId?.trim()?.takeIf { it.isNotEmpty() },
+        customCCompiler = normalizeCompilerPath(customCCompiler),
+        customCppCompiler = normalizeCompilerPath(customCppCompiler),
+        singleFileCppStandard = normalizeSingleFileCppStandard(singleFileCppStandard)
+    )
 
     /**
      * 获取参数列表
@@ -136,7 +134,7 @@ data class RunConfiguration(
         if (args.isBlank()) return emptyList()
         return args.split(Regex("\\s+")).filter { it.isNotBlank() }
     }
-    
+
     /**
      * 获取参数列表（带变量替换）
      */
@@ -149,14 +147,12 @@ data class RunConfiguration(
     /**
      * 获取绝对工作目录
      */
-    fun getAbsoluteWorkDir(projectPath: String): String {
-        return if (workDir.isBlank()) {
-            projectPath
-        } else {
-            File(projectPath, workDir).absolutePath
-        }
+    fun getAbsoluteWorkDir(projectPath: String): String = if (workDir.isBlank()) {
+        projectPath
+    } else {
+        File(projectPath, workDir).absolutePath
     }
-    
+
     /**
      * 获取绝对工作目录（带变量替换）
      */
@@ -171,7 +167,7 @@ data class RunConfiguration(
             File(projectPath, expandedWorkDir).absolutePath
         }
     }
-    
+
     /**
      * 获取要编译的源文件
      *
@@ -179,78 +175,68 @@ data class RunConfiguration(
      * @param currentFile 当前编辑的文件（可选）
      * @return 源文件，如果无法确定则返回 null
      */
-    fun getSourceFile(projectRoot: File, currentFile: File? = null): File? {
-        return when (sourceFileMode) {
-            SourceFileMode.AUTO -> null  // 返回 null 表示使用默认行为
-            
-            SourceFileMode.CURRENT_FILE -> {
-                currentFile?.takeIf { isSourceFile(it) }
-            }
-            
-            SourceFileMode.SPECIFIED_FILE -> {
-                if (sourceFilePath.isBlank()) {
-                    null
+    fun getSourceFile(projectRoot: File, currentFile: File? = null): File? = when (sourceFileMode) {
+        SourceFileMode.AUTO -> null // 返回 null 表示使用默认行为
+
+        SourceFileMode.CURRENT_FILE -> {
+            currentFile?.takeIf { isSourceFile(it) }
+        }
+
+        SourceFileMode.SPECIFIED_FILE -> {
+            if (sourceFilePath.isBlank()) {
+                null
+            } else {
+                // 支持变量替换
+                val context = BuildVariables.BuildContext(
+                    projectDir = projectRoot,
+                    projectName = projectRoot.name,
+                    currentFile = currentFile
+                )
+                val expandedPath = BuildVariables.expand(sourceFilePath, context)
+                val file = if (File(expandedPath).isAbsolute) {
+                    File(expandedPath)
                 } else {
-                    // 支持变量替换
-                    val context = BuildVariables.BuildContext(
-                        projectDir = projectRoot,
-                        projectName = projectRoot.name,
-                        currentFile = currentFile
-                    )
-                    val expandedPath = BuildVariables.expand(sourceFilePath, context)
-                    val file = if (File(expandedPath).isAbsolute) {
-                        File(expandedPath)
-                    } else {
-                        File(projectRoot, expandedPath)
-                    }
-                    file.takeIf { it.exists() && isSourceFile(it) }
+                    File(projectRoot, expandedPath)
                 }
+                file.takeIf { it.exists() && isSourceFile(it) }
             }
         }
     }
-    
+
     /**
      * 检查是否为单文件编译模式
      */
-    fun isSingleFileMode(): Boolean {
-        return sourceFileMode != SourceFileMode.AUTO
-    }
+    fun isSingleFileMode(): Boolean = sourceFileMode != SourceFileMode.AUTO
 
     /**
      * 获取显示名称（用于配置选择器）
      */
     fun displayName(): String = name
-    
+
     /**
      * 获取源文件模式的显示名称
      */
-    fun sourceFileModeDisplayName(): String {
-        return when (sourceFileMode) {
-            SourceFileMode.AUTO -> Strings.run_config_auto_detect.str()
-            SourceFileMode.CURRENT_FILE -> Strings.run_config_current_file.str()
-            SourceFileMode.SPECIFIED_FILE -> Strings.run_config_specified_file.str()
-        }
+    fun sourceFileModeDisplayName(): String = when (sourceFileMode) {
+        SourceFileMode.AUTO -> Strings.run_config_auto_detect.str()
+        SourceFileMode.CURRENT_FILE -> Strings.run_config_current_file.str()
+        SourceFileMode.SPECIFIED_FILE -> Strings.run_config_specified_file.str()
     }
 
     /**
      * 获取输出模式显示名称
      */
-    fun outputModeDisplayName(): String {
-        return when (outputMode) {
-            OutputMode.TERMINAL -> Strings.run_config_output_terminal.str()
-            OutputMode.SDL -> Strings.run_config_output_sdl.str()
-        }
+    fun outputModeDisplayName(): String = when (outputMode) {
+        OutputMode.TERMINAL -> Strings.run_config_output_terminal.str()
+        OutputMode.SDL -> Strings.run_config_output_sdl.str()
     }
-    
+
     companion object {
         private val SOURCE_EXTENSIONS: Set<String> = CxxFileSupport.singleFileBuildSourceExtensions
-        
+
         /**
          * 检查文件是否为 C/C++ 源文件
          */
-        fun isSourceFile(file: File): Boolean {
-            return file.isFile && file.extension.lowercase() in SOURCE_EXTENSIONS
-        }
+        fun isSourceFile(file: File): Boolean = file.isFile && file.extension.lowercase() in SOURCE_EXTENSIONS
 
         /**
          * 解析单文件 C++ 标准配置（支持 `CPP_20` / `20` / `c++20`）。
@@ -408,12 +394,10 @@ data class RunConfigurationManager(
             )
         }
 
-        private fun createDefaultRunConfiguration(projectPath: String?): RunConfiguration {
-            return RunConfiguration(
-                name = "Debug",
-                outputMode = resolveDefaultOutputMode(projectPath)
-            )
-        }
+        private fun createDefaultRunConfiguration(projectPath: String?): RunConfiguration = RunConfiguration(
+            name = "Debug",
+            outputMode = resolveDefaultOutputMode(projectPath)
+        )
 
         private fun resolveDefaultOutputMode(projectPath: String?): OutputMode {
             val projectRoot = projectPath
@@ -451,30 +435,24 @@ data class RunConfigurationManager(
     /**
      * 选择配置
      */
-    fun selectConfig(id: String): RunConfigurationManager {
-        return copy(selectedId = id)
-    }
+    fun selectConfig(id: String): RunConfigurationManager = copy(selectedId = id)
 
     /**
      * 添加新配置
      */
-    fun addConfig(config: RunConfiguration): RunConfigurationManager {
-        return copy(
-            configurations = configurations + config,
-            selectedId = config.id
-        )
-    }
+    fun addConfig(config: RunConfiguration): RunConfigurationManager = copy(
+        configurations = configurations + config,
+        selectedId = config.id
+    )
 
     /**
      * 更新配置
      */
-    fun updateConfig(config: RunConfiguration): RunConfigurationManager {
-        return copy(
-            configurations = configurations.map {
-                if (it.id == config.id) config else it
-            }
-        )
-    }
+    fun updateConfig(config: RunConfiguration): RunConfigurationManager = copy(
+        configurations = configurations.map {
+            if (it.id == config.id) config else it
+        }
+    )
 
     /**
      * 删除配置
@@ -534,8 +512,10 @@ enum class OutputMode {
 enum class SdlOrientation {
     /** 跟随系统自动旋转 */
     AUTO,
+
     /** 强制横屏 */
     LANDSCAPE,
+
     /** 强制竖屏 */
     PORTRAIT
 }

@@ -134,9 +134,7 @@ internal class EditorWordWrapLayoutCache(
         }
     }
 
-    private fun buildStarts(lineText: String, wrapColumns: Int, tabSize: Int): IntArray {
-        return TextScanKernel.findWrapSegmentStarts(lineText, wrapColumns, tabSize)
-    }
+    private fun buildStarts(lineText: String, wrapColumns: Int, tabSize: Int): IntArray = TextScanKernel.findWrapSegmentStarts(lineText, wrapColumns, tabSize)
 
     private fun invalidateRangeInternal(startLine: Int, endLine: Int) {
         if (startLine > endLine) return
@@ -173,4 +171,3 @@ internal class EditorWordWrapLayoutCache(
         }
     }
 }
-

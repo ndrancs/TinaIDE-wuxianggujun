@@ -2,6 +2,7 @@ package com.wuxianggujun.tinaide.database.impl
 
 import com.wuxianggujun.tinaide.core.network.ApiResult
 import com.wuxianggujun.tinaide.core.network.api.UserContentApiClient
+import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import com.wuxianggujun.tinaide.core.user.DownloadHistoryItem
 import com.wuxianggujun.tinaide.core.user.DownloadHistoryResponse
 import com.wuxianggujun.tinaide.core.user.FavoritePlugin
@@ -11,7 +12,6 @@ import com.wuxianggujun.tinaide.database.user.DownloadHistoryDao
 import com.wuxianggujun.tinaide.database.user.FavoriteDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 
@@ -35,69 +35,59 @@ class HybridUserContentRepository(
 
     // ===== 收藏相关 =====
 
-    override fun getFavoritesFlow(): Flow<List<FavoritePlugin>> {
-        return favoriteDao.getAllFavoritesFlow().map { entities ->
-            entities.map { it.toFavoritePlugin() }
-        }
+    override fun getFavoritesFlow(): Flow<List<FavoritePlugin>> = favoriteDao.getAllFavoritesFlow().map { entities ->
+        entities.map { it.toFavoritePlugin() }
     }
 
-    override suspend fun getFavorites(page: Int, pageSize: Int): Result<FavoritesResponse> {
-        return try {
-            val offset = (page - 1) * pageSize
-            val entities = favoriteDao.getFavoritesPaged(pageSize, offset)
-            val total = favoriteDao.getFavoritesCount()
+    override suspend fun getFavorites(page: Int, pageSize: Int): Result<FavoritesResponse> = try {
+        val offset = (page - 1) * pageSize
+        val entities = favoriteDao.getFavoritesPaged(pageSize, offset)
+        val total = favoriteDao.getFavoritesCount()
 
-            val plugins = entities.map { it.toFavoritePlugin() }
-            Result.success(
-                FavoritesResponse(
-                    plugins = plugins,
-                    total = total,
-                    page = page,
-                    pageSize = pageSize
-                )
+        val plugins = entities.map { it.toFavoritePlugin() }
+        Result.success(
+            FavoritesResponse(
+                plugins = plugins,
+                total = total,
+                page = page,
+                pageSize = pageSize
             )
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        )
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 
-    override suspend fun addFavorite(plugin: FavoritePlugin): Result<Unit> {
-        return try {
-            // 1. 先保存到本地数据库（快速响应）
-            val entity = plugin.toFavoriteEntity()
-            favoriteDao.insertFavorite(entity)
+    override suspend fun addFavorite(plugin: FavoritePlugin): Result<Unit> = try {
+        // 1. 先保存到本地数据库（快速响应）
+        val entity = plugin.toFavoriteEntity()
+        favoriteDao.insertFavorite(entity)
 
-            // 2. 异步同步到服务器
-            syncFavoriteToServer(plugin.pluginId, isAdd = true)
+        // 2. 异步同步到服务器
+        syncFavoriteToServer(plugin.pluginId, isAdd = true)
 
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "addFavorite failed")
-            Result.failure(e)
-        }
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "addFavorite failed")
+        Result.failure(e)
     }
 
-    override suspend fun removeFavorite(pluginId: String): Result<Unit> {
-        return try {
-            // 1. 先从本地数据库删除（快速响应）
-            favoriteDao.deleteFavoriteByPluginId(pluginId)
+    override suspend fun removeFavorite(pluginId: String): Result<Unit> = try {
+        // 1. 先从本地数据库删除（快速响应）
+        favoriteDao.deleteFavoriteByPluginId(pluginId)
 
-            // 2. 异步同步到服务器
-            syncFavoriteToServer(pluginId, isAdd = false)
+        // 2. 异步同步到服务器
+        syncFavoriteToServer(pluginId, isAdd = false)
 
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "removeFavorite failed")
-            Result.failure(e)
-        }
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "removeFavorite failed")
+        Result.failure(e)
     }
 
-    override suspend fun isFavorite(pluginId: String): Boolean {
-        return try {
-            favoriteDao.getFavoriteByPluginId(pluginId) != null
-        } catch (e: Exception) {
-            false
-        }
+    override suspend fun isFavorite(pluginId: String): Boolean = try {
+        favoriteDao.getFavoriteByPluginId(pluginId) != null
+    } catch (e: Exception) {
+        false
     }
 
     /**
@@ -171,7 +161,8 @@ class HybridUserContentRepository(
             when (result) {
                 is ApiResult.Success -> {
                     // 标记为已同步
-                    val entity = favoriteDao.getFavoriteByPluginId(pluginId); entity?.let { favoriteDao.markAsSynced(it.id) }
+                    val entity = favoriteDao.getFavoriteByPluginId(pluginId)
+                    entity?.let { favoriteDao.markAsSynced(it.id) }
                 }
                 is ApiResult.Error -> {
                     Timber.tag(TAG).w("Sync favorite to server failed: %s", result.message)
@@ -187,108 +178,91 @@ class HybridUserContentRepository(
 
     // ===== 下载历史相关 =====
 
-    override suspend fun getDownloadHistory(page: Int, pageSize: Int): Result<DownloadHistoryResponse> {
-        return try {
-            val offset = (page - 1) * pageSize
-            val entities = downloadHistoryDao.getDownloadsPaged(pageSize, offset)
-            val total = downloadHistoryDao.getDownloadsCount()
+    override suspend fun getDownloadHistory(page: Int, pageSize: Int): Result<DownloadHistoryResponse> = try {
+        val offset = (page - 1) * pageSize
+        val entities = downloadHistoryDao.getDownloadsPaged(pageSize, offset)
+        val total = downloadHistoryDao.getDownloadsCount()
 
-            val items = entities.map { it.toDownloadHistoryItem() }
-            Result.success(
-                DownloadHistoryResponse(
-                    items = items,
-                    total = total,
-                    page = page,
-                    pageSize = pageSize
-                )
+        val items = entities.map { it.toDownloadHistoryItem() }
+        Result.success(
+            DownloadHistoryResponse(
+                items = items,
+                total = total,
+                page = page,
+                pageSize = pageSize
             )
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        )
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 
-    override suspend fun addDownloadHistory(item: DownloadHistoryItem): Result<Unit> {
-        return try {
-            val entity = item.toDownloadHistoryEntity()
-            downloadHistoryDao.insertDownload(entity)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun addDownloadHistory(item: DownloadHistoryItem): Result<Unit> = try {
+        val entity = item.toDownloadHistoryEntity()
+        downloadHistoryDao.insertDownload(entity)
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 
-    override suspend fun removeDownloadHistory(id: String): Result<Unit> {
-        return try {
-            downloadHistoryDao.deleteDownloadById(id)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun removeDownloadHistory(id: String): Result<Unit> = try {
+        downloadHistoryDao.deleteDownloadById(id)
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 
-    override suspend fun clearDownloadHistory(): Result<Unit> {
-        return try {
-            downloadHistoryDao.deleteAllDownloads()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun clearDownloadHistory(): Result<Unit> = try {
+        downloadHistoryDao.deleteAllDownloads()
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 
     // ===== Entity <-> Domain Model 转换 =====
 
-    private fun com.wuxianggujun.tinaide.database.user.FavoriteEntity.toFavoritePlugin(): FavoritePlugin {
-        return FavoritePlugin(
-            id = id,
-            pluginId = pluginId,
-            name = name,
-            description = description,
-            iconUrl = iconUrl,
-            category = category,
-            tags = tags?.let { JsonSerializer.decodeOrNull<List<String>>(it) ?: emptyList() },
-            latestVersion = latestVersion,
-            addedAt = addedAt,
-            synced = synced
-        )
-    }
+    private fun com.wuxianggujun.tinaide.database.user.FavoriteEntity.toFavoritePlugin(): FavoritePlugin = FavoritePlugin(
+        id = id,
+        pluginId = pluginId,
+        name = name,
+        description = description,
+        iconUrl = iconUrl,
+        category = category,
+        tags = tags?.let { JsonSerializer.decodeOrNull<List<String>>(it) ?: emptyList() },
+        latestVersion = latestVersion,
+        addedAt = addedAt,
+        synced = synced
+    )
 
-    private fun FavoritePlugin.toFavoriteEntity(): com.wuxianggujun.tinaide.database.user.FavoriteEntity {
-        return com.wuxianggujun.tinaide.database.user.FavoriteEntity(
-            id = id,
-            pluginId = pluginId,
-            name = name,
-            description = description,
-            iconUrl = iconUrl,
-            category = category,
-            tags = tags?.let { JsonSerializer.encode(it) },
-            latestVersion = latestVersion,
-            addedAt = addedAt,
-            synced = synced
-        )
-    }
+    private fun FavoritePlugin.toFavoriteEntity(): com.wuxianggujun.tinaide.database.user.FavoriteEntity = com.wuxianggujun.tinaide.database.user.FavoriteEntity(
+        id = id,
+        pluginId = pluginId,
+        name = name,
+        description = description,
+        iconUrl = iconUrl,
+        category = category,
+        tags = tags?.let { JsonSerializer.encode(it) },
+        latestVersion = latestVersion,
+        addedAt = addedAt,
+        synced = synced
+    )
 
-    private fun com.wuxianggujun.tinaide.database.user.DownloadHistoryEntity.toDownloadHistoryItem(): DownloadHistoryItem {
-        return DownloadHistoryItem(
-            id = id,
-            itemType = itemType,
-            itemId = itemId,
-            version = version,
-            downloadedAt = downloadedAt,
-            fileSize = fileSize,
-            synced = synced
-        )
-    }
+    private fun com.wuxianggujun.tinaide.database.user.DownloadHistoryEntity.toDownloadHistoryItem(): DownloadHistoryItem = DownloadHistoryItem(
+        id = id,
+        itemType = itemType,
+        itemId = itemId,
+        version = version,
+        downloadedAt = downloadedAt,
+        fileSize = fileSize,
+        synced = synced
+    )
 
-    private fun DownloadHistoryItem.toDownloadHistoryEntity(): com.wuxianggujun.tinaide.database.user.DownloadHistoryEntity {
-        return com.wuxianggujun.tinaide.database.user.DownloadHistoryEntity(
-            id = id,
-            itemType = itemType,
-            itemId = itemId,
-            version = version,
-            downloadedAt = downloadedAt,
-            fileSize = fileSize,
-            synced = synced
-        )
-    }
-
+    private fun DownloadHistoryItem.toDownloadHistoryEntity(): com.wuxianggujun.tinaide.database.user.DownloadHistoryEntity = com.wuxianggujun.tinaide.database.user.DownloadHistoryEntity(
+        id = id,
+        itemType = itemType,
+        itemId = itemId,
+        version = version,
+        downloadedAt = downloadedAt,
+        fileSize = fileSize,
+        synced = synced
+    )
 }

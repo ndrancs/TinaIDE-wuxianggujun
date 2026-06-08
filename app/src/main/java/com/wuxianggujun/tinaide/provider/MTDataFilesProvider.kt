@@ -121,8 +121,7 @@ class MTDataFilesProvider : DocumentsProvider() {
     }
 
     @Throws(FileNotFoundException::class)
-    private fun parseDocumentId(docId: String): MTDocumentIdParts =
-        MTDataFilesProviderPathSafety.parseDocumentId(packageName, docId)
+    private fun parseDocumentId(docId: String): MTDocumentIdParts = MTDataFilesProviderPathSafety.parseDocumentId(packageName, docId)
 
     private fun getRootForType(type: String): File? = when {
         type.equals("data", ignoreCase = true) -> dataDir
@@ -133,8 +132,7 @@ class MTDataFilesProvider : DocumentsProvider() {
     }
 
     @Throws(FileNotFoundException::class)
-    private fun sanitizeDocumentSubPath(subPath: String, docId: String): String =
-        MTDataFilesProviderPathSafety.sanitizeDocumentSubPath(subPath, docId)
+    private fun sanitizeDocumentSubPath(subPath: String, docId: String): String = MTDataFilesProviderPathSafety.sanitizeDocumentSubPath(subPath, docId)
 
     @Throws(FileNotFoundException::class)
     private fun requireFileInsideRoot(root: File, file: File, docId: String) {
@@ -149,11 +147,9 @@ class MTDataFilesProvider : DocumentsProvider() {
     }
 
     @Throws(FileNotFoundException::class)
-    private fun requireSymlinkTargetInsideRoot(root: File, linkFile: File, linkTarget: String, docId: String): String =
-        MTDataFilesProviderPathSafety.requireSymlinkTargetInsideRoot(root, linkFile, linkTarget, docId)
+    private fun requireSymlinkTargetInsideRoot(root: File, linkFile: File, linkTarget: String, docId: String): String = MTDataFilesProviderPathSafety.requireSymlinkTargetInsideRoot(root, linkFile, linkTarget, docId)
 
-    private fun canonicalCandidate(file: File): File =
-        MTDataFilesProviderPathSafety.canonicalCandidate(file)
+    private fun canonicalCandidate(file: File): File = MTDataFilesProviderPathSafety.canonicalCandidate(file)
 
     private fun existsWithoutFollowing(file: File): Boolean = try {
         Os.lstat(file.path)
@@ -162,32 +158,26 @@ class MTDataFilesProvider : DocumentsProvider() {
         false
     }
 
-    private fun isSameOrChild(root: File, candidate: File): Boolean =
-        MTDataFilesProviderPathSafety.isSameOrChild(root, candidate)
+    private fun isSameOrChild(root: File, candidate: File): Boolean = MTDataFilesProviderPathSafety.isSameOrChild(root, candidate)
 
     @Throws(FileNotFoundException::class)
-    private fun sanitizeDisplayName(displayName: String): String =
-        MTDataFilesProviderPathSafety.sanitizeDisplayName(displayName)
+    private fun sanitizeDisplayName(displayName: String): String = MTDataFilesProviderPathSafety.sanitizeDisplayName(displayName)
 
     @Throws(FileNotFoundException::class)
-    private fun getParentDocumentId(documentId: String): String =
-        MTDataFilesProviderPathSafety.getParentDocumentId(packageName, documentId)
+    private fun getParentDocumentId(documentId: String): String = MTDataFilesProviderPathSafety.getParentDocumentId(packageName, documentId)
 
-    private fun appendDocumentId(parentDocumentId: String, displayName: String): String =
-        MTDataFilesProviderPathSafety.appendDocumentId(parentDocumentId, displayName)
+    private fun appendDocumentId(parentDocumentId: String, displayName: String): String = MTDataFilesProviderPathSafety.appendDocumentId(parentDocumentId, displayName)
 
-    private fun getDocumentIdFromUri(uri: Uri): String? {
-        return runCatching { DocumentsContract.getDocumentId(uri) }
-            .getOrNull()
-            ?.takeIf { it.isNotBlank() }
-            ?: uri.pathSegments.let { segments ->
-                when {
-                    segments.size >= 4 -> segments[3]
-                    segments.size >= 2 -> segments[1]
-                    else -> null
-                }
+    private fun getDocumentIdFromUri(uri: Uri): String? = runCatching { DocumentsContract.getDocumentId(uri) }
+        .getOrNull()
+        ?.takeIf { it.isNotBlank() }
+        ?: uri.pathSegments.let { segments ->
+            when {
+                segments.size >= 4 -> segments[3]
+                segments.size >= 2 -> segments[1]
+                else -> null
             }
-    }
+        }
 
     override fun queryRoots(projection: Array<String>?): Cursor {
         val context = context ?: return MatrixCursor(projection ?: DEFAULT_ROOT_PROJECTION)

@@ -33,5 +33,3 @@ data class TextChange(
 fun interface TextChangeListener {
     fun onTextChanged(change: TextChange)
 }
-
-

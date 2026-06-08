@@ -14,7 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
  * - AUTO: 跟随系统主题
  */
 enum class AppTheme {
-    LIGHT, DARK, GRAY, AUTO;
+    LIGHT,
+    DARK,
+    GRAY,
+    AUTO;
 
     companion object {
         /**
@@ -22,12 +25,10 @@ enum class AppTheme {
          * @param value 主题名称字符串（大小写不敏感）
          * @return 对应的 AppTheme，无效值默认返回 DARK
          */
-        fun fromString(value: String): AppTheme {
-            return try {
-                valueOf(value.uppercase())
-            } catch (e: IllegalArgumentException) {
-                LIGHT // 默认浅色主题
-            }
+        fun fromString(value: String): AppTheme = try {
+            valueOf(value.uppercase())
+        } catch (e: IllegalArgumentException) {
+            LIGHT // 默认浅色主题
         }
     }
 }

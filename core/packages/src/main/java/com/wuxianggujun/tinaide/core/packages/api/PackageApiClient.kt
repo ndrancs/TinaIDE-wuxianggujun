@@ -47,10 +47,8 @@ class PackageApiClient private constructor(
         @Volatile
         private var instance: PackageApiClient? = null
 
-        fun getInstance(): PackageApiClient {
-            return instance ?: synchronized(this) {
-                instance ?: createInstance().also { instance = it }
-            }
+        fun getInstance(): PackageApiClient = instance ?: synchronized(this) {
+            instance ?: createInstance().also { instance = it }
         }
 
         fun getInstance(context: Context): PackageApiClient {
@@ -63,24 +61,20 @@ class PackageApiClient private constructor(
             }
         }
 
-        private fun createInstance(): PackageApiClient {
-            return PackageApiClient(
-                indexUrls = GitHubRegistryConfig.packageIndexV2Urls(),
-                indexClient = OkHttpClientProvider.probe,
-                proxySettings = GitHubRegistryProxySettings(),
-            )
-        }
+        private fun createInstance(): PackageApiClient = PackageApiClient(
+            indexUrls = GitHubRegistryConfig.packageIndexV2Urls(),
+            indexClient = OkHttpClientProvider.probe,
+            proxySettings = GitHubRegistryProxySettings(),
+        )
 
         private fun createInstance(
             context: Context,
             settings: GitHubRegistryProxySettings,
-        ): PackageApiClient {
-            return PackageApiClient(
-                indexUrls = GitHubRegistryConfig.packageIndexV2Urls(),
-                indexClient = GitHubRegistryHttpClientFactory.probe(context),
-                proxySettings = settings,
-            )
-        }
+        ): PackageApiClient = PackageApiClient(
+            indexUrls = GitHubRegistryConfig.packageIndexV2Urls(),
+            indexClient = GitHubRegistryHttpClientFactory.probe(context),
+            proxySettings = settings,
+        )
 
         fun resetInstance() {
             instance = null
@@ -180,13 +174,11 @@ class PackageApiClient private constructor(
         }
     }
 
-    private suspend fun <T> withIndex(block: (LoadedPackageRegistryCatalog) -> T): ApiResult<T> {
-        return when (val result = loadIndex()) {
-            is ApiResult.Success -> runCatching { ApiResult.Success(block(result.data)) }
-                .getOrElse { error -> ApiResult.Error(-1, error.message ?: Strings.error_unknown.str()) }
-            is ApiResult.Error -> result
-            is ApiResult.NetworkError -> result
-        }
+    private suspend fun <T> withIndex(block: (LoadedPackageRegistryCatalog) -> T): ApiResult<T> = when (val result = loadIndex()) {
+        is ApiResult.Success -> runCatching { ApiResult.Success(block(result.data)) }
+            .getOrElse { error -> ApiResult.Error(-1, error.message ?: Strings.error_unknown.str()) }
+        is ApiResult.Error -> result
+        is ApiResult.NetworkError -> result
     }
 
     private suspend fun loadIndex(): ApiResult<LoadedPackageRegistryCatalog> = withContext(Dispatchers.IO) {
@@ -335,85 +327,75 @@ class PackageApiClient private constructor(
         )
     }
 
-    private fun deriveCategories(packages: List<GUIPackage>): List<PackageCategory> {
-        return packages.mapNotNull { it.category }
-            .distinct()
-            .sorted()
-            .mapIndexed { index, category ->
-                PackageCategory(
-                    id = category,
-                    name = category.replaceFirstChar { it.uppercase() },
-                    sortOrder = index,
-                )
-            }
-    }
-
-    private fun GUIPackage.hasPlatform(platform: String): Boolean {
-        return when (platform.lowercase()) {
-            Platform.LINUX.name.lowercase() -> linux != null
-            Platform.ANDROID.name.lowercase() -> android != null
-            else -> true
+    private fun deriveCategories(packages: List<GUIPackage>): List<PackageCategory> = packages.mapNotNull { it.category }
+        .distinct()
+        .sorted()
+        .mapIndexed { index, category ->
+            PackageCategory(
+                id = category,
+                name = category.replaceFirstChar { it.uppercase() },
+                sortOrder = index,
+            )
         }
+
+    private fun GUIPackage.hasPlatform(platform: String): Boolean = when (platform.lowercase()) {
+        Platform.LINUX.name.lowercase() -> linux != null
+        Platform.ANDROID.name.lowercase() -> android != null
+        else -> true
     }
 
-    private fun GUIPackage.toVersions(packageId: String): PackageVersionsResponse {
-        return PackageVersionsResponse(
-            linux = linux?.let { pkg ->
-                listOf(
-                    PackageVersion(
-                        id = 1,
-                        packageId = packageId,
-                        platform = Platform.LINUX,
-                        version = pkg.version,
-                        artifactType = pkg.artifactType,
-                        installType = pkg.installType,
-                        aptPackage = pkg.aptPackage,
-                        downloadSize = pkg.size,
-                        downloadUrl = pkg.downloadUrl,
-                        downloadSources = pkg.downloadSources,
-                        checksum = pkg.checksum,
-                        abi = pkg.abi,
-                        dependencies = pkg.dependencies,
-                        releaseNotes = pkg.releaseNotes,
-                        isLatest = true,
-                    )
+    private fun GUIPackage.toVersions(packageId: String): PackageVersionsResponse = PackageVersionsResponse(
+        linux = linux?.let { pkg ->
+            listOf(
+                PackageVersion(
+                    id = 1,
+                    packageId = packageId,
+                    platform = Platform.LINUX,
+                    version = pkg.version,
+                    artifactType = pkg.artifactType,
+                    installType = pkg.installType,
+                    aptPackage = pkg.aptPackage,
+                    downloadSize = pkg.size,
+                    downloadUrl = pkg.downloadUrl,
+                    downloadSources = pkg.downloadSources,
+                    checksum = pkg.checksum,
+                    abi = pkg.abi,
+                    dependencies = pkg.dependencies,
+                    releaseNotes = pkg.releaseNotes,
+                    isLatest = true,
                 )
-            },
-            android = android?.let { pkg ->
-                listOf(
-                    PackageVersion(
-                        id = 2,
-                        packageId = packageId,
-                        platform = Platform.ANDROID,
-                        version = pkg.version,
-                        artifactType = pkg.artifactType,
-                        installType = pkg.installType,
-                        aptPackage = pkg.aptPackage,
-                        downloadSize = pkg.size,
-                        downloadUrl = pkg.downloadUrl,
-                        downloadSources = pkg.downloadSources,
-                        checksum = pkg.checksum,
-                        abi = pkg.abi,
-                        dependencies = pkg.dependencies,
-                        releaseNotes = pkg.releaseNotes,
-                        isLatest = true,
-                    )
+            )
+        },
+        android = android?.let { pkg ->
+            listOf(
+                PackageVersion(
+                    id = 2,
+                    packageId = packageId,
+                    platform = Platform.ANDROID,
+                    version = pkg.version,
+                    artifactType = pkg.artifactType,
+                    installType = pkg.installType,
+                    aptPackage = pkg.aptPackage,
+                    downloadSize = pkg.size,
+                    downloadUrl = pkg.downloadUrl,
+                    downloadSources = pkg.downloadSources,
+                    checksum = pkg.checksum,
+                    abi = pkg.abi,
+                    dependencies = pkg.dependencies,
+                    releaseNotes = pkg.releaseNotes,
+                    isLatest = true,
                 )
-            },
-        )
-    }
+            )
+        },
+    )
 
-    private fun PackageVersionsResponse.allVersions(): List<PackageVersion> {
-        return linux.orEmpty() + android.orEmpty()
-    }
+    private fun PackageVersionsResponse.allVersions(): List<PackageVersion> = linux.orEmpty() + android.orEmpty()
 
-    private fun DownloadInfo.withResolvedSources(baseUrl: String): DownloadInfo {
-        return copy(
-            sources = sources.map { source ->
-                source.copy(url = GitHubRegistryConfig.resolveRawUrl(source.url, baseUrl))
-            }
-        )
-    }
+    private fun DownloadInfo.withResolvedSources(baseUrl: String): DownloadInfo = copy(
+        sources = sources.map { source ->
+            source.copy(url = GitHubRegistryConfig.resolveRawUrl(source.url, baseUrl))
+        }
+    )
 }
 
 @Serializable
@@ -440,18 +422,16 @@ data class PackageRegistryCatalogEntry(
     @SerialName("detail_url")
     val detailUrl: String? = null,
 ) {
-    fun toPackage(): GUIPackage {
-        return GUIPackage(
-            id = id,
-            name = name,
-            description = description,
-            category = category,
-            iconUrl = iconUrl,
-            homepage = homepage,
-            linux = linux,
-            android = android,
-        )
-    }
+    fun toPackage(): GUIPackage = GUIPackage(
+        id = id,
+        name = name,
+        description = description,
+        category = category,
+        iconUrl = iconUrl,
+        homepage = homepage,
+        linux = linux,
+        android = android,
+    )
 }
 
 @Serializable
