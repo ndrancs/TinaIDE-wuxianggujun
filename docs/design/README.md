@@ -1,6 +1,6 @@
 # 设计文档索引
 
-> 更新日期：2026-06-11
+> 更新日期：2026-06-12
 
 本目录存放 TinaIDE 仍有维护价值的设计、审计与实现说明。这里的文档不是单独的当前事实源；涉及当前实现、类名、构建链路或用户可见行为时，必须回到源码、测试和 [文档状态与生命周期](../documentation-status.md) 校对。
 
@@ -23,6 +23,7 @@
 - [高亮链路审查报告](TinaEditor-Highlight-Pipeline-Review.md)
 - [统一布局快照](unified-layout-snapshot.md)
 - [LSP Snippet 占位符处理](LSP-Snippet-Placeholder-Handling.md)
+- [compile_commands 与已安装包同步机制](CompileCommands-Package-Sync-Design.md)
 
 ### 运行时与系统
 

@@ -175,8 +175,26 @@ Make 路径没有 clangd 进程日志，主要看 `LspEditorManager` 的 attach 
 - 当前问题是否来自解析 / 分词，而不是 clangd
 - 是否误把“没有 clangd 日志”当成 attach 失败
 
+### 5. 装了依赖包，但 clangd 仍报“找不到头文件”（编译却能过）
+
+典型场景：先创建项目（如 SDL3 模板）→ 打开源码看到头文件报错 → 安装依赖包 → clangd 仍报红，但点编译运行正常。
+
+判定与排查顺序：
+
+1. 先确认这是 **Tina 兜底生成的 compile_commands.json**，而不是 CMake 导出的：看
+   `build/debug/compile_commands.tina.meta.properties` 里的 `generatedBy` 字段，
+   `tina-fallback` 表示兜底库（消费已安装包的 include），`external` 表示 CMake / 用户提供。
+2. 兜底库才会随装包刷新；CMake 导出库（`build/compile_commands.json`）的权威来源是
+   CMake 配置，装包后需要重新 configure，clangd 报红属正常预期。
+3. 若确为兜底库仍未刷新，确认装包事件是否触发了缓存失效：日志关键字
+   `Dependency revision=... invalidated compile setup cache` 或
+   `compile setup cache stale ... package fingerprint changed`。
+4. 仍未恢复时，对照 [compile_commands 与依赖包同步设计](../design/CompileCommands-Package-Sync-Design.md)
+   核对包指纹（`packageFingerprint`）是否随安装状态变化。
+
 ## 相关文档
 
 - [架构概览](../架构概览.md)
+- [compile_commands 与依赖包同步设计](../design/CompileCommands-Package-Sync-Design.md)
 - [远程 LSP 指南](Remote-LSP-Guide.md)
 - [PC LSP 代理配置](PC-LSP-Proxy-Setup-Guide.md)

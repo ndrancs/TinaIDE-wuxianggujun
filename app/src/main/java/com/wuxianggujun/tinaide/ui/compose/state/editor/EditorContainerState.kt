@@ -2180,12 +2180,21 @@ class EditorContainerState(
         if (revision <= lastHandledDependencyRevision) return
         lastHandledDependencyRevision = revision
 
+        // 先让编译数据库缓存失效：即使当前没有打开的 C/C++ 编辑器，也要清除内存中的
+        // compile setup 缓存。否则在“项目开着 + 装包 + 当前无活跃 C/C++ 文件”时，缓存会残留，
+        // 下次打开 C/C++ 文件时会绕过 compile_commands 的包指纹校验，导致头文件假错。
+        lspEditorManager.invalidateCompileSetupCache()
+
         val refreshCandidates = tabs.count { tab ->
             if (!hasAttachedCodeEditor(tab.id, tab.contentType)) return@count false
             tab.file.extension.lowercase() in CxxFileSupport.clangdSupportedExtensions
         }
 
-        if (refreshCandidates <= 0) return
+        if (refreshCandidates <= 0) {
+            Timber.tag("EditorContainerState")
+                .i("Dependency revision=%d detected, no active C/C++ tab; invalidated compile setup cache only", revision)
+            return
+        }
         lspEditorManager.refreshLspConnection(context)
         Timber.tag("EditorContainerState")
             .i("Dependency revision=%d detected, refreshed %d C/C++ tab(s)", revision, refreshCandidates)

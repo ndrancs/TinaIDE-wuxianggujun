@@ -37,6 +37,16 @@
 - 本项目不使用 `Unreleased` / `未发布` 区块。
 - 所有变更必须归档到明确的版本号区块（版本号来源：`version.properties` 的 `versionName`）。
 
+## [0.18.4] - 2026-06-12
+
+### Fixed
+- 修复“先创建 C/C++ 项目再安装依赖包”时编辑器持续报头文件找不到的假错（如安装 SDL3 后 clangd 仍提示找不到 SDL3 头文件，但实际编译运行正常）。现在区分 Tina 兜底生成与 CMake/外部导出的 `compile_commands.json`：兜底数据库会随已安装包指纹变化自动失效重建，外部权威数据库仍直接复用。
+- 修复“项目开着时安装包、但当前没有打开 C/C++ 文件”这条路径下编译数据库缓存不刷新的问题：依赖包变更事件现在会无条件失效 `LspEditorManager` 的内存编译缓存，并在缓存命中时再次校验包指纹做自愈兜底，避免下次打开文件时复用过时配置。
+- 修复 SDL 项目运行时偶发因加载到上一次残留的系统库脏副本（如 `libmediandk.so`）而崩溃的问题：每次 stage 运行库前先清空该项目的暂存目录；同时把 OS 提供的 NDK 系统库清单统一收敛到 `AndroidSystemLibraries`，避免 SDL 运行与 APK 导出两处各自维护、口径不一致。
+
+### Documentation
+- 新增设计文档《compile_commands 与依赖包同步机制》（`docs/design/CompileCommands-Package-Sync-Design.md`），记录 compile_commands 来源区分、包指纹失效与缓存自愈的完整链路；并在 LSP 调试指南补充“装包后 clangd 仍报找不到头文件”的排查小节。
+
 ## [0.18.3] - 2026-06-11
 
 ### Changed

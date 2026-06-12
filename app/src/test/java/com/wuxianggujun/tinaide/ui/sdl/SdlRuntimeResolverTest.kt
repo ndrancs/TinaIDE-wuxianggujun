@@ -65,5 +65,34 @@ class SdlRuntimeResolverTest {
         }
     }
 
+    @Test
+    fun `resolvePreloadLibraries skips OS provided NDK system libraries`() {
+        val tempDir = Files.createTempDirectory("sdl-runtime-ndk-system-test").toFile()
+        try {
+            val main = File(tempDir, "libmain.so").apply { writeText("main") }
+            val sdl = File(tempDir, "libSDL3.so").apply { writeText("sdl") }
+
+            // libmediandk.so 等由 OS 提供，绝不能进 preload(会被复制进私有目录后 dlopen 失败)，
+            // 也绝不能进 missing(误报“缺少运行库”)。
+            val result = SdlRuntimeResolver.resolvePreloadLibraries(
+                runtimeIndex = emptyMap(),
+                neededLibraries = setOf(
+                    "libmediandk.so",
+                    "libnativewindow.so",
+                    "libvulkan.so",
+                    "libaaudio.so",
+                    "libcamera2ndk.so",
+                ),
+                mainLibrary = main,
+                sdlLibrary = sdl
+            )
+
+            assertThat(result.libraryPaths).isEmpty()
+            assertThat(result.missingLibraries).isEmpty()
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
     private fun appContext(): Context = RuntimeEnvironment.getApplication().applicationContext
 }

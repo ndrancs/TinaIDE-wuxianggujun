@@ -7,6 +7,7 @@ import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.packages.InstalledPackagePathResolver
 import com.wuxianggujun.tinaide.core.packages.model.Platform
 import com.wuxianggujun.tinaide.core.packages.store.LocalInstallStateStore
+import com.wuxianggujun.tinaide.ui.runtime.AndroidSystemLibraries
 import com.wuxianggujun.tinaide.ui.runtime.NativeLibraryDependencyHints
 import java.io.File
 import java.io.IOException
@@ -28,21 +29,9 @@ object SdlRuntimeResolver {
     private val sdl2NamePattern = Regex("""^libSDL2\.so(?:\..+)?$""")
     private val sdl3NamePattern = Regex("""^libSDL3\.so(?:\..+)?$""")
 
-    private val systemLibraryNames = setOf(
-        "libc.so",
-        "libm.so",
-        "libdl.so",
-        "liblog.so",
-        "libandroid.so",
-        "libEGL.so",
-        "libGLESv1_CM.so",
-        "libGLESv2.so",
-        "libGLESv3.so",
-        "libOpenSLES.so",
-        "libjnigraphics.so",
-        "libz.so",
-        "libc++_shared.so",
-    )
+    // OS 提供的 NDK 系统库统一走 AndroidSystemLibraries.ndkProvided，
+    // 额外加上 libc++_shared.so：RUN 时由 sysroot 经 LD_LIBRARY_PATH 注入，无需预加载。
+    private val systemLibraryNames = AndroidSystemLibraries.ndkProvided + "libc++_shared.so"
 
     data class SdlRuntimeSpec(
         val requiredSdlMajor: Int,

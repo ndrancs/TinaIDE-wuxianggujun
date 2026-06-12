@@ -979,6 +979,24 @@ class LspEditorManager {
         return@withContext regions
     }
 
+    /**
+     * 让 compile setup 内存缓存失效（不重连）。
+     *
+     * 用于“项目开着但当前没有活跃 C/C++ 标签页”时发生依赖变更的场景：
+     * 此时无编辑器可重连，但残留的缓存会让下一次打开 C/C++ 文件直接命中旧 setup，
+     * 绕过 CompileDatabaseProvider 的包指纹校验，导致头文件假错。
+     */
+    /**
+     * 让内存中的 compile setup 缓存整体失效。
+     *
+     * 依赖包安装/卸载后调用：即使当前没有打开的 C/C++ 编辑器，也需要清除缓存，
+     * 确保下次 attach 时重新走 [CompileDatabaseProvider.prepare] 的包指纹校验，
+     * 避免复用过时的 compile_commands.json 导致头文件假错。
+     */
+    fun invalidateCompileSetupCache() {
+        clearCompileSetupCache()
+    }
+
     fun refreshLspConnection(context: Context) {
         val bindings = synchronized(stateLock) { tabBindings.toMap() }
         if (bindings.isEmpty()) return
@@ -1538,13 +1556,28 @@ class LspEditorManager {
         synchronized(stateLock) {
             compileSetupCache[key]
         }?.let { cached ->
-            Timber.tag(TAG).d(
-                "compile setup cache hit for %s (%s) in %dms",
+            // 自愈：缓存命中时再校验一次包指纹。即使某条路径漏掉了显式失效（见
+            // invalidateCompileSetupCache），只要已安装包发生变化就丢弃旧缓存重算，
+            // 避免返回过时的 compile_commands 目录导致头文件假错。
+            if (isCompileSetupStillFresh(context, cached)) {
+                Timber.tag(TAG).d(
+                    "compile setup cache hit for %s (%s) in %dms",
+                    file.name,
+                    key.projectHint,
+                    elapsedMillis(startedAt)
+                )
+                return cached
+            }
+            Timber.tag(TAG).i(
+                "compile setup cache stale for %s (%s): package fingerprint changed, recomputing",
                 file.name,
-                key.projectHint,
-                elapsedMillis(startedAt)
+                key.projectHint
             )
-            return cached
+            synchronized(stateLock) {
+                if (compileSetupCache[key] === cached) {
+                    compileSetupCache.remove(key)
+                }
+            }
         }
 
         val task = compileSetupMutex.withLock {
@@ -1584,6 +1617,20 @@ class LspEditorManager {
                 }
             }
         }
+    }
+
+    /**
+     * 校验缓存的 compile setup 是否仍然有效：比对当前已安装包的指纹与生成时的指纹。
+     *
+     * 指纹计算会扫描磁盘（installed-packages 目录），必须在 IO 线程执行。
+     * 计算失败时保守视为“仍然有效”，避免因偶发 IO 错误反复重建拖慢 attach。
+     */
+    private suspend fun isCompileSetupStillFresh(context: Context, cached: CompileSetup): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            val provider = getCompileDatabaseProvider(context)
+            val currentFingerprint = provider.computePackageFingerprint(cached.prepared.workspaceRoot)
+            currentFingerprint == cached.prepared.packageFingerprint
+        }.getOrDefault(true)
     }
 
     private fun startSharedCxxAttach(

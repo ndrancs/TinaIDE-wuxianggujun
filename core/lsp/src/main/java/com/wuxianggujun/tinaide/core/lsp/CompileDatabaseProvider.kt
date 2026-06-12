@@ -41,6 +41,15 @@ class CompileDatabaseProvider(context: Context) {
         private const val META_KEY_PACKAGE_FINGERPRINT = "packageFingerprint"
         private const val META_KEY_TOOLCHAIN_ID = "toolchainId"
 
+        /** 标记 compile_commands.json 的来源，用于区分 Tina 兜底生成与外部权威导出。 */
+        private const val META_KEY_GENERATED_BY = "generatedBy"
+
+        /** Tina 在缺少外部 compile_commands 时自动生成的兜底数据库。 */
+        private const val GENERATED_BY_TINA = "tina-fallback"
+
+        /** 外部（CMake 导出 / 用户提供）的权威 compile_commands 数据库。 */
+        private const val GENERATED_BY_EXTERNAL = "external"
+
         private val COMPILE_COMMANDS_SEARCH_PATHS = listOf(
             "build/compile_commands.json",
             "build/debug/compile_commands.json",
@@ -121,7 +130,10 @@ class CompileDatabaseProvider(context: Context) {
             sourceCompileCommandsFile.isFile && sourceCompileCommandsFile.length() > 0
         val shouldReuseExisting = when {
             !hasUsableCompileCommands -> false
-            isCmakeProject -> true
+            // CMake 等外部工具导出的 compile_commands.json 是权威数据库，直接复用。
+            // 但 Tina 兜底生成的数据库可能因包安装/工具链变化而过时，仍需走指纹校验，
+            // 否则会出现“装包后头文件假错”的问题。
+            isCmakeProject && !isTinaGeneratedCompileCommands(compileCommandsDir) -> true
             else -> compileCommandsUpToDate(
                 compileCommandsFile = sourceCompileCommandsFile,
                 isCxx = isCxx,
@@ -211,6 +223,8 @@ class CompileDatabaseProvider(context: Context) {
                     cppStandard = prepared.desiredCppStandard,
                     packageFingerprint = prepared.packageFingerprint,
                     toolchainId = prepared.toolchainId,
+                    // 复用已有数据库时沿用其原始来源标记；缺失则按外部权威处理。
+                    generatedBy = resolveExistingGeneratedBy(prepared.sourceCompileCommandsDir),
                 )
             }
             if (materialized && CompileCommandsDebugLogger.isCompileCommandsSelectionEnabled()) {
@@ -391,6 +405,7 @@ class CompileDatabaseProvider(context: Context) {
                     cppStandard = prepared.desiredCppStandard,
                     packageFingerprint = prepared.packageFingerprint,
                     toolchainId = prepared.toolchainId,
+                    generatedBy = GENERATED_BY_TINA,
                 )
             }
 
@@ -418,6 +433,7 @@ class CompileDatabaseProvider(context: Context) {
                     cppStandard = prepared.desiredCppStandard,
                     packageFingerprint = prepared.packageFingerprint,
                     toolchainId = prepared.toolchainId,
+                    generatedBy = GENERATED_BY_TINA,
                 )
             }
 
@@ -431,6 +447,22 @@ class CompileDatabaseProvider(context: Context) {
         val ensuredDir = ensure(prepared) ?: return null
         return EnsureResult(ensuredDir, regenerated = prepared.shouldGenerate)
     }
+
+    /**
+     * 计算当前项目的包指纹（已安装包的 include/lib/prefix 路径 + 安装状态的 SHA-256）。
+     *
+     * 供上层在复用缓存的编译配置前做一次轻量自愈校验：若指纹与缓存创建时不一致，
+     * 说明期间发生过装包/卸载，应丢弃缓存重新 prepare()，避免头文件假错。
+     *
+     * 注意：内部会扫描已安装包目录，调用方需在 IO 线程执行。
+     */
+    /**
+     * 计算当前已安装包 + 项目依赖目录的指纹，供调用方做缓存自愈比对。
+     *
+     * 复用 [prepare] 内部的同一套指纹算法，保证与写入 meta 的 packageFingerprint 一致。
+     * 内部会扫描磁盘（installed-packages 目录、项目 metadata），**请勿在主线程调用**。
+     */
+    fun computePackageFingerprint(projectRoot: File?): String = resolvePackageFingerprint(projectRoot)
 
     fun prepareProvidedCompileCommandsForLsp(
         sourceCompileCommandsFile: File,
@@ -461,6 +493,7 @@ class CompileDatabaseProvider(context: Context) {
             cppStandard = desiredCppStandard,
             packageFingerprint = packageFingerprint,
             toolchainId = toolchainId,
+            generatedBy = GENERATED_BY_EXTERNAL,
         )
         return compileCommandsDir
     }
@@ -513,11 +546,35 @@ class CompileDatabaseProvider(context: Context) {
         }.getOrNull()
     }
 
+    /**
+     * 判断指定目录下的 compile_commands.json 是否由 Tina 兜底生成。
+     *
+     * 兼容旧数据：历史 meta 文件没有 generatedBy 字段，无法判定来源，
+     * 保守视为“非 Tina 生成”以维持原有的 CMake 直接复用行为，
+     * 待下一次 Tina 兜底生成或外部导出时补齐标记。
+     */
+    private fun isTinaGeneratedCompileCommands(compileCommandsDir: File): Boolean {
+        val metadata = readCompileCommandsMetadata(compileCommandsDir) ?: return false
+        val generatedBy = metadata.getProperty(META_KEY_GENERATED_BY)?.trim().orEmpty()
+        return generatedBy == GENERATED_BY_TINA
+    }
+
+    /**
+     * 复用已有数据库时读取其原始来源标记；缺失（旧数据）时按外部权威处理，
+     * 避免把无法判定来源的历史数据库误标成 Tina 兜底而触发不必要的重建。
+     */
+    private fun resolveExistingGeneratedBy(compileCommandsDir: File): String {
+        val metadata = readCompileCommandsMetadata(compileCommandsDir) ?: return GENERATED_BY_EXTERNAL
+        val generatedBy = metadata.getProperty(META_KEY_GENERATED_BY)?.trim().orEmpty()
+        return generatedBy.ifEmpty { GENERATED_BY_EXTERNAL }
+    }
+
     private fun writeCompileCommandsMetadata(
         compileCommandsDir: File,
         cppStandard: CppStandard,
         packageFingerprint: String,
-        toolchainId: String?
+        toolchainId: String?,
+        generatedBy: String,
     ) {
         val metaFile = File(compileCommandsDir, COMPILE_COMMANDS_META_FILE_NAME)
         runCatching {
@@ -527,6 +584,7 @@ class CompileDatabaseProvider(context: Context) {
             val props = Properties().apply {
                 setProperty(META_KEY_CPP_STANDARD, cppStandard.flag)
                 setProperty(META_KEY_PACKAGE_FINGERPRINT, packageFingerprint)
+                setProperty(META_KEY_GENERATED_BY, generatedBy)
                 toolchainId?.let { setProperty(META_KEY_TOOLCHAIN_ID, it) }
             }
             FileOutputStream(metaFile).use { out ->
