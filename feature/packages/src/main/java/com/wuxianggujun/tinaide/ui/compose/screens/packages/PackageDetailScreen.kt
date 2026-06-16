@@ -3,8 +3,6 @@ package com.wuxianggujun.tinaide.ui.compose.screens.packages
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import timber.log.Timber
-import com.wuxianggujun.tinaide.core.i18n.strOr
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -15,20 +13,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.packages.InstalledPackageMetadata
 import com.wuxianggujun.tinaide.core.packages.model.*
-import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
-import com.wuxianggujun.tinaide.ui.compose.components.TinaSpacing
-import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
-import com.wuxianggujun.tinaide.ui.compose.components.DetailIconPlaceholder
 import com.wuxianggujun.tinaide.ui.compose.components.DetailHeaderCard
+import com.wuxianggujun.tinaide.ui.compose.components.DetailIconPlaceholder
 import com.wuxianggujun.tinaide.ui.compose.components.DetailInfoCard
-import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDangerOutlinedButton
+import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
+import com.wuxianggujun.tinaide.ui.compose.components.TinaSpacing
+import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
+import timber.log.Timber
 
 private const val TAG = "PackageDetailScreen"
 
@@ -428,13 +427,11 @@ private fun InfoRow(
     }
 }
 
-private fun formatSize(bytes: Long): String {
-    return when {
-        bytes >= 1024 * 1024 * 1024 -> "%.1f GB".format(bytes / (1024.0 * 1024.0 * 1024.0))
-        bytes >= 1024 * 1024 -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
-        bytes >= 1024 -> "%.1f KB".format(bytes / 1024.0)
-        else -> "$bytes B"
-    }
+private fun formatSize(bytes: Long): String = when {
+    bytes >= 1024 * 1024 * 1024 -> "%.1f GB".format(bytes / (1024.0 * 1024.0 * 1024.0))
+    bytes >= 1024 * 1024 -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
+    bytes >= 1024 -> "%.1f KB".format(bytes / 1024.0)
+    else -> "$bytes B"
 }
 
 @Composable

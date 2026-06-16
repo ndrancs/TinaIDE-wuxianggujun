@@ -27,5 +27,5 @@ data class ProjectTemplateOption(
 
 object BuiltInProjectTemplates {
     const val PLUGIN_ID: String = "tinaide.project.templates"
-    const val defaultTemplateId: String = "plugin:tinaide.project.templates:cpp-single-file"
+    const val DEFAULT_TEMPLATE_ID: String = "plugin:tinaide.project.templates:cpp-single-file"
 }

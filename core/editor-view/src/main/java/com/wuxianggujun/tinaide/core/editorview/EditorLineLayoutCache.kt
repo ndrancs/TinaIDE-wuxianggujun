@@ -292,9 +292,7 @@ internal class EditorLineLayoutCache(
         lru.putAll(shifted)
     }
 
-    private fun isDevDiagEnabled(): Boolean {
-        return runCatching {
-            Prefs.developerOptionsEnabled && Prefs.devDiagnosticsEnabled
-        }.getOrDefault(false)
-    }
+    private fun isDevDiagEnabled(): Boolean = runCatching {
+        Prefs.developerOptionsEnabled && Prefs.devDiagnosticsEnabled
+    }.getOrDefault(false)
 }

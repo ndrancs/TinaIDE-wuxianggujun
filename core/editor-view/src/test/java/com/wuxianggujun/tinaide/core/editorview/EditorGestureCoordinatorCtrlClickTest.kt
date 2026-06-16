@@ -154,13 +154,11 @@ class EditorGestureCoordinatorCtrlClickTest {
 
         override fun contentStartX(state: EditorState, lineNumberPaint: Paint): Float = textStartX
 
-        override fun hitZones(state: EditorState, lineNumberPaint: Paint): EditorHitZones {
-            return EditorHitZones(
-                lineNumberEndX = 0f,
-                gutterEndX = 0f,
-                textStartX = textStartX
-            )
-        }
+        override fun hitZones(state: EditorState, lineNumberPaint: Paint): EditorHitZones = EditorHitZones(
+            lineNumberEndX = 0f,
+            gutterEndX = 0f,
+            textStartX = textStartX
+        )
 
         override fun isFoldBadgeHit(
             docLine: Int,
@@ -176,23 +174,21 @@ class EditorGestureCoordinatorCtrlClickTest {
             textPaint: Paint
         ): Int = -1
 
-        override fun performanceSnapshot(): EditorRenderPerformanceSnapshot {
-            return EditorRenderPerformanceSnapshot(
-                totalRenderedFrames = 0,
-                slowRenderedFrames = 0,
-                lastRenderDurationMs = 0,
-                lastVisibleLineCount = 0,
-                lastFrameCacheHits = 0,
-                lastFrameCacheMisses = 0,
-                totalCacheHits = 0,
-                totalCacheMisses = 0,
-                totalCacheHitRatePercent = 0.0,
-                textLineCacheSize = 0,
-                textScanCacheSize = 0,
-                lineLayoutCacheEntryCount = 0,
-                lineLayoutCacheFloatCount = 0
-            )
-        }
+        override fun performanceSnapshot(): EditorRenderPerformanceSnapshot = EditorRenderPerformanceSnapshot(
+            totalRenderedFrames = 0,
+            slowRenderedFrames = 0,
+            lastRenderDurationMs = 0,
+            lastVisibleLineCount = 0,
+            lastFrameCacheHits = 0,
+            lastFrameCacheMisses = 0,
+            totalCacheHits = 0,
+            totalCacheMisses = 0,
+            totalCacheHitRatePercent = 0.0,
+            textLineCacheSize = 0,
+            textScanCacheSize = 0,
+            lineLayoutCacheEntryCount = 0,
+            lineLayoutCacheFloatCount = 0
+        )
 
         override fun invalidateCache() = Unit
 

@@ -1,6 +1,6 @@
 # TinaIDE 文档中心
 
-> 更新日期：2026-04-29
+> 更新日期：2026-06-11
 
 这里汇总 TinaIDE 当前仍然有效的项目文档，并标出应该优先回看的源码入口。
 
@@ -10,6 +10,7 @@
 - [架构概览](架构概览.md)：启动入口、模块分层、编辑器语言服务分流
 - [模块功能说明](模块功能说明.md)：当前 Gradle 模块、外部本地模块与复合构建职责
 - [开发指南](开发指南.md)：本地开发、验证命令、提交与协作约束
+- [文档状态与生命周期](documentation-status.md)：文档可信层级、历史参考边界与后续清理规则
 - [项目 README](../README.md)：项目定位、功能概览、仓库结构
 
 ## 当前事实源
@@ -30,7 +31,7 @@
 - 插件 LSP：`core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/lsp/LspPluginManager.kt`
 - AI 工具注册：`feature/ai/src/main/java/com/wuxianggujun/tinaide/ai/tools/ToolInitializer.kt`、`feature/ai/src/main/java/com/wuxianggujun/tinaide/ai/tools/ToolRegistry.kt`
 - 帮助文档入口：`feature/help/src/main/java/com/wuxianggujun/tinaide/core/help/HelpRepository.kt`
-- PRoot / Linux 环境：PRootBootstrap.kt、SelfHostedLinuxDistroRuntime.kt、core/linux-distro manifest
+- PRoot / Linux 环境：`core/proot/src/main/java/com/wuxianggujun/tinaide/core/proot/PRootBootstrap.kt`、`core/proot/src/main/java/com/wuxianggujun/tinaide/core/proot/SelfHostedLinuxDistroRuntime.kt`、`core/linux-distro/src/main/assets/linux-distro/manifest.json`
 
 ## 文档导航
 
@@ -45,11 +46,11 @@
 
 - [架构概览](架构概览.md)
 - [模块功能说明](模块功能说明.md)
+- [文档状态与生命周期](documentation-status.md)
 - [设计文档索引](design/README.md)
 
 ### 功能与实现
 
-- [Clangd 补全 Fast Path](clangd-completion-fast-path.md)
 - [Android-hosted LLVM 工具链对比与风险分析](android-hosted-llvm-toolchain-analysis.md)
 - [Clang Android 执行权限修复](clang-android-exec-fix.md)
 - [Toolchain 构建与同步指南](toolchain-build-guide.md)
@@ -62,6 +63,7 @@
 - [LSP 调试指南](guides/LSP-Debug-Guide.md)
 - [远程 LSP 指南](guides/Remote-LSP-Guide.md)
 - [PC LSP 代理配置](guides/PC-LSP-Proxy-Setup-Guide.md)
+- [MT Data Files Provider](guides/MT-Data-Files-Provider.md)
 - [文件预览指南](guides/File-Viewer-Guide.md)
 - [分支管理指南](guides/Branch-Management-Guide.md)
 
@@ -86,6 +88,7 @@
 - PRoot 是可选 Linux 环境，主要服务终端、Linux 工具和插件 / 调试扩展能力。
 - 编辑器语言服务不是单一路径：C/C++ 走 `clangd`，CMake / Make 走内建语言服务，其他语言可走插件 LSP。
 - App 首次启动默认只安装内置运行资产；只有显式进入 Linux 环境相关流程时，才会通过自研 Linux 发行版管理器安装 rootfs 与 guest toolchain。
+- 设计、规划、Docker 与工具脚本文档的可信层级，以 [文档状态与生命周期](documentation-status.md) 为准。
 
 ## 说明
 

@@ -171,21 +171,19 @@ class PluginKeyBindingResolverTest {
 
     private fun createPlugin(
         keybindingPaths: List<String>
-    ): InstalledPlugin {
-        return InstalledPlugin(
-            manifest = PluginManifest(
-                id = "plugin.keybinding",
-                name = "Plugin Keybinding",
-                version = "1.0.0",
-                type = PluginTypes.CONFIG,
-                contributions = PluginContributions(
-                    keybindings = keybindingPaths
-                )
-            ),
-            directory = pluginDir,
-            enabled = true
-        )
-    }
+    ): InstalledPlugin = InstalledPlugin(
+        manifest = PluginManifest(
+            id = "plugin.keybinding",
+            name = "Plugin Keybinding",
+            version = "1.0.0",
+            type = PluginTypes.CONFIG,
+            contributions = PluginContributions(
+                keybindings = keybindingPaths
+            )
+        ),
+        directory = pluginDir,
+        enabled = true
+    )
 
     private fun keyEvent(
         keyCode: Int,

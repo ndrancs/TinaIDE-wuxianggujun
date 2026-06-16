@@ -46,6 +46,7 @@
 ## 快速开始
 
 优先使用 IDE 内的 **新建插件项目** 入口，不再把手工创建目录作为第一步。
+如果你第一次写插件，先做 `config-basic`，先把主题和代码片段跑通，再碰脚本和 LSP。
 
 ### 1. 打开新建插件项目向导
 
@@ -67,7 +68,7 @@
 
 `TinaIDE Plugin Starters` 需要先从插件市场 / Registry 安装并启用。当前提供：
 
-- `config-basic`：配置型插件，适合主题、片段、菜单等声明式扩展
+- `config-basic`：第一次写插件先选它，适合主题、片段、菜单等声明式扩展
 - `script-command`：脚本命令插件，适合先验证菜单命令闭环
 - `script-basic`：脚本插件基础工程，适合逐步接入宿主 API
 - `lsp-basic`：LSP 插件基础工程，适合语言服务集成
@@ -77,47 +78,31 @@
 
 ### 3. 修改 `manifest.json`
 
-先把模板中的 `id`、`name`、`version`、`type` 和贡献项改成你的插件信息：
+先把模板中的 `id`、`name`、`version`、`type` 和贡献项改成你的插件信息。
+第一次写插件时，先保留最小的 `themes` + `snippets`，不要一上来就加脚本和权限。
 
 ```json
 {
-  "id": "com.example.my-plugin",
-  "name": "My TinaIDE Plugin",
-  "version": "1.0.0",
+  "id": "com.example.my-first-plugin",
+  "name": "My First Plugin",
+  "version": "0.1.0",
   "type": "config",
-  "configuration": {
-    "title": "My Plugin Settings",
-    "properties": {
-      "feature.enabled": {
-        "type": "boolean",
-        "default": true,
-        "description": "Enable the feature"
-      },
-      "output.format": {
-        "type": "string",
-        "default": "json",
-        "enum": ["text", "json"],
-        "description": "Output format"
-      },
-      "build.jobs": {
-        "type": "number",
-        "default": 2,
-        "description": "Parallel build jobs"
-      }
-    }
+  "description": "My first TinaIDE plugin.",
+  "author": {
+    "name": "Your Name"
   },
   "contributions": {
-    "themes": ["themes/my-theme.json"]
+    "themes": [
+      "themes/my-theme.json"
+    ],
+    "snippets": [
+      "snippets/my-snippets.json"
+    ]
   }
 }
 ```
 
-`configuration.properties` 当前支持：
-
-- `type = "boolean"`：详情页渲染为开关。
-- `type = "string"`：详情页渲染为文本输入。
-- `type = "number"`：详情页渲染为数字输入。
-- `type = "string"` 且声明 `enum`：详情页渲染为单选项。
+`id` 只能包含字母、数字、`.`、`_`、`-`，不能是路径，也不能带 `..`。
 
 配置 key 必须匹配 `^[A-Za-z0-9][A-Za-z0-9._-]*$`。宿主会按插件 ID 隔离保存配置；
 脚本 / hybrid 插件可通过 `tina.config.get/set/reset` 读取和更新自己声明过的配置项，并可监听
@@ -168,6 +153,8 @@ my-plugin/
 
 > 备注（与源码同步）：`editor/toolbar` 已接入编辑器标签栏右侧插件动作菜单，
 > 同时会进入主编辑器命令面板；`keybindings` 已接入 MainActivity 硬件键盘快捷键分发。
+> 宿主内部统一使用 `ResolvedPluginCommand` 表示已解析的插件命令，包含 `pluginId`、`pluginName`、
+> `commandId`、`group`、`surface` 与 `source`；旧 `ResolvedHostMenuItem` 仅作为菜单 UI 兼容层保留。
 
 ## 宿主内置命令总览
 
@@ -811,6 +798,9 @@ v1 兼容索引默认不再生成，只服务旧客户端。主仓库当前随 A
 - 插件通过 `contributions.keybindings` 声明 keybindings JSON 文件
 - `command` 支持宿主内置命令，或当前插件运行时已注册的插件命令
 - `contributions.commands` 会参与菜单标题解析；若未声明，则回退到运行时注册标题或命令 ID
+- 菜单解析统一输出 `ResolvedPluginCommand` 元数据，`surface` 当前包括 `EDITOR_TOOLBAR`、`EDITOR_CONTEXT`、
+  `FILE_TREE_CONTEXT`，`source` 当前包括 `HOST` 与 `PLUGIN`
+- 命令面板消费 `resolveEditorToolbarCommands()`，不要从旧菜单项临时拼接插件名、来源或搜索关键词
 - 插件快捷键会在用户自定义/内置快捷键未命中后尝试执行，避免覆盖用户设置
 
 `contributions.keybindings` 示例：

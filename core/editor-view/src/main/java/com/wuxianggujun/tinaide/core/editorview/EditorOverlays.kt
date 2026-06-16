@@ -1,7 +1,6 @@
 package com.wuxianggujun.tinaide.core.editorview
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -18,10 +17,10 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -383,10 +382,16 @@ internal fun EditorSignatureHelpOverlay(
     val visibleSignatureCount = resolvedResult?.signatures?.size?.coerceIn(1, 3) ?: 1
     val preferredContentHeightPx = (
         with(density) { 18.dp.toPx() } +
-            if ((resolvedResult?.signatures?.size ?: 0) > 1) with(density) { 34.dp.toPx() } else 0f +
-            (state.lineHeightPx * estimatedLineCountPerSignature * 1.1f +
-                with(density) { 18.dp.toPx() }) * visibleSignatureCount +
-            if (signatureState is SignatureHelpUiState.Loading) with(density) { 20.dp.toPx() } else 0f
+            if ((resolvedResult?.signatures?.size ?: 0) > 1) {
+                with(density) { 34.dp.toPx() }
+            } else {
+                0f +
+                    (
+                        state.lineHeightPx * estimatedLineCountPerSignature * 1.1f +
+                            with(density) { 18.dp.toPx() }
+                        ) * visibleSignatureCount +
+                    if (signatureState is SignatureHelpUiState.Loading) with(density) { 20.dp.toPx() } else 0f
+            }
         ).coerceAtLeast(popupMinHeightPx)
     val cursorAnchor = resolveCursorPopupAnchor(session)
     val layout = SignatureHelpPopupLayoutResolver.resolve(

@@ -1,5 +1,6 @@
 package com.wuxianggujun.tinaide.buildlogic
 
+import groovy.json.JsonSlurper
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
@@ -14,6 +15,9 @@ import java.util.Properties
  * duplicate Gradle task logic or depend directly on Android DSL internals.
  */
 internal object TinaToolchainAssetsVerification {
+
+    private const val SYSROOT_ASSET_DIR = "android-sysroot"
+    private const val SYSROOT_PROFILE_MANIFEST = "profiles.json"
 
     /**
      * ABI flavor names that Tina supports end-to-end today. Kept in the
@@ -103,6 +107,7 @@ internal object TinaToolchainAssetsVerification {
                     "Fix: generate/sync toolchain assets for the missing ABI before building.",
             )
         }
+        verifyRequiredSysrootManifests(project, expectedFlavorSpecs.keys)
 
         val srcRoot = project.file("src")
         val specFiles = if (srcRoot.isDirectory) {
@@ -128,6 +133,134 @@ internal object TinaToolchainAssetsVerification {
 
         for (specFile in specFiles) {
             verifySingleSpec(project, logger, specFile)
+        }
+
+        for (manifestFile in findSysrootManifests(srcRoot)) {
+            verifySingleSysrootManifest(project, manifestFile)
+        }
+    }
+
+    private fun verifyRequiredSysrootManifests(project: Project, requiredFlavors: Collection<String>) {
+        val missingManifests = requiredFlavors
+            .map { flavor ->
+                flavor to project.file("src/$flavor/assets/$SYSROOT_ASSET_DIR/$SYSROOT_PROFILE_MANIFEST")
+            }
+            .filter { (_, file) -> !file.isFile }
+
+        if (missingManifests.isNotEmpty()) {
+            val details = missingManifests.joinToString("\n") { (flavor, file) ->
+                " - $flavor: ${file.relativeTo(project.projectDir).invariantSeparatorsPath}"
+            }
+            throw GradleException(
+                "Missing Android sysroot profile manifest for required ABI flavor(s):\n$details\n" +
+                    "Fix: run tools/sync-tina-toolchain-assets.ps1 for the ABI or add $SYSROOT_PROFILE_MANIFEST " +
+                    "under app/src/<abi>/assets/$SYSROOT_ASSET_DIR.",
+            )
+        }
+    }
+
+    private fun findSysrootManifests(srcRoot: File): List<File> {
+        if (!srcRoot.isDirectory) return emptyList()
+        return srcRoot.walkTopDown()
+            .filter {
+                it.isFile &&
+                    it.name == SYSROOT_PROFILE_MANIFEST &&
+                    it.parentFile?.name == SYSROOT_ASSET_DIR &&
+                    it.parentFile?.parentFile?.name == "assets"
+            }
+            .sortedBy { it.invariantSeparatorsPath }
+            .toList()
+    }
+
+    private fun verifySingleSysrootManifest(project: Project, manifestFile: File) {
+        val relManifest = manifestFile.relativeTo(project.projectDir).invariantSeparatorsPath
+        val relParts = relManifest.split('/')
+        val flavorName = relParts.getOrNull(1) ?: "unknown"
+        val expectedTriple = expectedSysrootTriple(flavorName)
+        val expectedArchNames = expectedSysrootArchNames(flavorName)
+        val assetsDir = manifestFile.parentFile?.parentFile
+            ?: throw GradleException("Invalid Android sysroot manifest location: $relManifest")
+
+        val parsed = try {
+            JsonSlurper().parse(manifestFile)
+        } catch (e: Exception) {
+            throw GradleException("Invalid Android sysroot manifest JSON: $relManifest", e)
+        }
+        val manifest = parsed as? Map<*, *>
+            ?: throw GradleException("Android sysroot manifest root must be a JSON object: $relManifest")
+
+        val schemaVersion = readInt(manifest, "schemaVersion")
+        if (schemaVersion != 1) {
+            throw GradleException("Android sysroot manifest schemaVersion must be 1: $relManifest")
+        }
+
+        val defaultProfileId = readString(manifest, "defaultProfileId")
+            ?: throw GradleException("Android sysroot manifest defaultProfileId is blank: $relManifest")
+        val profiles = readList(manifest, "profiles")
+            ?: throw GradleException("Android sysroot manifest profiles must be an array: $relManifest")
+        if (profiles.isEmpty()) {
+            throw GradleException("Android sysroot manifest contains no profiles: $relManifest")
+        }
+
+        val profileIds = linkedSetOf<String>()
+        for ((index, rawProfile) in profiles.withIndex()) {
+            val profile = rawProfile as? Map<*, *>
+                ?: throw GradleException("Android sysroot profile at index $index must be an object: $relManifest")
+            val id = readString(profile, "id")
+                ?: throw GradleException("Android sysroot profile id is blank at index $index: $relManifest")
+            if (!profileIds.add(id)) {
+                throw GradleException("Duplicate Android sysroot profile id '$id': $relManifest")
+            }
+
+            val arch = readString(profile, "arch")
+                ?: throw GradleException("Android sysroot profile arch is blank: id=$id manifest=$relManifest")
+            if (expectedArchNames.isNotEmpty() && arch !in expectedArchNames) {
+                throw GradleException(
+                    "Android sysroot profile arch mismatch: id=$id arch=$arch expected=$expectedArchNames " +
+                        "manifest=$relManifest",
+                )
+            }
+
+            val assetPath = readString(profile, "assetPath")
+                ?: throw GradleException("Android sysroot profile assetPath is blank: id=$id manifest=$relManifest")
+            requireSafeSysrootAssetPath(assetPath, id, relManifest)
+            val assetFile = assetsDir.resolve(assetPath)
+            if (!assetFile.isFile) {
+                throw GradleException(
+                    "Missing Android sysroot asset for profile '$id' in $relManifest: " +
+                        "expected ${assetFile.relativeTo(project.projectDir).invariantSeparatorsPath}",
+                )
+            }
+            if (!assetPath.endsWith(".tar.xz")) {
+                throw GradleException(
+                    "Unsupported Android sysroot asset extension: id=$id assetPath=$assetPath. " +
+                        "Only .tar.xz is supported.",
+                )
+            }
+
+            val sha256 = readString(profile, "sha256")
+            if (sha256 != null && !sha256.matches(Regex("[0-9a-fA-F]{64}"))) {
+                throw GradleException("Invalid Android sysroot sha256: id=$id manifest=$relManifest")
+            }
+
+            val toolchainTriple = readString(profile, "toolchainTriple")
+            if (expectedTriple != null && toolchainTriple != null && toolchainTriple != expectedTriple) {
+                throw GradleException(
+                    "Android sysroot profile triple mismatch: id=$id triple=$toolchainTriple " +
+                        "expected=$expectedTriple manifest=$relManifest",
+                )
+            }
+
+            val apiLevels = readList(profile, "apiLevels")
+            if (apiLevels != null && apiLevels.any { (it as? Number)?.toInt() == null }) {
+                throw GradleException("Android sysroot apiLevels must contain only numbers: id=$id manifest=$relManifest")
+            }
+        }
+
+        if (defaultProfileId !in profileIds) {
+            throw GradleException(
+                "Android sysroot defaultProfileId '$defaultProfileId' does not match any profile id: $relManifest",
+            )
         }
     }
 
@@ -235,6 +368,44 @@ internal object TinaToolchainAssetsVerification {
             )
         }
     }
+
+    private fun requireSafeSysrootAssetPath(assetPath: String, profileId: String, relManifest: String) {
+        val isUnsafe = assetPath.contains('\\') ||
+            assetPath.startsWith("/") ||
+            assetPath.contains("..") ||
+            !assetPath.startsWith("$SYSROOT_ASSET_DIR/")
+        if (isUnsafe) {
+            throw GradleException(
+                "Unsafe Android sysroot assetPath: id=$profileId assetPath=$assetPath manifest=$relManifest. " +
+                    "Expected a path under $SYSROOT_ASSET_DIR/.",
+            )
+        }
+    }
+
+    private fun expectedSysrootTriple(flavorName: String): String? = when (flavorName) {
+        "arm64" -> "aarch64-linux-android"
+        "x86_64" -> "x86_64-linux-android"
+        else -> null
+    }
+
+    private fun expectedSysrootArchNames(flavorName: String): Set<String> = when (flavorName) {
+        "arm64" -> setOf("ARM64", "aarch64-linux-android")
+        "x86_64" -> setOf("X86_64", "x86_64-linux-android")
+        else -> emptySet()
+    }
+
+    private fun readString(map: Map<*, *>, key: String): String? =
+        (map[key] as? String)?.trim()?.takeIf { it.isNotBlank() }
+
+    private fun readInt(map: Map<*, *>, key: String): Int? =
+        when (val value = map[key]) {
+            is Number -> value.toInt()
+            is String -> value.trim().toIntOrNull()
+            else -> null
+        }
+
+    private fun readList(map: Map<*, *>, key: String): List<*>? =
+        map[key] as? List<*>
 
     private fun readTrimmed(props: Properties, key: String): String? {
         return props.getProperty(key)?.trim()?.takeIf { it.isNotBlank() }

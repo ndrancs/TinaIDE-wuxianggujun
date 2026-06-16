@@ -4,18 +4,18 @@ import android.content.Context
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.exception.TinaIDEException
 import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.storage.ProjectPaths
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import com.wuxianggujun.tinaide.storage.ProjectPaths
+import java.io.File
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import java.io.File
 
 /**
  * PathValidator 单元测试（Robolectric）
@@ -213,5 +213,4 @@ class PathValidatorTest {
         val prefixes = validator.getAllowedHostPrefixes()
         assertThat(prefixes).isNotEmpty()
     }
-
 }

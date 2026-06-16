@@ -3,10 +3,10 @@ package com.wuxianggujun.tinaide.core.compile
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.project.ProjectMetadata
 import com.wuxianggujun.tinaide.project.ProjectMetadataStore
+import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 class ProjectSysrootApiLevelResolverTest {
 

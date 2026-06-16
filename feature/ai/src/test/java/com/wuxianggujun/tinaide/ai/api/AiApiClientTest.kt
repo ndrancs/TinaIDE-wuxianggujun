@@ -677,14 +677,14 @@ class AiApiClientTest {
     }
 
     @Test
-    fun `list models accepts gateway compatible minimal model items`() = runTest {
+    fun `list models accepts provider compatible minimal model items`() = runTest {
         val client = newClient(
             responseBody = """
                 {
                   "object":"list",
                   "data":[
-                    {"id":"gateway-model-a"},
-                    {"id":"gateway-model-b"}
+                    {"id":"provider-model-a"},
+                    {"id":"provider-model-b"}
                   ]
                 }
             """.trimIndent()
@@ -692,7 +692,7 @@ class AiApiClientTest {
 
         val result = client.listModels()
 
-        assertThat(result).isEqualTo(ApiResult.Success(listOf("gateway-model-a", "gateway-model-b")))
+        assertThat(result).isEqualTo(ApiResult.Success(listOf("provider-model-a", "provider-model-b")))
     }
 
     @Test

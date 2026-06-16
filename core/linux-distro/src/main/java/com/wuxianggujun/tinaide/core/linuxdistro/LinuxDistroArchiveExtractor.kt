@@ -27,6 +27,7 @@ class TarLinuxDistroArchiveExtractor : LinuxDistroArchiveExtractor {
             input = archiveFile.inputStream(),
             targetDir = targetDir,
             compressionType = format.compressionType(),
+            symlinkPolicy = TarExtractor.SymlinkPolicy.PRESERVE_ARCHIVE_TARGETS,
             ensureActive = ensureActive,
             progress = progress,
         )

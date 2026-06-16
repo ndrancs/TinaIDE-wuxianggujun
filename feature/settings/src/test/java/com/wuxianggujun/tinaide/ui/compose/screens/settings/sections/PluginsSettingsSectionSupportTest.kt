@@ -3,6 +3,7 @@ package com.wuxianggujun.tinaide.ui.compose.screens.settings.sections
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.plugin.InstalledPlugin
+import com.wuxianggujun.tinaide.plugin.PluginCommand
 import com.wuxianggujun.tinaide.plugin.PluginConfiguration
 import com.wuxianggujun.tinaide.plugin.PluginConfigurationProperty
 import com.wuxianggujun.tinaide.plugin.PluginContributions
@@ -19,11 +20,16 @@ import com.wuxianggujun.tinaide.plugin.PluginMenuItem
 import com.wuxianggujun.tinaide.plugin.PluginMenus
 import com.wuxianggujun.tinaide.plugin.PluginRequirements
 import com.wuxianggujun.tinaide.plugin.PluginToolchainRequirements
+import com.wuxianggujun.tinaide.plugin.ResolvedPluginCommandSource
+import com.wuxianggujun.tinaide.plugin.ResolvedPluginCommandSurface
 import com.wuxianggujun.tinaide.plugin.ThemeConfig
 import com.wuxianggujun.tinaide.plugin.lsp.LspPluginInfo
 import com.wuxianggujun.tinaide.plugin.lsp.LspPluginInstallState
 import com.wuxianggujun.tinaide.plugin.lsp.LspToolchainConfig
 import com.wuxianggujun.tinaide.plugin.lsp.ToolchainInstallState
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandAvailability
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandExecutionIssue
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistrationIssue
 import java.io.File
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Test
@@ -307,6 +313,9 @@ class PluginsSettingsSectionSupportTest {
                     editorContext = listOf(
                         PluginMenuItem(command = "c"),
                     ),
+                    editorToolbar = listOf(
+                        PluginMenuItem(command = "d"),
+                    ),
                 ),
             ),
         )
@@ -318,8 +327,442 @@ class PluginsSettingsSectionSupportTest {
                 themeCount = 2,
                 fileTreeMenuCount = 2,
                 editorContextMenuCount = 1,
+                editorToolbarMenuCount = 1,
             )
         )
+    }
+
+    @Test
+    fun commandContributions_shouldExposeSurfaceSourceAndStatus() {
+        val manifest = PluginManifest(
+            id = "demo.plugin",
+            name = "Demo Plugin",
+            version = "1.0.0",
+            contributions = PluginContributions(
+                commands = listOf(
+                    PluginCommand(id = "plugin.run", title = "Run Demo"),
+                    PluginCommand(id = "plugin.open", title = "Open Demo"),
+                ),
+                menus = PluginMenus(
+                    editorContext = listOf(
+                        PluginMenuItem(
+                            command = "plugin.run",
+                            group = "1_run",
+                            `when` = " isDirty ",
+                        ),
+                        PluginMenuItem(
+                            command = "missing.command",
+                            group = "2_missing",
+                        ),
+                        PluginMenuItem(
+                            command = " ",
+                            group = "3_blank",
+                        ),
+                    ),
+                    editorToolbar = listOf(
+                        PluginMenuItem(command = "editor.save"),
+                    ),
+                    fileTreeContext = listOf(
+                        PluginMenuItem(command = "plugin.open", group = "0_open"),
+                    ),
+                ),
+            ),
+        )
+
+        val commands = PluginsSettingsSectionSupport.resolveCommandContributions(
+            manifest = manifest,
+            isPluginCommandRegistered = { _, _ -> true },
+            pluginCommandAvailability = { _, _ -> PluginCommandAvailability(available = true) },
+        )
+
+        assertThat(commands.map { command -> command.surface }).containsExactly(
+            ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+            ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+            ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+            ResolvedPluginCommandSurface.EDITOR_TOOLBAR,
+            ResolvedPluginCommandSurface.FILE_TREE_CONTEXT,
+        ).inOrder()
+        assertThat(commands.map { command -> command.commandId }).containsExactly(
+            "plugin.run",
+            "missing.command",
+            "",
+            "editor.save",
+            "plugin.open",
+        ).inOrder()
+        assertThat(commands.map { command -> command.source }).containsExactly(
+            ResolvedPluginCommandSource.PLUGIN,
+            null,
+            null,
+            ResolvedPluginCommandSource.HOST,
+            ResolvedPluginCommandSource.PLUGIN,
+        ).inOrder()
+        assertThat(commands.map { command -> command.status }).containsExactly(
+            PluginCommandContributionStatus.AVAILABLE,
+            PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION,
+            PluginCommandContributionStatus.MISSING_COMMAND_ID,
+            PluginCommandContributionStatus.AVAILABLE,
+            PluginCommandContributionStatus.AVAILABLE,
+        ).inOrder()
+        assertThat(commands.first().title).isEqualTo("Run Demo")
+        assertThat(commands.first().whenExpression).isEqualTo("isDirty")
+        assertThat(commands[3].group).isEqualTo("9_plugin")
+        assertThat(
+            PluginsSettingsSectionSupport.resolveCommandContributionSummary(commands)
+        ).isEqualTo(
+            PluginsCommandContributionSummary(
+                totalCount = 5,
+                availableCount = 3,
+                issueCount = 2,
+            )
+        )
+    }
+
+    @Test
+    fun commandContributionFilters_shouldExposeCountsAndFilteredLists() {
+        val commands = listOf(
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                commandId = "plugin.ready",
+                title = "Ready",
+                group = "ready",
+                source = ResolvedPluginCommandSource.PLUGIN,
+                status = PluginCommandContributionStatus.AVAILABLE,
+                whenExpression = null,
+            ),
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                commandId = "plugin.missing",
+                title = "Missing Runtime",
+                group = "missing",
+                source = ResolvedPluginCommandSource.PLUGIN,
+                status = PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION,
+                whenExpression = null,
+                statusMessage = "Command ID already registered by plugin other.plugin: plugin.missing",
+            ),
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.FILE_TREE_CONTEXT,
+                commandId = "",
+                title = "Broken Menu",
+                group = "broken",
+                source = null,
+                status = PluginCommandContributionStatus.MISSING_COMMAND_ID,
+                whenExpression = null,
+            ),
+        )
+        val summary = PluginsSettingsSectionSupport.resolveCommandContributionSummary(commands)
+
+        assertThat(
+            PluginsSettingsSectionSupport.resolveCommandContributionFilterOptions(summary)
+        ).containsExactly(
+            PluginCommandContributionFilterOption(
+                filter = PluginCommandContributionFilter.ALL,
+                count = 3,
+            ),
+            PluginCommandContributionFilterOption(
+                filter = PluginCommandContributionFilter.ISSUES,
+                count = 2,
+            ),
+            PluginCommandContributionFilterOption(
+                filter = PluginCommandContributionFilter.AVAILABLE,
+                count = 1,
+            ),
+        ).inOrder()
+        assertThat(
+            PluginsSettingsSectionSupport.filterCommandContributions(
+                commands = commands,
+                filter = PluginCommandContributionFilter.ISSUES,
+            ).map { command -> command.commandId }
+        ).containsExactly("plugin.missing", "")
+        assertThat(
+            PluginsSettingsSectionSupport.filterCommandContributions(
+                commands = commands,
+                filter = PluginCommandContributionFilter.AVAILABLE,
+            ).map { command -> command.commandId }
+        ).containsExactly("plugin.ready")
+        assertThat(
+            PluginsSettingsSectionSupport.resolveCommandContributionFilterOrAll(
+                filter = PluginCommandContributionFilter.AVAILABLE,
+                availableFilters = listOf(
+                    PluginCommandContributionFilterOption(
+                        filter = PluginCommandContributionFilter.ALL,
+                        count = 2,
+                    ),
+                    PluginCommandContributionFilterOption(
+                        filter = PluginCommandContributionFilter.ISSUES,
+                        count = 2,
+                    ),
+                ),
+            )
+        ).isEqualTo(PluginCommandContributionFilter.ALL)
+    }
+
+    @Test
+    fun commandContributions_shouldExposeRuntimeAvailabilityDiagnostics() {
+        val manifest = PluginManifest(
+            id = "demo.plugin",
+            name = "Demo Plugin",
+            version = "1.0.0",
+            contributions = PluginContributions(
+                commands = listOf(
+                    PluginCommand(id = "plugin.missing", title = "Missing Runtime"),
+                    PluginCommand(id = "plugin.denied", title = "Denied Runtime"),
+                    PluginCommand(id = "plugin.failed", title = "Failed Runtime"),
+                    PluginCommand(id = "plugin.ready", title = "Ready Runtime"),
+                ),
+                menus = PluginMenus(
+                    editorContext = listOf(
+                        PluginMenuItem(command = "plugin.missing", group = "1_missing"),
+                        PluginMenuItem(command = "plugin.denied", group = "2_denied"),
+                        PluginMenuItem(command = "plugin.failed", group = "3_failed"),
+                        PluginMenuItem(command = "plugin.ready", group = "4_ready"),
+                    ),
+                ),
+            ),
+        )
+
+        val commands = PluginsSettingsSectionSupport.resolveCommandContributions(
+            manifest = manifest,
+            isPluginCommandRegistered = { commandId, _ -> commandId != "plugin.missing" },
+            pluginCommandAvailability = { commandId, _ ->
+                when (commandId) {
+                    "plugin.denied" -> PluginCommandAvailability(
+                        available = false,
+                        errorMessage = "Permission command.execute is not granted",
+                    )
+                    else -> PluginCommandAvailability(available = true)
+                }
+            },
+            pluginCommandRegistrationIssue = { commandId, pluginId ->
+                if (commandId == "plugin.missing") {
+                    PluginCommandRegistrationIssue(
+                        pluginId = pluginId,
+                        pluginName = "Demo Plugin",
+                        commandId = commandId,
+                        message = "Command ID already registered by plugin other.plugin: plugin.missing",
+                    )
+                } else {
+                    null
+                }
+            },
+            pluginCommandExecutionIssue = { commandId, pluginId ->
+                if (commandId == "plugin.failed") {
+                    PluginCommandExecutionIssue(
+                        pluginId = pluginId,
+                        pluginName = "Demo Plugin",
+                        commandId = commandId,
+                        message = "Boom",
+                    )
+                } else {
+                    null
+                }
+            },
+        )
+
+        assertThat(commands.map { command -> command.commandId }).containsExactly(
+            "plugin.missing",
+            "plugin.denied",
+            "plugin.failed",
+            "plugin.ready",
+        ).inOrder()
+        assertThat(commands.map { command -> command.status }).containsExactly(
+            PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION,
+            PluginCommandContributionStatus.UNAVAILABLE,
+            PluginCommandContributionStatus.EXECUTION_FAILED,
+            PluginCommandContributionStatus.AVAILABLE,
+        ).inOrder()
+        assertThat(commands[0].statusMessage)
+            .isEqualTo("Command ID already registered by plugin other.plugin: plugin.missing")
+        assertThat(commands[1].statusMessage).isEqualTo("Permission command.execute is not granted")
+        assertThat(commands[2].statusMessage).isEqualTo("Boom")
+        assertThat(
+            PluginsSettingsSectionSupport.resolveCommandContributionSummary(commands)
+        ).isEqualTo(
+            PluginsCommandContributionSummary(
+                totalCount = 4,
+                availableCount = 1,
+                issueCount = 3,
+            )
+        )
+    }
+
+    @Test
+    fun commandRuntimeEntries_shouldExposeDiagnosticsAndActions() {
+        val commands = listOf(
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                commandId = "plugin.missing",
+                title = "Missing Runtime",
+                group = "1_missing",
+                source = ResolvedPluginCommandSource.PLUGIN,
+                status = PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION,
+                whenExpression = null,
+                statusMessage = "Command ID already registered by plugin other.plugin: plugin.missing",
+            ),
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                commandId = "plugin.denied",
+                title = "Denied Runtime",
+                group = "2_denied",
+                source = ResolvedPluginCommandSource.PLUGIN,
+                status = PluginCommandContributionStatus.UNAVAILABLE,
+                whenExpression = null,
+                statusMessage = "Permission command.execute is not granted",
+            ),
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                commandId = "plugin.failed",
+                title = "Failed Runtime",
+                group = "3_failed",
+                source = ResolvedPluginCommandSource.PLUGIN,
+                status = PluginCommandContributionStatus.EXECUTION_FAILED,
+                whenExpression = null,
+                statusMessage = "Boom",
+            ),
+            PluginsCommandContribution(
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                commandId = "plugin.ready",
+                title = "Ready Runtime",
+                group = "4_ready",
+                source = ResolvedPluginCommandSource.PLUGIN,
+                status = PluginCommandContributionStatus.AVAILABLE,
+                whenExpression = null,
+            ),
+        )
+        val diagnosticText = PluginCommandRuntimeDiagnosticText(
+            missingRegistrationTemplate = "Command %1\$s is not registered",
+            missingRegistrationWithReasonTemplate = "Command %1\$s registration failed: %2\$s",
+            unavailableTemplate = "Command %1\$s is unavailable: %2\$s",
+            unavailableWithoutReasonTemplate = "Command %1\$s is unavailable",
+            executionFailedTemplate = "Command %1\$s failed: %2\$s",
+            runtimeFixHint = "Reload plugin",
+            permissionFixHint = "Grant permission",
+            missingCommandIdLabel = "Missing command ID",
+        )
+
+        val entries = PluginsSettingsSectionSupport.buildCommandRuntimeEntries(
+            commands = commands,
+            diagnosticText = diagnosticText,
+        )
+        val missingRegistrationMessage = "Command plugin.missing registration failed: " +
+            "Command ID already registered by plugin other.plugin: plugin.missing"
+
+        assertThat(entries.map { entry -> entry.source }).containsExactly(
+            PluginDiagnosticSource.RUNTIME,
+            PluginDiagnosticSource.RUNTIME,
+            PluginDiagnosticSource.RUNTIME,
+        )
+        assertThat(entries.map { entry -> entry.issue.category }).containsExactly(
+            PluginDiagnosticCategory.RUNTIME,
+            PluginDiagnosticCategory.PERMISSIONS,
+            PluginDiagnosticCategory.RUNTIME,
+        )
+        assertThat(entries.map { entry -> entry.issue.severity }).containsExactly(
+            PluginDiagnosticSeverity.WARNING,
+            PluginDiagnosticSeverity.WARNING,
+            PluginDiagnosticSeverity.ERROR,
+        )
+        assertThat(entries.map { entry -> entry.issue.message }).containsExactly(
+            missingRegistrationMessage,
+            "Command plugin.denied is unavailable: Permission command.execute is not granted",
+            "Command plugin.failed failed: Boom",
+        ).inOrder()
+        assertThat(entries.map { entry -> entry.issue.fixHint }).containsExactly(
+            "Reload plugin",
+            "Grant permission",
+            "Reload plugin",
+        ).inOrder()
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionActions(
+                command = commands[0],
+                isScriptPlugin = true,
+            )
+        ).containsExactly(
+            PluginDiagnosticAction.OPEN_LOGS,
+            PluginDiagnosticAction.RELOAD_PLUGIN,
+            PluginDiagnosticAction.COPY_DIAGNOSTIC,
+        ).inOrder()
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionActions(
+                command = commands[1],
+                isScriptPlugin = true,
+            )
+        ).containsExactly(
+            PluginDiagnosticAction.OPEN_LOGS,
+            PluginDiagnosticAction.SHOW_PERMISSIONS,
+            PluginDiagnosticAction.RELOAD_PLUGIN,
+            PluginDiagnosticAction.COPY_DIAGNOSTIC,
+        ).inOrder()
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionActions(
+                command = commands[2],
+                isScriptPlugin = true,
+            )
+        ).containsExactly(
+            PluginDiagnosticAction.OPEN_LOGS,
+            PluginDiagnosticAction.RELOAD_PLUGIN,
+            PluginDiagnosticAction.COPY_DIAGNOSTIC,
+        ).inOrder()
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionActions(
+                command = commands[3],
+                isScriptPlugin = true,
+            )
+        ).isEmpty()
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionActions(
+                command = commands[3].copy(
+                    status = PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION,
+                ),
+                isScriptPlugin = true,
+            )
+        ).containsExactly(PluginDiagnosticAction.COPY_DIAGNOSTIC)
+    }
+
+    @Test
+    fun commandContributionLabels_shouldMapToStableStringResources() {
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandSurfaceLabelRes(
+                ResolvedPluginCommandSurface.EDITOR_CONTEXT
+            )
+        ).isEqualTo(Strings.plugins_commands_surface_editor_context)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandSourceLabelRes(
+                ResolvedPluginCommandSource.HOST
+            )
+        ).isEqualTo(Strings.plugins_commands_source_host)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandSourceLabelRes(null)
+        ).isEqualTo(Strings.plugins_commands_source_unknown)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandStatusLabelRes(
+                PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION
+            )
+        ).isEqualTo(Strings.plugins_commands_status_missing_declaration)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandStatusLabelRes(
+                PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION
+            )
+        ).isEqualTo(Strings.plugins_commands_status_missing_registration)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandStatusLabelRes(
+                PluginCommandContributionStatus.UNAVAILABLE
+            )
+        ).isEqualTo(Strings.plugins_commands_status_unavailable)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandStatusLabelRes(
+                PluginCommandContributionStatus.EXECUTION_FAILED
+            )
+        ).isEqualTo(Strings.plugins_commands_status_execution_failed)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionFilterLabelRes(
+                PluginCommandContributionFilter.ISSUES
+            )
+        ).isEqualTo(Strings.plugins_commands_filter_issues)
+        assertThat(
+            PluginsSettingsSectionSupport.resolvePluginCommandContributionFilterLabelRes(
+                PluginCommandContributionFilter.AVAILABLE
+            )
+        ).isEqualTo(Strings.plugins_commands_filter_available)
     }
 
     @Test
@@ -1186,6 +1629,43 @@ class PluginsSettingsSectionSupportTest {
         assertThat(clipboardText).contains("source: HEALTH")
         assertThat(clipboardText).contains("severity: WARNING")
         assertThat(clipboardText).contains("message: Unknown permission")
+    }
+
+    @Test
+    fun commandContributionClipboardText_shouldIncludeStableStructuredFields() {
+        val plugin = installedPlugin(
+            id = "demo.plugin",
+            name = "Demo Plugin",
+        )
+        val command = PluginsCommandContribution(
+            surface = ResolvedPluginCommandSurface.EDITOR_TOOLBAR,
+            commandId = "demo.run",
+            title = "Run Demo",
+            group = "navigation",
+            source = ResolvedPluginCommandSource.PLUGIN,
+            status = PluginCommandContributionStatus.UNAVAILABLE,
+            whenExpression = "editorLang == cpp",
+            statusMessage = "Permission command.execute is not granted",
+        )
+
+        val clipboardText = PluginsSettingsSectionSupport.buildPluginCommandContributionClipboardText(
+            plugin = plugin,
+            command = command,
+        )
+
+        assertThat(clipboardText).contains("Plugin command contribution")
+        assertThat(clipboardText).contains("pluginId: demo.plugin")
+        assertThat(clipboardText).contains("pluginName: Demo Plugin")
+        assertThat(clipboardText).contains("directoryName: demo.plugin")
+        assertThat(clipboardText).contains("enabled: true")
+        assertThat(clipboardText).contains("surface: EDITOR_TOOLBAR")
+        assertThat(clipboardText).contains("source: PLUGIN")
+        assertThat(clipboardText).contains("status: UNAVAILABLE")
+        assertThat(clipboardText).contains("commandId: demo.run")
+        assertThat(clipboardText).contains("title: Run Demo")
+        assertThat(clipboardText).contains("group: navigation")
+        assertThat(clipboardText).contains("when: editorLang == cpp")
+        assertThat(clipboardText).contains("reason: Permission command.execute is not granted")
     }
 
     @Test

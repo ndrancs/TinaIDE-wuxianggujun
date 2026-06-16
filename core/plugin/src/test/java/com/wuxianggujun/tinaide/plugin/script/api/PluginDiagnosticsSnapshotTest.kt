@@ -34,17 +34,15 @@ class PluginDiagnosticsSnapshotTest {
         assertThat(snapshot.error).isEqualTo("Diagnostics provider unavailable")
     }
 
-    private fun diagnostic(severity: String): PluginDiagnosticItem {
-        return PluginDiagnosticItem(
-            fileUri = "file:///workspace/src/Main.kt",
-            filePath = "src/Main.kt",
-            fileName = "Main.kt",
-            line = 1,
-            column = 2,
-            endLine = 1,
-            endColumn = 3,
-            message = "message",
-            severity = severity
-        )
-    }
+    private fun diagnostic(severity: String): PluginDiagnosticItem = PluginDiagnosticItem(
+        fileUri = "file:///workspace/src/Main.kt",
+        filePath = "src/Main.kt",
+        fileName = "Main.kt",
+        line = 1,
+        column = 2,
+        endLine = 1,
+        endColumn = 3,
+        message = "message",
+        severity = severity
+    )
 }

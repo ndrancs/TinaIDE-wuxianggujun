@@ -55,7 +55,12 @@ object SdlRuntimeLibraryStager {
         return runCatching {
             stageRootDir.mkdirs()
             val stageKey = mainLibrary.absolutePath.hashCode().toUInt().toString(16)
+            // stageDir 按项目固定（hashCode），不清空会残留上一次的脏副本。
+            // 例如曾被误判为依赖而复制进来的 libmediandk.so 等 OS 系统库副本，
+            // 即使代码已不再 stage 它们，旧副本仍会在受限 linker 命名空间里被 dlopen 而崩溃。
+            // 因此每次 stage 前先清空该项目目录，保证只保留本次真正需要的库。
             val stageDir = File(stageRootDir, "${mainLibrary.nameWithoutExtension}.$stageKey").apply {
+                deleteRecursively()
                 mkdirs()
             }
 

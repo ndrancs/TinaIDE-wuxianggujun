@@ -7,12 +7,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import com.wuxianggujun.tinaide.core.config.Prefs
 import com.wuxianggujun.tinaide.core.textengine.Position
+import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import kotlin.math.abs
 
 internal class EditorInteractionController(
     private val state: EditorState,
@@ -274,14 +274,19 @@ internal class EditorInteractionController(
         val cursorOffset = state.cursorOffset.coerceIn(0, state.textBuffer.length)
         val charBeforeTrigger = if (cursorOffset >= 2) {
             state.textBuffer.charAt(cursorOffset - 2)
-        } else null
+        } else {
+            null
+        }
         if (shouldRequestCompletionAfterInsert(
-                insertedText, trigger, charBeforeTrigger, state.file?.name
+                insertedText,
+                trigger,
+                charBeforeTrigger,
+                state.file?.name
             )
         ) {
-            if (!isTriggerCharacter(trigger, charBeforeTrigger)
-                && state.completionUiState !is CompletionUiState.Hidden
-                && state.cachedCompletionResults.isNotEmpty()
+            if (!isTriggerCharacter(trigger, charBeforeTrigger) &&
+                state.completionUiState !is CompletionUiState.Hidden &&
+                state.cachedCompletionResults.isNotEmpty()
             ) {
                 val newQuery = state.completionQueryFromCursor()
                 if (isCompletionPrefixExtension(state.cachedCompletionPrefix, newQuery)) {
@@ -365,7 +370,5 @@ internal class EditorInteractionController(
         Timber.tag(IME_DIAG_TAG).d(message)
     }
 
-    private fun isImeDiagnosticsEnabled(): Boolean {
-        return runCatching { Prefs.devDiagnosticsEnabled }.getOrDefault(false)
-    }
+    private fun isImeDiagnosticsEnabled(): Boolean = runCatching { Prefs.devDiagnosticsEnabled }.getOrDefault(false)
 }

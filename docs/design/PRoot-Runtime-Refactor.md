@@ -91,11 +91,11 @@
 - 关于页中的 PRoot 日志入口隐藏
 - 插件从关闭切换为开启时，如果 rootfs 未安装，会弹出安装引导
 
-## 资源策略
+## 构建资源策略
 
-为避免并行任务与 Gradle 自身并发叠加导致资源争抢，项目已配置：
+重构阶段曾临时收紧 Gradle 并发以降低资源争抢。当前仓库已经恢复常规本地构建配置，事实源以根目录 `gradle.properties` 与 `build-logic/gradle.properties` 为准：
 
-- `org.gradle.parallel=false`
-- `org.gradle.workers.max=1`
+- 根目录 `gradle.properties`：`org.gradle.parallel=true`、`org.gradle.workers.max=6`
+- `build-logic/gradle.properties`：`org.gradle.parallel=true`
 
-这保证 Gradle 在当前重构阶段仅使用单 worker 执行。
+如果后续再次遇到 PRoot 资产构建或 native 包构建资源争抢，应优先在具体维护脚本中限流，不要把全仓库 Gradle 默认构建改回单 worker。

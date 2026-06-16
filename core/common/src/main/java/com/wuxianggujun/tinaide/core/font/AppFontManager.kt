@@ -12,39 +12,39 @@ import timber.log.Timber
  * 内置字体：JetBrains Mono Nerd Font（包含 Powerline 图标支持）
  */
 object AppFontManager {
-    
+
     private const val TAG = "AppFontManager"
-    
+
     /** 内置字体文件路径 */
     private const val BUILTIN_FONT_PATH = "fonts/JetBrainsMonoNerdFont-Regular.ttf"
-    
+
     /** 内置字体显示名称 */
     const val BUILTIN_FONT_NAME = "JetBrains Mono Nerd Font"
-    
+
     // ========== 统一的字体大小常量 ==========
-    
+
     /** 最小字体大小（sp） */
     const val MIN_FONT_SIZE = 8f
-    
+
     /** 最大字体大小（sp） */
     const val MAX_FONT_SIZE = 48f
-    
+
     /** 终端最大字体大小（sp）- 终端通常不需要太大的字体 */
     const val TERMINAL_MAX_FONT_SIZE = 32f
-    
+
     /** 编辑器默认字体大小（sp） */
     const val DEFAULT_EDITOR_FONT_SIZE = 14f
-    
+
     /** 终端默认字体大小（sp） */
     const val DEFAULT_TERMINAL_FONT_SIZE = 13f
-    
+
     // 缓存已加载的字体
     private var cachedTypeface: Typeface? = null
-    
+
     // 缓存自定义字体
     private var cachedCustomTypeface: Typeface? = null
     private var cachedCustomFontPath: String? = null
-    
+
     /**
      * 获取应用使用的等宽字体
      *
@@ -53,7 +53,7 @@ object AppFontManager {
      */
     fun getMonospaceTypeface(context: Context): Typeface {
         cachedTypeface?.let { return it }
-        
+
         val typeface = try {
             Typeface.createFromAsset(context.assets, BUILTIN_FONT_PATH).also {
                 Timber.tag(TAG).i("Successfully loaded built-in font: $BUILTIN_FONT_NAME")
@@ -62,11 +62,11 @@ object AppFontManager {
             Timber.tag(TAG).w(e, "Failed to load built-in font from assets, falling back to system monospace")
             Typeface.MONOSPACE
         }
-        
+
         cachedTypeface = typeface
         return typeface
     }
-    
+
     /**
      * 从文件路径加载自定义字体
      *
@@ -78,14 +78,14 @@ object AppFontManager {
         if (fontPath == cachedCustomFontPath && cachedCustomTypeface != null) {
             return cachedCustomTypeface
         }
-        
+
         return try {
             val file = File(fontPath)
             if (!file.exists()) {
                 Timber.tag(TAG).w("Custom font file not found: $fontPath")
                 return null
             }
-            
+
             val typeface = Typeface.createFromFile(file)
             // 缓存成功加载的字体
             cachedCustomFontPath = fontPath
@@ -97,7 +97,7 @@ object AppFontManager {
             null
         }
     }
-    
+
     /**
      * 验证字体文件是否有效
      *
@@ -111,14 +111,14 @@ object AppFontManager {
                 Timber.tag(TAG).w("Font file does not exist: $fontPath")
                 return false
             }
-            
+
             // 检查文件扩展名
             val ext = file.extension.lowercase()
             if (ext !in listOf("ttf", "otf", "ttc")) {
                 Timber.tag(TAG).w("Invalid font file extension: $ext")
                 return false
             }
-            
+
             // 尝试加载字体以验证其有效性
             Typeface.createFromFile(file)
             Timber.tag(TAG).i("Font file validation successful: ${file.name}")
@@ -128,7 +128,7 @@ object AppFontManager {
             false
         }
     }
-    
+
     /**
      * 清除字体缓存
      */
@@ -138,29 +138,25 @@ object AppFontManager {
         cachedCustomFontPath = null
         Timber.tag(TAG).d("Font cache cleared")
     }
-    
+
     /**
      * 检查内置字体是否可用
      */
-    fun hasBuiltInFont(context: Context): Boolean {
-        return try {
-            context.assets.open(BUILTIN_FONT_PATH).use { true }
-        } catch (e: Exception) {
-            false
-        }
+    fun hasBuiltInFont(context: Context): Boolean = try {
+        context.assets.open(BUILTIN_FONT_PATH).use { true }
+    } catch (e: Exception) {
+        false
     }
-    
+
     /**
      * 获取当前字体名称
      */
-    fun getCurrentFontName(context: Context): String {
-        return if (hasBuiltInFont(context)) {
-            BUILTIN_FONT_NAME
-        } else {
-            "System Monospace"
-        }
+    fun getCurrentFontName(context: Context): String = if (hasBuiltInFont(context)) {
+        BUILTIN_FONT_NAME
+    } else {
+        "System Monospace"
     }
-    
+
     /**
      * 约束字体大小到有效范围
      *
@@ -168,7 +164,5 @@ object AppFontManager {
      * @param maxSize 最大字体大小（默认使用 MAX_FONT_SIZE）
      * @return 约束后的字体大小
      */
-    fun clampFontSize(size: Float, maxSize: Float = MAX_FONT_SIZE): Float {
-        return size.coerceIn(MIN_FONT_SIZE, maxSize)
-    }
+    fun clampFontSize(size: Float, maxSize: Float = MAX_FONT_SIZE): Float = size.coerceIn(MIN_FONT_SIZE, maxSize)
 }

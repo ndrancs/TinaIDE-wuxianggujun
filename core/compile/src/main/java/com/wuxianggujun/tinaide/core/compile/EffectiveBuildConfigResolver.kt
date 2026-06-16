@@ -1,8 +1,10 @@
 package com.wuxianggujun.tinaide.core.compile
 
+import android.content.Context
 import com.wuxianggujun.tinaide.core.compile.action.LaunchIntent
 import com.wuxianggujun.tinaide.core.config.Prefs
 import com.wuxianggujun.tinaide.core.linux.LinuxRunModePolicy
+import com.wuxianggujun.tinaide.core.ndk.AndroidSysrootManager
 import com.wuxianggujun.tinaide.project.CppStandard
 import com.wuxianggujun.tinaide.project.ProjectMetadata
 import com.wuxianggujun.tinaide.project.ProjectMetadataStore
@@ -23,7 +25,8 @@ internal object EffectiveBuildConfigResolver {
         val buildSystem: BuildSystem,
         val runConfig: RunConfiguration,
         val projectRoot: File,
-        val linuxEnvironmentAvailable: Boolean
+        val linuxEnvironmentAvailable: Boolean,
+        val appContext: Context? = null
     )
 
     data class EffectiveBuildConfig(
@@ -35,6 +38,7 @@ internal object EffectiveBuildConfigResolver {
         val cmakeGenerator: CMakeGeneratorOption,
         val compilerType: CompilerType,
         val toolchainId: String?,
+        val sysrootProfileId: String?,
         val customCCompiler: String?,
         val customCppCompiler: String?,
         val sysrootApiLevel: Int,
@@ -53,6 +57,12 @@ internal object EffectiveBuildConfigResolver {
         val optimizationLevel = normalizeOptimizationLevel(Prefs.compilerOptimizationLevel)
         val parallelJobs = resolveParallelJobs(input.buildSystem)
         val projectMetadata = runCatching { ProjectMetadataStore.read(input.projectRoot) }.getOrNull()
+        val sysrootProfileId = input.appContext
+            ?.let { context ->
+                runCatching {
+                    AndroidSysrootManager(context).getActiveProfile()?.id
+                }.getOrNull()
+            }
         val sysrootResolution = ProjectSysrootApiLevelResolver.resolve(
             projectRoot = input.projectRoot,
             runConfigApiLevel = input.runConfig.sysrootApiLevel
@@ -74,6 +84,7 @@ internal object EffectiveBuildConfigResolver {
             cmakeGenerator = cmakeGenerator,
             compilerType = input.runConfig.compilerType,
             toolchainId = input.runConfig.toolchainId,
+            sysrootProfileId = sysrootProfileId,
             customCCompiler = RunConfiguration.normalizeCompilerPath(input.runConfig.customCCompiler),
             customCppCompiler = RunConfiguration.normalizeCompilerPath(input.runConfig.customCppCompiler),
             sysrootApiLevel = sysrootResolution.apiLevel,
@@ -120,14 +131,12 @@ internal object EffectiveBuildConfigResolver {
         return configured.coerceIn(1, 8)
     }
 
-    private fun normalizeOptimizationLevel(value: String?): String {
-        return when (value?.trim()?.uppercase()) {
-            "O0" -> "O0"
-            "O1" -> "O1"
-            "O2" -> "O2"
-            "O3" -> "O3"
-            else -> "O2"
-        }
+    private fun normalizeOptimizationLevel(value: String?): String = when (value?.trim()?.uppercase()) {
+        "O0" -> "O0"
+        "O1" -> "O1"
+        "O2" -> "O2"
+        "O3" -> "O3"
+        else -> "O2"
     }
 
     private fun resolveRunMode(input: Input): LinuxRunModePolicy.RunMode {

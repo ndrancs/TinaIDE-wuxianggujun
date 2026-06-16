@@ -1,12 +1,11 @@
 package com.wuxianggujun.tinaide.core.apkbuilder
 
-import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
-import java.io.RandomAccessFile
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
+import timber.log.Timber
 
 /**
  * Pure-Kotlin zipalign implementation.

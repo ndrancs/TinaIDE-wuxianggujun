@@ -5,13 +5,13 @@ import com.wuxianggujun.tinaide.core.ServiceLifecycle
 import com.wuxianggujun.tinaide.project.ProjectMetadataStore
 import com.wuxianggujun.tinaide.storage.db.ProjectLocationEntity
 import com.wuxianggujun.tinaide.storage.db.StorageDatabase
+import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 
 /**
  * 项目位置管理器
@@ -35,16 +35,24 @@ class ProjectLocationManager(
     private val locationDao = database.projectLocationDao()
 
     // 项目路径映射缓存
-    private val projectMappingsById = mutableMapOf<String, ProjectLocation>()
-    private val projectIdBySourceRootPath = mutableMapOf<String, String>()
+    // 读：ConcurrentHashMap 提供无锁安全读 / 安全迭代（getAllProjects 等可在任意线程调用）。
+    // 写：所有“复合读改写”（registerProject / unregisterProject / 加载合并）都走 cacheLock，
+    //     保证两个 map 之间以及 read-modify-write 的整体原子性。
+    //     init 协程的注册与外部 openProject 可能并发，仅靠 ConcurrentHashMap 不足以保证一致。
+    private val cacheLock = Any()
+    private val projectMappingsById = ConcurrentHashMap<String, ProjectLocation>()
+    private val projectIdBySourceRootPath = ConcurrentHashMap<String, String>()
 
     override fun onCreate() {
         Timber.tag(TAG).d("ProjectLocationManager initialized")
-        runBlocking {
+        // 不在装配线程（可能是主线程）同步读数据库。
+        // 整个初始化序列放进 IO 协程，内部保持原有串行顺序：
+        // 先加载映射，再迁移遗留项目、注册私有项目（后两者依赖映射已就绪）。
+        scope.launch(Dispatchers.IO) {
             loadProjectMappings()
+            migrateLegacyPrivateProjectsIfNeeded()
+            registerProjectsFromPrivateRoot()
         }
-        migrateLegacyPrivateProjectsIfNeeded()
-        registerProjectsFromPrivateRoot()
     }
 
     override fun onDestroy() {
@@ -52,9 +60,7 @@ class ProjectLocationManager(
         // 缓存已经实时同步到数据库，无需额外保存
     }
 
-    fun getProjectLocation(projectId: String): ProjectLocation? {
-        return projectMappingsById[projectId]
-    }
+    fun getProjectLocation(projectId: String): ProjectLocation? = projectMappingsById[projectId]
 
     fun registerProject(sourceDir: File): ProjectLocation {
         require(sourceDir.exists() && sourceDir.isDirectory) {
@@ -65,29 +71,33 @@ class ProjectLocationManager(
         val metadata = ProjectMetadataStore.ensure(sourceDir, displayNameFallback = sourceDir.name)
         val projectId = metadata.id
         val projectDirName = sourceDir.name
-        val existing = projectMappingsById[projectId]
-        val location = when {
-            existing == null -> ProjectLocation(
-                projectId = projectId,
-                projectDirName = projectDirName,
-                sourceRootPath = normalizedSourceDir,
-                registered = System.currentTimeMillis()
-            )
-            existing.projectDirName != projectDirName || existing.sourceRootPath != normalizedSourceDir ->
-                existing.copy(
-                    projectDirName = projectDirName,
-                    sourceRootPath = normalizedSourceDir
-                )
-            else -> existing
-        }
 
-        existing?.let { previous ->
-            if (previous.sourceRootPath != normalizedSourceDir) {
+        // 锁内完成“读 existing → 计算 location → 改两个 map”的复合操作，保证原子性。
+        // 文件 IO（ensure）与异步落库（saveProjectMapping）都放在锁外，避免锁内做慢操作。
+        val (existing, location) = synchronized(cacheLock) {
+            val previous = projectMappingsById[projectId]
+            val resolved = when {
+                previous == null -> ProjectLocation(
+                    projectId = projectId,
+                    projectDirName = projectDirName,
+                    sourceRootPath = normalizedSourceDir,
+                    registered = System.currentTimeMillis()
+                )
+                previous.projectDirName != projectDirName || previous.sourceRootPath != normalizedSourceDir ->
+                    previous.copy(
+                        projectDirName = projectDirName,
+                        sourceRootPath = normalizedSourceDir
+                    )
+                else -> previous
+            }
+
+            if (previous != null && previous.sourceRootPath != normalizedSourceDir) {
                 projectIdBySourceRootPath.remove(previous.sourceRootPath)
             }
+            projectMappingsById[projectId] = resolved
+            projectIdBySourceRootPath[normalizedSourceDir] = projectId
+            previous to resolved
         }
-        projectMappingsById[projectId] = location
-        projectIdBySourceRootPath[normalizedSourceDir] = projectId
 
         if (existing != location) {
             saveProjectMapping(location)
@@ -100,13 +110,9 @@ class ProjectLocationManager(
         return location
     }
 
-    fun getAllProjects(): List<ProjectLocation> {
-        return projectMappingsById.values.toList()
-    }
+    fun getAllProjects(): List<ProjectLocation> = projectMappingsById.values.toList()
 
-    fun getSourceDir(projectId: String): File? {
-        return projectMappingsById[projectId]?.let { File(it.sourceRootPath) }
-    }
+    fun getSourceDir(projectId: String): File? = projectMappingsById[projectId]?.let { File(it.sourceRootPath) }
 
     fun getWorkspaceDir(projectId: String): File {
         require(projectMappingsById.containsKey(projectId)) {
@@ -115,13 +121,15 @@ class ProjectLocationManager(
         return ProjectPaths.getProjectWorkspaceDir(context, projectId).apply { mkdirs() }
     }
 
-    fun getBuildDir(projectId: String): File {
-        return ProjectPaths.getProjectBuildDir(getWorkspaceDir(projectId)).apply { mkdirs() }
-    }
+    fun getBuildDir(projectId: String): File = ProjectPaths.getProjectBuildDir(getWorkspaceDir(projectId)).apply { mkdirs() }
 
     fun unregisterProject(projectId: String, deleteWorkspace: Boolean = false): Boolean {
-        val location = projectMappingsById.remove(projectId) ?: return false
-        projectIdBySourceRootPath.remove(location.sourceRootPath)
+        // 锁内移除两个 map 的对应条目，与 registerProject 互斥。
+        val location = synchronized(cacheLock) {
+            val removed = projectMappingsById.remove(projectId) ?: return false
+            projectIdBySourceRootPath.remove(removed.sourceRootPath)
+            removed
+        }
 
         if (deleteWorkspace) {
             val workspaceDir = ProjectPaths.getProjectWorkspaceDir(context, projectId)
@@ -140,10 +148,8 @@ class ProjectLocationManager(
         try {
             val entities = locationDao.getAllLocations()
 
-            projectMappingsById.clear()
-            projectIdBySourceRootPath.clear()
-
-            entities.forEach { entity ->
+            // 先在锁外完成每条记录的规整与文件 IO（修正遗留 sourceRootPath、ensure 元数据）。
+            val loaded = entities.map { entity ->
                 var location = entity.toDomainModel()
                 if (location.sourceRootPath.isBlank() || isLegacyPendingSourceRoot(location.sourceRootPath)) {
                     val fallbackDir = ProjectPaths.getPrivateProjectDir(context, location.projectDirName)
@@ -155,8 +161,18 @@ class ProjectLocationManager(
                 if (sourceDir.exists() && sourceDir.isDirectory) {
                     ProjectMetadataStore.ensure(sourceDir, displayNameFallback = location.projectDirName)
                 }
-                projectMappingsById[location.projectId] = location
-                projectIdBySourceRootPath[location.sourceRootPath] = location.projectId
+                location
+            }
+
+            // 锁内合并：不再 clear。加载是在 IO 协程里异步进行的，期间外部可能已通过
+            // openProject/restoreLastSession 注册了项目，那些条目比数据库快照更新鲜。
+            // 因此用 putIfAbsent 语义：仅补齐数据库里有、而缓存中尚无的项目，已存在则跳过。
+            synchronized(cacheLock) {
+                loaded.forEach { location ->
+                    if (projectMappingsById.putIfAbsent(location.projectId, location) == null) {
+                        projectIdBySourceRootPath[location.sourceRootPath] = location.projectId
+                    }
+                }
             }
 
             Timber.tag(TAG).i("Loaded %d project mappings from database", projectMappingsById.size)
@@ -188,10 +204,8 @@ class ProjectLocationManager(
         }
     }
 
-    fun findProjectByPath(projectPath: String): ProjectLocation? {
-        return projectIdBySourceRootPath[normalizePath(projectPath)]
-            ?.let(projectMappingsById::get)
-    }
+    fun findProjectByPath(projectPath: String): ProjectLocation? = projectIdBySourceRootPath[normalizePath(projectPath)]
+        ?.let(projectMappingsById::get)
 
     private fun migrateLegacyPrivateProjectsIfNeeded() {
         val markerFile = File(context.filesDir, LEGACY_PRIVATE_PROJECTS_MIGRATION_MARKER)
@@ -308,21 +322,13 @@ class ProjectLocationManager(
         }.onFailure { Timber.tag(TAG).w(it, "Failed to write migration marker: %s", markerFile.absolutePath) }
     }
 
-    private fun isLegacyPendingSourceRoot(path: String): Boolean {
-        return path.startsWith(ProjectLocationEntity.LEGACY_PENDING_SOURCE_ROOT_PREFIX)
-    }
+    private fun isLegacyPendingSourceRoot(path: String): Boolean = path.startsWith(ProjectLocationEntity.LEGACY_PENDING_SOURCE_ROOT_PREFIX)
 
-    private fun normalizePath(path: String): String {
-        return runCatching { File(path).canonicalPath }.getOrElse { File(path).absolutePath }
-    }
+    private fun normalizePath(path: String): String = runCatching { File(path).canonicalPath }.getOrElse { File(path).absolutePath }
 
-    private fun normalizePath(file: File): String {
-        return runCatching { file.canonicalPath }.getOrElse { file.absolutePath }
-    }
+    private fun normalizePath(file: File): String = runCatching { file.canonicalPath }.getOrElse { file.absolutePath }
 
-    private fun File.canonicalOrAbsolutePath(): String {
-        return runCatching { canonicalPath }.getOrElse { absolutePath }
-    }
+    private fun File.canonicalOrAbsolutePath(): String = runCatching { canonicalPath }.getOrElse { absolutePath }
 }
 
 /**

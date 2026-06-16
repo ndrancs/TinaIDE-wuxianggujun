@@ -7,21 +7,19 @@ internal object PluginFileIconResolver {
     private const val TAG = "PluginFileIconResolver"
     private const val BUILTIN_PREFIX = "builtin:"
 
-    fun resolve(installedPlugins: List<InstalledPlugin>): List<ResolvedPluginFileIcon> {
-        return installedPlugins.asSequence()
-            .filter { it.enabled }
-            .flatMap { plugin ->
-                plugin.manifest.contributions?.fileIcons.orEmpty()
-                    .asSequence()
-                    .mapNotNull { contribution -> resolveContribution(plugin, contribution) }
-            }
-            .sortedWith(
-                compareByDescending<ResolvedPluginFileIcon> { it.priority }
-                    .thenBy { it.pluginId }
-                    .thenBy { it.iconSpec }
-            )
-            .toList()
-    }
+    fun resolve(installedPlugins: List<InstalledPlugin>): List<ResolvedPluginFileIcon> = installedPlugins.asSequence()
+        .filter { it.enabled }
+        .flatMap { plugin ->
+            plugin.manifest.contributions?.fileIcons.orEmpty()
+                .asSequence()
+                .mapNotNull { contribution -> resolveContribution(plugin, contribution) }
+        }
+        .sortedWith(
+            compareByDescending<ResolvedPluginFileIcon> { it.priority }
+                .thenBy { it.pluginId }
+                .thenBy { it.iconSpec }
+        )
+        .toList()
 
     private fun resolveContribution(
         plugin: InstalledPlugin,
@@ -96,10 +94,8 @@ internal object PluginFileIconResolver {
         return normalized
     }
 
-    private fun normalizeFileName(raw: String?): String? {
-        return raw
-            ?.trim()
-            ?.lowercase()
-            ?.takeIf { it.isNotEmpty() }
-    }
+    private fun normalizeFileName(raw: String?): String? = raw
+        ?.trim()
+        ?.lowercase()
+        ?.takeIf { it.isNotEmpty() }
 }

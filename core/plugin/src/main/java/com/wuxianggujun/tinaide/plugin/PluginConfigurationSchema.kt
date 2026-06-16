@@ -12,9 +12,7 @@ enum class PluginConfigurationPropertyType(val id: String) {
     BOOLEAN("boolean");
 
     companion object {
-        fun from(rawType: String): PluginConfigurationPropertyType? {
-            return entries.firstOrNull { type -> type.id == rawType.trim().lowercase() }
-        }
+        fun from(rawType: String): PluginConfigurationPropertyType? = entries.firstOrNull { type -> type.id == rawType.trim().lowercase() }
     }
 }
 
@@ -45,29 +43,21 @@ data class ResolvedPluginConfigurationProperty(
 object PluginConfigurationSchema {
     private val propertyKeyPattern = Regex("^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
-    fun isValidPropertyKey(key: String): Boolean {
-        return key.isNotBlank() && propertyKeyPattern.matches(key)
-    }
+    fun isValidPropertyKey(key: String): Boolean = key.isNotBlank() && propertyKeyPattern.matches(key)
 
-    fun resolveProperties(manifest: PluginManifest): List<ResolvedPluginConfigurationProperty> {
-        return resolveProperties(manifest.configuration)
-    }
+    fun resolveProperties(manifest: PluginManifest): List<ResolvedPluginConfigurationProperty> = resolveProperties(manifest.configuration)
 
-    fun resolveProperties(configuration: PluginConfiguration?): List<ResolvedPluginConfigurationProperty> {
-        return configuration?.properties.orEmpty()
-            .mapNotNull { (key, property) -> resolveProperty(key, property) }
-            .sortedBy { property -> property.key }
-    }
+    fun resolveProperties(configuration: PluginConfiguration?): List<ResolvedPluginConfigurationProperty> = configuration?.properties.orEmpty()
+        .mapNotNull { (key, property) -> resolveProperty(key, property) }
+        .sortedBy { property -> property.key }
 
     fun resolveProperty(
         manifest: PluginManifest,
         propertyKey: String,
-    ): ResolvedPluginConfigurationProperty? {
-        return manifest.configuration
-            ?.properties
-            ?.get(propertyKey)
-            ?.let { property -> resolveProperty(propertyKey, property) }
-    }
+    ): ResolvedPluginConfigurationProperty? = manifest.configuration
+        ?.properties
+        ?.get(propertyKey)
+        ?.let { property -> resolveProperty(propertyKey, property) }
 
     fun resolveProperty(
         propertyKey: String,
@@ -93,10 +83,8 @@ object PluginConfigurationSchema {
         return resolved.copy(defaultValue = defaultValue)
     }
 
-    fun validateConfiguration(configuration: PluginConfiguration?): List<PluginConfigurationValidationIssue> {
-        return configuration?.properties.orEmpty()
-            .flatMap { (key, property) -> validateProperty(key, property) }
-    }
+    fun validateConfiguration(configuration: PluginConfiguration?): List<PluginConfigurationValidationIssue> = configuration?.properties.orEmpty()
+        .flatMap { (key, property) -> validateProperty(key, property) }
 
     fun normalizeValue(
         property: ResolvedPluginConfigurationProperty,
@@ -149,28 +137,25 @@ object PluginConfigurationSchema {
         }
     }
 
-    fun booleanValue(value: JsonElement?): Boolean {
-        return value?.jsonPrimitive?.booleanOrNull ?: false
-    }
+    fun booleanValue(value: JsonElement?): Boolean = value?.jsonPrimitive?.booleanOrNull ?: false
 
     fun toJsonPrimitive(
         property: ResolvedPluginConfigurationProperty,
         rawText: String,
-    ): JsonElement? {
-        return when (property.type) {
-            PluginConfigurationPropertyType.STRING -> JsonPrimitive(rawText)
-            PluginConfigurationPropertyType.NUMBER -> rawText
+    ): JsonElement? = when (property.type) {
+        PluginConfigurationPropertyType.STRING -> JsonPrimitive(rawText)
+        PluginConfigurationPropertyType.NUMBER ->
+            rawText
                 .trim()
                 .toDoubleOrNull()
                 ?.takeIf { numberValue -> numberValue.isFinite() }
                 ?.let { numberValue -> JsonPrimitive(numberValue) }
-            PluginConfigurationPropertyType.BOOLEAN -> when (rawText.trim().lowercase()) {
-                "true" -> JsonPrimitive(true)
-                "false" -> JsonPrimitive(false)
-                else -> null
-            }
-        }?.let { value -> normalizeValue(property, value) }
-    }
+        PluginConfigurationPropertyType.BOOLEAN -> when (rawText.trim().lowercase()) {
+            "true" -> JsonPrimitive(true)
+            "false" -> JsonPrimitive(false)
+            else -> null
+        }
+    }?.let { value -> normalizeValue(property, value) }
 
     private fun validateProperty(
         key: String,

@@ -182,12 +182,10 @@ class MainActivityShortcutDispatcherTest {
         assertThat(executed).isFalse()
     }
 
-    private fun ctrlKShortcut(): KeyboardShortcut {
-        return KeyboardShortcut(
-            keyCode = KeyEvent.KEYCODE_K,
-            ctrl = true
-        )
-    }
+    private fun ctrlKShortcut(): KeyboardShortcut = KeyboardShortcut(
+        keyCode = KeyEvent.KEYCODE_K,
+        ctrl = true
+    )
 
     private fun keyEvent(
         keyCode: Int,

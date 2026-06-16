@@ -1,10 +1,10 @@
 package com.wuxianggujun.tinaide.core.debug
 
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 断点存储
@@ -96,23 +96,17 @@ class BreakpointStore {
     /**
      * 获取指定文件的所有断点
      */
-    fun getForFile(file: String): List<Breakpoint> {
-        return _breakpoints.value.filter { it.file == file }
-    }
+    fun getForFile(file: String): List<Breakpoint> = _breakpoints.value.filter { it.file == file }
 
     /**
      * 获取指定位置的断点
      */
-    fun getAt(file: String, line: Int): Breakpoint? {
-        return _breakpoints.value.find { it.file == file && it.line == line }
-    }
+    fun getAt(file: String, line: Int): Breakpoint? = _breakpoints.value.find { it.file == file && it.line == line }
 
     /**
      * 检查指定位置是否有断点
      */
-    fun hasBreakpoint(file: String, line: Int): Boolean {
-        return _breakpoints.value.any { it.file == file && it.line == line }
-    }
+    fun hasBreakpoint(file: String, line: Int): Boolean = _breakpoints.value.any { it.file == file && it.line == line }
 
     /**
      * 更新断点的验证状态和地址
@@ -167,7 +161,5 @@ class BreakpointStore {
     /**
      * 获取所有启用的断点
      */
-    fun getEnabled(): List<Breakpoint> {
-        return _breakpoints.value.filter { it.enabled }
-    }
+    fun getEnabled(): List<Breakpoint> = _breakpoints.value.filter { it.enabled }
 }

@@ -1,224 +1,202 @@
 # 插件开发快速开始
 
-这篇教程面向想给 TinaIDE 写插件的人。目标不是先解释所有字段，而是带你走通当前 IDE 里最短的闭环：创建插件项目、运行热安装、打包 `.tinaplug`、再用从文件安装做预检。
+这篇教程只做一件事：带你做出第一个能看见效果的 TinaIDE 插件。
+先从 `config` 插件开始，先改主题和代码片段，再去碰脚本和 LSP。
 
-## 你会得到什么
+## 你会完成什么
 
-走完这条流程后，你会得到一个真正可安装的插件包：
+- 创建一个插件项目
+- 修改 `manifest.json`
+- 改一个主题文件
+- 改一个 snippet 文件
+- 点击运行热安装
+- 在设置里切换主题并验证 snippet
+- 打包 `.tinaplug`
+- 再用从文件安装验证一次
 
-- 项目根目录包含 `manifest.json`
-- 需要脚本能力时会有 `main.lua` 或对应入口文件
-- 打包后得到 `.tinaplug`
-- 安装前会经过同一套插件诊断规则预检
+## 0. 先准备
+
+- 安装并启用 `TinaIDE Plugin Starters`
+- 如果模板列表里没有插件模板，先到 `设置 → 插件` 检查 starter 是否已安装并启用
+- 下面的步骤默认以 `Tina Config Plugin` 为例
 
 ## 1. 创建插件项目
 
-优先点击本教程上方的快捷操作 **创建插件项目**。
+1. 打开 TinaIDE
+2. 进入本教程，点击顶部快捷操作 `创建插件项目`
+3. 确认向导标题是 `新建插件项目`
+4. 选择 `Tina Config Plugin`
+5. 输入项目名并创建
 
-从教程快捷操作进入时，IDE 会打开 **新建插件项目** 向导，
-只显示已安装并启用的插件项目模板。
+如果你是从 `项目` 页右下角 `+` 进去，打开的还是通用新建项目向导。
+那条路径只作为兜底，请主动选择带“插件”标识的模板。
 
-如果你是从 **项目** 页右下角 **+** 手动进入，IDE 会打开通用新建项目向导。
-这时请主动选择带 **插件** 标识的模板，不要停留在默认 C/C++ 模板。
+如果这里没有插件模板，先安装并启用 `TinaIDE Plugin Starters`，然后回到本教程再试。
 
-如果插件模板插件已经安装并启用，你会在模板列表里看到带 **插件** 标识的模板。
+## 2. 先改 `manifest.json`
 
-如果这里提示没有插件项目模板，先到插件市场安装并启用
-`TinaIDE Plugin Starters`，然后重新打开本教程入口继续。
+先把模板里的插件信息改掉。最少改这几项：
 
-选择插件模板后，向导会提示：
+- `id`
+- `name`
+- `version`
+- `type`
+- `description`
+- `author.name`
+- `contributions.themes`
+- `contributions.snippets`
 
-- 创建后点击 **运行**：校验 + 打包 + 热安装
-- 点击 **打包**：生成 `.tinaplug`
+一个最小可用示例：
 
-插件模板通常是混合语言项目，所以向导会隐藏 C++ 标准这类无关配置。
+```json
+{
+  "id": "com.example.my-first-plugin",
+  "name": "My First Plugin",
+  "version": "0.1.0",
+  "type": "config",
+  "description": "My first TinaIDE plugin.",
+  "author": {
+    "name": "Your Name"
+  },
+  "contributions": {
+    "themes": [
+      "themes/my-theme.json"
+    ],
+    "snippets": [
+      "snippets/my-snippets.json"
+    ]
+  }
+}
+```
 
-## 2. 认识插件项目结构
+`id` 只能包含字母、数字、`.`、`_`、`-`，不能是路径，也不能带 `..`。
 
-最关键的是 `manifest.json`。
+先别急着加 `commands`、`permissions` 或 `lsp`。第一版先把主题和片段跑通。
 
-它声明插件的基础信息和贡献项，例如：
+## 3. 先做一个能看见变化的主题
 
-- `id`：插件唯一 ID
-- `name` / `version`：显示名称与版本
-- `type`：插件类型，例如 `config`、`script`、`hybrid`、`lsp`
-- `apiVersion`：插件 API 版本
-- `permissions` / `optionalPermissions`：权限声明
-- `main`：脚本入口文件
-- `contributions`：命令、菜单、主题、文件图标、项目模板等贡献项
+主题最容易验证。把 `themes/my-theme.json` 写成这样：
 
-不要把 README、打包脚本、校验脚本当成运行时文件依赖。模板的打包流程会把这些开发辅助文件排除在最终插件包之外。
+```json
+{
+  "name": "My First Theme",
+  "type": "dark",
+  "colors": {
+    "WHOLE_BACKGROUND": "#1E1E1E",
+    "TEXT_NORMAL": "#D4D4D4",
+    "KEYWORD": "#C586C0",
+    "STRING": "#CE9178",
+    "LINE_NUMBER": "#6B7280"
+  }
+}
+```
 
-## 3. 运行插件项目
+验证步骤：
 
-打开插件项目后，直接点击顶部 **运行**。
+1. 点击顶部 `运行`
+2. 打开 `设置 → 插件`
+3. 进入你的插件详情
+4. 找到 `插件主题` 并切换到刚才这个主题
+5. 打开一个代码文件确认颜色已经变化
 
-对于插件项目，运行不是启动一个普通程序，而是执行：
+如果安装成功但外观没变化，通常不是安装失败，而是你还没切到这个插件主题。
+
+## 4. 再加一个 snippet
+
+把 `snippets/my-snippets.json` 写成这样：
+
+```json
+{
+  "language": "cpp",
+  "snippets": [
+    {
+      "prefix": "fori",
+      "name": "for (int i = 0; i < n; i++)",
+      "description": "最小 for 循环模板",
+      "body": [
+        "for (int i = 0; i < ${1:n}; i++) {",
+        "  $0",
+        "}"
+      ]
+    }
+  ]
+}
+```
+
+验证步骤：
+
+1. 打开一个 `cpp` 文件
+2. 输入 `fori`
+3. 从补全里插入这个片段
+4. 确认代码块已经展开
+
+如果没有出现补全，先检查 `language`、`prefix` 和片段文件路径是否写对。
+
+## 5. 点击运行，做热安装
+
+打开插件项目后，直接点顶部 `运行`。
+
+对于插件项目，运行不是启动普通程序，而是：
 
 1. 校验当前插件目录
 2. 打包 `.tinaplug`
-3. 调用插件管理器热安装
+3. 热安装到当前 TinaIDE
 4. 刷新已安装插件状态
 
-正常情况下不需要重启 IDE。安装完成后，你可以去 **设置 → 插件** 查看插件状态。
+正常情况下不需要重启 IDE。安装完成后，去 `设置 → 插件` 看插件是否已经启用。
 
-## 4. 打包插件
+## 6. 打包 `.tinaplug`
 
-如果你只想生成安装包，点击 **打包**。
+如果你只想生成安装包，点顶部 `打包`。
 
-打包会先校验插件，再生成 `.tinaplug`。
-
-最终插件包只应该包含运行时需要的文件，例如：
-
-- `manifest.json`
-- `main.lua` 或脚本入口
-- 主题、图标、模板 zip 等被 manifest 引用的资源
-
-最终包不应该包含：
-
-- README
-- `pack.ps1` / `pack.sh`
-- `validate.ps1` / `validate.sh`
-- 隐藏的开发辅助目录
-
-## 5. 从文件安装前预检
-
-到 **设置 → 插件 → 从文件安装插件** 选择 `.tinaplug`。
-
-IDE 会先解包并检查插件：
-
-- 有 error：阻止安装
-- 只有 warning：允许你确认后继续安装
-- 脚本 / 混合插件需要敏感权限：继续弹权限确认
-
-预检会按类别展示问题，例如：
-
-- 清单：基础字段、`apiVersion`、`main`、资源路径、`networkHosts`
-- 权限：权限 ID 是否支持、是否重复声明
-- 贡献项：命令、菜单引用、文件图标、项目模板路径
-- 兼容性：宿主当前是否支持对应插件能力
-
-每个类别下面都会有简短修复提示。你也可以复制诊断内容发给插件作者或维护者。
-
-## 6. 快速排错 FAQ
-
-### 点“创建插件项目”后还是像普通新建项目？
-
-优先确认你点的是本教程上方的 **创建插件项目** 快捷操作。
-
-从 **项目** 页右下角 **+** 进入时，IDE 保持通用新建项目语义，
-这时需要手动选择带 **插件** 标识的模板。
-
-如果从教程快捷操作进入仍不是 **新建插件项目**，请检查应用是否已经更新到包含插件专用入口的版本。
-
-### 没有插件项目模板？
-
-先到插件市场安装并启用 `TinaIDE Plugin Starters`，再重新打开本教程入口。
-如果已经安装但仍未显示，到 **设置 → 插件** 检查：
-
-- 是否已经安装
-- 是否已经启用
-- 是否版本足够新
-
-正常情况下，插件入口至少应该显示：
-
-- `Tina Config Plugin`
-- `Tina Script Command Plugin (Beta)`
-- `Tina Script Plugin (Beta)`
-- `Tina LSP Plugin`
-
-### 点击运行后没有热安装？
-
-插件项目点击 **运行** 应该执行：
-
-1. 校验当前插件目录
-2. 打包 `.tinaplug`
-3. 热安装到当前 IDE
-4. 打开构建日志
-
-如果看起来像普通 C/C++ 运行，先检查项目根目录是否有合法 `manifest.json`。
-它至少需要 `id`、`name`、`version`、`type`。
-
-### `.tinaplug` 生成在哪里？
-
-点击 **打包** 后，输出路径通常是：
+输出通常是：
 
 ```text
 dist/<manifest.id>-<manifest.version>.tinaplug
 ```
 
-如果你只想分发插件，优先拿这个文件。
-如果你想边开发边验证，优先点击 **运行** 让 IDE 自动热安装。
+这个文件就是你要分发的插件包。
 
-### 从文件安装失败怎么办？
+## 7. 再用文件安装验证一次
 
-从文件安装会复用同一套插件诊断规则。
+到 `设置 → 插件 → 从文件安装插件` 选择刚刚生成的 `.tinaplug`。
 
-先看诊断类别：
+安装前会先预检：
 
-- 清单：`manifest.json` 字段不完整或格式错误
-- 权限：权限 ID 不支持或重复声明
-- 贡献项：命令、菜单、图标、模板路径引用错误
-- 兼容性：当前宿主暂不支持对应能力
+- `error` 会阻止安装
+- `warning` 允许确认后继续
+- `script` / `hybrid` 插件才会额外走权限确认
 
-有 error 时必须修复后再安装；只有 warning 时可以确认后继续。
+如果这里报错，先回头改 `manifest.json` 和资源路径，不要先怀疑安装入口。
 
-### 命令菜单不显示？
+## 8. 常见问题
 
-先检查菜单里的 `command` 是否能被宿主解析。
+### 点击“创建插件项目”后还是普通新建项目？
 
-纯配置插件通常只能绑定宿主内置命令，例如：
+优先确认你点的是本教程顶部的 `创建插件项目`。
 
-- `file.copyPath`
-- `editor.save`
-- `view.toggleFileTree`
+如果你是从 `项目` 页右下角 `+` 进入，那里本来就是通用新建项目向导，需要手动选插件模板。
 
-注意：`contributions.commands` 只是声明菜单标题，不会自动生成可执行逻辑。
+### 没有插件模板？
 
-脚本或混合插件如果要显示自定义命令菜单，需要同时满足：
+先去 `设置 → 插件` 检查 `TinaIDE Plugin Starters` 是否已安装并启用。没装就先装，装了就回到本教程重开一次。
 
-- `contributions.commands` 中声明同一个命令 ID
-- `contributions.menus` 中引用同一个命令 ID
-- `permissions` 中声明 `command.execute`
-- `main.lua` 运行时调用 `tina.commands.register(...)` 注册同一个命令 ID
+### 运行后没有热安装？
+
+先检查项目根目录有没有合法 `manifest.json`。插件项目至少要有：
+
+- `id`
+- `name`
+- `version`
+- `type`
 
 ### 资源找不到？
 
-检查 manifest 里的路径是否是相对路径，并且文件确实会进入最终 `.tinaplug`。
-
-最终插件包不包含 README、打包脚本、校验脚本和隐藏开发目录，
-所以不要在运行时依赖这些开发辅助文件。
-
-### networkHosts 报错？
-
-`networkHosts` 只写 host，不写协议和路径。
-
-正确示例：
-
-```json
-"networkHosts": ["api.example.com"]
-```
-
-错误示例：
-
-```json
-"networkHosts": ["https://api.example.com/v1"]
-```
-
-## 7. 推荐闭环
-
-建议开发时按这个顺序迭代：
-
-1. 在插件项目里修改 `manifest.json` 和脚本 / 资源
-2. 点击 **运行**，让 IDE 校验并热安装
-3. 到 **设置 → 插件** 查看状态和日志
-4. 没问题后点击 **打包** 生成 `.tinaplug`
-5. 用 **从文件安装插件** 再做一次安装前预检
+确认 `manifest.json` 里的路径是相对路径，并且文件确实会被打进最终 `.tinaplug`。
 
 ## 继续学习
 
+- [插件设置说明](plugins-settings.md)
 - [创建项目](create-project.md)
 - [编译项目](build-project.md)
-- [Git 基础](git-basics.md)
-- [插件设置说明](plugins-settings.md)
-- [常见问题](faq.md)
+- [已知问题](known-issues.md)

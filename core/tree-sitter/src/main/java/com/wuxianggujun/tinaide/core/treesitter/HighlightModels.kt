@@ -13,8 +13,8 @@ enum class HighlightType {
     COMMENT,
     OPERATOR,
     PUNCTUATION,
-    CONSTANT,  // 命名常量：cmake VERSION/SHARED，Kotlin SCREAMING_CASE，C NULL/EOF
-    BUILTIN,   // 内置标识符：内置函数、内置类型、内置变量（it/this）
+    CONSTANT, // 命名常量：cmake VERSION/SHARED，Kotlin SCREAMING_CASE，C NULL/EOF
+    BUILTIN, // 内置标识符：内置函数、内置类型、内置变量（it/this）
     DEFAULT
 }
 

@@ -1,17 +1,18 @@
 package com.wuxianggujun.tinaide.core.packages
 
 import android.content.Context
+import com.wuxianggujun.tinaide.core.common.io.ArchivePathSafety
+import com.wuxianggujun.tinaide.core.common.io.TarExtractor
 import com.wuxianggujun.tinaide.core.packages.model.InstallType
 import com.wuxianggujun.tinaide.core.packages.model.Platform
 import com.wuxianggujun.tinaide.core.packages.store.LocalInstallStateStore
-import com.wuxianggujun.tinaide.core.common.io.TarExtractor
+import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
+import java.io.File
+import java.util.zip.ZipFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import timber.log.Timber
-import java.io.File
-import java.util.zip.ZipFile
 
 /**
  * 内置包安装器
@@ -72,18 +73,16 @@ class BundledPackagesInstaller(
     /**
      * 解析包文件名，提取包 ID 和压缩格式
      */
-    private fun parsePackageFileName(fileName: String): PackageFileInfo? {
-        return when {
-            fileName.endsWith(".tar.xz", ignoreCase = true) ->
-                PackageFileInfo(fileName.removeSuffix(".tar.xz"), CompressionFormat.TAR_XZ)
-            fileName.endsWith(".tar.zst", ignoreCase = true) ->
-                PackageFileInfo(fileName.removeSuffix(".tar.zst"), CompressionFormat.TAR_ZSTD)
-            fileName.endsWith(".tar.gz", ignoreCase = true) ->
-                PackageFileInfo(fileName.removeSuffix(".tar.gz"), CompressionFormat.TAR_GZ)
-            fileName.endsWith(".zip", ignoreCase = true) ->
-                PackageFileInfo(fileName.removeSuffix(".zip"), CompressionFormat.ZIP)
-            else -> null
-        }
+    private fun parsePackageFileName(fileName: String): PackageFileInfo? = when {
+        fileName.endsWith(".tar.xz", ignoreCase = true) ->
+            PackageFileInfo(fileName.removeSuffix(".tar.xz"), CompressionFormat.TAR_XZ)
+        fileName.endsWith(".tar.zst", ignoreCase = true) ->
+            PackageFileInfo(fileName.removeSuffix(".tar.zst"), CompressionFormat.TAR_ZSTD)
+        fileName.endsWith(".tar.gz", ignoreCase = true) ->
+            PackageFileInfo(fileName.removeSuffix(".tar.gz"), CompressionFormat.TAR_GZ)
+        fileName.endsWith(".zip", ignoreCase = true) ->
+            PackageFileInfo(fileName.removeSuffix(".zip"), CompressionFormat.ZIP)
+        else -> null
     }
 
     private data class PackageFileInfo(
@@ -92,13 +91,16 @@ class BundledPackagesInstaller(
     )
 
     private enum class CompressionFormat {
-        TAR_XZ, TAR_ZSTD, TAR_GZ, ZIP;
+        TAR_XZ,
+        TAR_ZSTD,
+        TAR_GZ,
+        ZIP;
 
         fun toTarExtractorType(): TarExtractor.CompressionType? = when (this) {
             TAR_XZ -> TarExtractor.CompressionType.XZ
             TAR_ZSTD -> TarExtractor.CompressionType.ZSTD
             TAR_GZ -> TarExtractor.CompressionType.GZIP
-            ZIP -> null  // ZIP 单独处理
+            ZIP -> null // ZIP 单独处理
         }
     }
 
@@ -205,7 +207,7 @@ class BundledPackagesInstaller(
     private fun extractZip(archiveFile: File, targetDir: File) {
         ZipFile(archiveFile).use { zip ->
             zip.entries().asSequence().forEach { entry ->
-                val entryFile = File(targetDir, entry.name)
+                val entryFile = ArchivePathSafety.resolveEntryFile(targetDir, entry.name, "zip entry")
                 if (entry.isDirectory) {
                     entryFile.mkdirs()
                 } else {
@@ -238,12 +240,10 @@ class BundledPackagesInstaller(
     /**
      * 计算包大小
      */
-    private fun calculatePackageSize(dir: File): Long {
-        return dir.walkTopDown()
-            .filter { it.isFile }
-            .map { it.length() }
-            .sum()
-    }
+    private fun calculatePackageSize(dir: File): Long = dir.walkTopDown()
+        .filter { it.isFile }
+        .map { it.length() }
+        .sum()
 
     /**
      * 包元数据（对应 package.json）

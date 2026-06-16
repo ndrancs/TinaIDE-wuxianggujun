@@ -1,27 +1,42 @@
 # TinaIDE
 
-> A lightweight C/C++ IDE running on Android devices
+> A C/C++ IDE for Android devices. The default development path uses
+> `native tina-toolchain + Android sysroot`; Linux distro / PRoot is optional.
 
 [中文文档](README.md)
 
 ---
 
-TinaIDE is an integrated development environment designed specifically for Android devices, allowing you to write, compile, and run C/C++ code directly on your phone or tablet. With a built-in complete Clang/LLVM toolchain and clangd language server, it provides a development experience close to desktop IDEs.
+TinaIDE is an integrated development environment for phones and tablets. Current
+runtime responsibilities are split into two layers:
+
+- Default development path: bundled `native tina-toolchain`, `Android sysroot`,
+  and native clangd/LSP.
+- Optional Linux environment: `core:linux-distro + PRoot` for terminal, Linux
+  tools, plugin LSP dependencies, and selected debugging flows.
+
+Basic C/C++ build, run, and clangd completion no longer require PRoot.
 
 ## Features
 
-- **Embedded Compiler**: Built-in Clang/LLVM 17, in-process compilation, no external tools required
-- **Intelligent Code Completion**: Integrated clangd LSP for precise semantic-level code completion
+- **Native C/C++ Toolchain**: Bundled `tina-toolchain` provides clang, clang++,
+  clangd, and related runtime tools
+- **Android Sysroot**: ABI-specific headers and libraries are installed and
+  verified by the app
+- **Intelligent Code Completion**: Native clangd + LSP diagnostics, go to
+  definition, references, and hover information
 - **Syntax Highlighting**: High-performance incremental syntax highlighting based on Tree-sitter
 - **Code Navigation**: Go to definition, find references, hover documentation
 - **Real-time Diagnostics**: Display errors and warnings in real-time while editing
 - **Modern Editor**: Powered by Tina Editor (Compose + Canvas) with multi-tab editing
 - **Material Design 3**: Following the latest Material Design guidelines
-- **In-process Execution**: Run compiled programs directly within the app
-- **Multi-shell Terminal**: Built-in Bash and Zsh environment
-- **LLDB Debugging**: Breakpoints, stepping, variables, and call stacks
+- **Terminal and Linux Environment**: Optional self-hosted Linux distro / PRoot
+  terminal
+- **LLDB Debugging**: Breakpoints, stepping, variables, and call stacks where
+  the runtime environment supports it
 - **Git Integration**: Clone/commit/push/pull/branches/conflict resolution with HTTPS credentials and SSH keys
-- **Plugin System**: Themes/snippets/menu extensions; supports auto-install bundled plugins from assets
+- **Plugin System**: Themes, snippets, menu extensions, LSP plugins, and script
+  / hybrid plugins
 - **File Preview**: Built-in preview for Markdown/JSON/images/Hex and more
 
 ## UI Preview
@@ -45,10 +60,10 @@ TinaIDE is an integrated development environment designed specifically for Andro
 
 | Feature | Description |
 |---------|-------------|
-| In-process Compilation | Clang/LLVM integrated as dynamic library, no need to fork external processes |
-| LLD Linker | Fast linking using LLVM LLD (with process isolation) |
-| Shared Library Output | Compile to .so files, support in-process loading and execution |
-| Complete Sysroot | Android NDK headers and runtime libraries |
+| Native Toolchain | Bundled `tina-toolchain` for clang / clang++ / lld |
+| Android Sysroot | ABI-specific Android headers and runtime libraries |
+| Build Modes | Single-file, Make, and CMake project flows |
+| Optional PRoot Path | Available only when the Linux distro / PRoot environment is installed |
 
 ### LSP Language Services
 
@@ -114,6 +129,11 @@ TinaIDE is an integrated development environment designed specifically for Andro
 | Bundled Plugins | `assets/bundled_plugins/*` auto install/update on app start |
 | Public Registry | Plugins and packages are published from `https://github.com/wuxianggujun/TinaIDE-Registry` |
 
+The current Android client reads `plugins/index.v2.json` and
+`packages/index.v2.json` only. It no longer falls back to legacy
+`plugins/index.json` / `packages/index.json`; legacy v1 artifacts should be
+generated explicitly in the Registry repo only when old clients must be served.
+
 ### File Preview
 
 | Type | Description |
@@ -128,35 +148,62 @@ TinaIDE is an integrated development environment designed specifically for Andro
 ### 1. Toolchain Assets
 
 ```powershell
-# This repo already includes the built-in runtime/debug assets (proot/sysroot/toolchain metadata),
+# This repo already includes the built-in runtime/debug assets
+# (sysroot, tina-toolchain metadata, and optional PRoot assets),
 # so normal development usually does NOT require rebuilding them locally.
 #
 # If you need to rebuild (contributors/maintainers), see docs/快速开始.md
-# ("Rebuild built-in runtime environment").
+# ("维护者可选资产重建").
 #
 # Common entry points:
 # - Refresh Linux distro manifest: pwsh ./tools/linux-distro/generate-linux-distro-manifest.ps1
 # - Rebuild proot + sysroot: pwsh ./docker/proot-build/build-proot.ps1 -CopyToJniLibs -CopyToAssets
+# - Sync tina-toolchain assets: pwsh ./tools/sync-tina-toolchain-assets.ps1 -Abi arm64
 ```
 
 ### 2. Build Application
 
-```bash
-# Build and install (Debug version)
-./gradlew installDebug
+```powershell
+# Build and install arm64 Debug
+pwsh ./tools/build-apk.ps1 -Install
 
-# Build Release version (requires signing configuration)
-./gradlew assembleRelease
+# Build and install x86_64 Debug for emulators
+pwsh ./tools/build-apk.ps1 -Abi x86 -Install
+
+# Build Release, local signing config required
+pwsh ./tools/build-apk.ps1 -Variant release
+```
+
+Advanced Gradle entry points:
+
+```bash
+./gradlew :app:assembleArm64Debug
+./gradlew -Ptina.devAbi=x86_64 :app:assembleX86_64Debug
+./gradlew :app:assembleDebugAllAbi
+./gradlew :app:assembleReleaseAllAbi
 ```
 
 ### 3. Getting Started
 
-1. Launch the app (first launch will auto-extract sysroot, takes about 1-2 minutes)
+1. Launch the app. The default setup verifies and installs `Android sysroot`
+   and `native tina-toolchain`.
 2. Create a new project or open an existing one
 3. Write code (LSP automatically provides completion and diagnostics)
 4. Click the run button to compile and execute
 
+Install Linux distro / PRoot only when you need a Linux terminal, Linux tools,
+or plugin dependencies that require a guest environment.
+
 For detailed steps, see [Quick Start Guide](docs/快速开始.md)
+
+### 4. Release Side Effects
+
+Release tasks are not pure read-only checks. They may:
+
+- increment `version.properties`
+- back up R8 mapping files
+
+Mapping files are only archived locally by the public build logic.
 
 ## Documentation
 
@@ -168,25 +215,26 @@ For detailed steps, see [Quick Start Guide](docs/快速开始.md)
 
 ### Technical Documentation
 
-- [Clang/LLVM Integration Roadmap](docs/CLANG_INTEGRATION_ROADMAP.md)
-- [LSP Integration Guide](docs/LSP-Integration.md)
-- [Native Compile & Runtime](docs/Native-Compile-Runtime.md)
-- [Bottom Panel Guide](docs/Bottom-Panel-Guide.md)
+- [GitHub Registry](docs/registry/GitHub-Registry.md)
+- [ProGuard / R8 Rules](docs/proguard-rules-reference.md)
+- [Toolchain Build Guide](docs/toolchain-build-guide.md)
+- [Remote LSP Guide](docs/guides/Remote-LSP-Guide.md)
+- [MT Data Files Provider](docs/guides/MT-Data-Files-Provider.md)
 
 ## Tech Stack
 
 | Category | Technology |
 |----------|------------|
 | Languages | Kotlin, C++ |
-| UI Framework | Android View + Material Design 3 |
+| UI Framework | Jetpack Compose + Material 3 |
 | Editor | Tina Editor (in-house, Compose + Canvas) |
-| Syntax Highlighting | Tree-sitter (C/C++/CMake) |
-| Compiler | Clang/LLVM 17 |
-| Linker | LLD |
-| LSP Service | clangd (embedded) |
-| Async Processing | Kotlin Coroutines |
+| Syntax Highlighting | Tree-sitter |
+| Compiler | native tina-toolchain |
+| Sysroot | Android sysroot, installed per ABI |
+| LSP Service | native clangd, with remote / PRoot / plugin providers |
 | Build System | Gradle + CMake |
-| Dependency Injection | Custom ServiceLocator |
+| Dependency Injection | Koin |
+| Async Processing | Kotlin Coroutines + Flow |
 
 ## Supported Architectures
 
@@ -204,8 +252,8 @@ For detailed steps, see [Quick Start Guide](docs/快速开始.md)
 
 - Android Studio (latest stable version)
 - JDK 17+
-- Docker Desktop (for building LLVM)
 - PowerShell 7+
+- Docker Desktop only for maintainers rebuilding runtime assets
 
 ### Runtime Environment
 
@@ -215,35 +263,26 @@ For detailed steps, see [Quick Start Guide](docs/快速开始.md)
 
 ## Project Structure
 
-```
+```text
 TinaIDE/
-├── app/
-│   └── src/main/
-│       ├── java/.../tinaide/
-│       │   ├── core/                    # Core services
-│       │   │   ├── compile/             # Build & run
-│       │   │   ├── config/              # App configuration
-│       │   │   ├── debug/               # Debugger (LLDB)
-│       │   │   ├── format/              # Code formatting
-│       │   │   ├── git/                 # Git integration
-│       │   │   ├── lsp/                 # LSP client
-│       │   │   └── proot/               # PRoot environment
-│       │   ├── editor/                  # Editor core
-│       │   ├── file/                    # File management
-│       │   ├── output/                  # Output management
-│       │   ├── plugin/                  # Plugin system
-│       │   └── ui/                      # UI layer (Jetpack Compose)
-│       └── cpp/
-│           ├── compiler/       # Clang compiler JNI
-│           ├── linker/         # LLD linker JNI
-│           ├── lsp/            # clangd service JNI
-│           └── treesitter/     # Tree-sitter syntax highlighting
-├── external/
-│   ├── tina-android-tree-sitter/ # Tree-sitter integration
-│   └── termux-terminal/        # Terminal modules
-├── language-cmake/             # CMake language support module
-└── docs/                       # Project documentation
+├── app/                # App shell, startup, navigation, cross-module wiring
+├── core/               # Shared runtime: compile, LSP, storage, plugin, security
+├── feature/            # User-facing slices: editor, settings, AI, help, workspace
+├── external/           # Local source dependencies and submodules
+├── server/             # Public placeholder; backend moved to a private repo
+├── docs/               # Project documentation
+├── docker/             # Runtime asset build helpers
+├── tools/              # Local development scripts and templates
+└── build-logic/        # Gradle convention plugins
 ```
+
+Architecture reminders:
+
+- `app` handles startup, navigation, DI assembly, and cross-module coordination.
+- `feature/*` owns user-facing flows.
+- `core/*` owns reusable infrastructure.
+- Default compile / LSP depends on native toolchain, not PRoot.
+- PRoot is an optional Linux environment, not the default compiler host.
 
 ## Support
 

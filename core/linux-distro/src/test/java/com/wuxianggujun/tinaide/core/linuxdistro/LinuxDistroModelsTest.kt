@@ -90,25 +90,21 @@ class LinuxDistroModelsTest {
         }
     }
 
-    private fun release(id: String): DistroRelease {
-        return DistroRelease(
-            id = id,
-            version = id,
-            displayName = id,
-            artifacts = listOf(artifact())
-        )
-    }
+    private fun release(id: String): DistroRelease = DistroRelease(
+        id = id,
+        version = id,
+        displayName = id,
+        artifacts = listOf(artifact())
+    )
 
     private fun artifact(
         url: String = "https://example.com/rootfs.tar.gz",
         sizeBytes: Long? = 1024L,
-    ): DistroArtifact {
-        return DistroArtifact(
-            architecture = DistroArchitecture.AARCH64,
-            url = url,
-            format = DistroArchiveFormat.TAR_GZ,
-            checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "abc123"),
-            sizeBytes = sizeBytes
-        )
-    }
+    ): DistroArtifact = DistroArtifact(
+        architecture = DistroArchitecture.AARCH64,
+        url = url,
+        format = DistroArchiveFormat.TAR_GZ,
+        checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "abc123"),
+        sizeBytes = sizeBytes
+    )
 }

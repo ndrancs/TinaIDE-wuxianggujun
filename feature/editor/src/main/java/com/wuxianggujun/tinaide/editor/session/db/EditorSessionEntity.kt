@@ -33,13 +33,11 @@ data class EditorSessionEntity(
     val updatedAt: Long = System.currentTimeMillis()
 ) {
     companion object {
-        fun fromSnapshot(projectPath: String, snapshot: ProjectSessionSnapshot): EditorSessionEntity {
-            return EditorSessionEntity(
-                projectPath = projectPath,
-                activeFile = snapshot.activeFile,
-                updatedAt = snapshot.updatedAt
-            )
-        }
+        fun fromSnapshot(projectPath: String, snapshot: ProjectSessionSnapshot): EditorSessionEntity = EditorSessionEntity(
+            projectPath = projectPath,
+            activeFile = snapshot.activeFile,
+            updatedAt = snapshot.updatedAt
+        )
     }
 }
 
@@ -78,26 +76,22 @@ data class EditorFileStateEntity(
     @ColumnInfo(name = "scroll_y")
     val scrollY: Int = 0
 ) {
-    fun toDomainModel(): ProjectSessionFileSnapshot {
-        return ProjectSessionFileSnapshot(
-            path = filePath,
-            cursorLine = cursorLine,
-            cursorColumn = cursorColumn,
-            scrollX = scrollX,
-            scrollY = scrollY
-        )
-    }
+    fun toDomainModel(): ProjectSessionFileSnapshot = ProjectSessionFileSnapshot(
+        path = filePath,
+        cursorLine = cursorLine,
+        cursorColumn = cursorColumn,
+        scrollX = scrollX,
+        scrollY = scrollY
+    )
 
     companion object {
-        fun fromDomainModel(projectPath: String, snapshot: ProjectSessionFileSnapshot): EditorFileStateEntity {
-            return EditorFileStateEntity(
-                projectPath = projectPath,
-                filePath = snapshot.path,
-                cursorLine = snapshot.cursorLine,
-                cursorColumn = snapshot.cursorColumn,
-                scrollX = snapshot.scrollX,
-                scrollY = snapshot.scrollY
-            )
-        }
+        fun fromDomainModel(projectPath: String, snapshot: ProjectSessionFileSnapshot): EditorFileStateEntity = EditorFileStateEntity(
+            projectPath = projectPath,
+            filePath = snapshot.path,
+            cursorLine = snapshot.cursorLine,
+            cursorColumn = snapshot.cursorColumn,
+            scrollX = snapshot.scrollX,
+            scrollY = snapshot.scrollY
+        )
     }
 }

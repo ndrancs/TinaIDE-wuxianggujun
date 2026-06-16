@@ -22,9 +22,9 @@ import com.wuxianggujun.tinaide.core.compile.strategy.BuildStrategy
 import com.wuxianggujun.tinaide.core.compile.strategy.ExecutionOutcome
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -32,7 +32,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 /**
  * Auto-Fallback 场景测试(设计文档 §4.6)。

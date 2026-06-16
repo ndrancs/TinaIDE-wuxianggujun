@@ -17,17 +17,13 @@ object PackageAbiCompatibility {
         return required.any { abi -> abi in supported }
     }
 
-    fun currentAbiLabel(supportedAbis: Array<String>): String {
-        return supportedAbis.firstOrNull { it.isNotBlank() } ?: "unknown"
-    }
+    fun currentAbiLabel(supportedAbis: Array<String>): String = supportedAbis.firstOrNull { it.isNotBlank() } ?: "unknown"
 
-    private fun normalize(abis: List<String>?): List<String> {
-        return abis.orEmpty()
-            .asSequence()
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .map { it.lowercase() }
-            .distinct()
-            .toList()
-    }
+    private fun normalize(abis: List<String>?): List<String> = abis.orEmpty()
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .map { it.lowercase() }
+        .distinct()
+        .toList()
 }

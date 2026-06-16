@@ -2,10 +2,10 @@ package com.wuxianggujun.tinaide.core.security
 
 import android.content.Context
 import com.wuxianggujun.tinaide.core.exception.TinaIDEException
-import com.wuxianggujun.tinaide.storage.ProjectPaths
-import java.io.File
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
+import com.wuxianggujun.tinaide.storage.ProjectPaths
+import java.io.File
 
 /**
  * 文件路径验证器
@@ -24,7 +24,7 @@ import com.wuxianggujun.tinaide.core.i18n.strOr
  * **使用示例**:
  * ```kotlin
  * val validator = PathValidator(context)
- * 
+ *
  * try {
  *     validator.validatePath("/workspace/main.cpp")  // 通过
  *     validator.validatePath("../../../etc/passwd")   // 抛出异常
@@ -34,21 +34,21 @@ import com.wuxianggujun.tinaide.core.i18n.strOr
  * ```
  */
 class PathValidator(private val context: Context) {
-    
+
     companion object {
         private const val TAG = "PathValidator"
-        
+
         /**
          * PRoot guest 路径白名单前缀
          *
          * 允许访问的 PRoot guest 路径前缀列表
          */
         private val PROOT_GUEST_ALLOWED_PREFIXES = listOf(
-            "/workspace",      // 工作空间（主要工作目录）
-            "/tmp",           // 临时文件
-            "/home"           // 用户目录
+            "/workspace", // 工作空间（主要工作目录）
+            "/tmp", // 临时文件
+            "/home" // 用户目录
         )
-        
+
         /**
          * 禁止访问的 PRoot guest 路径
          *
@@ -60,7 +60,7 @@ class PathValidator(private val context: Context) {
             "/etc/sudoers"
         )
     }
-    
+
     /**
      * Android host 路径白名单前缀（延迟初始化）
      */
@@ -77,7 +77,7 @@ class PathValidator(private val context: Context) {
             File(context.filesDir, "rootfs")
         ).mapNotNull { it?.canonicalPathOrAbsolute() }
     }
-    
+
     /**
      * 验证 PRoot guest 路径是否合法
      *
@@ -99,7 +99,7 @@ class PathValidator(private val context: Context) {
     fun validateGuestPath(path: String) {
         // 规范化路径（移除 . 和 ..）
         val normalizedPath = normalizePath(path)
-        
+
         // 检查是否在禁止列表中
         if (PROOT_GUEST_FORBIDDEN_PATHS.any { normalizedPath.startsWith(it) }) {
             throw TinaIDEException.PathValidationException(
@@ -109,24 +109,25 @@ class PathValidator(private val context: Context) {
                 recoverySuggestion = Strings.path_error_forbidden_suggestion.strOr(context)
             )
         }
-        
+
         // 检查是否在白名单中
         val isAllowed = PROOT_GUEST_ALLOWED_PREFIXES.any { prefix ->
             normalizedPath.isSameOrChildOf(prefix)
         }
-        
+
         if (!isAllowed) {
             throw TinaIDEException.PathValidationException(
                 path = path,
                 message = "Guest path not allowed: $path",
                 userMessage = Strings.path_error_not_allowed_guest.strOr(context, path),
-                recoverySuggestion = Strings.path_error_allowed_prefixes.strOr(context,
+                recoverySuggestion = Strings.path_error_allowed_prefixes.strOr(
+                    context,
                     PROOT_GUEST_ALLOWED_PREFIXES.joinToString(", ")
                 )
             )
         }
     }
-    
+
     /**
      * 验证 Android host 路径是否合法
      *
@@ -147,7 +148,7 @@ class PathValidator(private val context: Context) {
      */
     fun validateHostPath(path: String) {
         val file = File(path)
-        
+
         // 获取规范化的绝对路径
         val canonicalPath = try {
             file.canonicalPath
@@ -159,12 +160,12 @@ class PathValidator(private val context: Context) {
                 recoverySuggestion = Strings.path_error_format_suggestion.strOr(context)
             )
         }
-        
+
         // 检查是否在白名单中
         val isAllowed = hostAllowedPrefixes.any { prefix ->
             canonicalPath.isSameOrChildOf(prefix)
         }
-        
+
         if (!isAllowed) {
             throw TinaIDEException.PathValidationException(
                 path = path,
@@ -174,37 +175,33 @@ class PathValidator(private val context: Context) {
             )
         }
     }
-    
+
     /**
      * 检查 PRoot guest 路径是否合法（不抛出异常）
      *
      * @param path PRoot guest 路径
      * @return true 表示合法，false 表示不合法
      */
-    fun isGuestPathAllowed(path: String): Boolean {
-        return try {
-            validateGuestPath(path)
-            true
-        } catch (e: TinaIDEException.PathValidationException) {
-            false
-        }
+    fun isGuestPathAllowed(path: String): Boolean = try {
+        validateGuestPath(path)
+        true
+    } catch (e: TinaIDEException.PathValidationException) {
+        false
     }
-    
+
     /**
      * 检查 Android host 路径是否合法（不抛出异常）
      *
      * @param path Android 文件系统路径
      * @return true 表示合法，false 表示不合法
      */
-    fun isHostPathAllowed(path: String): Boolean {
-        return try {
-            validateHostPath(path)
-            true
-        } catch (e: TinaIDEException.PathValidationException) {
-            false
-        }
+    fun isHostPathAllowed(path: String): Boolean = try {
+        validateHostPath(path)
+        true
+    } catch (e: TinaIDEException.PathValidationException) {
+        false
     }
-    
+
     /**
      * 规范化路径（移除 . 和 ..）
      *
@@ -226,12 +223,12 @@ class PathValidator(private val context: Context) {
     private fun normalizePath(path: String): String {
         val isAbsolute = path.startsWith("/")
         val segments = path.split("/").filter { it.isNotEmpty() }
-        
+
         val normalized = mutableListOf<String>()
-        
+
         for (segment in segments) {
             when (segment) {
-                "." -> continue  // 忽略当前目录
+                "." -> continue // 忽略当前目录
                 ".." -> {
                     // 向上一级
                     if (normalized.isNotEmpty()) {
@@ -241,35 +238,29 @@ class PathValidator(private val context: Context) {
                 else -> normalized.add(segment)
             }
         }
-        
+
         return if (isAbsolute) {
             "/" + normalized.joinToString("/")
         } else {
             normalized.joinToString("/")
         }
     }
-    
+
     /**
      * 获取允许的 guest 路径前缀列表
      *
      * @return 白名单前缀列表
      */
-    fun getAllowedGuestPrefixes(): List<String> {
-        return PROOT_GUEST_ALLOWED_PREFIXES
-    }
-    
+    fun getAllowedGuestPrefixes(): List<String> = PROOT_GUEST_ALLOWED_PREFIXES
+
     /**
      * 获取允许的 host 路径前缀列表
      *
      * @return 白名单前缀列表
      */
-    fun getAllowedHostPrefixes(): List<String> {
-        return hostAllowedPrefixes
-    }
+    fun getAllowedHostPrefixes(): List<String> = hostAllowedPrefixes
 
-    private fun File.canonicalPathOrAbsolute(): String {
-        return runCatching { canonicalPath }.getOrDefault(absolutePath)
-    }
+    private fun File.canonicalPathOrAbsolute(): String = runCatching { canonicalPath }.getOrDefault(absolutePath)
 
     private fun String.isSameOrChildOf(prefix: String): Boolean {
         val cleanPrefix = prefix.trimEnd('/', File.separatorChar)

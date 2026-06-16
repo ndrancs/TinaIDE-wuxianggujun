@@ -60,7 +60,7 @@ internal data class HighlightLineCacheChange(
 /**
  * 按 [HighlightLineCacheChange] 更新 lineCache：
  * - 未编辑区的行：原样保留或按 [HighlightLineCacheChange.lineDelta] 平移行号。
- * - 编辑区内的行（`[startLine..oldChangedEndLine]`）：
+ * - 编辑区内的行（`startLine..oldChangedEndLine`）：
  *   - 单行内编辑（无 `\n` 进出）：保留旧 segments，并按列偏移做"近似平移"——
  *     编辑点之前的 segment 不变；之后的按 [HighlightLineCacheChange.columnDelta] 整体平移；
  *     跨越编辑点的 segment 拉伸/截断。这样可以在 tree-sitter parse 跑完之前提供一份"肉眼可接受"的旧色，
@@ -176,9 +176,7 @@ internal fun buildLineStartOffsets(text: String): IntArray {
     return starts.toIntArray()
 }
 
-internal fun IntArray.lineStartOffset(line: Int): Int {
-    return this[line.coerceIn(0, lastIndex)]
-}
+internal fun IntArray.lineStartOffset(line: Int): Int = this[line.coerceIn(0, lastIndex)]
 
 internal fun IntArray.lineEndOffsetExclusive(line: Int, textLength: Int): Int {
     val safeLine = line.coerceIn(0, lastIndex)

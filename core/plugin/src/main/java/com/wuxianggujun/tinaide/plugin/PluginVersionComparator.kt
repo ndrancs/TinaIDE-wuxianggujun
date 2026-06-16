@@ -37,16 +37,14 @@ internal object PluginVersionComparator {
         )
     }
 
-    private fun tokenize(raw: String): List<VersionToken> {
-        return tokenPattern.findAll(raw)
-            .map { token ->
-                VersionToken(
-                    raw = token.value,
-                    numericValue = token.value.toLongOrNull(),
-                )
-            }
-            .toList()
-    }
+    private fun tokenize(raw: String): List<VersionToken> = tokenPattern.findAll(raw)
+        .map { token ->
+            VersionToken(
+                raw = token.value,
+                numericValue = token.value.toLongOrNull(),
+            )
+        }
+        .toList()
 
     private fun compareCoreTokens(
         left: List<VersionToken>,

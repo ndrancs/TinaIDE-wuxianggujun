@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide.plugin.script.api
 
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 class PluginWorkspaceFileAccess(
     private val projectRootProvider: () -> String?

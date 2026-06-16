@@ -1,11 +1,11 @@
 package com.wuxianggujun.tinaide.core.compile
 
 import com.google.common.truth.Truth.assertThat
-import org.junit.Test
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.zip.ZipFile
+import org.junit.Test
 
 class Sdl3TemplateRegressionTest {
 

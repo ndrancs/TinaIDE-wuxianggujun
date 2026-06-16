@@ -33,7 +33,6 @@ import com.wuxianggujun.tinaide.ai.tools.executor.diagnostics.DiagnosticsCallbac
 import com.wuxianggujun.tinaide.ai.tools.executor.editor.EditorToolCallbacks
 import com.wuxianggujun.tinaide.ai.tools.executor.execution.ExecutionCallbacks
 import com.wuxianggujun.tinaide.ai.tools.executor.filesystem.FileSystemCallbacks
-import com.wuxianggujun.tinaide.core.config.ai.AiAccessMode
 import com.wuxianggujun.tinaide.core.config.ai.AiConfig
 import com.wuxianggujun.tinaide.core.config.ai.AiGenerationSettings
 import com.wuxianggujun.tinaide.core.config.ai.AiPromptSettings
@@ -206,7 +205,6 @@ class AiChatViewModelTest {
         coEvery { channelRepository.getById("missing-key-channel") } returns null
         val missingKeyViewModel = newViewModel(
             config = AiConfig(
-                accessMode = AiAccessMode.CUSTOM_BYOK,
                 activeChannelId = "missing-key-channel",
                 generation = AiGenerationSettings(model = "gpt-test"),
                 prompt = AiPromptSettings(systemPrompt = "system prompt"),
@@ -1123,7 +1121,6 @@ class AiChatViewModelTest {
     private fun newViewModel(
         conversationRepository: ConversationRepository? = null,
         config: AiConfig = AiConfig(
-            accessMode = AiAccessMode.CUSTOM_BYOK,
             activeChannelId = null,
             generation = AiGenerationSettings(model = "gpt-test"),
             prompt = AiPromptSettings(systemPrompt = "system prompt"),
@@ -1169,6 +1166,7 @@ class AiChatViewModelTest {
         val configFlow = MutableStateFlow(config)
         val preferences = mockk<AiPreferences>()
         every { preferences.configFlow } returns configFlow
+        every { channelRepository.channelsFlow } returns flowOf(emptyList())
 
         resetAppStrings()
         AppStrings.initialize(context)
@@ -1325,7 +1323,6 @@ class AiChatViewModelTest {
         field.isAccessible = true
         field.set(AppStrings, null)
     }
-
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

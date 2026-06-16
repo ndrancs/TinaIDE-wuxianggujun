@@ -49,10 +49,8 @@ fun LinuxDistroRootfsHealthReport.toHealthSummary(
 
 private fun LinuxDistroRootfsHealthCheck.toDisplayItems(
     probeLabel: (LinuxDistroRootfsHealthProbe) -> String,
-): List<String> {
-    return when {
-        missingItems.isNotEmpty() -> missingItems
-        checkedItems.isNotEmpty() -> checkedItems
-        else -> listOf(probeLabel(probe))
-    }
+): List<String> = when {
+    missingItems.isNotEmpty() -> missingItems
+    checkedItems.isNotEmpty() -> checkedItems
+    else -> listOf(probeLabel(probe))
 }

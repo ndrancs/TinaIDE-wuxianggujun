@@ -5,4 +5,3 @@ data class SearchOptions(
     val useRegex: Boolean = false,
     val wholeWord: Boolean = false
 )
-

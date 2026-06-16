@@ -51,10 +51,12 @@ class BuildOrchestrator(
             failure.reason,
             failure.artifact.absolutePath,
         )
-        events.emit(BuildEvent.AutoFallback(
-            reason = "cached artifact launch failed: ${failure.reason}",
-            firstFailure = failure,
-        ))
+        events.emit(
+            BuildEvent.AutoFallback(
+                reason = "cached artifact launch failed: ${failure.reason}",
+                firstFailure = failure,
+            )
+        )
 
         val forceRequest = request.copy(
             build = BuildIntent.Force,
@@ -68,13 +70,11 @@ class BuildOrchestrator(
         fallbackReport
     }
 
-    private fun shouldFallbackToRebuild(request: CompileRequest, report: BuildReport): Boolean {
-        return request.fallbackOnLaunchFailure &&
-            request.build is BuildIntent.IfNeeded &&
-            request.launch !is LaunchIntent.None &&
-            report is BuildReport.LaunchFailed &&
-            report.artifactWasCached
-    }
+    private fun shouldFallbackToRebuild(request: CompileRequest, report: BuildReport): Boolean = request.fallbackOnLaunchFailure &&
+        request.build is BuildIntent.IfNeeded &&
+        request.launch !is LaunchIntent.None &&
+        report is BuildReport.LaunchFailed &&
+        report.artifactWasCached
 
     private suspend fun runOnce(request: CompileRequest, ctx: BuildContext): BuildReport {
         events.emit(BuildEvent.Started(request))
@@ -119,12 +119,10 @@ class BuildOrchestrator(
         artifact: Artifact,
         wasCached: Boolean,
         ctx: BuildContext,
-    ): BuildReport {
-        return if (intent is LaunchIntent.None) {
-            BuildReport.BuiltOnly(artifact)
-        } else {
-            dispatcher.dispatch(intent, artifact, wasCached, ctx, events)
-        }
+    ): BuildReport = if (intent is LaunchIntent.None) {
+        BuildReport.BuiltOnly(artifact)
+    } else {
+        dispatcher.dispatch(intent, artifact, wasCached, ctx, events)
     }
 
     private suspend fun finishWith(report: BuildReport): BuildReport {

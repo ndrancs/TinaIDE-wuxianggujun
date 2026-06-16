@@ -5,10 +5,10 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
-import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import timber.log.Timber
 
 /**
  * 把用户挑选的图标文件解码、缩放到启动器图标基准尺寸，再编码为 PNG 字节。

@@ -1,5 +1,6 @@
 package com.wuxianggujun.tinaide.core.lsp
 
+import java.util.concurrent.CompletableFuture
 import org.eclipse.lsp4j.CallHierarchyIncomingCall
 import org.eclipse.lsp4j.CallHierarchyIncomingCallsParams
 import org.eclipse.lsp4j.CallHierarchyItem
@@ -25,7 +26,6 @@ import org.eclipse.lsp4j.WorkspaceEdit
 import org.eclipse.lsp4j.WorkspaceSymbol
 import org.eclipse.lsp4j.WorkspaceSymbolParams
 import org.eclipse.lsp4j.jsonrpc.messages.Either
-import java.util.concurrent.CompletableFuture
 
 /**
  * TinaIDE 的 LSP 会话抽象，避免 core:lsp 与任意编辑器框架直接耦合。

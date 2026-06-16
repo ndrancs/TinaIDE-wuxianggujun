@@ -3,6 +3,13 @@ package com.wuxianggujun.tinaide.plugin
 import android.content.Context
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.str
+import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -10,16 +17,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import timber.log.Timber
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * 插件日志级别
@@ -58,16 +58,14 @@ data class PluginLogEntry(
     /**
      * 转换为可复制的文本格式
      */
-    fun toClipboardText(): String {
-        return buildString {
-            appendLine(Strings.plugin_log_time.str(getFormattedDate()))
-            appendLine(Strings.plugin_log_level_line.str(level.name))
-            appendLine(Strings.plugin_log_plugin.str(pluginName, pluginId))
-            appendLine(Strings.plugin_log_message_line.str(message))
-            stackTrace?.let {
-                appendLine(Strings.plugin_log_stacktrace.str())
-                appendLine(it)
-            }
+    fun toClipboardText(): String = buildString {
+        appendLine(Strings.plugin_log_time.str(getFormattedDate()))
+        appendLine(Strings.plugin_log_level_line.str(level.name))
+        appendLine(Strings.plugin_log_plugin.str(pluginName, pluginId))
+        appendLine(Strings.plugin_log_message_line.str(message))
+        stackTrace?.let {
+            appendLine(Strings.plugin_log_stacktrace.str())
+            appendLine(it)
         }
     }
 }
@@ -103,10 +101,8 @@ class PluginLogManager private constructor(private val context: Context) {
         @Volatile
         private var instance: PluginLogManager? = null
 
-        fun getInstance(context: Context): PluginLogManager {
-            return instance ?: synchronized(this) {
-                instance ?: PluginLogManager(context.applicationContext).also { instance = it }
-            }
+        fun getInstance(context: Context): PluginLogManager = instance ?: synchronized(this) {
+            instance ?: PluginLogManager(context.applicationContext).also { instance = it }
         }
     }
 
@@ -274,16 +270,12 @@ class PluginLogManager private constructor(private val context: Context) {
     /**
      * 获取指定插件的日志
      */
-    fun getLogsForPlugin(pluginId: String): List<PluginLogEntry> {
-        return logs.filter { it.pluginId == pluginId }
-    }
+    fun getLogsForPlugin(pluginId: String): List<PluginLogEntry> = logs.filter { it.pluginId == pluginId }
 
     /**
      * 获取指定级别的日志
      */
-    fun getLogsByLevel(level: PluginLogLevel): List<PluginLogEntry> {
-        return logs.filter { it.level == level }
-    }
+    fun getLogsByLevel(level: PluginLogLevel): List<PluginLogEntry> = logs.filter { it.level == level }
 
     /**
      * 清空所有日志
@@ -309,15 +301,13 @@ class PluginLogManager private constructor(private val context: Context) {
     /**
      * 导出日志为文本格式
      */
-    fun exportToText(): String {
-        return buildString {
-            logs.forEach { entry ->
-                appendLine("${entry.getFormattedDate()} [${entry.level}] [${entry.pluginName}] ${entry.message}")
-                entry.stackTrace?.let {
-                    appendLine("Stack trace:")
-                    appendLine(it)
-                    appendLine()
-                }
+    fun exportToText(): String = buildString {
+        logs.forEach { entry ->
+            appendLine("${entry.getFormattedDate()} [${entry.level}] [${entry.pluginName}] ${entry.message}")
+            entry.stackTrace?.let {
+                appendLine("Stack trace:")
+                appendLine(it)
+                appendLine()
             }
         }
     }
@@ -353,47 +343,41 @@ class PluginLogManager private constructor(private val context: Context) {
         maxEntries: Int = Int.MAX_VALUE,
         minLevel: PluginLogLevel? = null,
         sinceTimestamp: Long? = null
-    ): List<PluginLogEntryDto> {
-        return logs
-            .filter { entry ->
-                (minLevel == null || entry.level.ordinal >= minLevel.ordinal) &&
+    ): List<PluginLogEntryDto> = logs
+        .filter { entry ->
+            (minLevel == null || entry.level.ordinal >= minLevel.ordinal) &&
                 (sinceTimestamp == null || entry.timestamp >= sinceTimestamp)
-            }
-            .takeLast(maxEntries)
-            .map { entry ->
-                PluginLogEntryDto(
-                    id = entry.id,
-                    timestamp = entry.timestamp,
-                    pluginId = entry.pluginId,
-                    pluginName = entry.pluginName,
-                    level = entry.level.name,
-                    message = entry.message,
-                    stackTrace = entry.stackTrace,
-                    eventCode = entry.eventCode,
-                    attributes = entry.attributes,
-                )
-            }
-    }
+        }
+        .takeLast(maxEntries)
+        .map { entry ->
+            PluginLogEntryDto(
+                id = entry.id,
+                timestamp = entry.timestamp,
+                pluginId = entry.pluginId,
+                pluginName = entry.pluginName,
+                level = entry.level.name,
+                message = entry.message,
+                stackTrace = entry.stackTrace,
+                eventCode = entry.eventCode,
+                attributes = entry.attributes,
+            )
+        }
 
     /**
      * 获取最近的错误日志（用于崩溃报告）
      */
-    fun getRecentErrors(maxEntries: Int = 50): List<PluginLogEntryDto> {
-        return getLogsForUpload(
-            maxEntries = maxEntries,
-            minLevel = PluginLogLevel.ERROR
-        )
-    }
+    fun getRecentErrors(maxEntries: Int = 50): List<PluginLogEntryDto> = getLogsForUpload(
+        maxEntries = maxEntries,
+        minLevel = PluginLogLevel.ERROR
+    )
 
     /**
      * 获取最近的警告和错误日志
      */
-    fun getRecentWarningsAndErrors(maxEntries: Int = 100): List<PluginLogEntryDto> {
-        return getLogsForUpload(
-            maxEntries = maxEntries,
-            minLevel = PluginLogLevel.WARN
-        )
-    }
+    fun getRecentWarningsAndErrors(maxEntries: Int = 100): List<PluginLogEntryDto> = getLogsForUpload(
+        maxEntries = maxEntries,
+        minLevel = PluginLogLevel.WARN
+    )
 
     // ==================== 持久化相关 ====================
 

@@ -196,20 +196,18 @@ class EditorApiModuleRuntimeTest {
     private fun createRuntime(
         pluginId: String,
         permissions: List<String>
-    ): ScriptPluginRuntime {
-        return ScriptPluginRuntime(
-            context = context,
-            manifest = PluginManifest(
-                id = pluginId,
-                name = "Editor Runtime Test",
-                version = "1.0.0",
-                type = "script",
-                permissions = permissions
-            ),
-            pluginDir = File(context.cacheDir, pluginId).apply { mkdirs() },
-            permissionManager = permissionManager
-        ).also(runtimes::add)
-    }
+    ): ScriptPluginRuntime = ScriptPluginRuntime(
+        context = context,
+        manifest = PluginManifest(
+            id = pluginId,
+            name = "Editor Runtime Test",
+            version = "1.0.0",
+            type = "script",
+            permissions = permissions
+        ),
+        pluginDir = File(context.cacheDir, pluginId).apply { mkdirs() },
+        permissionManager = permissionManager
+    ).also(runtimes::add)
 
     private suspend fun initializeRuntimeOrSkip(runtime: ScriptPluginRuntime) {
         try {
@@ -225,16 +223,14 @@ class EditorApiModuleRuntimeTest {
         var insertedColumn: Int? = null
         var replacedSelectionText: String? = null
 
-        override fun getActiveEditor(): PluginActiveEditor {
-            return PluginActiveEditor(
-                tabId = "tab-1",
-                filePath = "/workspace/src/Main.kt",
-                fileName = "Main.kt",
-                languageId = "kotlin",
-                isDirty = true,
-                cursor = CursorPosition(line = 3, column = 4)
-            )
-        }
+        override fun getActiveEditor(): PluginActiveEditor = PluginActiveEditor(
+            tabId = "tab-1",
+            filePath = "/workspace/src/Main.kt",
+            fileName = "Main.kt",
+            languageId = "kotlin",
+            isDirty = true,
+            cursor = CursorPosition(line = 3, column = 4)
+        )
 
         override fun getActiveFile(): File = File("/workspace/src/Main.kt")
 

@@ -3,12 +3,12 @@ package com.wuxianggujun.tinaide.core.compile
 import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
 import com.wuxianggujun.tinaide.project.ProjectBuildSystem
 import com.wuxianggujun.tinaide.project.ProjectMetadataStore
+import java.io.File
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import java.io.File
 import timber.log.Timber
 
 /**
@@ -31,23 +31,23 @@ object BuildSystemDetector {
      */
     fun detect(projectRoot: File): BuildSystem {
         Timber.tag(TAG).d("Detecting build system: ${projectRoot.absolutePath}")
-        
+
         // 首先检查项目目录是否存在且可读
         if (!projectRoot.exists()) {
             Timber.tag(TAG).w("Project directory does not exist: ${projectRoot.absolutePath}")
             return BuildSystem.UNKNOWN
         }
-        
+
         if (!projectRoot.isDirectory) {
             Timber.tag(TAG).w("Project path is not a directory: ${projectRoot.absolutePath}")
             return BuildSystem.UNKNOWN
         }
-        
+
         if (!projectRoot.canRead()) {
             Timber.tag(TAG).w("Project directory not readable: ${projectRoot.absolutePath}")
             return BuildSystem.UNKNOWN
         }
-        
+
         // 1. 优先从元数据读取
         val metadata = ProjectMetadataStore.read(projectRoot)
         val metaBuildSystem = metadata?.buildSystem
@@ -65,11 +65,11 @@ object BuildSystemDetector {
             Timber.tag(TAG).d("Build system from metadata: $buildSystem")
             return buildSystem
         }
-        
+
         // 2. 元数据中没有指定，进行文件检测
         Timber.tag(TAG).d("No build system in metadata, detecting from files...")
         val detected = detectByFiles(projectRoot)
-        
+
         // 3. 如果检测成功，保存到元数据中
         if (detected != BuildSystem.UNKNOWN) {
             val projectBuildSystem = convertToProjectBuildSystem(detected)
@@ -77,74 +77,68 @@ object BuildSystemDetector {
                 Timber.tag(TAG).d("Saved detected build system to metadata: $detected")
             }
         }
-        
+
         return detected
     }
-    
+
     /**
      * 通过文件检测构建系统（内部方法）
      */
-    private fun detectByFiles(projectRoot: File): BuildSystem {
-        return try {
-            when {
-                hasPluginManifest(projectRoot) -> {
-                    Timber.tag(TAG).d("Detected TinaIDE plugin project")
-                    BuildSystem.PLUGIN
-                }
-                hasCMakeLists(projectRoot) -> {
-                    Timber.tag(TAG).d("Detected CMake project")
-                    BuildSystem.CMAKE
-                }
-                hasMakefile(projectRoot) -> {
-                    Timber.tag(TAG).d("Detected Makefile project")
-                    BuildSystem.MAKE
-                }
-                hasSourceFiles(projectRoot) -> {
-                    Timber.tag(TAG).d("Detected single/multi-file project")
-                    BuildSystem.SINGLE_FILE
-                }
-                else -> {
-                    Timber.tag(TAG).w("No source files detected")
-                    // 列出目录内容以便调试
-                    val files = projectRoot.listFiles()
-                    if (files == null) {
-                        Timber.tag(TAG).w("Failed to list directory contents (listFiles returned null)")
-                    } else {
-                        Timber.tag(TAG).d("Directory contents: ${files.map { it.name }}")
-                    }
-                    BuildSystem.UNKNOWN
-                }
+    private fun detectByFiles(projectRoot: File): BuildSystem = try {
+        when {
+            hasPluginManifest(projectRoot) -> {
+                Timber.tag(TAG).d("Detected TinaIDE plugin project")
+                BuildSystem.PLUGIN
             }
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Exception while detecting build system")
-            BuildSystem.UNKNOWN
+            hasCMakeLists(projectRoot) -> {
+                Timber.tag(TAG).d("Detected CMake project")
+                BuildSystem.CMAKE
+            }
+            hasMakefile(projectRoot) -> {
+                Timber.tag(TAG).d("Detected Makefile project")
+                BuildSystem.MAKE
+            }
+            hasSourceFiles(projectRoot) -> {
+                Timber.tag(TAG).d("Detected single/multi-file project")
+                BuildSystem.SINGLE_FILE
+            }
+            else -> {
+                Timber.tag(TAG).w("No source files detected")
+                // 列出目录内容以便调试
+                val files = projectRoot.listFiles()
+                if (files == null) {
+                    Timber.tag(TAG).w("Failed to list directory contents (listFiles returned null)")
+                } else {
+                    Timber.tag(TAG).d("Directory contents: ${files.map { it.name }}")
+                }
+                BuildSystem.UNKNOWN
+            }
         }
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Exception while detecting build system")
+        BuildSystem.UNKNOWN
     }
-    
+
     /**
      * 将 ProjectBuildSystem 转换为 BuildSystem
      */
-    private fun convertFromProjectBuildSystem(pbs: ProjectBuildSystem): BuildSystem {
-        return when (pbs) {
-            ProjectBuildSystem.SINGLE_FILE -> BuildSystem.SINGLE_FILE
-            ProjectBuildSystem.CMAKE -> BuildSystem.CMAKE
-            ProjectBuildSystem.MAKE -> BuildSystem.MAKE
-            ProjectBuildSystem.PLUGIN -> BuildSystem.PLUGIN
-            ProjectBuildSystem.UNKNOWN -> BuildSystem.UNKNOWN
-        }
+    private fun convertFromProjectBuildSystem(pbs: ProjectBuildSystem): BuildSystem = when (pbs) {
+        ProjectBuildSystem.SINGLE_FILE -> BuildSystem.SINGLE_FILE
+        ProjectBuildSystem.CMAKE -> BuildSystem.CMAKE
+        ProjectBuildSystem.MAKE -> BuildSystem.MAKE
+        ProjectBuildSystem.PLUGIN -> BuildSystem.PLUGIN
+        ProjectBuildSystem.UNKNOWN -> BuildSystem.UNKNOWN
     }
 
     /**
      * 将 BuildSystem 转换为 ProjectBuildSystem
      */
-    private fun convertToProjectBuildSystem(bs: BuildSystem): ProjectBuildSystem {
-        return when (bs) {
-            BuildSystem.SINGLE_FILE -> ProjectBuildSystem.SINGLE_FILE
-            BuildSystem.CMAKE -> ProjectBuildSystem.CMAKE
-            BuildSystem.MAKE -> ProjectBuildSystem.MAKE
-            BuildSystem.PLUGIN -> ProjectBuildSystem.PLUGIN
-            BuildSystem.UNKNOWN -> ProjectBuildSystem.UNKNOWN
-        }
+    private fun convertToProjectBuildSystem(bs: BuildSystem): ProjectBuildSystem = when (bs) {
+        BuildSystem.SINGLE_FILE -> ProjectBuildSystem.SINGLE_FILE
+        BuildSystem.CMAKE -> ProjectBuildSystem.CMAKE
+        BuildSystem.MAKE -> ProjectBuildSystem.MAKE
+        BuildSystem.PLUGIN -> ProjectBuildSystem.PLUGIN
+        BuildSystem.UNKNOWN -> ProjectBuildSystem.UNKNOWN
     }
 
     /**
@@ -179,25 +173,19 @@ object BuildSystemDetector {
         }
     }
 
-    private fun JsonObject.stringValue(name: String): String {
-        return this[name]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
-    }
+    private fun JsonObject.stringValue(name: String): String = this[name]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
 
     /**
      * 检查是否存在 CMakeLists.txt
      */
-    private fun hasCMakeLists(projectRoot: File): Boolean {
-        return File(projectRoot, "CMakeLists.txt").exists()
-    }
+    private fun hasCMakeLists(projectRoot: File): Boolean = File(projectRoot, "CMakeLists.txt").exists()
 
     /**
      * 检查是否存在 Makefile
      */
-    private fun hasMakefile(projectRoot: File): Boolean {
-        return File(projectRoot, "Makefile").exists() ||
-                File(projectRoot, "makefile").exists() ||
-                File(projectRoot, "GNUmakefile").exists()
-    }
+    private fun hasMakefile(projectRoot: File): Boolean = File(projectRoot, "Makefile").exists() ||
+        File(projectRoot, "makefile").exists() ||
+        File(projectRoot, "GNUmakefile").exists()
 
     /**
      * 检查是否有源文件（单个或多个）
@@ -234,12 +222,12 @@ object BuildSystemDetector {
             val topLevelFiles = projectRoot.listFiles()?.filter {
                 it.isFile && it.extension.lowercase() in SOURCE_EXTENSIONS
             } ?: emptyList()
-            
+
             if (topLevelFiles.isNotEmpty()) {
                 Timber.tag(TAG).d("Found source files at top level: ${topLevelFiles.map { it.name }}")
                 return topLevelFiles.asSequence()
             }
-            
+
             // 如果顶层没有，再递归查找
             projectRoot.walkTopDown()
                 .onFail { file, exception ->
@@ -264,7 +252,5 @@ object BuildSystemDetector {
     /**
      * 获取所有源文件
      */
-    fun findAllSourceFiles(projectRoot: File): List<File> {
-        return findSourceFiles(projectRoot).toList()
-    }
+    fun findAllSourceFiles(projectRoot: File): List<File> = findSourceFiles(projectRoot).toList()
 }

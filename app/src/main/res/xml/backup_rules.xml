@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Backup rules for TinaIDE
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
--->
+<?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!-- 仅备份用户偏好；file/domain 内容默认不参与备份 -->
-    <include domain="sharedpref" path="."/>
+    <include domain="sharedpref" path="." />
+
+    <exclude domain="sharedpref" path="ai_channel_api_keys.xml" />
+    <exclude domain="sharedpref" path="git_credentials.xml" />
+    <exclude domain="sharedpref" path="plugin_permissions.xml" />
+    <exclude domain="sharedpref" path="tina_server_config.xml" />
+    <exclude domain="sharedpref" path="tinaide_config.xml" />
 </full-backup-content>

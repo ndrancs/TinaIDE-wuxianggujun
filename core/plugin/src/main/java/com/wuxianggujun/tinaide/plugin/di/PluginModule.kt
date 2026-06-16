@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide.plugin.di
 
-import com.wuxianggujun.tinaide.file.IProjectContext
 import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
+import com.wuxianggujun.tinaide.file.IProjectContext
 import com.wuxianggujun.tinaide.plugin.PluginLinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.plugin.PluginManager
 import com.wuxianggujun.tinaide.plugin.PluginSnippetManager

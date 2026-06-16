@@ -1,8 +1,11 @@
 package com.wuxianggujun.tinaide.ui.compose.screens.settings.sections
 
 import androidx.annotation.StringRes
+import com.wuxianggujun.tinaide.core.commands.HostCommands
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.plugin.InstalledPlugin
+import com.wuxianggujun.tinaide.plugin.PluginCommand
+import com.wuxianggujun.tinaide.plugin.PluginConfigurationSchema
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticCategory
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticEntry
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticIssue
@@ -12,7 +15,9 @@ import com.wuxianggujun.tinaide.plugin.PluginDiagnosticsReport
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticsSnapshot
 import com.wuxianggujun.tinaide.plugin.PluginLogLevel
 import com.wuxianggujun.tinaide.plugin.PluginManifest
-import com.wuxianggujun.tinaide.plugin.PluginConfigurationSchema
+import com.wuxianggujun.tinaide.plugin.PluginMenuItem
+import com.wuxianggujun.tinaide.plugin.ResolvedPluginCommandSource
+import com.wuxianggujun.tinaide.plugin.ResolvedPluginCommandSurface
 import com.wuxianggujun.tinaide.plugin.ResolvedPluginConfigurationProperty
 import com.wuxianggujun.tinaide.plugin.ThemeConfig
 import com.wuxianggujun.tinaide.plugin.lsp.LspPluginInfo
@@ -20,13 +25,55 @@ import com.wuxianggujun.tinaide.plugin.lsp.LspPluginInstallState
 import com.wuxianggujun.tinaide.plugin.lsp.LspToolchainConfig
 import com.wuxianggujun.tinaide.plugin.lsp.ToolchainInstallState
 import com.wuxianggujun.tinaide.plugin.script.ScriptPluginState
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandAvailability
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandExecutionIssue
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistrationIssue
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistry
 import java.util.Locale
 
 internal data class PluginsContributionSummary(
     val themeCount: Int,
     val fileTreeMenuCount: Int,
     val editorContextMenuCount: Int,
+    val editorToolbarMenuCount: Int = 0,
 )
+
+internal data class PluginsCommandContribution(
+    val surface: ResolvedPluginCommandSurface,
+    val commandId: String,
+    val title: String,
+    val group: String,
+    val source: ResolvedPluginCommandSource?,
+    val status: PluginCommandContributionStatus,
+    val whenExpression: String?,
+    val statusMessage: String? = null,
+)
+
+internal data class PluginsCommandContributionSummary(
+    val totalCount: Int,
+    val availableCount: Int,
+    val issueCount: Int,
+)
+
+internal data class PluginCommandContributionFilterOption(
+    val filter: PluginCommandContributionFilter,
+    val count: Int,
+)
+
+internal enum class PluginCommandContributionFilter {
+    ALL,
+    ISSUES,
+    AVAILABLE,
+}
+
+internal enum class PluginCommandContributionStatus {
+    AVAILABLE,
+    MISSING_COMMAND_ID,
+    MISSING_COMMAND_DECLARATION,
+    MISSING_RUNTIME_REGISTRATION,
+    UNAVAILABLE,
+    EXECUTION_FAILED,
+}
 
 internal data class PluginsRequirementsSummary(
     val recommendedToolchains: List<String>,
@@ -104,6 +151,17 @@ internal data class LspRuntimeDiagnosticText(
     val repairFixHint: String,
 )
 
+internal data class PluginCommandRuntimeDiagnosticText(
+    val missingRegistrationTemplate: String,
+    val missingRegistrationWithReasonTemplate: String,
+    val unavailableTemplate: String,
+    val unavailableWithoutReasonTemplate: String,
+    val executionFailedTemplate: String,
+    val runtimeFixHint: String,
+    val permissionFixHint: String,
+    val missingCommandIdLabel: String,
+)
+
 internal enum class PluginDiagnosticAction {
     OPEN_LOGS,
     RELOAD_PLUGIN,
@@ -122,6 +180,8 @@ internal sealed interface PluginsBatchUninstallSpec {
 }
 
 internal object PluginsSettingsSectionSupport {
+
+    private const val DEFAULT_PLUGIN_COMMAND_GROUP = "9_plugin"
 
     fun toggleSelectedPlugin(
         selectedIds: Set<String>,
@@ -260,11 +320,125 @@ internal object PluginsSettingsSectionSupport {
         ),
     )
 
+    fun buildCommandRuntimeEntriesByPluginId(
+        installedPlugins: List<InstalledPlugin>,
+        diagnosticText: PluginCommandRuntimeDiagnosticText,
+    ): Map<String, List<PluginDiagnosticEntry>> = installedPlugins.mapNotNull { plugin ->
+        if (!plugin.enabled) {
+            return@mapNotNull null
+        }
+        val entries = buildCommandRuntimeEntries(
+            commands = resolveCommandContributions(plugin.manifest),
+            diagnosticText = diagnosticText,
+        )
+        if (entries.isEmpty()) {
+            null
+        } else {
+            plugin.manifest.id to entries
+        }
+    }.toMap()
+
+    fun buildCommandRuntimeEntries(
+        commands: List<PluginsCommandContribution>,
+        diagnosticText: PluginCommandRuntimeDiagnosticText,
+    ): List<PluginDiagnosticEntry> = commands.mapNotNull { command ->
+        when (command.status) {
+            PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION -> {
+                val reason = command.statusMessage?.takeIf { message -> message.isNotBlank() }
+                buildCommandRuntimeDiagnosticEntry(
+                    severity = PluginDiagnosticSeverity.WARNING,
+                    category = PluginDiagnosticCategory.RUNTIME,
+                    message = if (reason == null) {
+                        formatLspDiagnosticText(
+                            diagnosticText.missingRegistrationTemplate,
+                            command.commandDisplayName(diagnosticText),
+                        )
+                    } else {
+                        formatLspDiagnosticText(
+                            diagnosticText.missingRegistrationWithReasonTemplate,
+                            command.commandDisplayName(diagnosticText),
+                            reason,
+                        )
+                    },
+                    fixHint = diagnosticText.runtimeFixHint,
+                )
+            }
+            PluginCommandContributionStatus.UNAVAILABLE -> {
+                val reason = command.statusMessage?.takeIf { message -> message.isNotBlank() }
+                val category = if (reason == null) {
+                    PluginDiagnosticCategory.RUNTIME
+                } else {
+                    PluginDiagnosticCategory.PERMISSIONS
+                }
+                val message = if (reason == null) {
+                    formatLspDiagnosticText(
+                        diagnosticText.unavailableWithoutReasonTemplate,
+                        command.commandDisplayName(diagnosticText),
+                    )
+                } else {
+                    formatLspDiagnosticText(
+                        diagnosticText.unavailableTemplate,
+                        command.commandDisplayName(diagnosticText),
+                        reason,
+                    )
+                }
+                buildCommandRuntimeDiagnosticEntry(
+                    severity = PluginDiagnosticSeverity.WARNING,
+                    category = category,
+                    message = message,
+                    fixHint = if (category == PluginDiagnosticCategory.PERMISSIONS) {
+                        diagnosticText.permissionFixHint
+                    } else {
+                        diagnosticText.runtimeFixHint
+                    },
+                )
+            }
+            PluginCommandContributionStatus.EXECUTION_FAILED -> {
+                val reason = command.statusMessage.orEmpty()
+                buildCommandRuntimeDiagnosticEntry(
+                    severity = PluginDiagnosticSeverity.ERROR,
+                    category = PluginDiagnosticCategory.RUNTIME,
+                    message = formatLspDiagnosticText(
+                        diagnosticText.executionFailedTemplate,
+                        command.commandDisplayName(diagnosticText),
+                        reason,
+                    ),
+                    fixHint = diagnosticText.runtimeFixHint,
+                )
+            }
+            PluginCommandContributionStatus.AVAILABLE,
+            PluginCommandContributionStatus.MISSING_COMMAND_ID,
+            PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION -> null
+        }
+    }
+
+    private fun buildCommandRuntimeDiagnosticEntry(
+        severity: PluginDiagnosticSeverity,
+        category: PluginDiagnosticCategory,
+        message: String,
+        fixHint: String,
+    ): PluginDiagnosticEntry = PluginDiagnosticEntry(
+        source = PluginDiagnosticSource.RUNTIME,
+        issue = PluginDiagnosticIssue(
+            severity = severity,
+            category = category,
+            message = message,
+            fixHint = fixHint,
+        ),
+    )
+
+    private fun PluginsCommandContribution.commandDisplayName(
+        diagnosticText: PluginCommandRuntimeDiagnosticText,
+    ): String = commandId
+        .takeIf { it.isNotBlank() }
+        ?: title.takeIf { it.isNotBlank() }
+        ?: diagnosticText.missingCommandIdLabel
+
     private fun List<LspToolchainConfig>.toToolchainDisplayNames(): String = joinToString(separator = ", ") { toolchain ->
         toolchain.name.takeIf { name -> name.isNotBlank() } ?: toolchain.id
     }
 
-    private fun formatLspDiagnosticText(template: String, value: String): String = String.format(Locale.getDefault(), template, value)
+    private fun formatLspDiagnosticText(template: String, vararg values: String): String = String.format(Locale.getDefault(), template, *values)
 
     private fun normalizeRequirementItems(items: List<String>?): List<String> = items.orEmpty()
         .asSequence()
@@ -324,7 +498,228 @@ internal object PluginsSettingsSectionSupport {
         themeCount = manifest.contributions?.themes?.size ?: 0,
         fileTreeMenuCount = manifest.contributions?.menus?.fileTreeContext?.size ?: 0,
         editorContextMenuCount = manifest.contributions?.menus?.editorContext?.size ?: 0,
+        editorToolbarMenuCount = manifest.contributions?.menus?.editorToolbar?.size ?: 0,
     )
+
+    fun resolveCommandContributions(
+        manifest: PluginManifest,
+        checkRuntimeAvailability: Boolean = true,
+        isPluginCommandRegistered: (
+            commandId: String,
+            pluginId: String,
+        ) -> Boolean = { commandId, pluginId -> PluginCommandRegistry.isRegistered(commandId, pluginId) },
+        pluginCommandAvailability: (
+            commandId: String,
+            pluginId: String,
+        ) -> PluginCommandAvailability = { commandId, pluginId ->
+            PluginCommandRegistry.availability(commandId, pluginId)
+        },
+        pluginCommandRegistrationIssue: (
+            commandId: String,
+            pluginId: String,
+        ) -> PluginCommandRegistrationIssue? = { commandId, pluginId ->
+            PluginCommandRegistry.registrationIssue(commandId, pluginId)
+        },
+        pluginCommandExecutionIssue: (
+            commandId: String,
+            pluginId: String,
+        ) -> PluginCommandExecutionIssue? = { commandId, pluginId ->
+            PluginCommandRegistry.executionIssue(commandId, pluginId)
+        },
+    ): List<PluginsCommandContribution> {
+        val contributions = manifest.contributions ?: return emptyList()
+        val declaredCommands = contributions.commands.orEmpty()
+            .associateBy { command -> command.id.trim() }
+        return buildList {
+            appendCommandContributions(
+                pluginId = manifest.id,
+                surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+                menuItems = contributions.menus?.editorContext.orEmpty(),
+                declaredCommands = declaredCommands,
+                checkRuntimeAvailability = checkRuntimeAvailability,
+                isPluginCommandRegistered = isPluginCommandRegistered,
+                pluginCommandAvailability = pluginCommandAvailability,
+                pluginCommandRegistrationIssue = pluginCommandRegistrationIssue,
+                pluginCommandExecutionIssue = pluginCommandExecutionIssue,
+            )
+            appendCommandContributions(
+                pluginId = manifest.id,
+                surface = ResolvedPluginCommandSurface.EDITOR_TOOLBAR,
+                menuItems = contributions.menus?.editorToolbar.orEmpty(),
+                declaredCommands = declaredCommands,
+                checkRuntimeAvailability = checkRuntimeAvailability,
+                isPluginCommandRegistered = isPluginCommandRegistered,
+                pluginCommandAvailability = pluginCommandAvailability,
+                pluginCommandRegistrationIssue = pluginCommandRegistrationIssue,
+                pluginCommandExecutionIssue = pluginCommandExecutionIssue,
+            )
+            appendCommandContributions(
+                pluginId = manifest.id,
+                surface = ResolvedPluginCommandSurface.FILE_TREE_CONTEXT,
+                menuItems = contributions.menus?.fileTreeContext.orEmpty(),
+                declaredCommands = declaredCommands,
+                checkRuntimeAvailability = checkRuntimeAvailability,
+                isPluginCommandRegistered = isPluginCommandRegistered,
+                pluginCommandAvailability = pluginCommandAvailability,
+                pluginCommandRegistrationIssue = pluginCommandRegistrationIssue,
+                pluginCommandExecutionIssue = pluginCommandExecutionIssue,
+            )
+        }.sortedWith(
+            compareBy<PluginsCommandContribution> { command -> command.surface.ordinal }
+                .thenBy { command -> command.group }
+                .thenBy { command -> command.title.ifBlank { command.commandId } }
+                .thenBy { command -> command.commandId }
+        )
+    }
+
+    fun resolveCommandContributionSummary(
+        commands: List<PluginsCommandContribution>,
+    ): PluginsCommandContributionSummary = PluginsCommandContributionSummary(
+        totalCount = commands.size,
+        availableCount = commands.count { command -> command.status == PluginCommandContributionStatus.AVAILABLE },
+        issueCount = commands.count { command -> command.status != PluginCommandContributionStatus.AVAILABLE },
+    )
+
+    fun resolveCommandContributionFilterOptions(
+        summary: PluginsCommandContributionSummary,
+    ): List<PluginCommandContributionFilterOption> = buildList {
+        add(
+            PluginCommandContributionFilterOption(
+                filter = PluginCommandContributionFilter.ALL,
+                count = summary.totalCount,
+            )
+        )
+        if (summary.issueCount > 0) {
+            add(
+                PluginCommandContributionFilterOption(
+                    filter = PluginCommandContributionFilter.ISSUES,
+                    count = summary.issueCount,
+                )
+            )
+        }
+        if (summary.availableCount > 0) {
+            add(
+                PluginCommandContributionFilterOption(
+                    filter = PluginCommandContributionFilter.AVAILABLE,
+                    count = summary.availableCount,
+                )
+            )
+        }
+    }
+
+    fun resolveCommandContributionFilterOrAll(
+        filter: PluginCommandContributionFilter,
+        availableFilters: List<PluginCommandContributionFilterOption>,
+    ): PluginCommandContributionFilter {
+        val availableFilterValues = availableFilters.map { option -> option.filter }.toSet()
+        return filter.takeIf { it in availableFilterValues } ?: PluginCommandContributionFilter.ALL
+    }
+
+    fun filterCommandContributions(
+        commands: List<PluginsCommandContribution>,
+        filter: PluginCommandContributionFilter,
+    ): List<PluginsCommandContribution> = when (filter) {
+        PluginCommandContributionFilter.ALL -> commands
+        PluginCommandContributionFilter.ISSUES -> commands.filter { command ->
+            command.status != PluginCommandContributionStatus.AVAILABLE
+        }
+        PluginCommandContributionFilter.AVAILABLE -> commands.filter { command ->
+            command.status == PluginCommandContributionStatus.AVAILABLE
+        }
+    }
+
+    private fun MutableList<PluginsCommandContribution>.appendCommandContributions(
+        pluginId: String,
+        surface: ResolvedPluginCommandSurface,
+        menuItems: List<PluginMenuItem>,
+        declaredCommands: Map<String, PluginCommand>,
+        checkRuntimeAvailability: Boolean,
+        isPluginCommandRegistered: (commandId: String, pluginId: String) -> Boolean,
+        pluginCommandAvailability: (commandId: String, pluginId: String) -> PluginCommandAvailability,
+        pluginCommandRegistrationIssue: (commandId: String, pluginId: String) -> PluginCommandRegistrationIssue?,
+        pluginCommandExecutionIssue: (commandId: String, pluginId: String) -> PluginCommandExecutionIssue?,
+    ) {
+        menuItems.forEach { menuItem ->
+            val commandId = menuItem.command.trim()
+            val declaredCommand = declaredCommands[commandId]
+            val source = when {
+                commandId.isBlank() -> null
+                HostCommands.isSupported(commandId) -> ResolvedPluginCommandSource.HOST
+                declaredCommand != null -> ResolvedPluginCommandSource.PLUGIN
+                else -> null
+            }
+            var registrationIssue: PluginCommandRegistrationIssue? = null
+            var executionIssue: PluginCommandExecutionIssue? = null
+            val availability = if (source == ResolvedPluginCommandSource.PLUGIN) {
+                when {
+                    !checkRuntimeAvailability -> PluginCommandAvailability(available = true)
+                    isPluginCommandRegistered(commandId, pluginId) -> {
+                        pluginCommandAvailability(commandId, pluginId).also { currentAvailability ->
+                            if (currentAvailability.available) {
+                                executionIssue = pluginCommandExecutionIssue(commandId, pluginId)
+                            }
+                        }
+                    }
+                    else -> {
+                        registrationIssue = pluginCommandRegistrationIssue(commandId, pluginId)
+                        null
+                    }
+                }
+            } else {
+                null
+            }
+            val status = resolveCommandContributionStatus(
+                commandId = commandId,
+                source = source,
+                availability = availability,
+                executionIssue = executionIssue,
+            )
+            add(
+                PluginsCommandContribution(
+                    surface = surface,
+                    commandId = commandId,
+                    title = declaredCommand?.title?.trim()?.takeIf { title -> title.isNotBlank() }
+                        ?: commandId,
+                    group = menuItem.group?.trim()?.takeIf { group -> group.isNotBlank() }
+                        ?: DEFAULT_PLUGIN_COMMAND_GROUP,
+                    source = source,
+                    status = status,
+                    whenExpression = menuItem.`when`?.trim()?.takeIf { expression -> expression.isNotBlank() },
+                    statusMessage = resolveCommandContributionStatusMessage(
+                        status = status,
+                        availability = availability,
+                        registrationIssue = registrationIssue,
+                        executionIssue = executionIssue,
+                    ),
+                )
+            )
+        }
+    }
+
+    private fun resolveCommandContributionStatus(
+        commandId: String,
+        source: ResolvedPluginCommandSource?,
+        availability: PluginCommandAvailability?,
+        executionIssue: PluginCommandExecutionIssue?,
+    ): PluginCommandContributionStatus = when {
+        commandId.isBlank() -> PluginCommandContributionStatus.MISSING_COMMAND_ID
+        source == null -> PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION
+        source == ResolvedPluginCommandSource.HOST -> PluginCommandContributionStatus.AVAILABLE
+        availability == null -> PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION
+        !availability.available -> PluginCommandContributionStatus.UNAVAILABLE
+        executionIssue != null -> PluginCommandContributionStatus.EXECUTION_FAILED
+        else -> PluginCommandContributionStatus.AVAILABLE
+    }
+
+    private fun resolveCommandContributionStatusMessage(
+        status: PluginCommandContributionStatus,
+        availability: PluginCommandAvailability?,
+        registrationIssue: PluginCommandRegistrationIssue?,
+        executionIssue: PluginCommandExecutionIssue?,
+    ): String? = when (status) {
+        PluginCommandContributionStatus.EXECUTION_FAILED -> executionIssue?.message
+        else -> availability?.errorMessage ?: registrationIssue?.message
+    }?.trim()?.takeIf { message -> message.isNotBlank() }
 
     fun resolveRequirementsSummary(manifest: PluginManifest): PluginsRequirementsSummary {
         val requirements = manifest.requires
@@ -348,12 +743,10 @@ internal object PluginsSettingsSectionSupport {
         )
     }
 
-    fun resolveConfigurationSummary(manifest: PluginManifest): PluginsConfigurationSummary {
-        return PluginsConfigurationSummary(
-            title = manifest.configuration?.title?.trim()?.takeIf { title -> title.isNotBlank() },
-            properties = PluginConfigurationSchema.resolveProperties(manifest),
-        )
-    }
+    fun resolveConfigurationSummary(manifest: PluginManifest): PluginsConfigurationSummary = PluginsConfigurationSummary(
+        title = manifest.configuration?.title?.trim()?.takeIf { title -> title.isNotBlank() },
+        properties = PluginConfigurationSchema.resolveProperties(manifest),
+    )
 
     fun resolvePluginDiagnosticsSummary(report: PluginDiagnosticsReport?): PluginDiagnosticsSummary {
         val issues = report?.issues.orEmpty()
@@ -606,6 +999,43 @@ internal object PluginsSettingsSectionSupport {
         }.distinct()
     }
 
+    fun resolvePluginCommandContributionActions(
+        command: PluginsCommandContribution,
+        isScriptPlugin: Boolean,
+    ): List<PluginDiagnosticAction> = buildList {
+        when (command.status) {
+            PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION -> {
+                add(PluginDiagnosticAction.OPEN_LOGS)
+                if (isScriptPlugin) {
+                    add(PluginDiagnosticAction.RELOAD_PLUGIN)
+                }
+                add(PluginDiagnosticAction.COPY_DIAGNOSTIC)
+            }
+            PluginCommandContributionStatus.UNAVAILABLE -> {
+                add(PluginDiagnosticAction.OPEN_LOGS)
+                if (command.statusMessage?.isNotBlank() == true) {
+                    add(PluginDiagnosticAction.SHOW_PERMISSIONS)
+                }
+                if (isScriptPlugin) {
+                    add(PluginDiagnosticAction.RELOAD_PLUGIN)
+                }
+                add(PluginDiagnosticAction.COPY_DIAGNOSTIC)
+            }
+            PluginCommandContributionStatus.EXECUTION_FAILED -> {
+                add(PluginDiagnosticAction.OPEN_LOGS)
+                if (isScriptPlugin) {
+                    add(PluginDiagnosticAction.RELOAD_PLUGIN)
+                }
+                add(PluginDiagnosticAction.COPY_DIAGNOSTIC)
+            }
+            PluginCommandContributionStatus.MISSING_COMMAND_ID,
+            PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION -> {
+                add(PluginDiagnosticAction.COPY_DIAGNOSTIC)
+            }
+            PluginCommandContributionStatus.AVAILABLE -> Unit
+        }
+    }.distinct()
+
     fun resolvePluginDiagnosticPreferredLogLevel(
         entry: PluginDiagnosticEntry,
     ): PluginLogLevel? {
@@ -662,6 +1092,29 @@ internal object PluginsSettingsSectionSupport {
             issue.fixHint?.takeIf { it.isNotBlank() }?.let { fixHint ->
                 appendLine("fixHint: $fixHint")
             }
+        }
+    }.trimEnd()
+
+    fun buildPluginCommandContributionClipboardText(
+        plugin: InstalledPlugin,
+        command: PluginsCommandContribution,
+    ): String = buildString {
+        appendLine("Plugin command contribution")
+        appendLine("pluginId: ${plugin.manifest.id}")
+        appendLine("pluginName: ${plugin.manifest.name}")
+        appendLine("directoryName: ${plugin.directory.name}")
+        appendLine("enabled: ${plugin.enabled}")
+        appendLine("surface: ${command.surface.name}")
+        appendLine("source: ${command.source?.name ?: "-"}")
+        appendLine("status: ${command.status.name}")
+        appendLine("commandId: ${command.commandId.ifBlank { "-" }}")
+        appendLine("title: ${command.title.ifBlank { "-" }}")
+        appendLine("group: ${command.group.ifBlank { "-" }}")
+        command.whenExpression?.takeIf { it.isNotBlank() }?.let { whenExpression ->
+            appendLine("when: $whenExpression")
+        }
+        command.statusMessage?.takeIf { it.isNotBlank() }?.let { statusMessage ->
+            appendLine("reason: $statusMessage")
         }
     }.trimEnd()
 
@@ -854,5 +1307,38 @@ internal object PluginsSettingsSectionSupport {
         PluginDiagnosticAction.SHOW_PERMISSIONS -> Strings.plugins_diagnostics_action_view_permissions
         PluginDiagnosticAction.REPAIR_LSP_DEPENDENCIES -> Strings.plugins_diagnostics_action_repair_lsp
         PluginDiagnosticAction.COPY_DIAGNOSTIC -> Strings.action_copy
+    }
+
+    @StringRes
+    fun resolvePluginCommandSurfaceLabelRes(surface: ResolvedPluginCommandSurface): Int = when (surface) {
+        ResolvedPluginCommandSurface.EDITOR_CONTEXT -> Strings.plugins_commands_surface_editor_context
+        ResolvedPluginCommandSurface.EDITOR_TOOLBAR -> Strings.plugins_commands_surface_editor_toolbar
+        ResolvedPluginCommandSurface.FILE_TREE_CONTEXT -> Strings.plugins_commands_surface_file_tree_context
+    }
+
+    @StringRes
+    fun resolvePluginCommandSourceLabelRes(source: ResolvedPluginCommandSource?): Int = when (source) {
+        ResolvedPluginCommandSource.HOST -> Strings.plugins_commands_source_host
+        ResolvedPluginCommandSource.PLUGIN -> Strings.plugins_commands_source_plugin
+        null -> Strings.plugins_commands_source_unknown
+    }
+
+    @StringRes
+    fun resolvePluginCommandStatusLabelRes(status: PluginCommandContributionStatus): Int = when (status) {
+        PluginCommandContributionStatus.AVAILABLE -> Strings.plugins_commands_status_available
+        PluginCommandContributionStatus.MISSING_COMMAND_ID -> Strings.plugins_commands_status_missing_command_id
+        PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION -> Strings.plugins_commands_status_missing_declaration
+        PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION -> {
+            Strings.plugins_commands_status_missing_registration
+        }
+        PluginCommandContributionStatus.UNAVAILABLE -> Strings.plugins_commands_status_unavailable
+        PluginCommandContributionStatus.EXECUTION_FAILED -> Strings.plugins_commands_status_execution_failed
+    }
+
+    @StringRes
+    fun resolvePluginCommandContributionFilterLabelRes(filter: PluginCommandContributionFilter): Int = when (filter) {
+        PluginCommandContributionFilter.ALL -> Strings.filter_all
+        PluginCommandContributionFilter.ISSUES -> Strings.plugins_commands_filter_issues
+        PluginCommandContributionFilter.AVAILABLE -> Strings.plugins_commands_filter_available
     }
 }

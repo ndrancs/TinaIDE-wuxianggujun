@@ -38,13 +38,13 @@ object QuickKeys {
     const val ESC = "\u001b"
     const val TAB = "\t"
     const val ENTER = "\r"
-    
+
     // 方向键
     const val ARROW_UP = "\u001b[A"
     const val ARROW_DOWN = "\u001b[B"
     const val ARROW_RIGHT = "\u001b[C"
     const val ARROW_LEFT = "\u001b[D"
-    
+
     // 功能键
     const val HOME = "\u001b[H"
     const val END = "\u001b[F"
@@ -52,7 +52,7 @@ object QuickKeys {
     const val PAGE_DOWN = "\u001b[6~"
     const val DELETE = "\u001b[3~"
     const val INSERT = "\u001b[2~"
-    
+
     // 常用符号
     const val PIPE = "|"
     const val SLASH = "/"
@@ -137,7 +137,7 @@ fun TerminalExtraKeys(
                     ExtraKey("#") { onKey(QuickKeys.HASH) }
                     ExtraKey("*") { onKey(QuickKeys.ASTERISK) }
                 }
-                
+
                 // 第二行
                 Row(
                     modifier = Modifier
@@ -171,7 +171,7 @@ fun TerminalExtraKeys(
                     ExtraKey("\"") { onKey(QuickKeys.DOUBLE_QUOTE) }
                 }
             }
-            
+
             // 右侧：方向键十字布局（固定位置）
             ArrowKeyPad(onKey = onKey)
         }
@@ -196,7 +196,7 @@ private fun ArrowKeyPad(onKey: (String) -> Unit) {
         ) {
             // 上箭头
             ArrowKey(Icons.Filled.KeyboardArrowUp) { onKey(QuickKeys.ARROW_UP) }
-            
+
             // 左、下、右箭头
             Row(
                 horizontalArrangement = Arrangement.spacedBy(0.dp)

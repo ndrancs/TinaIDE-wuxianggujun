@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,10 +44,10 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
-import com.wuxianggujun.tinaide.core.i18n.Strings
 
 /**
  * 图片信息数据类
@@ -158,7 +158,7 @@ private fun ZoomableImage(
     onErrorChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    
+
     val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
         onScaleChange((scale * zoomChange).coerceIn(0.5f, 5f))
         onOffsetChange(offset + panChange)
@@ -285,13 +285,13 @@ private fun ImageInfoBar(
  */
 private fun loadImageInfo(file: File): ImageInfo? {
     if (!file.exists()) return null
-    
+
     return try {
         val options = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
         }
         BitmapFactory.decodeFile(file.absolutePath, options)
-        
+
         val format = when (file.extension.lowercase()) {
             "png" -> "PNG"
             "jpg", "jpeg" -> "JPEG"
@@ -302,7 +302,7 @@ private fun loadImageInfo(file: File): ImageInfo? {
             "ico" -> "ICO"
             else -> file.extension.uppercase()
         }
-        
+
         ImageInfo(
             width = options.outWidth,
             height = options.outHeight,
@@ -322,12 +322,9 @@ private fun loadImageInfo(file: File): ImageInfo? {
 /**
  * 格式化文件大小
  */
-fun formatFileSize(size: Long): String {
-    return when {
-        size < 1024 -> "$size B"
-        size < 1024 * 1024 -> "%.1f KB".format(size / 1024.0)
-        size < 1024 * 1024 * 1024 -> "%.1f MB".format(size / (1024.0 * 1024.0))
-        else -> "%.1f GB".format(size / (1024.0 * 1024.0 * 1024.0))
-    }
+fun formatFileSize(size: Long): String = when {
+    size < 1024 -> "$size B"
+    size < 1024 * 1024 -> "%.1f KB".format(size / 1024.0)
+    size < 1024 * 1024 * 1024 -> "%.1f MB".format(size / (1024.0 * 1024.0))
+    else -> "%.1f GB".format(size / (1024.0 * 1024.0 * 1024.0))
 }
-

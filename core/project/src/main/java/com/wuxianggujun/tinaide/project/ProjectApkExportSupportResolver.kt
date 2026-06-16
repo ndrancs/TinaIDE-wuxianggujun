@@ -98,7 +98,8 @@ object ProjectApkExportSupportResolver {
 
         return if (hasLibMainMarker && containsAnyMarker(textMatches, nativeActivityMarkers)) {
             ProjectApkExportType.NATIVE_ACTIVITY
-        } else if (!hasLibMainMarker && (
+        } else if (!hasLibMainMarker &&
+            (
                 hasTerminalMainEntry(textMatches) ||
                     hasCompiledTerminalExecutable(projectRoot, buildDir)
                 )
@@ -115,33 +116,28 @@ object ProjectApkExportSupportResolver {
         return projectRoot.walkTopDown()
             .onEnter { dir -> dir == projectRoot || dir.name !in excludedDirNames }
             .filter { file ->
-                file.isFile && (
-                    file.name in candidateFileNames ||
-                        file.extension.lowercase() in candidateExtensions
-                    )
+                file.isFile &&
+                    (
+                        file.name in candidateFileNames ||
+                            file.extension.lowercase() in candidateExtensions
+                        )
             }
             .take(MAX_SCANNED_TEXT_FILES)
             .toList()
     }
 
-    private fun readTextSafely(file: File): CandidateText? {
-        return runCatching {
-            CandidateText(
-                file = file,
-                text = file.readText(Charsets.UTF_8)
-            )
-        }.getOrNull()
-    }
+    private fun readTextSafely(file: File): CandidateText? = runCatching {
+        CandidateText(
+            file = file,
+            text = file.readText(Charsets.UTF_8)
+        )
+    }.getOrNull()
 
-    private fun containsAnyMarker(textMatches: List<CandidateText>, markers: List<String>): Boolean {
-        return textMatches.any { candidate -> markers.any(candidate.text::contains) }
-    }
+    private fun containsAnyMarker(textMatches: List<CandidateText>, markers: List<String>): Boolean = textMatches.any { candidate -> markers.any(candidate.text::contains) }
 
-    private fun hasTerminalMainEntry(textMatches: List<CandidateText>): Boolean {
-        return textMatches.any { candidate ->
-            candidate.file.extension.lowercase() in terminalSourceExtensions &&
-                terminalMainEntryRegex.containsMatchIn(candidate.text)
-        }
+    private fun hasTerminalMainEntry(textMatches: List<CandidateText>): Boolean = textMatches.any { candidate ->
+        candidate.file.extension.lowercase() in terminalSourceExtensions &&
+            terminalMainEntryRegex.containsMatchIn(candidate.text)
     }
 
     private fun hasCompiledLibMain(projectRoot: File, buildDir: File?): Boolean {
@@ -151,9 +147,10 @@ object ProjectApkExportSupportResolver {
         }.distinctBy { it.absolutePath }
 
         return candidates.any { candidate ->
-            candidate.isDirectory && candidate.walkTopDown()
-                .onEnter { dir -> dir == candidate || dir.name !in excludedDirNames }
-                .any { file -> file.isFile && file.name == "libmain.so" }
+            candidate.isDirectory &&
+                candidate.walkTopDown()
+                    .onEnter { dir -> dir == candidate || dir.name !in excludedDirNames }
+                    .any { file -> file.isFile && file.name == "libmain.so" }
         }
     }
 
@@ -164,9 +161,10 @@ object ProjectApkExportSupportResolver {
         }.distinctBy { it.absolutePath }
 
         return candidates.any { candidate ->
-            candidate.isDirectory && candidate.walkTopDown()
-                .onEnter { dir -> dir == candidate || dir.name !in excludedDirNames }
-                .any(::isRunnableTerminalArtifact)
+            candidate.isDirectory &&
+                candidate.walkTopDown()
+                    .onEnter { dir -> dir == candidate || dir.name !in excludedDirNames }
+                    .any(::isRunnableTerminalArtifact)
         }
     }
 
@@ -177,19 +175,17 @@ object ProjectApkExportSupportResolver {
         return file.canExecute() || hasElfMagic(file)
     }
 
-    private fun hasElfMagic(file: File): Boolean {
-        return runCatching {
-            file.inputStream().use { input ->
-                val header = ByteArray(4)
-                if (input.read(header) != 4) {
-                    false
-                } else {
-                    header[0] == 0x7F.toByte() &&
-                        header[1] == 'E'.code.toByte() &&
-                        header[2] == 'L'.code.toByte() &&
-                        header[3] == 'F'.code.toByte()
-                }
+    private fun hasElfMagic(file: File): Boolean = runCatching {
+        file.inputStream().use { input ->
+            val header = ByteArray(4)
+            if (input.read(header) != 4) {
+                false
+            } else {
+                header[0] == 0x7F.toByte() &&
+                    header[1] == 'E'.code.toByte() &&
+                    header[2] == 'L'.code.toByte() &&
+                    header[3] == 'F'.code.toByte()
             }
-        }.getOrDefault(false)
-    }
+        }
+    }.getOrDefault(false)
 }

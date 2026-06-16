@@ -17,9 +17,7 @@ class LinuxDistroManager(
 
     fun resolveDistro(distroId: String): DistroDefinition? = catalog.resolveDistro(distroId)
 
-    fun listInstalled(syncFromDisk: Boolean = true): List<InstalledLinuxDistro> {
-        return if (syncFromDisk) refreshInstalledFromDisk() else registry.list()
-    }
+    fun listInstalled(syncFromDisk: Boolean = true): List<InstalledLinuxDistro> = if (syncFromDisk) refreshInstalledFromDisk() else registry.list()
 
     fun isInstalled(distroId: String): Boolean {
         require(distroId.isSafeId()) { "Unsafe distro id: $distroId" }

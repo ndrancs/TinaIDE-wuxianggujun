@@ -26,7 +26,9 @@ internal class BracketPairGuideRenderer {
         if (textBuffer.lineCount <= 0) return
         if (state.config.rainbowBracketsMaxLines > 0 &&
             textBuffer.lineCount > state.config.rainbowBracketsMaxLines
-        ) return
+        ) {
+            return
+        }
         val visibleLines = state.visibleDocumentLines
         if (visibleLines.isEmpty()) return
 

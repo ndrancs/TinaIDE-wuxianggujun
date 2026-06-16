@@ -148,20 +148,18 @@ class WorkspaceApiModuleRuntimeTest {
     private fun createRuntime(
         pluginId: String,
         permissions: List<String>
-    ): ScriptPluginRuntime {
-        return ScriptPluginRuntime(
-            context = context,
-            manifest = PluginManifest(
-                id = pluginId,
-                name = "Workspace Runtime Test",
-                version = "1.0.0",
-                type = "script",
-                permissions = permissions
-            ),
-            pluginDir = File(context.cacheDir, pluginId).apply { mkdirs() },
-            permissionManager = permissionManager
-        ).also(runtimes::add)
-    }
+    ): ScriptPluginRuntime = ScriptPluginRuntime(
+        context = context,
+        manifest = PluginManifest(
+            id = pluginId,
+            name = "Workspace Runtime Test",
+            version = "1.0.0",
+            type = "script",
+            permissions = permissions
+        ),
+        pluginDir = File(context.cacheDir, pluginId).apply { mkdirs() },
+        permissionManager = permissionManager
+    ).also(runtimes::add)
 
     private suspend fun initializeRuntimeOrSkip(runtime: ScriptPluginRuntime) {
         try {

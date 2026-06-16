@@ -2,6 +2,8 @@ package com.wuxianggujun.tinaide.ui.compose.screens.main
 
 import android.app.Application
 import com.google.common.truth.Truth.assertThat
+import com.wuxianggujun.tinaide.core.commands.HostCommands
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -39,7 +41,7 @@ class MainActivityCommandOrderingTest {
     }
 
     @Test
-    fun `orderMainActivityCommands should filter disabled commands and match plugin source name`() {
+    fun `orderMainActivityCommands should hide silent disabled commands and match plugin source name`() {
         val context = RuntimeEnvironment.getApplication()
         val commands = listOf(
             command("plugin.command", MainActivityCommandCategory.PLUGIN, sourceName = "Plugin Tools"),
@@ -59,37 +61,85 @@ class MainActivityCommandOrderingTest {
     }
 
     @Test
-    fun `selectMainActivityOverflowCommands should use pinned commands when present`() {
+    fun `orderMainActivityCommands should keep unavailable commands with visible reason`() {
+        val context = RuntimeEnvironment.getApplication()
         val commands = listOf(
-            command("view.settings", MainActivityCommandCategory.VIEW),
-            command("project.build", MainActivityCommandCategory.BUILD),
+            command(
+                id = "plugin.unavailable",
+                category = MainActivityCommandCategory.PLUGIN,
+                enabled = false,
+                disabledReason = MainActivityCommandText.Literal("Permission not granted"),
+                sourceName = "Plugin Tools"
+            ),
+            command("disabled.command", MainActivityCommandCategory.CODE, enabled = false),
         )
 
-        val selected = selectMainActivityOverflowCommands(
+        val ordered = orderMainActivityCommands(
             commands = commands,
-            pinnedCommandIds = listOf("project.build")
+            context = context,
+            pinnedCommandIds = emptyList(),
+            recentCommandIds = emptyList(),
+            query = "permission"
         )
 
-        assertThat(selected.map(MainActivityCommand::id))
-            .containsExactly("project.build")
+        assertThat(ordered.map(MainActivityCommand::id))
+            .containsExactly("plugin.unavailable")
     }
 
     @Test
-    fun `selectMainActivityOverflowCommands should cap top bar commands`() {
+    fun `groupMainActivityCommands should split pinned recent and category commands`() {
         val commands = listOf(
-            command("first", MainActivityCommandCategory.VIEW),
-            command("second", MainActivityCommandCategory.BUILD),
-            command("third", MainActivityCommandCategory.CODE),
-            command("fourth", MainActivityCommandCategory.FILE),
+            command("pinned", MainActivityCommandCategory.VIEW),
+            command("recent", MainActivityCommandCategory.BUILD),
+            command("code", MainActivityCommandCategory.CODE),
+            command("build", MainActivityCommandCategory.BUILD),
         )
 
-        val selected = selectMainActivityOverflowCommands(
+        val groups = groupMainActivityCommands(
             commands = commands,
-            pinnedCommandIds = listOf("first", "second", "third", "fourth")
+            pinnedCommandIds = listOf("pinned"),
+            recentCommandIds = listOf("recent")
         )
 
-        assertThat(selected.map(MainActivityCommand::id))
-            .containsExactly("first", "second", "third")
+        assertThat(groups.map(MainActivityCommandGroup::titleRes))
+            .containsExactly(
+                Strings.command_palette_pinned,
+                Strings.command_palette_quick_actions,
+                Strings.menu_section_code,
+                Strings.menu_section_build
+            )
+            .inOrder()
+        assertThat(groups.map { group -> group.commands.map(MainActivityCommand::id) })
+            .containsExactly(
+                listOf("pinned"),
+                listOf("recent"),
+                listOf("code"),
+                listOf("build")
+            )
+            .inOrder()
+    }
+
+    @Test
+    fun `selectMainActivityOverflowCommands should use stable top-level menu order`() {
+        val commands = listOf(
+            command(HostCommands.VIEW_SETTINGS, MainActivityCommandCategory.VIEW),
+            command("view.globalSearch", MainActivityCommandCategory.VIEW),
+            command(HostCommands.PROJECT_CLOSE, MainActivityCommandCategory.FILE),
+            command(HostCommands.VIEW_COMMAND_PALETTE, MainActivityCommandCategory.VIEW),
+            command(HostCommands.VIEW_TOGGLE_TERMINAL, MainActivityCommandCategory.VIEW),
+            command(HostCommands.PROJECT_BUILD, MainActivityCommandCategory.BUILD),
+        )
+
+        val overflowCommands = selectMainActivityOverflowCommands(commands)
+
+        assertThat(overflowCommands.map(MainActivityCommand::id))
+            .containsExactly(
+                HostCommands.VIEW_COMMAND_PALETTE,
+                "view.globalSearch",
+                HostCommands.VIEW_TOGGLE_TERMINAL,
+                HostCommands.VIEW_SETTINGS,
+                HostCommands.PROJECT_CLOSE
+            )
             .inOrder()
     }
 
@@ -97,15 +147,15 @@ class MainActivityCommandOrderingTest {
         id: String,
         category: MainActivityCommandCategory,
         enabled: Boolean = true,
+        disabledReason: MainActivityCommandText? = null,
         sourceName: String? = null,
-    ): MainActivityCommand {
-        return MainActivityCommand(
-            id = id,
-            title = MainActivityCommandText.Literal(id),
-            category = category,
-            enabled = enabled,
-            sourceName = sourceName,
-            execute = {}
-        )
-    }
+    ): MainActivityCommand = MainActivityCommand(
+        id = id,
+        title = MainActivityCommandText.Literal(id),
+        category = category,
+        enabled = enabled,
+        disabledReason = disabledReason,
+        sourceName = sourceName,
+        execute = {}
+    )
 }

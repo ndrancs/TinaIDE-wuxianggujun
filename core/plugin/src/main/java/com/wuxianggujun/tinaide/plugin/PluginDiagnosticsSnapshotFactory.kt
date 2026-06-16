@@ -15,6 +15,7 @@ object PluginDiagnosticsSnapshotFactory {
         pluginLogs: List<PluginLogEntry>,
         permissionRuntimeFixHint: String,
         lspRuntimeEntriesByPluginId: Map<String, List<PluginDiagnosticEntry>> = emptyMap(),
+        commandRuntimeEntriesByPluginId: Map<String, List<PluginDiagnosticEntry>> = emptyMap(),
     ): PluginDiagnosticsSnapshot {
         val permissionRuntimeEntriesByPluginId = buildPermissionRuntimeEntriesByPluginId(
             pluginLogs = pluginLogs,
@@ -28,6 +29,7 @@ object PluginDiagnosticsSnapshotFactory {
                 runtimeFixHint = runtimeFixHint,
                 permissionRuntimeEntries = permissionRuntimeEntriesByPluginId[plugin.manifest.id].orEmpty(),
                 lspRuntimeEntries = lspRuntimeEntriesByPluginId[plugin.manifest.id].orEmpty(),
+                commandRuntimeEntries = commandRuntimeEntriesByPluginId[plugin.manifest.id].orEmpty(),
             )
         }
 
@@ -48,6 +50,7 @@ object PluginDiagnosticsSnapshotFactory {
         runtimeFixHint: String,
         permissionRuntimeEntries: List<PluginDiagnosticEntry>,
         lspRuntimeEntries: List<PluginDiagnosticEntry>,
+        commandRuntimeEntries: List<PluginDiagnosticEntry>,
     ): PluginDiagnosticsReport {
         val entries = buildList {
             addAll(
@@ -59,6 +62,7 @@ object PluginDiagnosticsSnapshotFactory {
                 }
             )
             addAll(permissionRuntimeEntries)
+            addAll(commandRuntimeEntries)
             addAll(lspRuntimeEntries)
             buildRuntimeEntry(
                 scriptPluginInfo = scriptPluginInfo,
@@ -100,31 +104,29 @@ object PluginDiagnosticsSnapshotFactory {
     private fun buildPermissionRuntimeEntriesByPluginId(
         pluginLogs: List<PluginLogEntry>,
         permissionRuntimeFixHint: String,
-    ): Map<String, List<PluginDiagnosticEntry>> {
-        return pluginLogs
-            .asSequence()
-            .filter { log -> log.eventCode == PluginLogEventCodes.PERMISSION_DENIED }
-            .groupBy { log -> log.pluginId }
-            .mapValues { (_, logs) ->
-                logs.asSequence()
-                    .sortedWith(compareByDescending<PluginLogEntry> { it.timestamp }.thenByDescending { it.id })
-                    .distinctBy { log -> resolvePermissionRuntimeDedupKey(log) }
-                    .take(MAX_PERMISSION_RUNTIME_ENTRIES_PER_PLUGIN)
-                    .map { log ->
-                        PluginDiagnosticEntry(
-                            source = PluginDiagnosticSource.RUNTIME,
-                            issue = PluginDiagnosticIssue(
-                                severity = PluginDiagnosticSeverity.WARNING,
-                                category = PluginDiagnosticCategory.PERMISSIONS,
-                                message = log.message,
-                                fixHint = permissionRuntimeFixHint,
-                            ),
-                        )
-                    }
-                    .toList()
-            }
-            .filterValues { entries -> entries.isNotEmpty() }
-    }
+    ): Map<String, List<PluginDiagnosticEntry>> = pluginLogs
+        .asSequence()
+        .filter { log -> log.eventCode == PluginLogEventCodes.PERMISSION_DENIED }
+        .groupBy { log -> log.pluginId }
+        .mapValues { (_, logs) ->
+            logs.asSequence()
+                .sortedWith(compareByDescending<PluginLogEntry> { it.timestamp }.thenByDescending { it.id })
+                .distinctBy { log -> resolvePermissionRuntimeDedupKey(log) }
+                .take(MAX_PERMISSION_RUNTIME_ENTRIES_PER_PLUGIN)
+                .map { log ->
+                    PluginDiagnosticEntry(
+                        source = PluginDiagnosticSource.RUNTIME,
+                        issue = PluginDiagnosticIssue(
+                            severity = PluginDiagnosticSeverity.WARNING,
+                            category = PluginDiagnosticCategory.PERMISSIONS,
+                            message = log.message,
+                            fixHint = permissionRuntimeFixHint,
+                        ),
+                    )
+                }
+                .toList()
+        }
+        .filterValues { entries -> entries.isNotEmpty() }
 
     private fun resolvePermissionRuntimeDedupKey(log: PluginLogEntry): String {
         val attributes = log.attributes

@@ -36,20 +36,20 @@ import com.wuxianggujun.tinaide.core.config.NewProjectSourceLocation
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.project.AndroidApiLevel
+import com.wuxianggujun.tinaide.project.CppStandard
 import com.wuxianggujun.tinaide.project.ProjectBuildSystem
 import com.wuxianggujun.tinaide.project.ProjectTemplateOption
-import com.wuxianggujun.tinaide.project.CppStandard
 import com.wuxianggujun.tinaide.project.getDisplayName
 import com.wuxianggujun.tinaide.storage.compose.rememberStoragePermissionRequester
-import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaOutlinedButton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
-import com.wuxianggujun.tinaide.ui.compose.components.TinaLoadingDialog
-import com.wuxianggujun.tinaide.ui.compose.components.TinaExposedDropdownMenu
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDropdownMenuItem
+import com.wuxianggujun.tinaide.ui.compose.components.TinaExposedDropdownMenu
+import com.wuxianggujun.tinaide.ui.compose.components.TinaLoadingDialog
+import com.wuxianggujun.tinaide.ui.compose.components.TinaOutlinedButton
+import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaRecommendedBadge
 import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
 import com.wuxianggujun.tinaide.ui.compose.components.TinaSpacing
+import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
 
 /**
  * 新建项目向导主界面
@@ -706,7 +706,9 @@ private fun ConfigurationStep(
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
-                            } else null
+                            } else {
+                                null
+                            }
                         )
                     }
                 }
@@ -761,7 +763,9 @@ private fun ConfigurationStep(
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
-                                } else null
+                                } else {
+                                    null
+                                }
                             )
                         }
                 }
@@ -889,16 +893,12 @@ private fun SourceLocationCard(
     }
 }
 
-private fun resolveSourceLocationLabelRes(location: NewProjectSourceLocation): Int {
-    return when (location) {
-        NewProjectSourceLocation.PUBLIC -> Strings.project_source_location_public
-        NewProjectSourceLocation.PRIVATE -> Strings.project_source_location_private
-    }
+private fun resolveSourceLocationLabelRes(location: NewProjectSourceLocation): Int = when (location) {
+    NewProjectSourceLocation.PUBLIC -> Strings.project_source_location_public
+    NewProjectSourceLocation.PRIVATE -> Strings.project_source_location_private
 }
 
-private fun resolveSourceLocationDescRes(location: NewProjectSourceLocation): Int {
-    return when (location) {
-        NewProjectSourceLocation.PUBLIC -> Strings.project_source_location_public_desc
-        NewProjectSourceLocation.PRIVATE -> Strings.project_source_location_private_desc
-    }
+private fun resolveSourceLocationDescRes(location: NewProjectSourceLocation): Int = when (location) {
+    NewProjectSourceLocation.PUBLIC -> Strings.project_source_location_public_desc
+    NewProjectSourceLocation.PRIVATE -> Strings.project_source_location_private_desc
 }

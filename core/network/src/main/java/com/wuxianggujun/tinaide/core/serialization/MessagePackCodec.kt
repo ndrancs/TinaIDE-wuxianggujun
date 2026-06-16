@@ -80,54 +80,50 @@ object MessagePackCodec {
         }
     }
 
-    private fun unpackValue(unpacker: MessageUnpacker): JsonElement {
-        return when (unpacker.nextFormat.valueType) {
-            ValueType.NIL -> {
-                unpacker.unpackNil()
-                JsonNull
+    private fun unpackValue(unpacker: MessageUnpacker): JsonElement = when (unpacker.nextFormat.valueType) {
+        ValueType.NIL -> {
+            unpacker.unpackNil()
+            JsonNull
+        }
+
+        ValueType.BOOLEAN -> JsonPrimitive(unpacker.unpackBoolean())
+        ValueType.INTEGER -> unpackInteger(unpacker)
+        ValueType.FLOAT -> JsonPrimitive(unpacker.unpackDouble())
+        ValueType.STRING -> JsonPrimitive(unpacker.unpackString())
+        ValueType.BINARY -> unpackBinaryAsJsonArray(unpacker)
+
+        ValueType.ARRAY -> {
+            val size = unpacker.unpackArrayHeader()
+            JsonArray(List(size) { unpackValue(unpacker) })
+        }
+
+        ValueType.MAP -> {
+            val size = unpacker.unpackMapHeader()
+            val map = LinkedHashMap<String, JsonElement>(size)
+            repeat(size) {
+                val key = unpackValue(unpacker).jsonKey()
+                map[key] = unpackValue(unpacker)
             }
+            JsonObject(map)
+        }
 
-            ValueType.BOOLEAN -> JsonPrimitive(unpacker.unpackBoolean())
-            ValueType.INTEGER -> unpackInteger(unpacker)
-            ValueType.FLOAT -> JsonPrimitive(unpacker.unpackDouble())
-            ValueType.STRING -> JsonPrimitive(unpacker.unpackString())
-            ValueType.BINARY -> unpackBinaryAsJsonArray(unpacker)
-
-            ValueType.ARRAY -> {
-                val size = unpacker.unpackArrayHeader()
-                JsonArray(List(size) { unpackValue(unpacker) })
-            }
-
-            ValueType.MAP -> {
-                val size = unpacker.unpackMapHeader()
-                val map = LinkedHashMap<String, JsonElement>(size)
-                repeat(size) {
-                    val key = unpackValue(unpacker).jsonKey()
-                    map[key] = unpackValue(unpacker)
-                }
-                JsonObject(map)
-            }
-
-            ValueType.EXTENSION -> {
-                val header = unpacker.unpackExtensionTypeHeader()
-                val payload = ByteArray(header.length)
-                unpacker.readPayload(payload)
-                JsonObject(
-                    mapOf(
-                        "_ext_type" to JsonPrimitive(header.type),
-                        "_ext_data" to byteArrayToJsonArray(payload)
-                    )
+        ValueType.EXTENSION -> {
+            val header = unpacker.unpackExtensionTypeHeader()
+            val payload = ByteArray(header.length)
+            unpacker.readPayload(payload)
+            JsonObject(
+                mapOf(
+                    "_ext_type" to JsonPrimitive(header.type),
+                    "_ext_data" to byteArrayToJsonArray(payload)
                 )
-            }
+            )
         }
     }
 
-    private fun unpackInteger(unpacker: MessageUnpacker): JsonPrimitive {
-        return runCatching {
-            JsonPrimitive(unpacker.unpackLong())
-        }.getOrElse {
-            JsonPrimitive(unpacker.unpackBigInteger().toString())
-        }
+    private fun unpackInteger(unpacker: MessageUnpacker): JsonPrimitive = runCatching {
+        JsonPrimitive(unpacker.unpackLong())
+    }.getOrElse {
+        JsonPrimitive(unpacker.unpackBigInteger().toString())
     }
 
     private fun unpackBinaryAsJsonArray(unpacker: MessageUnpacker): JsonArray {
@@ -142,12 +138,10 @@ object MessagePackCodec {
         return JsonArray(bytes.map { byte -> JsonPrimitive(byte.toInt()) })
     }
 
-    private fun JsonElement.jsonKey(): String {
-        return when (this) {
-            JsonNull -> "null"
-            is JsonPrimitive -> content
-            else -> toString()
-        }
+    private fun JsonElement.jsonKey(): String = when (this) {
+        JsonNull -> "null"
+        is JsonPrimitive -> content
+        else -> toString()
     }
 
     private fun packValue(packer: MessageBufferPacker, element: JsonElement) {
@@ -191,5 +185,4 @@ object MessagePackCodec {
         // 非法数字等兜底，按字符串写入，避免序列化阶段直接崩溃
         packer.packString(primitive.content)
     }
-
 }

@@ -15,8 +15,8 @@ object RootfsTargetDetector {
      * rootfs 类型枚举
      */
     enum class RootfsType {
-        GNU_LINUX,      // Debian/Ubuntu 等 GNU/Linux 发行版
-        ANDROID_NDK,    // Android NDK sysroot
+        GNU_LINUX, // Debian/Ubuntu 等 GNU/Linux 发行版
+        ANDROID_NDK, // Android NDK sysroot
         UNKNOWN
     }
 

@@ -45,27 +45,23 @@ data class BookmarkEntity(
     /**
      * 转换为领域模型
      */
-    fun toDomainModel(): Bookmark {
-        return Bookmark(
-            filePath = filePath,
-            line = line,
-            note = note,
-            createdAt = createdAt
-        )
-    }
+    fun toDomainModel(): Bookmark = Bookmark(
+        filePath = filePath,
+        line = line,
+        note = note,
+        createdAt = createdAt
+    )
 
     companion object {
         /**
          * 从领域模型创建实体
          */
-        fun fromDomainModel(projectPath: String, bookmark: Bookmark): BookmarkEntity {
-            return BookmarkEntity(
-                projectPath = projectPath,
-                filePath = bookmark.filePath,
-                line = bookmark.line,
-                note = bookmark.note,
-                createdAt = bookmark.createdAt
-            )
-        }
+        fun fromDomainModel(projectPath: String, bookmark: Bookmark): BookmarkEntity = BookmarkEntity(
+            projectPath = projectPath,
+            filePath = bookmark.filePath,
+            line = bookmark.line,
+            note = bookmark.note,
+            createdAt = bookmark.createdAt
+        )
     }
 }

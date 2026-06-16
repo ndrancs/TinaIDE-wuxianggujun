@@ -30,6 +30,11 @@ class CrashUploadStateTest {
 
     @Test
     fun uploadLifecycle_shouldKeepLatestStatusAndAttemptCount() {
+        assertThat(CrashUploadState.isAutoUploadEnabled(context)).isFalse()
+        context.getSharedPreferences("tinaide_config", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("logs.crash.auto_upload", true)
+            .commit()
         assertThat(CrashUploadState.isAutoUploadEnabled(context)).isTrue()
 
         CrashUploadState.markUploadQueued(context, "tombstone.log", "captured_by_xcrash")

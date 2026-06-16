@@ -59,22 +59,20 @@ internal class EditorGestureHandler(
     fun onPointerCountChanged(
         pointerCount: Int,
         isTransformInProgress: Boolean
-    ): Boolean {
-        return when {
-            pointerCount > 1 -> {
-                clearTextTapTracking()
-                isMultiTouchActive = true
-                true
-            }
-
-            pointerCount == 0 && isMultiTouchActive && !isTransformInProgress -> {
-                isMultiTouchActive = false
-                nudgeSuppression(releaseSuppressionMs)
-                false
-            }
-
-            else -> false
+    ): Boolean = when {
+        pointerCount > 1 -> {
+            clearTextTapTracking()
+            isMultiTouchActive = true
+            true
         }
+
+        pointerCount == 0 && isMultiTouchActive && !isTransformInProgress -> {
+            isMultiTouchActive = false
+            nudgeSuppression(releaseSuppressionMs)
+            false
+        }
+
+        else -> false
     }
 
     fun onTransformSettled() {
@@ -82,22 +80,16 @@ internal class EditorGestureHandler(
         nudgeSuppression(releaseSuppressionMs)
     }
 
-    fun shouldBlockScrollGestures(isTransformInProgress: Boolean): Boolean {
-        return isMultiTouchActive ||
-            isTransformInProgress ||
-            isSelectionDragActive ||
-            isCursorDragActive
-    }
+    fun shouldBlockScrollGestures(isTransformInProgress: Boolean): Boolean = isMultiTouchActive ||
+        isTransformInProgress ||
+        isSelectionDragActive ||
+        isCursorDragActive
 
-    fun handlingMotions(): Boolean {
-        return isSelectionDragActive ||
-            isCursorDragActive ||
-            uptimeMillisProvider() < suppressBasicGesturesUntilMs
-    }
+    fun handlingMotions(): Boolean = isSelectionDragActive ||
+        isCursorDragActive ||
+        uptimeMillisProvider() < suppressBasicGesturesUntilMs
 
-    fun shouldBlockBasicGestures(isTransformInProgress: Boolean): Boolean {
-        return shouldBlockScrollGestures(isTransformInProgress) || handlingMotions()
-    }
+    fun shouldBlockBasicGestures(isTransformInProgress: Boolean): Boolean = shouldBlockScrollGestures(isTransformInProgress) || handlingMotions()
 
     fun registerTextTap(position: Offset): Boolean {
         val now = uptimeMillisProvider()

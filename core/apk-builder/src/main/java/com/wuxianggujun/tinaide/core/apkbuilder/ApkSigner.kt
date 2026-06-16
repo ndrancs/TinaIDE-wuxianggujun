@@ -1,11 +1,11 @@
 package com.wuxianggujun.tinaide.core.apkbuilder
 
 import com.android.apksig.ApkSigner as AndroidApkSigner
-import timber.log.Timber
 import java.io.File
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
+import timber.log.Timber
 
 object ApkSigner {
 

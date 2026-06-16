@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide.core.symbol
 
-import kotlinx.coroutines.flow.StateFlow
 import java.io.File
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * 项目符号索引服务接口

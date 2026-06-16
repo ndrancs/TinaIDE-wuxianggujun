@@ -33,38 +33,36 @@ object FileCharsetDetector {
         }
     }
 
-    private fun detectBom(buffer: ByteArray, bytesRead: Int): Charset? {
-        return when {
-            bytesRead >= 3 &&
-                buffer[0] == 0xEF.toByte() &&
-                buffer[1] == 0xBB.toByte() &&
-                buffer[2] == 0xBF.toByte() -> Charsets.UTF_8
+    private fun detectBom(buffer: ByteArray, bytesRead: Int): Charset? = when {
+        bytesRead >= 3 &&
+            buffer[0] == 0xEF.toByte() &&
+            buffer[1] == 0xBB.toByte() &&
+            buffer[2] == 0xBF.toByte() -> Charsets.UTF_8
 
-            bytesRead >= 2 &&
-                buffer[0] == 0xFE.toByte() &&
-                buffer[1] == 0xFF.toByte() -> Charsets.UTF_16BE
+        bytesRead >= 2 &&
+            buffer[0] == 0xFE.toByte() &&
+            buffer[1] == 0xFF.toByte() -> Charsets.UTF_16BE
 
-            bytesRead >= 2 &&
-                buffer[0] == 0xFF.toByte() &&
-                buffer[1] == 0xFE.toByte() -> {
-                if (bytesRead >= 4 &&
-                    buffer[2] == 0x00.toByte() &&
-                    buffer[3] == 0x00.toByte()
-                ) {
-                    Charset.forName("UTF-32LE")
-                } else {
-                    Charsets.UTF_16LE
-                }
+        bytesRead >= 2 &&
+            buffer[0] == 0xFF.toByte() &&
+            buffer[1] == 0xFE.toByte() -> {
+            if (bytesRead >= 4 &&
+                buffer[2] == 0x00.toByte() &&
+                buffer[3] == 0x00.toByte()
+            ) {
+                Charset.forName("UTF-32LE")
+            } else {
+                Charsets.UTF_16LE
             }
-
-            bytesRead >= 4 &&
-                buffer[0] == 0x00.toByte() &&
-                buffer[1] == 0x00.toByte() &&
-                buffer[2] == 0xFE.toByte() &&
-                buffer[3] == 0xFF.toByte() -> Charset.forName("UTF-32BE")
-
-            else -> null
         }
+
+        bytesRead >= 4 &&
+            buffer[0] == 0x00.toByte() &&
+            buffer[1] == 0x00.toByte() &&
+            buffer[2] == 0xFE.toByte() &&
+            buffer[3] == 0xFF.toByte() -> Charset.forName("UTF-32BE")
+
+        else -> null
     }
 
     private fun detectHeuristic(buffer: ByteArray, bytesRead: Int): Charset {

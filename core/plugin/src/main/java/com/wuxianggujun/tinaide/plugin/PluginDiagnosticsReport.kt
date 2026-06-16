@@ -35,7 +35,5 @@ data class PluginDiagnosticsSnapshot(
     val installedReports: Map<String, PluginDiagnosticsReport>,
     val loadReports: List<PluginDiagnosticsReport>,
 ) {
-    fun getInstalledReport(pluginId: String): PluginDiagnosticsReport? {
-        return installedReports[pluginId]
-    }
+    fun getInstalledReport(pluginId: String): PluginDiagnosticsReport? = installedReports[pluginId]
 }

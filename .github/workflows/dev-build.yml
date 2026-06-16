@@ -1,9 +1,6 @@
 name: Dev APK Build
 
 on:
-  push:
-    branches:
-      - dev
   workflow_dispatch:
 
 permissions:
@@ -14,6 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  TINA_TOOLCHAIN_RELEASE_REPO: 'wuxianggujun/TinaIDE'
+  TINA_TOOLCHAIN_RELEASE_TAG: 'toolchain-v0.2.4'
   TS_CLI_BUILD_FROM_SOURCE: 'false'
   GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8 -XX:+UseParallelGC"
 
@@ -26,9 +25,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          lfs: true
+          lfs: false
           submodules: recursive
           fetch-depth: 0
+
+      - name: Restore tina-toolchain assets
+        run: bash tools/ci/restore-tina-toolchain-assets.sh arm64
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5

@@ -46,18 +46,14 @@ object CMake {
      * @param source CMake 源码字符串
      * @return 解析结果，包含结构化的 CMake 文档
      */
-    fun parse(source: String): Result<CMakeDoc> {
-        return CMakeParser.parse(source).map { doc ->
-            CMakeDoc(doc)
-        }
+    fun parse(source: String): Result<CMakeDoc> = CMakeParser.parse(source).map { doc ->
+        CMakeDoc(doc)
     }
 
     /**
      * 解析 CMake 文件（从字节数组）
      */
-    fun parse(source: ByteArray): Result<CMakeDoc> {
-        return parse(source.decodeToString())
-    }
+    fun parse(source: ByteArray): Result<CMakeDoc> = parse(source.decodeToString())
 }
 
 /**
@@ -149,8 +145,14 @@ class CMakeDoc internal constructor(private val rawDoc: CMakeDocument) {
     )
 
     enum class TargetType {
-        EXECUTABLE, STATIC_LIBRARY, SHARED_LIBRARY, MODULE_LIBRARY,
-        OBJECT_LIBRARY, INTERFACE_LIBRARY, CUSTOM_TARGET, UNKNOWN
+        EXECUTABLE,
+        STATIC_LIBRARY,
+        SHARED_LIBRARY,
+        MODULE_LIBRARY,
+        OBJECT_LIBRARY,
+        INTERFACE_LIBRARY,
+        CUSTOM_TARGET,
+        UNKNOWN
     }
 
     /**
@@ -306,61 +308,51 @@ class CMakeDoc internal constructor(private val rawDoc: CMakeDocument) {
     /**
      * 按名称获取命令
      */
-    fun commandsByName(name: String): List<CMakeCommand> {
-        return commands.filter { it.name.equals(name, ignoreCase = true) }
-    }
+    fun commandsByName(name: String): List<CMakeCommand> = commands.filter { it.name.equals(name, ignoreCase = true) }
 
     /**
      * 获取目标的链接库
      */
-    fun getTargetLibraries(targetName: String): List<String> {
-        return rawDoc.commandsByName("target_link_libraries")
-            .filter { it.arguments.getOrNull(0)?.text == targetName }
-            .flatMap { cmd ->
-                cmd.arguments.drop(1)
-                    .filter { it.text !in listOf("PUBLIC", "PRIVATE", "INTERFACE") }
-                    .map { it.text }
-            }
-    }
+    fun getTargetLibraries(targetName: String): List<String> = rawDoc.commandsByName("target_link_libraries")
+        .filter { it.arguments.getOrNull(0)?.text == targetName }
+        .flatMap { cmd ->
+            cmd.arguments.drop(1)
+                .filter { it.text !in listOf("PUBLIC", "PRIVATE", "INTERFACE") }
+                .map { it.text }
+        }
 
     /**
      * 获取目标的包含目录
      */
-    fun getTargetIncludeDirectories(targetName: String): List<String> {
-        return rawDoc.commandsByName("target_include_directories")
-            .filter { it.arguments.getOrNull(0)?.text == targetName }
-            .flatMap { cmd ->
-                cmd.arguments.drop(1)
-                    .filter { it.text !in listOf("PUBLIC", "PRIVATE", "INTERFACE", "SYSTEM", "BEFORE", "AFTER") }
-                    .map { it.text }
-            }
-    }
+    fun getTargetIncludeDirectories(targetName: String): List<String> = rawDoc.commandsByName("target_include_directories")
+        .filter { it.arguments.getOrNull(0)?.text == targetName }
+        .flatMap { cmd ->
+            cmd.arguments.drop(1)
+                .filter { it.text !in listOf("PUBLIC", "PRIVATE", "INTERFACE", "SYSTEM", "BEFORE", "AFTER") }
+                .map { it.text }
+        }
 
     /**
      * 获取目标的编译定义
      */
-    fun getTargetCompileDefinitions(targetName: String): List<String> {
-        return rawDoc.commandsByName("target_compile_definitions")
-            .filter { it.arguments.getOrNull(0)?.text == targetName }
-            .flatMap { cmd ->
-                cmd.arguments.drop(1)
-                    .filter { it.text !in listOf("PUBLIC", "PRIVATE", "INTERFACE") }
-                    .map { it.text }
-            }
-    }
-
-    override fun toString(): String {
-        return buildString {
-            appendLine("CMakeDoc {")
-            projectName?.let { appendLine("  project: $it") }
-            projectVersion?.let { appendLine("  version: $it") }
-            minimumVersion?.let { appendLine("  cmake_minimum_required: $it") }
-            if (languages.isNotEmpty()) appendLine("  languages: $languages")
-            appendLine("  targets: ${targets.size}")
-            appendLine("  variables: ${variables.size}")
-            appendLine("  subdirectories: ${subdirectories.size}")
-            appendLine("  packages: ${packages.size}")
-            appendLine("}")
+    fun getTargetCompileDefinitions(targetName: String): List<String> = rawDoc.commandsByName("target_compile_definitions")
+        .filter { it.arguments.getOrNull(0)?.text == targetName }
+        .flatMap { cmd ->
+            cmd.arguments.drop(1)
+                .filter { it.text !in listOf("PUBLIC", "PRIVATE", "INTERFACE") }
+                .map { it.text }
         }
+
+    override fun toString(): String = buildString {
+        appendLine("CMakeDoc {")
+        projectName?.let { appendLine("  project: $it") }
+        projectVersion?.let { appendLine("  version: $it") }
+        minimumVersion?.let { appendLine("  cmake_minimum_required: $it") }
+        if (languages.isNotEmpty()) appendLine("  languages: $languages")
+        appendLine("  targets: ${targets.size}")
+        appendLine("  variables: ${variables.size}")
+        appendLine("  subdirectories: ${subdirectories.size}")
+        appendLine("  packages: ${packages.size}")
+        appendLine("}")
     }
 }

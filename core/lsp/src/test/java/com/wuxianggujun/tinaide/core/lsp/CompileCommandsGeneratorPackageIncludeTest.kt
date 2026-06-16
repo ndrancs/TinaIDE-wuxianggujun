@@ -1,14 +1,14 @@
 package com.wuxianggujun.tinaide.core.lsp
 
 import com.google.common.truth.Truth.assertThat
+import java.io.File
+import kotlin.io.path.createTempDirectory
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
-import java.io.File
-import kotlin.io.path.createTempDirectory
 
 class CompileCommandsGeneratorPackageIncludeTest {
 

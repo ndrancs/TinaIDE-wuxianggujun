@@ -1,8 +1,8 @@
 package com.wuxianggujun.tinaide.core.apkbuilder
 
 import com.reandroid.apk.ApkModule
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * 读取模板 APK 的 resources.arsc，定位 launcher 图标（mipmap/ic_launcher）对应的 ZIP 条目路径。

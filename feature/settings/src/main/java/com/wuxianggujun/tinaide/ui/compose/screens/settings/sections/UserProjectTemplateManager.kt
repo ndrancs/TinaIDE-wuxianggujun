@@ -74,14 +74,12 @@ internal object UserProjectTemplateManager {
         encodeDefaults = false
     }
 
-    fun listTemplates(templatesDir: File): List<UserProjectTemplateItem> {
-        return templatesDir
-            .takeIf { it.isDirectory }
-            ?.listFiles { file -> file.isFile && isZipFileName(file.name) }
-            ?.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
-            ?.map(::toItem)
-            .orEmpty()
-    }
+    fun listTemplates(templatesDir: File): List<UserProjectTemplateItem> = templatesDir
+        .takeIf { it.isDirectory }
+        ?.listFiles { file -> file.isFile && isZipFileName(file.name) }
+        ?.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+        ?.map(::toItem)
+        .orEmpty()
 
     suspend fun importTemplateFromUri(
         context: Context,
@@ -173,78 +171,68 @@ internal object UserProjectTemplateManager {
         templatesDir: File,
         templateName: String,
         output: OutputStream,
-    ): Boolean {
-        return try {
-            val root = ProjectPaths.ensureDir(templatesDir).canonicalFile
-            val source = resolveExistingTemplate(root, templateName)
-            source.inputStream().use { input ->
-                input.copyTo(output)
-            }
-            true
-        } catch (error: UserProjectTemplateException) {
-            throw error
-        } catch (error: Throwable) {
-            throw UserProjectTemplateException(UserProjectTemplateFailure.EXPORT_FAILED, error)
+    ): Boolean = try {
+        val root = ProjectPaths.ensureDir(templatesDir).canonicalFile
+        val source = resolveExistingTemplate(root, templateName)
+        source.inputStream().use { input ->
+            input.copyTo(output)
         }
+        true
+    } catch (error: UserProjectTemplateException) {
+        throw error
+    } catch (error: Throwable) {
+        throw UserProjectTemplateException(UserProjectTemplateFailure.EXPORT_FAILED, error)
     }
 
-    fun deleteTemplate(templatesDir: File, templateName: String): Boolean {
-        return try {
-            val root = ProjectPaths.ensureDir(templatesDir).canonicalFile
-            val target = resolveExistingTemplate(root, templateName)
-            if (!target.delete()) {
-                throw UserProjectTemplateException(UserProjectTemplateFailure.DELETE_FAILED)
-            }
-            true
-        } catch (error: UserProjectTemplateException) {
-            throw error
-        } catch (error: Throwable) {
-            throw UserProjectTemplateException(UserProjectTemplateFailure.DELETE_FAILED, error)
+    fun deleteTemplate(templatesDir: File, templateName: String): Boolean = try {
+        val root = ProjectPaths.ensureDir(templatesDir).canonicalFile
+        val target = resolveExistingTemplate(root, templateName)
+        if (!target.delete()) {
+            throw UserProjectTemplateException(UserProjectTemplateFailure.DELETE_FAILED)
         }
+        true
+    } catch (error: UserProjectTemplateException) {
+        throw error
+    } catch (error: Throwable) {
+        throw UserProjectTemplateException(UserProjectTemplateFailure.DELETE_FAILED, error)
     }
 
     fun updateTemplateMetadata(
         templatesDir: File,
         templateName: String,
         metadata: UserProjectTemplateMetadataUpdate,
-    ): UserProjectTemplateItem {
-        return try {
-            val root = ProjectPaths.ensureDir(templatesDir).canonicalFile
-            val source = resolveExistingTemplate(root, templateName)
-            val tempFile = File.createTempFile(".${source.nameWithoutExtension}-metadata-", ".zip", root)
-            try {
-                rewriteTemplateMetadataZip(
-                    source = source,
-                    target = tempFile,
-                    metadata = metadata,
-                )
-                replaceTemplateFile(
-                    source = source,
-                    replacement = tempFile,
-                )
-                toItem(source)
-            } finally {
-                if (tempFile.exists()) tempFile.delete()
-            }
-        } catch (error: UserProjectTemplateException) {
-            throw error
-        } catch (error: Throwable) {
-            throw UserProjectTemplateException(UserProjectTemplateFailure.METADATA_UPDATE_FAILED, error)
+    ): UserProjectTemplateItem = try {
+        val root = ProjectPaths.ensureDir(templatesDir).canonicalFile
+        val source = resolveExistingTemplate(root, templateName)
+        val tempFile = File.createTempFile(".${source.nameWithoutExtension}-metadata-", ".zip", root)
+        try {
+            rewriteTemplateMetadataZip(
+                source = source,
+                target = tempFile,
+                metadata = metadata,
+            )
+            replaceTemplateFile(
+                source = source,
+                replacement = tempFile,
+            )
+            toItem(source)
+        } finally {
+            if (tempFile.exists()) tempFile.delete()
         }
+    } catch (error: UserProjectTemplateException) {
+        throw error
+    } catch (error: Throwable) {
+        throw UserProjectTemplateException(UserProjectTemplateFailure.METADATA_UPDATE_FAILED, error)
     }
 
-    fun buildTemplateMetadataPreview(metadata: UserProjectTemplateMetadataUpdate): String {
-        return metadata.toMetadataBytes()
-            ?.toString(Charsets.UTF_8)
-            ?.trimEnd()
-            ?: "{}"
-    }
+    fun buildTemplateMetadataPreview(metadata: UserProjectTemplateMetadataUpdate): String = metadata.toMetadataBytes()
+        ?.toString(Charsets.UTF_8)
+        ?.trimEnd()
+        ?: "{}"
 
-    fun formatVariableDefaults(variables: Map<String, String>): String {
-        return variables.normalizedVariables()
-            .entries
-            .joinToString(separator = "\n") { (key, value) -> "$key=$value" }
-    }
+    fun formatVariableDefaults(variables: Map<String, String>): String = variables.normalizedVariables()
+        .entries
+        .joinToString(separator = "\n") { (key, value) -> "$key=$value" }
 
     fun validateVariableDefaultsInput(input: String): UserProjectTemplateVariableInputError? {
         input.lineSequence()
@@ -266,16 +254,14 @@ internal object UserProjectTemplateManager {
         return null
     }
 
-    fun parseVariableDefaults(input: String): Map<String, String> {
-        return input.lineSequence()
-            .map { it.trim() }
-            .filter { it.isNotBlank() && it.contains('=') }
-            .map { line ->
-                line.substringBefore('=').trim() to line.substringAfter('=').trim()
-            }
-            .filter { (key, value) -> variableName.matches(key) && value.isNotBlank() }
-            .toMap()
-    }
+    fun parseVariableDefaults(input: String): Map<String, String> = input.lineSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() && it.contains('=') }
+        .map { line ->
+            line.substringBefore('=').trim() to line.substringAfter('=').trim()
+        }
+        .filter { (key, value) -> variableName.matches(key) && value.isNotBlank() }
+        .toMap()
 
     fun sanitizeTemplateFileName(sourceName: String?): String {
         val leafName = sourceName
@@ -306,11 +292,9 @@ internal object UserProjectTemplateManager {
         return candidate
     }
 
-    fun isZipFileName(fileName: String?): Boolean {
-        return fileName
-            ?.substringAfterLast('.', missingDelimiterValue = "")
-            ?.equals("zip", ignoreCase = true) == true
-    }
+    fun isZipFileName(fileName: String?): Boolean = fileName
+        ?.substringAfterLast('.', missingDelimiterValue = "")
+        ?.equals("zip", ignoreCase = true) == true
 
     fun formatTemplateSize(bytes: Long): String = when {
         bytes <= 0L -> "0 B"
@@ -415,11 +399,14 @@ internal object UserProjectTemplateManager {
         }
         val normalizedVariables = variables.normalizedVariables()
         if (normalizedVariables.isNotEmpty()) {
-            put("variables", buildJsonObject {
-                normalizedVariables.forEach { (key, value) ->
-                    put(key, value)
+            put(
+                "variables",
+                buildJsonObject {
+                    normalizedVariables.forEach { (key, value) ->
+                        put(key, value)
+                    }
                 }
-            })
+            )
         }
     }
 
@@ -433,19 +420,17 @@ internal object UserProjectTemplateManager {
 
     private fun String?.trimToNull(): String? = this?.trim()?.takeIf { it.isNotBlank() }
 
-    private fun Map<String, String>.normalizedVariables(): Map<String, String> {
-        return entries
-            .mapNotNull { (key, value) ->
-                val normalizedKey = key.trim().takeIf { it.isNotBlank() }
-                val normalizedValue = value.trim().takeIf { it.isNotBlank() }
-                if (normalizedKey != null && normalizedValue != null) {
-                    normalizedKey to normalizedValue
-                } else {
-                    null
-                }
+    private fun Map<String, String>.normalizedVariables(): Map<String, String> = entries
+        .mapNotNull { (key, value) ->
+            val normalizedKey = key.trim().takeIf { it.isNotBlank() }
+            val normalizedValue = value.trim().takeIf { it.isNotBlank() }
+            if (normalizedKey != null && normalizedValue != null) {
+                normalizedKey to normalizedValue
+            } else {
+                null
             }
-            .toMap()
-    }
+        }
+        .toMap()
 
     private fun resolveExistingTemplate(root: File, templateName: String): File {
         if (!isZipFileName(templateName)) {
@@ -458,26 +443,22 @@ internal object UserProjectTemplateManager {
         return target
     }
 
-    private fun queryDisplayName(context: Context, uri: Uri): String? {
-        return context.contentResolver
-            .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-            ?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (nameIndex >= 0 && cursor.moveToFirst()) {
-                    cursor.getString(nameIndex)
-                } else {
-                    null
-                }
+    private fun queryDisplayName(context: Context, uri: Uri): String? = context.contentResolver
+        .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+        ?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (nameIndex >= 0 && cursor.moveToFirst()) {
+                cursor.getString(nameIndex)
+            } else {
+                null
             }
-            ?.takeUnless { it.isBlank() }
-    }
-
-    private fun String.removeZipExtension(): String {
-        return if (endsWith(".zip", ignoreCase = true)) {
-            dropLast(4)
-        } else {
-            this
         }
+        ?.takeUnless { it.isBlank() }
+
+    private fun String.removeZipExtension(): String = if (endsWith(".zip", ignoreCase = true)) {
+        dropLast(4)
+    } else {
+        this
     }
 
     private fun File.isInside(root: File): Boolean {

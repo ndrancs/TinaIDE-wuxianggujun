@@ -287,32 +287,28 @@ class IncrementalTreeSitterHighlightStateTest {
         parser: TSParser,
         query: TSQuery,
         onClosed: (() -> Unit)? = null
-    ): TestFixture {
-        return TestFixture(
-            state = IncrementalTreeSitterHighlightState(
-                parser = parser,
-                query = query,
-                captureTypeByIndex = emptyArray(),
-                onClosed = onClosed
-            )
+    ): TestFixture = TestFixture(
+        state = IncrementalTreeSitterHighlightState(
+            parser = parser,
+            query = query,
+            captureTypeByIndex = emptyArray(),
+            onClosed = onClosed
         )
-    }
+    )
 
     private fun replaceIdentifierChange(
         oldIdentifier: String,
         newIdentifier: String
-    ): TextChange {
-        return TextChange(
-            startOffset = IDENTIFIER_START_OFFSET,
-            endOffset = IDENTIFIER_START_OFFSET + oldIdentifier.length,
-            oldText = oldIdentifier,
-            newText = newIdentifier,
-            startLine = 0,
-            startColumn = IDENTIFIER_START_OFFSET,
-            endLine = 0,
-            endColumn = IDENTIFIER_START_OFFSET + oldIdentifier.length
-        )
-    }
+    ): TextChange = TextChange(
+        startOffset = IDENTIFIER_START_OFFSET,
+        endOffset = IDENTIFIER_START_OFFSET + oldIdentifier.length,
+        oldText = oldIdentifier,
+        newText = newIdentifier,
+        startLine = 0,
+        startColumn = IDENTIFIER_START_OFFSET,
+        endLine = 0,
+        endColumn = IDENTIFIER_START_OFFSET + oldIdentifier.length
+    )
 
     private fun waitUntil(
         timeoutMs: Long = 5_000,
@@ -341,18 +337,14 @@ class IncrementalTreeSitterHighlightStateTest {
         }
     }
 
-    private fun mockQuery(): TSQuery {
-        return mockk {
-            every { canAccess() } returns true
-        }
+    private fun mockQuery(): TSQuery = mockk {
+        every { canAccess() } returns true
     }
 
-    private fun mockTree(name: String): TSTree {
-        return mockk(name = name) {
-            every { canAccess() } returns true
-            every { edit(any()) } just runs
-            every { close() } just runs
-        }
+    private fun mockTree(name: String): TSTree = mockk(name = name) {
+        every { canAccess() } returns true
+        every { edit(any()) } just runs
+        every { close() } just runs
     }
 
     private companion object {

@@ -2,12 +2,15 @@ package com.wuxianggujun.tinaide.terminal.session
 
 import android.app.Application
 import com.termux.terminal.TerminalSession
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.terminal.persistence.ProjectTerminalState
 import com.wuxianggujun.tinaide.terminal.persistence.TerminalSessionSnapshot
 import com.wuxianggujun.tinaide.terminal.persistence.TerminalStateStorage
 import com.wuxianggujun.tinaide.terminal.shell.ShellResolveResult
 import com.wuxianggujun.tinaide.terminal.shell.TerminalBackend
 import com.wuxianggujun.tinaide.terminal.shell.TerminalShellResolver
+import java.io.File
+import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,10 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import kotlin.math.min
 import timber.log.Timber
-import com.wuxianggujun.tinaide.core.i18n.Strings
 
 /**
  * 基于 Termux 的终端会话管理器
@@ -201,7 +201,6 @@ class TerminalSessionManager(
                     )
                 }
                 _frameId.update { it + 1 }
-
             } catch (t: Throwable) {
                 Timber.tag(TAG).e(t, "Failed to start terminal session")
                 updateSessionState(sessionId) {
@@ -323,9 +322,7 @@ class TerminalSessionManager(
     /**
      * 根据 ID 获取会话
      */
-    fun getSessionById(sessionId: String): TerminalSessionState? {
-        return _sessions.value.find { it.id == sessionId }
-    }
+    fun getSessionById(sessionId: String): TerminalSessionState? = _sessions.value.find { it.id == sessionId }
 
     /**
      * 根据 Termux Session 查找并更新会话状态
@@ -373,7 +370,7 @@ class TerminalSessionManager(
             Timber.tag(TAG).d("Cannot save terminal state: no project path set")
             return
         }
-        
+
         scope.launch(Dispatchers.Main) {
             try {
                 val sessionStates = _sessions.value
@@ -396,7 +393,7 @@ class TerminalSessionManager(
             }
         }
     }
-    
+
     /**
      * 从项目恢复终端状态
      *
@@ -405,12 +402,12 @@ class TerminalSessionManager(
      */
     fun restoreState(projectPath: String, defaultWorkDir: String = "/") {
         currentProjectPath = projectPath
-        
+
         if (_sessions.value.isNotEmpty()) {
             Timber.tag(TAG).d("Skip restoring terminal state: sessions already exist")
             return
         }
-        
+
         scope.launch(Dispatchers.IO) {
             try {
                 val state = stateStorage.load(projectPath)
@@ -424,22 +421,22 @@ class TerminalSessionManager(
                     }
                     return@launch
                 }
-                
+
                 Timber.tag(TAG).d("Restoring terminal state: %d sessions", state.sessions.size)
-                
+
                 withContext(Dispatchers.Main) {
                     // 恢复每个会话
                     state.sessions.forEach { snapshot ->
                         restoreSession(snapshot, defaultWorkDir)
                     }
-                    
+
                     // 切换到之前活动的会话
                     state.activeSessionId?.let { activeId ->
                         if (_sessions.value.any { it.id == activeId }) {
                             switchSession(activeId)
                         }
                     }
-                    
+
                     // 如果恢复后没有会话，创建一个默认终端
                     if (_sessions.value.isEmpty()) {
                         createSession(workDir = defaultWorkDir)
@@ -456,14 +453,14 @@ class TerminalSessionManager(
             }
         }
     }
-    
+
     /**
      * 创建会话快照
      */
     private fun createSnapshot(state: TerminalSessionState): TerminalSessionSnapshot {
         val session = state.session
         val emulator = session?.emulator
-        
+
         // 获取工作目录
         val workDir = try {
             session?.cwd
@@ -474,10 +471,14 @@ class TerminalSessionManager(
 
         // 获取 transcript（限制大小）
         val transcriptLinesToSave = try {
-            if (emulator == null) 0 else min(
-                emulator.screen.activeTranscriptRows,
-                TerminalSessionSnapshot.MAX_TRANSCRIPT_ROWS_TO_SAVE
-            )
+            if (emulator == null) {
+                0
+            } else {
+                min(
+                    emulator.screen.activeTranscriptRows,
+                    TerminalSessionSnapshot.MAX_TRANSCRIPT_ROWS_TO_SAVE
+                )
+            }
         } catch (e: Exception) {
             Timber.tag(TAG).d(e, "Failed to get transcript lines")
             0
@@ -507,7 +508,7 @@ class TerminalSessionManager(
             Timber.tag(TAG).w(e, "Failed to get transcript for session: %s", state.id)
             null
         }
-        
+
         return TerminalSessionSnapshot(
             id = state.id,
             title = state.title,
@@ -523,7 +524,7 @@ class TerminalSessionManager(
             savedAt = System.currentTimeMillis()
         )
     }
-    
+
     /**
      * 恢复单个会话
      *
@@ -547,10 +548,10 @@ class TerminalSessionManager(
             backend = backend,
             createdAt = snapshot.createdAt
         )
-        
+
         // 添加到会话列表
         _sessions.update { it + sessionState }
-        
+
         // 启动终端会话
         startTerminalSession(
             sessionId = snapshot.id,
@@ -558,11 +559,15 @@ class TerminalSessionManager(
             rows = snapshot.rows,
             cols = snapshot.columns
         )
-        
-        Timber.tag(TAG).d("Restored session: %s (title=%s, workDir=%s)",
-            snapshot.id, snapshot.title, workDir)
+
+        Timber.tag(TAG).d(
+            "Restored session: %s (title=%s, workDir=%s)",
+            snapshot.id,
+            snapshot.title,
+            workDir
+        )
     }
-    
+
     /**
      * 清除项目的终端状态
      */
@@ -596,10 +601,11 @@ class TerminalSessionManager(
 
     companion object {
         private const val TAG = "TerminalSessionManager"
+
         /** Tina 私有 OSC 识别码。非标准，避免与常见 xterm/urxvt 号段冲突。 */
         private const val OSC_CODE_TINA = 777
+
         /** Run 模式程序结束标记，格式 `tina-run-end;<exitCode>`。 */
         private const val OSC_RUN_END_PREFIX = "tina-run-end;"
     }
 }
-

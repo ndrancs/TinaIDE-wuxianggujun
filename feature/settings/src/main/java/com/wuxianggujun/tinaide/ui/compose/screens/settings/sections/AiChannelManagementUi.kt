@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Visibility
@@ -27,14 +28,17 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -50,6 +54,7 @@ import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogTitleText
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaSingleChoiceDialog
 import com.wuxianggujun.tinaide.ui.compose.components.TinaTextButton
+import kotlinx.coroutines.CancellationException
 
 /**
  * 渠道管理对话框：列出所有 BYOK 渠道，提供添加/编辑/删除/激活操作。
@@ -123,11 +128,7 @@ internal fun AiChannelManagementDialog(
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = stringResource(
-                                                Strings.settings_ai_channel_provider_model,
-                                                providerName,
-                                                channel.model,
-                                            ),
+                                            text = providerName,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -215,25 +216,47 @@ internal fun AiChannelManagementDialog(
  * 渠道新增/编辑对话框。
  *
  * [initial] 为 null 表示"新增"，此时 apiKey 必填；否则为"编辑"，
- * apiKey 留空表示不修改现有 key。
+ * 编辑时会从加密存储读取已有 key 并回填，用户可查看、复制或清空。
  */
 @Composable
 internal fun AiChannelEditDialog(
     initial: AiChannelConfig?,
+    onLoadApiKey: suspend (String) -> String,
     onDismiss: () -> Unit,
-    onSave: (name: String, provider: AiProvider, baseUrl: String, model: String, apiKey: String) -> Unit,
+    onSave: (name: String, provider: AiProvider, baseUrl: String, apiKey: String) -> Unit,
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val isEdit = initial != null
 
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var provider by remember { mutableStateOf(initial?.provider ?: AiProvider.OPENAI) }
     var baseUrl by remember { mutableStateOf(initial?.baseUrl ?: provider.defaultBaseUrl) }
-    var model by remember { mutableStateOf(initial?.model ?: provider.defaultModels.firstOrNull().orEmpty()) }
     var apiKey by remember { mutableStateOf("") }
+    var apiKeyLoading by remember { mutableStateOf(isEdit) }
+    var apiKeyLoaded by remember { mutableStateOf(!isEdit) }
     var showKey by remember { mutableStateOf(false) }
     var showProviderPicker by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(initial?.id) {
+        val channelId = initial?.id ?: return@LaunchedEffect
+        apiKeyLoading = true
+        apiKeyLoaded = false
+        try {
+            apiKey = onLoadApiKey(channelId)
+            apiKeyLoaded = true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            errorMessage = context.getString(
+                Strings.settings_ai_channel_apikey_load_failed,
+                e.message ?: context.getString(Strings.ai_error_unknown),
+            )
+        } finally {
+            apiKeyLoading = false
+        }
+    }
 
     TinaAlertDialog(
         onDismissRequest = onDismiss,
@@ -297,22 +320,20 @@ internal fun AiChannelEditDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedTextField(
-                    value = model,
-                    onValueChange = { model = it },
-                    label = { Text(stringResource(Strings.settings_ai_model)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
                     value = apiKey,
-                    onValueChange = { apiKey = it },
+                    onValueChange = {
+                        apiKey = it
+                        apiKeyLoaded = true
+                    },
                     label = { Text(stringResource(Strings.settings_ai_api_key)) },
                     placeholder = {
                         Text(
                             text = if (isEdit) {
-                                stringResource(Strings.settings_ai_channel_apikey_keep)
+                                if (apiKeyLoading) {
+                                    stringResource(Strings.settings_ai_channel_apikey_loading)
+                                } else {
+                                    stringResource(Strings.settings_ai_channel_apikey_empty)
+                                }
                             } else {
                                 stringResource(Strings.settings_ai_channel_apikey_required)
                             },
@@ -320,17 +341,31 @@ internal fun AiChannelEditDialog(
                         )
                     },
                     singleLine = true,
+                    enabled = !apiKeyLoading,
                     visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        IconButton(onClick = { showKey = !showKey }) {
-                            Icon(
-                                imageVector = if (showKey) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                contentDescription = null,
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (apiKey.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { clipboardManager.setText(AnnotatedString(apiKey)) },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.ContentCopy,
+                                        contentDescription = stringResource(Strings.settings_ai_channel_apikey_copy),
+                                    )
+                                }
+                            }
+                            IconButton(onClick = { showKey = !showKey }) {
+                                Icon(
+                                    imageVector = if (showKey) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                    contentDescription = null,
+                                )
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Spacer(modifier = Modifier.height(8.dp))
 
                 errorMessage?.let {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -345,11 +380,15 @@ internal fun AiChannelEditDialog(
         confirmButton = {
             TinaPrimaryButton(
                 text = stringResource(Strings.settings_ai_save),
+                enabled = !apiKeyLoading,
                 onClick = {
+                    if (isEdit && !apiKeyLoaded) {
+                        errorMessage = context.getString(Strings.settings_ai_channel_apikey_load_required)
+                        return@TinaPrimaryButton
+                    }
                     val validation = AiSettingsSectionSupport.validateChannelInput(
                         name = name,
                         baseUrl = baseUrl,
-                        model = model,
                         apiKey = apiKey,
                         apiKeyRequired = !isEdit,
                     )
@@ -358,7 +397,6 @@ internal fun AiChannelEditDialog(
                         AiChannelInputValidation.NameBlank -> Strings.settings_ai_channel_error_name_blank
                         AiChannelInputValidation.BaseUrlBlank -> Strings.settings_ai_channel_error_url_blank
                         AiChannelInputValidation.BaseUrlInvalid -> Strings.settings_ai_channel_error_url_invalid
-                        AiChannelInputValidation.ModelBlank -> Strings.settings_ai_channel_error_model_blank
                         AiChannelInputValidation.ApiKeyBlank -> Strings.settings_ai_channel_error_apikey_blank
                     }
                     if (errorRes != null) {
@@ -369,7 +407,6 @@ internal fun AiChannelEditDialog(
                         name.trim(),
                         provider,
                         baseUrl.trim(),
-                        model.trim(),
                         AiSettingsSectionSupport.sanitizeApiKey(apiKey),
                     )
                 },
@@ -394,13 +431,10 @@ internal fun AiChannelEditDialog(
             onSelected = { selected ->
                 val picked = AiProvider.entries.firstOrNull { it.name == selected } ?: provider
                 provider = picked
-                // 切换 provider 时，若 baseUrl/model 仍是上一 provider 的默认值，则同步更新。
+                // 切换 provider 时，若 baseUrl 仍是上一 provider 的默认值，则同步更新。
                 // 这里简单地覆盖——用户可在字段内继续编辑。
                 if (baseUrl.isBlank() || AiProvider.entries.any { it.defaultBaseUrl == baseUrl }) {
                     baseUrl = picked.defaultBaseUrl
-                }
-                if (model.isBlank() || AiProvider.entries.any { provider -> provider.defaultModels.contains(model) }) {
-                    model = picked.defaultModels.firstOrNull().orEmpty()
                 }
                 showProviderPicker = false
             },

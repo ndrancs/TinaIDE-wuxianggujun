@@ -13,40 +13,49 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.packages.InstalledPackageMetadata
-import org.koin.androidx.compose.koinViewModel
+import com.wuxianggujun.tinaide.core.packages.PackageInstallPlan
+import com.wuxianggujun.tinaide.core.packages.PackageInstallPlanItem
 import com.wuxianggujun.tinaide.core.packages.model.*
-import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
-import com.wuxianggujun.tinaide.ui.compose.components.TinaSpacing
-import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
 import com.wuxianggujun.tinaide.ui.compose.components.PluginCardSkeleton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaTextButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaAlertDialog
+import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
+import com.wuxianggujun.tinaide.ui.compose.components.TinaDangerButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogCard
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogContentColumn
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogMessageCard
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogTitleText
 import com.wuxianggujun.tinaide.ui.compose.components.TinaInfoDialog
-import com.wuxianggujun.tinaide.ui.compose.components.TinaSearchField
 import com.wuxianggujun.tinaide.ui.compose.components.TinaOutlinedButton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaDangerButton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
+import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
+import com.wuxianggujun.tinaide.ui.compose.components.TinaSearchField
+import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
+import com.wuxianggujun.tinaide.ui.compose.components.TinaSpacing
+import com.wuxianggujun.tinaide.ui.compose.components.TinaTextButton
+import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
 import com.wuxianggujun.tinaide.ui.compose.components.tinaBackAction
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PackageManagerScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    initialSearchQuery: String? = null
 ) {
     val viewModel: PackageManagerViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val filterState by viewModel.filterState.collectAsState()
     val dialogState by viewModel.dialogState.collectAsState()
+
+    LaunchedEffect(initialSearchQuery) {
+        initialSearchQuery
+            ?.takeUnless { it.isBlank() }
+            ?.let(viewModel::updateSearchQuery)
+    }
 
     // 处理系统返回键：优先处理内部子界面的返回
     TinaBackHandlers(
@@ -68,178 +77,205 @@ fun PackageManagerScreen(
             onDependencyClick = viewModel::navigateToDependency
         )
     } else {
-
-    Scaffold(
-        topBar = {
-            if (uiState.isSelectionMode) {
-                TinaTopBar(
-                    title = stringResource(Strings.pkg_manager_selected, uiState.selectedPackageIds.size),
-                    navigationIcon = {
-                        IconButton(onClick = viewModel::toggleSelectionMode) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(Strings.btn_cancel))
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = viewModel::selectAll) {
-                            Icon(Icons.Default.SelectAll, contentDescription = stringResource(Strings.pkg_manager_select))
-                        }
-                        IconButton(onClick = viewModel::clearSelection) {
-                            Icon(Icons.Default.Deselect, contentDescription = stringResource(Strings.btn_deselect_all))
-                        }
-                    }
-                )
-            } else {
-                TinaTopBar(
-                    title = stringResource(Strings.pkg_manager_title),
-                    onNavigateBack = onNavigateBack,
-                    actions = {
-                        if (uiState.availableUpdates.isNotEmpty()) {
-                            Badge(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
-                            ) {
-                                Text("${uiState.availableUpdates.size}")
+        Scaffold(
+            topBar = {
+                if (uiState.isSelectionMode) {
+                    TinaTopBar(
+                        title = stringResource(Strings.pkg_manager_selected, uiState.selectedPackageIds.size),
+                        navigationIcon = {
+                            IconButton(onClick = viewModel::toggleSelectionMode) {
+                                Icon(Icons.Default.Close, contentDescription = stringResource(Strings.btn_cancel))
                             }
-                            TextButton(onClick = viewModel::updateAllPackages) {
-                                Text(stringResource(Strings.pkg_manager_update_all))
+                        },
+                        actions = {
+                            IconButton(onClick = viewModel::selectAll) {
+                                Icon(Icons.Default.SelectAll, contentDescription = stringResource(Strings.pkg_manager_select))
+                            }
+                            IconButton(onClick = viewModel::clearSelection) {
+                                Icon(Icons.Default.Deselect, contentDescription = stringResource(Strings.btn_deselect_all))
                             }
                         }
-                        IconButton(onClick = viewModel::checkForUpdates) {
-                            Icon(Icons.Default.Update, contentDescription = stringResource(Strings.pkg_manager_check_updates))
+                    )
+                } else {
+                    TinaTopBar(
+                        title = stringResource(Strings.pkg_manager_title),
+                        onNavigateBack = onNavigateBack,
+                        actions = {
+                            if (uiState.availableUpdates.isNotEmpty()) {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                    contentColor = MaterialTheme.colorScheme.onError
+                                ) {
+                                    Text("${uiState.availableUpdates.size}")
+                                }
+                                TextButton(onClick = viewModel::updateAllPackages) {
+                                    Text(stringResource(Strings.pkg_manager_update_all))
+                                }
+                            }
+                            IconButton(onClick = viewModel::checkForUpdates) {
+                                Icon(Icons.Default.Update, contentDescription = stringResource(Strings.pkg_manager_check_updates))
+                            }
+                            IconButton(onClick = viewModel::refreshPackages) {
+                                Icon(Icons.Default.Refresh, contentDescription = stringResource(Strings.pkg_manager_refresh))
+                            }
+                            IconButton(onClick = viewModel::toggleSelectionMode) {
+                                Icon(Icons.Default.Checklist, contentDescription = stringResource(Strings.pkg_manager_select))
+                            }
                         }
-                        IconButton(onClick = viewModel::refreshPackages) {
-                            Icon(Icons.Default.Refresh, contentDescription = stringResource(Strings.pkg_manager_refresh))
-                        }
-                        IconButton(onClick = viewModel::toggleSelectionMode) {
-                            Icon(Icons.Default.Checklist, contentDescription = stringResource(Strings.pkg_manager_select))
-                        }
-                    }
-                )
-            }
-        },
-        bottomBar = {
-            AnimatedVisibility(visible = uiState.isSelectionMode && uiState.selectedPackageIds.isNotEmpty()) {
-                BottomAppBar {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = TinaSpacing.xl),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        TinaDangerButton(
-                            text = stringResource(Strings.pkg_manager_uninstall_linux),
-                            onClick = { viewModel.batchUninstall(Platform.LINUX) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(modifier = Modifier.width(TinaSpacing.md))
-                        TinaDangerButton(
-                            text = stringResource(Strings.pkg_manager_uninstall_android),
-                            onClick = { viewModel.batchUninstall(Platform.ANDROID) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            SearchBar(
-                query = filterState.searchQuery,
-                onQueryChange = viewModel::updateSearchQuery,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = TinaSpacing.xl, vertical = TinaSpacing.md)
-            )
-
-            if (uiState.isLoading) {
-                // 显示骨架屏
-                LazyColumn(
-                    contentPadding = PaddingValues(TinaSpacing.xl),
-                    verticalArrangement = Arrangement.spacedBy(TinaSpacing.lg),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(5) {
-                        PluginCardSkeleton()
-                    }
-                }
-            } else if (uiState.error != null) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = uiState.error ?: stringResource(Strings.pkg_manager_error_unknown),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(TinaSpacing.xl))
-                        TinaPrimaryButton(
-                            text = stringResource(Strings.pkg_manager_retry),
-                            onClick = viewModel::loadPackages
-                        )
-                    }
-                }
-            } else if (uiState.filteredPackages.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(Strings.pkg_manager_no_available_packages),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(TinaSpacing.xl),
-                    verticalArrangement = Arrangement.spacedBy(TinaSpacing.lg)
-                ) {
-                    items(uiState.filteredPackages, key = { it.id }) { pkg ->
-                        PackageCard(
-                            pkg = pkg,
-                            installedMetadata = uiState.installedMetadata[pkg.id],
-                            installState = uiState.installStates[pkg.id] ?: PackageInstallState(),
-                            isSelectionMode = uiState.isSelectionMode,
-                            isSelected = pkg.id in uiState.selectedPackageIds,
-                            onInstallLinux = { viewModel.installPackage(pkg.id, Platform.LINUX) },
-                            onInstallAndroid = { viewModel.installPackage(pkg.id, Platform.ANDROID) },
-                            onUninstallLinux = { viewModel.requestUninstall(pkg.id, Platform.LINUX) },
-                            onUninstallAndroid = { viewModel.requestUninstall(pkg.id, Platform.ANDROID) },
-                            onClick = {
-                                if (uiState.isSelectionMode) {
-                                    viewModel.togglePackageSelection(pkg.id)
-                                } else {
-                                    viewModel.showPackageDetails(pkg.id)
-                                }
-                            },
-                            onLongClick = {
-                                if (!uiState.isSelectionMode) {
-                                    viewModel.toggleSelectionMode()
-                                    viewModel.togglePackageSelection(pkg.id)
-                                }
+            },
+            bottomBar = {
+                AnimatedVisibility(visible = uiState.isSelectionMode && uiState.selectedPackageIds.isNotEmpty()) {
+                    BottomAppBar {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = TinaSpacing.xl),
+                            verticalArrangement = Arrangement.spacedBy(TinaSpacing.sm)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(TinaSpacing.md)
+                            ) {
+                                TinaPrimaryButton(
+                                    text = stringResource(Strings.pkg_manager_install_linux),
+                                    onClick = { viewModel.batchInstall(Platform.LINUX) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TinaPrimaryButton(
+                                    text = stringResource(Strings.pkg_manager_install_android),
+                                    onClick = { viewModel.batchInstall(Platform.ANDROID) },
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(TinaSpacing.md)
+                            ) {
+                                TinaDangerButton(
+                                    text = stringResource(Strings.pkg_manager_uninstall_linux),
+                                    onClick = { viewModel.batchUninstall(Platform.LINUX) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TinaDangerButton(
+                                    text = stringResource(Strings.pkg_manager_uninstall_android),
+                                    onClick = { viewModel.batchUninstall(Platform.ANDROID) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                SearchBar(
+                    query = filterState.searchQuery,
+                    onQueryChange = viewModel::updateSearchQuery,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = TinaSpacing.xl, vertical = TinaSpacing.md)
+                )
+
+                if (uiState.isLoading) {
+                    // 显示骨架屏
+                    LazyColumn(
+                        contentPadding = PaddingValues(TinaSpacing.xl),
+                        verticalArrangement = Arrangement.spacedBy(TinaSpacing.lg),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(5) {
+                            PluginCardSkeleton()
+                        }
+                    }
+                } else if (uiState.error != null) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = uiState.error ?: stringResource(Strings.pkg_manager_error_unknown),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(TinaSpacing.xl))
+                            TinaPrimaryButton(
+                                text = stringResource(Strings.pkg_manager_retry),
+                                onClick = viewModel::loadPackages
+                            )
+                        }
+                    }
+                } else if (uiState.filteredPackages.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(Strings.pkg_manager_no_available_packages),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(TinaSpacing.xl),
+                        verticalArrangement = Arrangement.spacedBy(TinaSpacing.lg)
+                    ) {
+                        items(uiState.filteredPackages, key = { it.id }) { pkg ->
+                            PackageCard(
+                                pkg = pkg,
+                                installedMetadata = uiState.installedMetadata[pkg.id],
+                                installState = uiState.installStates[pkg.id] ?: PackageInstallState(),
+                                isSelectionMode = uiState.isSelectionMode,
+                                isSelected = pkg.id in uiState.selectedPackageIds,
+                                onInstallLinux = { viewModel.installPackage(pkg.id, Platform.LINUX) },
+                                onInstallAndroid = { viewModel.installPackage(pkg.id, Platform.ANDROID) },
+                                onUninstallLinux = { viewModel.requestUninstall(pkg.id, Platform.LINUX) },
+                                onUninstallAndroid = { viewModel.requestUninstall(pkg.id, Platform.ANDROID) },
+                                onClick = {
+                                    if (uiState.isSelectionMode) {
+                                        viewModel.togglePackageSelection(pkg.id)
+                                    } else {
+                                        viewModel.showPackageDetails(pkg.id)
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!uiState.isSelectionMode) {
+                                        viewModel.toggleSelectionMode()
+                                        viewModel.togglePackageSelection(pkg.id)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
-    }
-
     } // end else
 
     dialogState?.let { state ->
         when (state) {
+            is PackageDialogState.InstallConfirm -> {
+                InstallConfirmDialog(
+                    packageInfo = state.packageInfo,
+                    platform = state.platform,
+                    plan = state.plan,
+                    onConfirm = { viewModel.confirmInstall(state.packageId, state.platform) },
+                    onDismiss = viewModel::dismissDialog
+                )
+            }
             is PackageDialogState.Installing -> {
                 InstallProgressDialog(
                     packageName = state.packageName,
                     platform = state.platform,
                     event = state.event,
+                    onCancel = viewModel::cancelInstall,
                     onDismiss = {}
                 )
             }
@@ -271,6 +307,20 @@ fun PackageManagerScreen(
                     onDismiss = viewModel::dismissDialog
                 )
             }
+            is PackageDialogState.BatchInstallConfirm -> {
+                BatchPlanConfirmDialog(
+                    title = stringResource(Strings.pkg_manager_batch_install_confirm_title),
+                    message = stringResource(
+                        Strings.pkg_manager_batch_install_confirm_message,
+                        state.packageIds.size,
+                        platformDisplayName(state.platform)
+                    ),
+                    plans = state.plans,
+                    confirmText = stringResource(Strings.pkg_manager_install_confirm_button),
+                    onConfirm = { viewModel.confirmBatchInstall() },
+                    onDismiss = viewModel::dismissDialog
+                )
+            }
             is PackageDialogState.BatchInstalling -> {
                 BatchInstallProgressDialog(
                     currentIndex = state.currentIndex,
@@ -283,7 +333,11 @@ fun PackageManagerScreen(
             is PackageDialogState.BatchInstallComplete -> {
                 TinaInfoDialog(
                     title = stringResource(Strings.pkg_manager_batch_complete_title),
-                    message = stringResource(Strings.pkg_manager_batch_complete_msg, state.totalCount, state.platform.name),
+                    message = stringResource(
+                        Strings.pkg_manager_batch_complete_msg,
+                        state.totalCount,
+                        platformDisplayName(state.platform)
+                    ),
                     confirmText = stringResource(Strings.btn_confirm),
                     onDismiss = viewModel::dismissDialog
                 )
@@ -295,6 +349,19 @@ fun PackageManagerScreen(
                     totalCount = state.totalCount,
                     currentPackageName = state.currentPackageName,
                     event = state.event
+                )
+            }
+            is PackageDialogState.BatchUpdateConfirm -> {
+                BatchPlanConfirmDialog(
+                    title = stringResource(Strings.pkg_manager_batch_update_confirm_title),
+                    message = stringResource(
+                        Strings.pkg_manager_batch_update_confirm_message,
+                        state.updates.size
+                    ),
+                    plans = state.plans,
+                    confirmText = stringResource(Strings.pkg_manager_update_all),
+                    onConfirm = { viewModel.confirmBatchUpdate() },
+                    onDismiss = viewModel::dismissDialog
                 )
             }
             is PackageDialogState.BatchUpdateComplete -> {
@@ -444,7 +511,7 @@ fun PackageCard(
 
                     if (pkg.linux != null) {
                         PlatformRow(
-                            platformLabel = "Linux",
+                            platformLabel = platformDisplayName(Platform.LINUX),
                             platformIcon = "\uD83D\uDC27",
                             state = installState.linux,
                             onInstall = onInstallLinux,
@@ -455,7 +522,7 @@ fun PackageCard(
                     if (pkg.android != null) {
                         Spacer(modifier = Modifier.height(TinaSpacing.md))
                         PlatformRow(
-                            platformLabel = "Android",
+                            platformLabel = platformDisplayName(Platform.ANDROID),
                             platformIcon = "\uD83E\uDD16",
                             state = installState.android,
                             onInstall = onInstallAndroid,
@@ -522,10 +589,144 @@ private fun PlatformRow(
 }
 
 @Composable
+private fun InstallConfirmDialog(
+    packageInfo: GUIPackage,
+    platform: Platform,
+    plan: PackageInstallPlan,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val dependenciesToInstall = plan.packages.filterNot { it.isRoot }
+    TinaAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { TinaDialogTitleText(stringResource(Strings.pkg_manager_install_confirm_title, packageInfo.name)) },
+        text = {
+            TinaDialogContentColumn {
+                TinaDialogMessageCard(
+                    message = stringResource(
+                        Strings.pkg_manager_install_confirm_message,
+                        platformDisplayName(platform),
+                        packageInfo.name
+                    )
+                )
+                if (dependenciesToInstall.isNotEmpty()) {
+                    TinaDialogCard(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.42f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(Strings.pkg_manager_install_confirm_dependencies_title),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        dependenciesToInstall.forEach { dependency ->
+                            Text(
+                                text = "\u2022 " + stringResource(
+                                    Strings.pkg_manager_install_confirm_dependency_item,
+                                    dependency.packageName,
+                                    dependency.version
+                                ),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TinaPrimaryButton(
+                text = stringResource(Strings.pkg_manager_install_confirm_button),
+                onClick = onConfirm
+            )
+        },
+        dismissButton = {
+            TinaTextButton(
+                text = stringResource(Strings.btn_cancel),
+                onClick = onDismiss
+            )
+        }
+    )
+}
+
+@Composable
+private fun BatchPlanConfirmDialog(
+    title: String,
+    message: String,
+    plans: List<PackageInstallPlan>,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val dependenciesToInstall = remember(plans) {
+        collectBatchPlanDependencies(plans)
+    }
+    TinaAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { TinaDialogTitleText(title) },
+        text = {
+            TinaDialogContentColumn {
+                TinaDialogMessageCard(message = message)
+                if (dependenciesToInstall.isNotEmpty()) {
+                    TinaDialogCard(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.42f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(Strings.pkg_manager_install_confirm_dependencies_title),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        dependenciesToInstall.forEach { dependency ->
+                            Text(
+                                text = "\u2022 " + stringResource(
+                                    Strings.pkg_manager_install_confirm_dependency_item,
+                                    dependency.packageName,
+                                    dependency.version
+                                ),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TinaPrimaryButton(
+                text = confirmText,
+                onClick = onConfirm
+            )
+        },
+        dismissButton = {
+            TinaTextButton(
+                text = stringResource(Strings.btn_cancel),
+                onClick = onDismiss
+            )
+        }
+    )
+}
+
+private fun collectBatchPlanDependencies(plans: List<PackageInstallPlan>): List<PackageInstallPlanItem> = plans.asSequence()
+    .flatMap { it.packages.asSequence() }
+    .filterNot { it.isRoot }
+    .filterNot { it.isAlreadyInstalled }
+    .distinctBy { it.packageId }
+    .sortedBy { it.packageName.lowercase() }
+    .toList()
+
+@Composable
+private fun platformDisplayName(platform: Platform): String = when (platform) {
+    Platform.LINUX -> stringResource(Strings.pkg_manager_platform_linux)
+    Platform.ANDROID -> stringResource(Strings.pkg_manager_platform_android)
+}
+
+@Composable
 private fun InstallProgressDialog(
     packageName: String,
     platform: Platform,
     event: InstallProgressEvent,
+    onCancel: () -> Unit,
     onDismiss: () -> Unit
 ) {
     TinaAlertDialog(
@@ -584,6 +785,12 @@ private fun InstallProgressDialog(
                 TinaTextButton(
                     text = stringResource(Strings.btn_close),
                     onClick = onDismiss
+                )
+            } else {
+                // 下载/安装进行中：允许取消（取消协程会触发 OkHttp Call.cancel 立即断开连接）。
+                TinaTextButton(
+                    text = stringResource(Strings.btn_cancel_install),
+                    onClick = onCancel
                 )
             }
         }
@@ -653,7 +860,7 @@ private fun UninstallConfirmDialog(
                 TinaDialogMessageCard(
                     message = stringResource(
                         Strings.pkg_manager_uninstall_message,
-                        platform.name.lowercase(),
+                        platformDisplayName(platform),
                         packageInfo.name
                     )
                 )
@@ -882,7 +1089,7 @@ private fun BatchInstallProgressDialog(
                     message = stringResource(
                         Strings.pkg_manager_batch_install_msg,
                         currentPackageName,
-                        platform.name
+                        platformDisplayName(platform)
                     )
                 )
                 TinaDialogCard(verticalArrangement = Arrangement.spacedBy(8.dp)) {

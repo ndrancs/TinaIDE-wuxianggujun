@@ -247,53 +247,49 @@ class RopeTextBuffer(
         return change != null
     }
 
-    override suspend fun loadFromFile(file: File, charset: Charset): Result<Unit> {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val startNs = System.nanoTime()
-                val text = readFileTextOptimized(file, charset)
+    override suspend fun loadFromFile(file: File, charset: Charset): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val startNs = System.nanoTime()
+            val text = readFileTextOptimized(file, charset)
 
-                lock.write {
-                    rope.setText(text)
-                    lineIndex.rebuild(text)
-                    history.clear()
-                    versionCounter.incrementAndGet()
-                }
-                logSlowLoadIfNeeded(
-                    file = file,
-                    loadedChars = text.length,
-                    durationMs = (System.nanoTime() - startNs) / 1_000_000L
-                )
-                Unit
+            lock.write {
+                rope.setText(text)
+                lineIndex.rebuild(text)
+                history.clear()
+                versionCounter.incrementAndGet()
             }
+            logSlowLoadIfNeeded(
+                file = file,
+                loadedChars = text.length,
+                durationMs = (System.nanoTime() - startNs) / 1_000_000L
+            )
+            Unit
         }
     }
 
-    override suspend fun saveToFile(file: File, charset: Charset): Result<Unit> {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val startNs = System.nanoTime()
-                file.parentFile?.mkdirs()
-                val writtenChars = lock.read {
-                    // 流式写：按 rope 内部 4KB 分片逐块 encode，不再把整份文档先拼成 String。
-                    // 对 50MB 文件可省 100MB 堆分配 + 一次 writeText 的再拷贝。
-                    var total = 0
-                    file.outputStream().use { out ->
-                        out.writer(charset).use { writer ->
-                            rope.forEachChunk { chunk ->
-                                writer.append(chunk)
-                                total += chunk.length
-                            }
+    override suspend fun saveToFile(file: File, charset: Charset): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val startNs = System.nanoTime()
+            file.parentFile?.mkdirs()
+            val writtenChars = lock.read {
+                // 流式写：按 rope 内部 4KB 分片逐块 encode，不再把整份文档先拼成 String。
+                // 对 50MB 文件可省 100MB 堆分配 + 一次 writeText 的再拷贝。
+                var total = 0
+                file.outputStream().use { out ->
+                    out.writer(charset).use { writer ->
+                        rope.forEachChunk { chunk ->
+                            writer.append(chunk)
+                            total += chunk.length
                         }
                     }
-                    total
                 }
-                logSlowSaveIfNeeded(
-                    file = file,
-                    writtenChars = writtenChars,
-                    durationMs = (System.nanoTime() - startNs) / 1_000_000L
-                )
+                total
             }
+            logSlowSaveIfNeeded(
+                file = file,
+                writtenChars = writtenChars,
+                durationMs = (System.nanoTime() - startNs) / 1_000_000L
+            )
         }
     }
 

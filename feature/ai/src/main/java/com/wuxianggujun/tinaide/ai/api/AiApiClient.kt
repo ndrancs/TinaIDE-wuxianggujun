@@ -38,7 +38,7 @@ import timber.log.Timber
  * AI API client.
  *
  * 职责:
- * - 按 [AuthStrategy] 构造 HTTP 请求 (Gateway 走拦截器,BYOK 附加 Bearer 头);
+ * - 按 [AuthStrategy] 构造 HTTP 请求并附加 BYOK Bearer 头;
  * - 执行 streaming / non-streaming 聊天与模型列表请求;
  * - 通过 [AtomicReference] 安全管理可被取消的在途 Call。
  *

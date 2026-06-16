@@ -110,9 +110,7 @@ class CommandsApiModule(
         runtime = null
     }
 
-    internal fun normalizeCommandId(commandId: String?): String? {
-        return commandId?.trim()?.takeIf { it.isNotBlank() }
-    }
+    internal fun normalizeCommandId(commandId: String?): String? = commandId?.trim()?.takeIf { it.isNotBlank() }
 
     internal fun resolveInvocationFile(path: String): File? {
         if (path.isBlank()) return null

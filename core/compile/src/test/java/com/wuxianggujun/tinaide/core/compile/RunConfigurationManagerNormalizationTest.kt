@@ -99,9 +99,7 @@ class RunConfigurationManagerNormalizationTest {
         }
     }
 
-    private fun createTempProjectRoot(): File {
-        return Files.createTempDirectory("run-config-normalization-test").toFile()
-    }
+    private fun createTempProjectRoot(): File = Files.createTempDirectory("run-config-normalization-test").toFile()
 
     private fun writeRunConfig(projectRoot: File, content: String) {
         val file = File(projectRoot, ".tinaide/run_configs.json")
@@ -109,7 +107,5 @@ class RunConfigurationManagerNormalizationTest {
         file.writeText(content)
     }
 
-    private fun readRunConfig(projectRoot: File): String {
-        return File(projectRoot, ".tinaide/run_configs.json").readText()
-    }
+    private fun readRunConfig(projectRoot: File): String = File(projectRoot, ".tinaide/run_configs.json").readText()
 }

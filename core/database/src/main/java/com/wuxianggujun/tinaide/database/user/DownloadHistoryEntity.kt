@@ -29,5 +29,5 @@ data class DownloadHistoryEntity(
     val downloadedAt: String,
 
     @ColumnInfo(name = "synced")
-    val synced: Boolean = true // 是否已同步到服务器
+    val synced: Boolean = true
 )

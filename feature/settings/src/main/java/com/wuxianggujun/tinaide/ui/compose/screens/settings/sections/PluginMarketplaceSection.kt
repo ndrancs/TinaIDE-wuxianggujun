@@ -25,10 +25,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -113,6 +115,7 @@ fun PluginMarketplaceScreen(
             hasUpdate = plugin.pluginId in uiState.updatablePlugins,
             downloadProgress = uiState.downloadingPlugins[plugin.pluginId],
             onInstall = { viewModel.installPlugin(plugin) },
+            onCancel = { viewModel.cancelInstall(plugin.pluginId) },
             onNavigateBack = { viewModel.closePluginDetails() }
         )
         return
@@ -175,6 +178,7 @@ fun PluginMarketplaceScreen(
                         hasMore = uiState.hasMorePages,
                         onLoadMore = { viewModel.loadMore() },
                         onInstall = { viewModel.installPlugin(it) },
+                        onCancel = { viewModel.cancelInstall(it.pluginId) },
                         onPluginClick = { viewModel.showPluginDetails(it) }
                     )
                 }
@@ -337,6 +341,7 @@ private fun PluginList(
     hasMore: Boolean,
     onLoadMore: () -> Unit,
     onInstall: (PluginSummary) -> Unit,
+    onCancel: (PluginSummary) -> Unit,
     onPluginClick: (PluginSummary) -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -376,6 +381,7 @@ private fun PluginList(
                 hasUpdate = hasUpdate,
                 downloadProgress = downloadProgress,
                 onInstall = { onInstall(plugin) },
+                onCancel = { onCancel(plugin) },
                 onClick = { onPluginClick(plugin) }
             )
         }
@@ -403,6 +409,7 @@ private fun PluginCard(
     hasUpdate: Boolean,
     downloadProgress: Float?,
     onInstall: () -> Unit,
+    onCancel: () -> Unit,
     onClick: () -> Unit
 ) {
     val installActionSpec = PluginMarketplaceSectionSupport.resolveInstallActionSpec(
@@ -497,18 +504,28 @@ private fun PluginCard(
 
                 when (installActionSpec) {
                     is PluginMarketplaceInstallActionSpec.Downloading -> {
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = stringResource(
-                                    Strings.plugin_marketplace_download_progress,
-                                    installActionSpec.progressPercent
-                                ),
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                            LinearProgressIndicator(
-                                progress = { downloadProgress ?: 0f },
-                                modifier = Modifier.width(80.dp)
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = stringResource(
+                                        Strings.plugin_marketplace_download_progress,
+                                        installActionSpec.progressPercent
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                                LinearProgressIndicator(
+                                    progress = { downloadProgress ?: 0f },
+                                    modifier = Modifier.width(80.dp)
+                                )
+                            }
+                            // 取消下载：取消协程会触发 OkHttp Call.cancel 立即断开连接。
+                            IconButton(onClick = onCancel) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = stringResource(Strings.btn_cancel_install),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                     PluginMarketplaceInstallActionSpec.Installed -> {
@@ -568,6 +585,7 @@ private fun PluginDetailScreen(
     hasUpdate: Boolean,
     downloadProgress: Float?,
     onInstall: () -> Unit,
+    onCancel: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val installActionSpec = PluginMarketplaceSectionSupport.resolveInstallActionSpec(
@@ -619,6 +637,21 @@ private fun PluginDetailScreen(
                                         progress = { downloadProgress ?: 0f },
                                         modifier = Modifier.fillMaxWidth()
                                     )
+                                    Spacer(modifier = Modifier.height(TinaSpacing.md))
+                                    // 取消下载：取消协程会触发 OkHttp Call.cancel 立即断开连接。
+                                    OutlinedButton(
+                                        onClick = onCancel,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(TinaShapes.ButtonCorner)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(TinaSpacing.md))
+                                        Text(stringResource(Strings.btn_cancel_install))
+                                    }
                                 }
                             }
                             PluginMarketplaceInstallActionSpec.Installed -> {

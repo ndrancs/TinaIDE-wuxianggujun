@@ -15,14 +15,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gyf.immersionbar.ktx.immersionBar
-import com.wuxianggujun.tinaide.core.i18n.Drawables
 import com.wuxianggujun.tinaide.core.IAppNavigator
+import com.wuxianggujun.tinaide.core.i18n.Drawables
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.proot.ToolchainConfig
 import com.wuxianggujun.tinaide.ui.compose.components.TinaConfirmDialog
 import com.wuxianggujun.tinaide.ui.theme.TinaIDETheme
 import com.wuxianggujun.tinaide.ui.workspace.components.*
 import com.wuxianggujun.tinaide.ui.workspace.model.*
-import com.wuxianggujun.tinaide.core.i18n.Strings
 import org.koin.androidx.viewmodel.ext.android.viewModel as koinViewModel
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
@@ -35,11 +35,13 @@ private const val PACKAGE_LINUX_ROOTFS = "linux-rootfs"
  *
  * 使用 MVVM 架构，状态管理逻辑在 ViewModel 中，
  * UI 组件拆分到 components 包中，提高代码可维护性。
- * 
+ *
  * 在环境配置步骤中安装 Linux 依赖包（rootfs 解压和工具链安装）
  * Linux 环境由自研 Linux 发行版管理器安装和管理。
  */
-class DependencyInstallActivity : ComponentActivity(), KoinComponent {
+class DependencyInstallActivity :
+    ComponentActivity(),
+    KoinComponent {
 
     companion object {
         const val EXTRA_TOOLCHAIN_CONFIG = "toolchain_config"
@@ -59,12 +61,10 @@ class DependencyInstallActivity : ComponentActivity(), KoinComponent {
             config: ToolchainConfig? = null,
             preferredLlvmMajorVersion: Int? = null,
             installLinuxEnvironment: Boolean = true
-        ): Intent {
-            return Intent(context, DependencyInstallActivity::class.java).apply {
-                config?.let { putExtra(EXTRA_TOOLCHAIN_CONFIG, it) }
-                putExtra(EXTRA_PREFERRED_LLVM_MAJOR_VERSION, preferredLlvmMajorVersion ?: LLVM_MAJOR_VERSION_AUTO)
-                putExtra(EXTRA_INSTALL_LINUX_ENVIRONMENT, installLinuxEnvironment)
-            }
+        ): Intent = Intent(context, DependencyInstallActivity::class.java).apply {
+            config?.let { putExtra(EXTRA_TOOLCHAIN_CONFIG, it) }
+            putExtra(EXTRA_PREFERRED_LLVM_MAJOR_VERSION, preferredLlvmMajorVersion ?: LLVM_MAJOR_VERSION_AUTO)
+            putExtra(EXTRA_INSTALL_LINUX_ENVIRONMENT, installLinuxEnvironment)
         }
     }
 
@@ -146,10 +146,10 @@ fun DependencyInstallScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
+
     // 取消安装确认对话框状态
     var showCancelDialog by remember { mutableStateOf(false) }
-    
+
     // 处理一次性事件
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->

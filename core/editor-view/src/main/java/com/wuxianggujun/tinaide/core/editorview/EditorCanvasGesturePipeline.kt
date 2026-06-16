@@ -2,11 +2,11 @@ package com.wuxianggujun.tinaide.core.editorview
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.isCtrlPressed
-import androidx.compose.ui.input.pointer.PointerEventPass
 
 internal class EditorCanvasGesturePipeline(
     private val gestureCoordinator: EditorGestureCoordinator,
@@ -74,9 +74,7 @@ internal class EditorCanvasGesturePipeline(
         gestureCoordinator.onCursorDragStart(position)
     }
 
-    fun onCursorDrag(position: Offset): Boolean {
-        return gestureCoordinator.onCursorDrag(position)
-    }
+    fun onCursorDrag(position: Offset): Boolean = gestureCoordinator.onCursorDrag(position)
 
     fun onCursorDragEnd() {
         gestureCoordinator.onCursorDragEnd()
@@ -90,9 +88,7 @@ internal class EditorCanvasGesturePipeline(
         gestureCoordinator.onSelectionDragStart(position)
     }
 
-    fun onSelectionDrag(position: Offset): Boolean {
-        return gestureCoordinator.onSelectionDrag(position)
-    }
+    fun onSelectionDrag(position: Offset): Boolean = gestureCoordinator.onSelectionDrag(position)
 
     fun onSelectionDragEnd() {
         gestureCoordinator.onSelectionDragEnd()

@@ -1,6 +1,7 @@
 package com.wuxianggujun.tinaide.core.editorview
 
 import com.google.common.truth.Truth.assertThat
+import com.wuxianggujun.tinaide.core.textengine.RopeTextBuffer
 import org.junit.Test
 
 class EditorInputConnectionUtilsTest {
@@ -39,6 +40,36 @@ class EditorInputConnectionUtilsTest {
 
         assertThat(mapped.first).isEqualTo(10_000)
         assertThat(mapped.second).isEqualTo(10_000)
+    }
+
+    @Test
+    fun extractedTextSelectionOffset_shouldReturnWindowRelativeOffset() {
+        val offset = extractedTextSelectionOffset(
+            documentOffset = 1_260,
+            windowStartOffset = 1_000,
+            windowLength = 512
+        )
+
+        assertThat(offset).isEqualTo(260)
+    }
+
+    @Test
+    fun isFullExtractedTextWindowSelection_shouldDetectWindowWideSelectionOnlyWhenWindowIsPartial() {
+        val partialWindow = ImeExtractedTextWindow(
+            startOffset = 1_000,
+            endOffset = 1_512,
+            documentLength = 10_000,
+            textVersion = 7L
+        )
+        val fullDocumentWindow = partialWindow.copy(
+            startOffset = 0,
+            endOffset = 10_000
+        )
+
+        assertThat(isFullExtractedTextWindowSelection(0, 512, partialWindow)).isTrue()
+        assertThat(isFullExtractedTextWindowSelection(512, 0, partialWindow)).isTrue()
+        assertThat(isFullExtractedTextWindowSelection(1, 512, partialWindow)).isFalse()
+        assertThat(isFullExtractedTextWindowSelection(0, 10_000, fullDocumentWindow)).isFalse()
     }
 
     @Test
@@ -96,5 +127,38 @@ class EditorInputConnectionUtilsTest {
         assertThat(composing).isNotNull()
         assertThat(composing!!.start).isEqualTo(20)
         assertThat(composing.end).isEqualTo(24)
+    }
+
+    @Test
+    fun imeDeleteSurroundingCharRange_shouldClampAroundCursor() {
+        val range = imeDeleteSurroundingCharRange(
+            cursorOffset = 2,
+            beforeLength = 5,
+            afterLength = 2,
+            documentLength = 6
+        )
+
+        assertThat(range).isEqualTo(ImeDeleteRange(start = 0, end = 4))
+    }
+
+    @Test
+    fun imeDeleteSurroundingCodePointRange_shouldKeepEmojiSurrogatePairTogether() {
+        val buffer = RopeTextBuffer().apply { insert(0, "a😀b") }
+
+        val beforeRange = imeDeleteSurroundingCodePointRange(
+            textBuffer = buffer,
+            cursorOffset = 3,
+            beforeLength = 1,
+            afterLength = 0
+        )
+        val afterRange = imeDeleteSurroundingCodePointRange(
+            textBuffer = buffer,
+            cursorOffset = 1,
+            beforeLength = 0,
+            afterLength = 1
+        )
+
+        assertThat(beforeRange).isEqualTo(ImeDeleteRange(start = 1, end = 3))
+        assertThat(afterRange).isEqualTo(ImeDeleteRange(start = 1, end = 3))
     }
 }

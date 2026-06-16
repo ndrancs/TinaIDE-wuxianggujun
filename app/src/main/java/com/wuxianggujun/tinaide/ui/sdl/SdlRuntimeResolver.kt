@@ -7,6 +7,8 @@ import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.packages.InstalledPackagePathResolver
 import com.wuxianggujun.tinaide.core.packages.model.Platform
 import com.wuxianggujun.tinaide.core.packages.store.LocalInstallStateStore
+import com.wuxianggujun.tinaide.ui.runtime.AndroidSystemLibraries
+import com.wuxianggujun.tinaide.ui.runtime.NativeLibraryDependencyHints
 import java.io.File
 import java.io.IOException
 import timber.log.Timber
@@ -27,21 +29,9 @@ object SdlRuntimeResolver {
     private val sdl2NamePattern = Regex("""^libSDL2\.so(?:\..+)?$""")
     private val sdl3NamePattern = Regex("""^libSDL3\.so(?:\..+)?$""")
 
-    private val systemLibraryNames = setOf(
-        "libc.so",
-        "libm.so",
-        "libdl.so",
-        "liblog.so",
-        "libandroid.so",
-        "libEGL.so",
-        "libGLESv1_CM.so",
-        "libGLESv2.so",
-        "libGLESv3.so",
-        "libOpenSLES.so",
-        "libjnigraphics.so",
-        "libz.so",
-        "libc++_shared.so",
-    )
+    // OS 提供的 NDK 系统库统一走 AndroidSystemLibraries.ndkProvided，
+    // 额外加上 libc++_shared.so：RUN 时由 sysroot 经 LD_LIBRARY_PATH 注入，无需预加载。
+    private val systemLibraryNames = AndroidSystemLibraries.ndkProvided + "libc++_shared.so"
 
     data class SdlRuntimeSpec(
         val requiredSdlMajor: Int,
@@ -71,7 +61,16 @@ object SdlRuntimeResolver {
         val packageVersion: String? = null,
     )
 
-    fun resolve(context: Context, mainLibraryPath: String): ResolveResult {
+    internal data class PreloadResolution(
+        val libraryPaths: List<String>,
+        val missingLibraries: List<String>
+    )
+
+    fun resolve(
+        context: Context,
+        mainLibraryPath: String,
+        extraRuntimeLibDirs: List<File> = emptyList(),
+    ): ResolveResult {
         if (mainLibraryPath.isBlank()) {
             return ResolveResult.Error(Strings.sdl_runtime_error_main_library_missing.strOr(context))
         }
@@ -87,6 +86,9 @@ object SdlRuntimeResolver {
         val packagePaths = InstalledPackagePathResolver.resolve(
             context = context.applicationContext,
             projectRoot = projectRoot
+        )
+        val configuredRuntimeDirs = normalizeRuntimeDirs(
+            extraRuntimeLibDirs + packagePaths.runtimeLibDirs
         )
 
         val neededLibraries = try {
@@ -118,7 +120,7 @@ object SdlRuntimeResolver {
         val selectedSdlLibrary =
             selectSdlLibraryFromManagedPackages(managedPackages, requiredSdlMajor)
                 ?: run {
-                    val runtimeDirs = packagePaths.runtimeLibDirs
+                    val runtimeDirs = configuredRuntimeDirs
                         .filter { it.isDirectory }
                     selectSdlLibraryFromRuntimeDirs(runtimeDirs, requiredSdlMajor)
                 }
@@ -131,18 +133,27 @@ object SdlRuntimeResolver {
                 )
 
         val runtimeDirs = linkedSetOf<File>().apply {
-            addAll(packagePaths.runtimeLibDirs.filter { it.isDirectory })
+            addAll(configuredRuntimeDirs.filter { it.isDirectory })
             addAll(selectedSdlLibrary.runtimeLibDirs)
             selectedSdlLibrary.libraryFile.parentFile?.let { add(it) }
         }.toList()
 
         val runtimeIndex = buildRuntimeLibraryIndex(runtimeDirs)
-        val preloadLibraries = resolvePreloadLibraries(
+        val preloadResolution = resolvePreloadLibraries(
             runtimeIndex = runtimeIndex,
             neededLibraries = neededLibraries,
             mainLibrary = mainLibrary,
             sdlLibrary = selectedSdlLibrary.libraryFile
         )
+        if (preloadResolution.missingLibraries.isNotEmpty()) {
+            return ResolveResult.Error(
+                NativeLibraryDependencyHints.buildMissingLibrariesMessage(
+                    context = context,
+                    missingLibraries = preloadResolution.missingLibraries
+                )
+            )
+        }
+        val preloadLibraries = preloadResolution.libraryPaths
 
         val packageTag = if (selectedSdlLibrary.packageId.isNullOrBlank()) {
             "external-runtime-scan"
@@ -340,6 +351,11 @@ object SdlRuntimeResolver {
         }
     }
 
+    private fun normalizeRuntimeDirs(dirs: List<File>): List<File> = dirs.asSequence()
+        .map { dir -> runCatching { dir.canonicalFile }.getOrDefault(dir.absoluteFile) }
+        .distinctBy { it.absolutePath }
+        .toList()
+
     private fun hasAnySharedLibrary(dir: File): Boolean = dir.listFiles { file ->
         file.isFile && file.name.contains(".so")
     }?.isNotEmpty() == true
@@ -400,13 +416,14 @@ object SdlRuntimeResolver {
         return index
     }
 
-    private fun resolvePreloadLibraries(
+    internal fun resolvePreloadLibraries(
         runtimeIndex: Map<String, File>,
         neededLibraries: Set<String>,
         mainLibrary: File,
         sdlLibrary: File,
-    ): List<String> {
+    ): PreloadResolution {
         val resolved = linkedSetOf<String>()
+        val missing = linkedSetOf<String>()
         neededLibraries.sorted().forEach { needed ->
             if (needed == mainLibrary.name || needed == sdlLibrary.name) return@forEach
 
@@ -417,7 +434,10 @@ object SdlRuntimeResolver {
 
             val resolvedFile = runtimeIndex[needed]
                 ?: canonical?.let { runtimeIndex[it] }
-                ?: return@forEach
+                ?: run {
+                    missing += needed
+                    return@forEach
+                }
 
             val absolutePath = resolvedFile.absolutePath
             if (absolutePath == mainLibrary.absolutePath || absolutePath == sdlLibrary.absolutePath) {
@@ -425,7 +445,10 @@ object SdlRuntimeResolver {
             }
             resolved += absolutePath
         }
-        return resolved.toList()
+        return PreloadResolution(
+            libraryPaths = resolved.toList(),
+            missingLibraries = missing.toList()
+        )
     }
 
     @Throws(IOException::class)

@@ -44,15 +44,13 @@ class FeedbackRepository(
             is ApiResult.NetworkError -> FeedbackResult.NetworkError(result.message)
         }
     }
-    
-    private fun collectDeviceInfo(): FeedbackDeviceInfo {
-        return FeedbackDeviceInfo(
-            model = Build.MODEL,
-            brand = Build.BRAND,
-            androidVersion = Build.VERSION.RELEASE,
-            appVersion = DeviceInfoProvider.versionName,
-            abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown",
-            sdkInt = Build.VERSION.SDK_INT
-        )
-    }
+
+    private fun collectDeviceInfo(): FeedbackDeviceInfo = FeedbackDeviceInfo(
+        model = Build.MODEL,
+        brand = Build.BRAND,
+        androidVersion = Build.VERSION.RELEASE,
+        appVersion = DeviceInfoProvider.versionName,
+        abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown",
+        sdkInt = Build.VERSION.SDK_INT
+    )
 }

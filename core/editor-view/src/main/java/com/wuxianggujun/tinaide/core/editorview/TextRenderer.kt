@@ -6,9 +6,7 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import com.wuxianggujun.tinaide.core.textengine.TextChange
-import com.wuxianggujun.tinaide.core.textengine.TextScanKernel
 import com.wuxianggujun.tinaide.core.treesitter.HighlightLineSegment
-import com.wuxianggujun.tinaide.core.treesitter.HighlightType
 import java.util.LinkedHashMap
 import timber.log.Timber
 
@@ -59,6 +57,7 @@ internal class TextRenderer {
 
     private companion object {
         private const val DEFAULT_MAX_CACHE_SIZE = 512
+
         // 预取窗口调到 200 行：与 IncrementalTreeSitterHighlightState 的 lineCache 预热配合，
         // 快速滚动时远距离行也能在到达可见区之前就命中缓存，消除"滚动追指"。
         private const val HIGHLIGHT_CACHE_MARGIN_LINES = 200
@@ -68,11 +67,13 @@ internal class TextRenderer {
     private val lineCache = LinkedHashMap<Int, CachedLine>(256, 0.75f, true)
     private var cacheVersion: Long = -1L
     private var visibleHighlightCacheKey: VisibleHighlightCacheKey? = null
+
     // 复用同一个 HashMap：避免每帧 cache miss 都分配新 map 导致 GC stall。
     // 使失效路径只清空 key（不动 map 内容），避免非主线程失效时与主线程 paint 的迭代发生 CME。
     // 下一次 main-thread resolve 命中 key=null 会先 clear 再填充，paint 此时还未开始迭代新结果。
     private val visibleHighlightCache: HashMap<Int, List<LineHighlightSegment>> = HashMap(256)
     private var visibleSemanticCacheKey: VisibleSemanticCacheKey? = null
+
     // 对称复用：与 visibleHighlightCache 同样的策略，失效路径只清 key 不动 map 内容。
     private val visibleSemanticCache: HashMap<Int, List<LineSemanticSegment>> = HashMap(128)
     private val reusableSyntaxOverlays = ArrayList<TextRenderOverlay>(32)
@@ -297,17 +298,17 @@ internal class TextRenderer {
                                 canvas = canvas.nativeCanvas,
                                 lineText = lookup.text,
                                 startColumn = run.startColumn,
-                            endColumn = run.endColumn,
-                            textStartX = baseX,
-                            baselineY = baselineY,
-                            paint = textPaint,
-                            prefixAdvance = ::prefixAdvance,
-                            tabColumns = tabColumns
-                        )
-                    } else {
-                        drawClampedTextRange(
-                            canvas = canvas.nativeCanvas,
-                            lineText = lookup.text,
+                                endColumn = run.endColumn,
+                                textStartX = baseX,
+                                baselineY = baselineY,
+                                paint = textPaint,
+                                prefixAdvance = ::prefixAdvance,
+                                tabColumns = tabColumns
+                            )
+                        } else {
+                            drawClampedTextRange(
+                                canvas = canvas.nativeCanvas,
+                                lineText = lookup.text,
                                 startColumn = run.startColumn,
                                 endColumn = run.endColumn,
                                 fallbackX = xPos,
@@ -351,13 +352,19 @@ internal class TextRenderer {
                                 foldEndLineText.length
                             )
                         )
-                    } else ""
+                    } else {
+                        ""
+                    }
                     val foldBracketColor = if (rainbowEnabled) {
                         val lastOpen = bracketInfos.lastOrNull { it.isOpen }
                         if (lastOpen != null) {
                             rainbowColorsArgb[lastOpen.depth % rainbowColors.size]
-                        } else defaultColor
-                    } else defaultColor
+                        } else {
+                            defaultColor
+                        }
+                    } else {
+                        defaultColor
+                    }
                     drawFoldPlaceholder(
                         nativeCanvas = canvas.nativeCanvas,
                         screenX = screenX,
@@ -411,8 +418,13 @@ internal class TextRenderer {
 
         foldBgPaint.color = scheme.foldPlaceholderBackground.toArgb()
         nativeCanvas.drawRoundRect(
-            bgLeft, bgTop, bgRight, bgBottom,
-            cornerRadius, cornerRadius, foldBgPaint
+            bgLeft,
+            bgTop,
+            bgRight,
+            bgBottom,
+            cornerRadius,
+            cornerRadius,
+            foldBgPaint
         )
 
         val savedColor = textPaint.color
@@ -534,10 +546,8 @@ internal class TextRenderer {
         }
     }
 
-    fun cacheSize(): Int {
-        return synchronized(cacheLock) {
-            lineCache.size
-        }
+    fun cacheSize(): Int = synchronized(cacheLock) {
+        lineCache.size
     }
 
     internal fun resolveDrawHighlightSegmentsForVisibleWindow(
@@ -736,9 +746,7 @@ internal class TextRenderer {
         }
     }
 
-    private fun resolveMaxCacheSize(state: EditorState): Int {
-        return state.config.lineRenderCacheSize.coerceIn(128, 8192)
-    }
+    private fun resolveMaxCacheSize(state: EditorState): Int = state.config.lineRenderCacheSize.coerceIn(128, 8192)
 }
 
 internal data class TextRenderOverlay(

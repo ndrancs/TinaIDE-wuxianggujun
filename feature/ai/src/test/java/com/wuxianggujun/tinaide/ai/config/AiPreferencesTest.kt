@@ -1,7 +1,6 @@
 package com.wuxianggujun.tinaide.ai.config
 
 import com.google.common.truth.Truth.assertThat
-import com.wuxianggujun.tinaide.core.config.ai.AiAccessMode
 import com.wuxianggujun.tinaide.core.config.ai.AiConfig
 import com.wuxianggujun.tinaide.core.config.ai.AiGenerationSettings
 import com.wuxianggujun.tinaide.core.config.ai.AiNetworkSettings
@@ -30,13 +29,23 @@ class AiPreferencesTest {
     }
 
     @Test
-    fun `default load persists open source byok mode and default values`() {
+    fun `default load returns default values without legacy mode key`() {
         val preferences = AiPreferences(context)
 
         assertThat(preferences.getCurrentConfig()).isEqualTo(AiConfig())
-        assertThat(rawPrefs().getString("access_mode", null))
-            .isEqualTo(AiAccessMode.CUSTOM_BYOK.name)
+        assertThat(rawPrefs().contains("access_mode")).isFalse()
         assertThat(rawPrefs().contains("active_channel_id")).isFalse()
+    }
+
+    @Test
+    fun `load removes legacy mode key`() {
+        rawPrefs().edit()
+            .putString("access_mode", "OLD_MODE")
+            .commit()
+
+        AiPreferences(context)
+
+        assertThat(rawPrefs().contains("access_mode")).isFalse()
     }
 
     @Test
@@ -59,7 +68,6 @@ class AiPreferencesTest {
     fun `save and load config round trip all groups`() {
         val preferences = AiPreferences(context)
         val config = AiConfig(
-            accessMode = AiAccessMode.CUSTOM_BYOK,
             activeChannelId = "channel-1",
             generation = AiGenerationSettings(model = "model-a", maxTokens = 77, temperature = 0.3f, imageDetail = "high"),
             tools = AiToolSettings(enableTools = true, allowDangerousToolsAuto = true),

@@ -23,7 +23,6 @@ import com.wuxianggujun.tinaide.ai.tools.executor.ToolCallbacksFactory
 import com.wuxianggujun.tinaide.ai.tools.executor.diagnostics.DiagnosticsCallbacks
 import com.wuxianggujun.tinaide.ai.tools.executor.editor.EditorToolCallbacks
 import com.wuxianggujun.tinaide.ai.tools.executor.execution.ExecutionCallbacks
-import com.wuxianggujun.tinaide.core.config.ai.AiAccessMode
 import com.wuxianggujun.tinaide.core.config.ai.AiConfig
 import com.wuxianggujun.tinaide.core.i18n.R
 import com.wuxianggujun.tinaide.core.network.ApiResult
@@ -512,7 +511,7 @@ class AiChatViewModel(
         // 监听配置变化:
         // - `_config` 订阅所有字段（UI 要用）
         // - `apiClient` 只在 "会影响 HTTP 路径" 的字段变化时重建:
-        //   accessMode / activeChannelId。Prompt、网络超时、思考预算等不影响 client 构造,
+        //   activeChannelId 或激活渠道内容。Prompt、网络超时、思考预算等不影响 client 构造,
         //   通过 distinctUntilChanged 过滤,避免流式过程被无关变更打断。
         viewModelScope.launch {
             aiPreferences.configFlow.collect { config ->
@@ -521,10 +520,16 @@ class AiChatViewModel(
         }
         viewModelScope.launch {
             aiPreferences.configFlow
-                .distinctUntilChanged { old, new ->
-                    old.accessMode == new.accessMode && old.activeChannelId == new.activeChannelId
+                .combine(channelRepository.channelsFlow) { config, channels ->
+                    config to channels.firstOrNull { it.id == config.activeChannelId }
                 }
-                .collect { config ->
+                .distinctUntilChanged { old, new ->
+                    val (oldConfig, oldChannel) = old
+                    val (newConfig, newChannel) = new
+                    oldConfig.activeChannelId == newConfig.activeChannelId &&
+                        oldChannel?.updatedAt == newChannel?.updatedAt
+                }
+                .collect { (config, _) ->
                     apiClient = buildApiClient(config)
                     _apiClientReady.value = true
                 }
@@ -572,23 +577,20 @@ class AiChatViewModel(
     }
 
     private suspend fun buildApiClient(config: AiConfig): AiApiClient? {
-        return when (config.accessMode) {
-            AiAccessMode.TINA_GATEWAY -> null
-            AiAccessMode.CUSTOM_BYOK -> {
-                // 开源版直接使用用户配置的 BYOK 渠道，不再做会员门禁。
-                val channelId = config.activeChannelId ?: return null
-                val channel = channelRepository.getById(channelId) ?: return null
-                val apiKey = channelRepository.getApiKey(channelId)
-                channelRepository.markUsed(channelId)
-                AiApiClient(
-                    config = config.copy(
-                        generation = config.generation.copy(model = channel.model),
-                    ),
-                    endpoint = channel.baseUrl,
-                    auth = AuthStrategy.Bearer(apiKey),
-                )
-            }
-        }
+        val channelId = config.activeChannelId ?: return null
+        val channel = channelRepository.getById(channelId) ?: return null
+        val apiKey = channelRepository.getApiKey(channelId)
+        channelRepository.markUsed(channelId)
+        val generation = config.generation.copy(
+            model = config.generation.model.ifBlank {
+                channel.provider.defaultModels.firstOrNull().orEmpty()
+            },
+        )
+        return AiApiClient(
+            config = config.copy(generation = generation),
+            endpoint = channel.baseUrl,
+            auth = AuthStrategy.Bearer(apiKey),
+        )
     }
 
     // ===== 发送消息 =====
@@ -1202,13 +1204,12 @@ class AiChatViewModel(
      *
      * 集中到一处,避免 sendMessage / sendImagesMessage / retryLastMessage 等处复制分支。
      */
-    private suspend fun resolveApiClientBlockerMessage(cfg: AiConfig?): String = when (cfg?.accessMode) {
-        AiAccessMode.TINA_GATEWAY -> context.getString(R.string.ai_error_gateway_unavailable)
-        AiAccessMode.CUSTOM_BYOK -> when {
+    private suspend fun resolveApiClientBlockerMessage(cfg: AiConfig?): String = when {
+        cfg == null -> context.getString(R.string.ai_error_configure_settings)
+        else -> when {
             cfg.activeChannelId.isNullOrBlank() -> context.getString(R.string.ai_error_no_active_channel)
             else -> context.getString(R.string.ai_error_configure_api_key)
         }
-        null -> context.getString(R.string.ai_error_configure_settings)
     }
 }
 

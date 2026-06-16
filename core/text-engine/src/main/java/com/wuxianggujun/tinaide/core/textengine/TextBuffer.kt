@@ -42,4 +42,3 @@ interface TextBuffer {
     suspend fun loadFromFile(file: File, charset: Charset = Charsets.UTF_8): Result<Unit>
     suspend fun saveToFile(file: File, charset: Charset = Charsets.UTF_8): Result<Unit>
 }
-

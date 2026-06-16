@@ -1,9 +1,11 @@
 package com.wuxianggujun.tinaide.core.debug
 
 import android.content.Context
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
 import com.wuxianggujun.tinaide.core.proot.ToolchainPathResolver
-import kotlinx.coroutines.CompletableDeferred
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,9 +19,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.File
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
 
 /**
  * 调试会话服务（LLDB + PRoot）
@@ -54,6 +53,7 @@ class DebugSessionService(
     private var debugger: PRootDebugger? = null
     private var sessionId: String? = null
     private var isFirstStop: Boolean = true
+
     @Volatile private var breakpointSyncPending: Boolean = false
 
     private val stateRefreshMutex = Mutex()
@@ -666,4 +666,3 @@ sealed class DebugEvent {
     data class Error(val message: String) : DebugEvent()
     data class OutputReceived(val text: String, val isStderr: Boolean = false) : DebugEvent()
 }
-

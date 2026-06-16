@@ -104,9 +104,7 @@ class PRootClangdConnectionProvider(
         }
     }
 
-    private fun shellEscape(value: String): String {
-        return "'" + value.replace("'", "'\\''") + "'"
-    }
+    private fun shellEscape(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 
     override val inputStream: InputStream
         get() = requireNotNull(process) { "clangd process not started" }.stdout

@@ -189,7 +189,7 @@ class EditorApiModule : PluginApiModule {
             }
         }
 
-        val result = AtomicReference<Any?>(UNSET_RESULT)
+        val result = AtomicReference<Any?>(UnsetResult)
         val latch = CountDownLatch(1)
         if (!mainHandler.post {
                 try {
@@ -213,7 +213,7 @@ class EditorApiModule : PluginApiModule {
             } else {
                 @Suppress("UNCHECKED_CAST")
                 val value = result.get()
-                if (value === UNSET_RESULT) defaultValue else value as T
+                if (value === UnsetResult) defaultValue else value as T
             }
         } catch (error: InterruptedException) {
             Thread.currentThread().interrupt()
@@ -244,5 +244,5 @@ class EditorApiModule : PluginApiModule {
         setField(-2, "cursor")
     }
 
-    private object UNSET_RESULT
+    private object UnsetResult
 }

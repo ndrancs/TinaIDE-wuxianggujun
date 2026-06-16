@@ -11,4 +11,3 @@ object PluginTypes {
     const val LSP = "lsp"
     const val SYSTEM = "system"
 }
-

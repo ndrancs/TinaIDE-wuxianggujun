@@ -118,14 +118,12 @@ object ApkKeyStoreManager {
         )
     }
 
-    private fun queryDisplayName(context: Context, uri: Uri): String? {
-        return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (cursor.moveToFirst() && nameIndex >= 0) {
-                cursor.getString(nameIndex)
-            } else {
-                null
-            }
+    private fun queryDisplayName(context: Context, uri: Uri): String? = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (cursor.moveToFirst() && nameIndex >= 0) {
+            cursor.getString(nameIndex)
+        } else {
+            null
         }
     }
 
@@ -134,21 +132,17 @@ object ApkKeyStoreManager {
         organizationUnit: String,
         organization: String,
         countryCode: String
-    ): String {
-        return listOf(
-            "CN=${escapeDnValue(commonName)}",
-            "OU=${escapeDnValue(organizationUnit)}",
-            "O=${escapeDnValue(organization)}",
-            "C=${escapeDnValue(countryCode)}"
-        ).joinToString(",")
-    }
+    ): String = listOf(
+        "CN=${escapeDnValue(commonName)}",
+        "OU=${escapeDnValue(organizationUnit)}",
+        "O=${escapeDnValue(organization)}",
+        "C=${escapeDnValue(countryCode)}"
+    ).joinToString(",")
 
-    private fun escapeDnValue(value: String): String {
-        return buildString(value.length) {
-            value.trim().forEach { char ->
-                if (char in ",+\"\\<>;=") append('\\')
-                append(char)
-            }
+    private fun escapeDnValue(value: String): String = buildString(value.length) {
+        value.trim().forEach { char ->
+            if (char in ",+\"\\<>;=") append('\\')
+            append(char)
         }
     }
 
@@ -167,9 +161,7 @@ object ApkKeyStoreManager {
         return sanitized.ifBlank { "apk-signing-key.$DEFAULT_EXTENSION" }
     }
 
-    private fun ensureExtension(fileName: String): String {
-        return if ('.' in fileName) fileName else "$fileName.$DEFAULT_EXTENSION"
-    }
+    private fun ensureExtension(fileName: String): String = if ('.' in fileName) fileName else "$fileName.$DEFAULT_EXTENSION"
 
     private fun uniqueFile(dir: File, fileName: String): File {
         var candidate = File(dir, fileName)

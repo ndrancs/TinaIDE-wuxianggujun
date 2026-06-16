@@ -85,15 +85,11 @@ internal object TreeSitterQueryLoader {
             }
     }
 
-    private fun readAssetOrNull(context: Context, path: String): String? {
-        return try {
-            context.assets.open(path).bufferedReader().use { it.readText() }
-        } catch (_: IOException) {
-            null
-        }
+    private fun readAssetOrNull(context: Context, path: String): String? = try {
+        context.assets.open(path).bufferedReader().use { it.readText() }
+    } catch (_: IOException) {
+        null
     }
 
-    private fun readAssetOrEmpty(context: Context, path: String): String {
-        return readAssetOrNull(context, path) ?: ""
-    }
+    private fun readAssetOrEmpty(context: Context, path: String): String = readAssetOrNull(context, path) ?: ""
 }

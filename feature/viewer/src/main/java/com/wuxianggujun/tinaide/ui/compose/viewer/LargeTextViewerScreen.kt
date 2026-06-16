@@ -26,13 +26,14 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
@@ -42,7 +43,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import com.wuxianggujun.tinaide.core.i18n.Strings
 
 private class LargeTextPager(
     private val file: File
@@ -288,4 +288,3 @@ fun LargeTextViewerScreen(
         }
     }
 }
-

@@ -1,7 +1,7 @@
 package com.wuxianggujun.tinaide.storage
 
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * 纯文件系统操作的可清理助手，抽离自 [StorageCleanupManager] 以便脱离 Android Context 做单测。

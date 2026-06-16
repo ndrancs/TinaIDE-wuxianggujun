@@ -177,22 +177,18 @@ class PRootGuestToolchainInstaller(
     private suspend fun packageExists(
         packageManager: RootfsPackageManager,
         packageName: String,
-    ): Boolean {
-        return GuestSystemPackageManager.packageExists(
-            linuxEnvironment = prootEnvironment,
-            packageManager = packageManager,
-            packageName = packageName,
-        )
-    }
+    ): Boolean = GuestSystemPackageManager.packageExists(
+        linuxEnvironment = prootEnvironment,
+        packageManager = packageManager,
+        packageName = packageName,
+    )
 
-    private suspend fun isPackageInstalled(packageName: String, packageManager: RootfsPackageManager): Boolean {
-        return GuestSystemPackageManager.queryInstalledVersions(
-            linuxEnvironment = prootEnvironment,
-            packageManager = packageManager,
-            packages = listOf(packageName),
-            timeoutMs = 15_000,
-        )[packageName] != null
-    }
+    private suspend fun isPackageInstalled(packageName: String, packageManager: RootfsPackageManager): Boolean = GuestSystemPackageManager.queryInstalledVersions(
+        linuxEnvironment = prootEnvironment,
+        packageManager = packageManager,
+        packages = listOf(packageName),
+        timeoutMs = 15_000,
+    )[packageName] != null
 
     private fun buildRequests(
         config: ToolchainConfig,
@@ -344,124 +340,100 @@ class PRootGuestToolchainInstaller(
         return requests.distinctBy { it.id }
     }
 
-    private fun buildBasePackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK -> listOf("build-base")
-            RootfsPackageManager.APT -> listOf("build-essential")
-            RootfsPackageManager.PACMAN -> listOf("base-devel")
-            RootfsPackageManager.DNF -> listOf("gcc", "gcc-c++", "make")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun buildBasePackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK -> listOf("build-base")
+        RootfsPackageManager.APT -> listOf("build-essential")
+        RootfsPackageManager.PACMAN -> listOf("base-devel")
+        RootfsPackageManager.DNF -> listOf("gcc", "gcc-c++", "make")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun clangPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK -> candidates("clang", preferGeneric = true)
-            RootfsPackageManager.APT -> hyphenatedCandidates("clang", preferGeneric = true)
-            RootfsPackageManager.PACMAN,
-            RootfsPackageManager.DNF -> listOf("clang")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun clangPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK -> candidates("clang", preferGeneric = true)
+        RootfsPackageManager.APT -> hyphenatedCandidates("clang", preferGeneric = true)
+        RootfsPackageManager.PACMAN,
+        RootfsPackageManager.DNF -> listOf("clang")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun llvmPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK -> candidates("llvm", preferGeneric = true)
-            RootfsPackageManager.APT -> hyphenatedCandidates("llvm", preferGeneric = true)
-            RootfsPackageManager.PACMAN,
-            RootfsPackageManager.DNF -> listOf("llvm")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun llvmPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK -> candidates("llvm", preferGeneric = true)
+        RootfsPackageManager.APT -> hyphenatedCandidates("llvm", preferGeneric = true)
+        RootfsPackageManager.PACMAN,
+        RootfsPackageManager.DNF -> listOf("llvm")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun clangdPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK -> candidates("clang-extra-tools") + candidates("clang-tools-extra")
-            RootfsPackageManager.APT -> hyphenatedCandidates("clangd", preferGeneric = true)
-            RootfsPackageManager.PACMAN -> listOf("clang")
-            RootfsPackageManager.DNF -> listOf("clang-tools-extra", "clang")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun clangdPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK -> candidates("clang-extra-tools") + candidates("clang-tools-extra")
+        RootfsPackageManager.APT -> hyphenatedCandidates("clangd", preferGeneric = true)
+        RootfsPackageManager.PACMAN -> listOf("clang")
+        RootfsPackageManager.DNF -> listOf("clang-tools-extra", "clang")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun clangFormatPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK -> candidates("clang-extra-tools") + candidates("clang-tools-extra")
-            RootfsPackageManager.APT -> hyphenatedCandidates("clang-format", preferGeneric = true)
-            RootfsPackageManager.PACMAN -> listOf("clang")
-            RootfsPackageManager.DNF -> listOf("clang-tools-extra", "clang")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun clangFormatPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK -> candidates("clang-extra-tools") + candidates("clang-tools-extra")
+        RootfsPackageManager.APT -> hyphenatedCandidates("clang-format", preferGeneric = true)
+        RootfsPackageManager.PACMAN -> listOf("clang")
+        RootfsPackageManager.DNF -> listOf("clang-tools-extra", "clang")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun libcxxPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK,
-            RootfsPackageManager.APT -> listOf("libc++-dev", "libc++", "libstdc++-dev")
-            RootfsPackageManager.PACMAN -> listOf("libc++")
-            RootfsPackageManager.DNF -> listOf("libcxx-devel", "libstdc++-devel")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun libcxxPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK,
+        RootfsPackageManager.APT -> listOf("libc++-dev", "libc++", "libstdc++-dev")
+        RootfsPackageManager.PACMAN -> listOf("libc++")
+        RootfsPackageManager.DNF -> listOf("libcxx-devel", "libstdc++-devel")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun libcxxAbiPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK,
-            RootfsPackageManager.APT -> listOf("libc++abi-dev", "libc++abi")
-            RootfsPackageManager.PACMAN -> listOf("libc++abi")
-            RootfsPackageManager.DNF -> listOf("libcxxabi-devel")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun libcxxAbiPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK,
+        RootfsPackageManager.APT -> listOf("libc++abi-dev", "libc++abi")
+        RootfsPackageManager.PACMAN -> listOf("libc++abi")
+        RootfsPackageManager.DNF -> listOf("libcxxabi-devel")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun ninjaPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APT -> listOf("ninja-build")
-            RootfsPackageManager.APK,
-            RootfsPackageManager.PACMAN,
-            RootfsPackageManager.DNF -> listOf("ninja", "ninja-build")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun ninjaPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APT -> listOf("ninja-build")
+        RootfsPackageManager.APK,
+        RootfsPackageManager.PACMAN,
+        RootfsPackageManager.DNF -> listOf("ninja", "ninja-build")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun lldPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK -> candidates("lld", preferGeneric = true)
-            RootfsPackageManager.APT -> hyphenatedCandidates("lld", preferGeneric = true)
-            RootfsPackageManager.PACMAN,
-            RootfsPackageManager.DNF -> listOf("lld")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun lldPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK -> candidates("lld", preferGeneric = true)
+        RootfsPackageManager.APT -> hyphenatedCandidates("lld", preferGeneric = true)
+        RootfsPackageManager.PACMAN,
+        RootfsPackageManager.DNF -> listOf("lld")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun gxxPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK,
-            RootfsPackageManager.APT -> listOf("g++")
-            RootfsPackageManager.PACMAN -> listOf("gcc")
-            RootfsPackageManager.DNF -> listOf("gcc-c++")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun gxxPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK,
+        RootfsPackageManager.APT -> listOf("g++")
+        RootfsPackageManager.PACMAN -> listOf("gcc")
+        RootfsPackageManager.DNF -> listOf("gcc-c++")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun lldbPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK -> listOf("lldb") + candidates("lldb")
-            RootfsPackageManager.APT -> hyphenatedCandidates("lldb", preferGeneric = true)
-            RootfsPackageManager.PACMAN,
-            RootfsPackageManager.DNF -> listOf("lldb")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun lldbPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK -> listOf("lldb") + candidates("lldb")
+        RootfsPackageManager.APT -> hyphenatedCandidates("lldb", preferGeneric = true)
+        RootfsPackageManager.PACMAN,
+        RootfsPackageManager.DNF -> listOf("lldb")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
-    private fun pythonLldbPackages(packageManager: RootfsPackageManager): List<String> {
-        return when (packageManager) {
-            RootfsPackageManager.APK -> listOf("py3-lldb", "python3-lldb")
-            RootfsPackageManager.APT -> hyphenatedCandidates("python3-lldb", preferGeneric = true)
-            RootfsPackageManager.PACMAN -> listOf("lldb")
-            RootfsPackageManager.DNF -> listOf("python3-lldb", "lldb")
-            RootfsPackageManager.UNKNOWN -> emptyList()
-        }
+    private fun pythonLldbPackages(packageManager: RootfsPackageManager): List<String> = when (packageManager) {
+        RootfsPackageManager.APK -> listOf("py3-lldb", "python3-lldb")
+        RootfsPackageManager.APT -> hyphenatedCandidates("python3-lldb", preferGeneric = true)
+        RootfsPackageManager.PACMAN -> listOf("lldb")
+        RootfsPackageManager.DNF -> listOf("python3-lldb", "lldb")
+        RootfsPackageManager.UNKNOWN -> emptyList()
     }
 
     private fun candidates(baseName: String, preferGeneric: Boolean = false): List<String> {

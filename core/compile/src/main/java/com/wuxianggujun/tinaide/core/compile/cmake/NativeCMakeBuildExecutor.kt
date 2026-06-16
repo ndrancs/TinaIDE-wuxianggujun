@@ -10,19 +10,19 @@ import com.wuxianggujun.tinaide.core.compile.ConfigureResult
 import com.wuxianggujun.tinaide.core.compile.MakeCommandOverrides
 import com.wuxianggujun.tinaide.core.compile.toolchain.ToolchainLinker64ShimManager
 import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
+import com.wuxianggujun.tinaide.core.i18n.str
 import com.wuxianggujun.tinaide.core.ndk.AndroidNativeToolchainManager
 import com.wuxianggujun.tinaide.core.ndk.AndroidSysrootManager
 import com.wuxianggujun.tinaide.core.packages.InstalledPackagePathResolver
 import com.wuxianggujun.tinaide.core.util.AndroidSystemLinker
 import com.wuxianggujun.tinaide.core.util.DiagnosticLogFormatter
 import com.wuxianggujun.tinaide.core.util.NativeExecutableRunner
-import timber.log.Timber
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
+import timber.log.Timber
 
 /**
  * 原生 CMake 构建执行器（不使用 PRoot）
@@ -536,6 +536,18 @@ class NativeCMakeBuildExecutor(
             return env
         }
 
+        internal fun buildCMakePackageRootArguments(
+            packagePaths: InstalledPackagePathResolver.PackagePaths
+        ): List<String> {
+            if (packagePaths.prefixDirs.isEmpty()) return emptyList()
+            val packagePrefixPath = packagePaths.prefixDirs.joinToString(";") { it.absolutePath }
+            return listOf(
+                "-DCMAKE_PREFIX_PATH=$packagePrefixPath",
+                // Android/cross CMake 会把 find_package 限制在 root path 内，需同步注入包根。
+                "-DCMAKE_FIND_ROOT_PATH=$packagePrefixPath"
+            )
+        }
+
         internal fun buildCMakeExtraEnvironment(
             packageEnvironment: Map<String, String>,
             traceToolchainShim: Boolean
@@ -551,9 +563,7 @@ class NativeCMakeBuildExecutor(
             generator: CMakeGenerator,
             preferLinker64: Boolean,
             useRecommendedTinaExec: Boolean
-        ): Boolean {
-            return useRecommendedTinaExec && preferLinker64 && generator == CMakeGenerator.NINJA
-        }
+        ): Boolean = useRecommendedTinaExec && preferLinker64 && generator == CMakeGenerator.NINJA
 
         internal fun shouldRetryWithoutTinaExecAfterShimFailure(
             output: String,
@@ -698,9 +708,7 @@ class NativeCMakeBuildExecutor(
         val onProgress: ((String) -> Unit)? = null
     ) {
         companion object {
-            fun defaultParallelJobs(): Int {
-                return Runtime.getRuntime().availableProcessors().coerceIn(1, 8)
-            }
+            fun defaultParallelJobs(): Int = Runtime.getRuntime().availableProcessors().coerceIn(1, 8)
         }
     }
 
@@ -743,27 +751,25 @@ class NativeCMakeBuildExecutor(
     /**
      * 获取 CMake 版本
      */
-    suspend fun getCMakeVersion(): String? {
-        return try {
-            val cmakeBinary = File(toolchainManager.getBinDir(), "cmake")
-            val result = executeNativeCommand(
-                command = listOf(cmakeBinary.absolutePath, "--version"),
-                workingDir = appContext.filesDir,
-                timeout = timeoutConfig.getEnvCheckTimeout()
-            )
+    suspend fun getCMakeVersion(): String? = try {
+        val cmakeBinary = File(toolchainManager.getBinDir(), "cmake")
+        val result = executeNativeCommand(
+            command = listOf(cmakeBinary.absolutePath, "--version"),
+            workingDir = appContext.filesDir,
+            timeout = timeoutConfig.getEnvCheckTimeout()
+        )
 
-            if (result.exitCode == 0) {
-                // 解析版本号（第一行通常是 "cmake version X.Y.Z"）
-                result.output.lines().firstOrNull()?.let { firstLine ->
-                    Regex("""cmake version (\d+\.\d+\.\d+)""").find(firstLine)?.groupValues?.get(1)
-                }
-            } else {
-                null
+        if (result.exitCode == 0) {
+            // 解析版本号（第一行通常是 "cmake version X.Y.Z"）
+            result.output.lines().firstOrNull()?.let { firstLine ->
+                Regex("""cmake version (\d+\.\d+\.\d+)""").find(firstLine)?.groupValues?.get(1)
             }
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to get cmake version")
+        } else {
             null
         }
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Failed to get cmake version")
+        null
     }
 
     /**
@@ -820,7 +826,6 @@ class NativeCMakeBuildExecutor(
 
         // 已安装包的 prefix 路径（供 find_package 使用）
         val packagePaths = InstalledPackagePathResolver.resolve(appContext, projectDir)
-        val packagePrefixPath = packagePaths.prefixDirs.joinToString(";") { it.absolutePath }
         val packageIncludePath = packagePaths.includeDirs.joinToString(";") { it.absolutePath }
         val packageLibraryPath = packagePaths.libDirs.joinToString(";") { it.absolutePath }
         val projectCFlags = options.cFlags
@@ -998,9 +1003,7 @@ class NativeCMakeBuildExecutor(
             }
 
             // 注入已安装包的路径，让 find_package() 能找到第三方库
-            if (packagePaths.prefixDirs.isNotEmpty()) {
-                add("-DCMAKE_PREFIX_PATH=$packagePrefixPath")
-            }
+            addAll(buildCMakePackageRootArguments(packagePaths))
             if (packagePaths.includeDirs.isNotEmpty()) {
                 add("-DCMAKE_INCLUDE_PATH=$packageIncludePath")
             }
@@ -1246,7 +1249,7 @@ class NativeCMakeBuildExecutor(
                 appendLine()
             }
             appendLine("===== $retryTitle =====")
-            appendLine("上一轮疑似为 shell shim + tina-exec 组合导致的静默失败；本轮已清理 LD_PRELOAD/TINA_EXEC 后重试。")
+            appendLine(Strings.cmake_retry_without_tina_exec_notice.str())
             if (retry.output.isNotBlank()) {
                 append(retry.output)
             }
@@ -1436,13 +1439,11 @@ class NativeCMakeBuildExecutor(
         environment[envName] = value
     }
 
-    private fun mergeFlagSegments(vararg values: String): String {
-        return values.asSequence()
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .joinToString(" ")
-    }
+    private fun mergeFlagSegments(vararg values: String): String = values.asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .joinToString(" ")
 
     private fun mergeCppFlags(cppFlags: String, cppStandard: String?): String {
         val normalizedFlags = cppFlags.trim()
@@ -1468,145 +1469,143 @@ class NativeCMakeBuildExecutor(
         onOutputLine: ((String) -> Unit)? = null,
         useToolchainShimEnvironment: Boolean = true,
         useRecommendedTinaExec: Boolean = true
-    ): CommandResult {
-        return try {
-            // 使用 NativeExecutableRunner 构建命令，自动处理 linker64 启动逻辑
-            val executable = command[0]
-            val args = command.drop(1)
-            val fullCommand = com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.buildCommand(
-                executable = executable,
-                args = args
-            )
+    ): CommandResult = try {
+        // 使用 NativeExecutableRunner 构建命令，自动处理 linker64 启动逻辑
+        val executable = command[0]
+        val args = command.drop(1)
+        val fullCommand = com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.buildCommand(
+            executable = executable,
+            args = args
+        )
 
-            val processBuilder = ProcessBuilder(fullCommand).apply {
-                directory(workingDir)
-                com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.configureEnvironment(
-                    this,
-                    nativeLibDir,
-                    toolchainManager.getBinDir(toolchainId).absolutePath,
-                    tmpDir = appContext.cacheDir.absolutePath,
-                    homeDir = appContext.filesDir.absolutePath
-                )
-                if (!useRecommendedTinaExec) {
-                    // 避免继承外层诊断页或其它链路残留的 tina-exec 环境。
-                    clearTinaExecEnvironment(environment())
-                }
-                if (useRecommendedTinaExec) {
-                    NativeExecutableRunner.applyRecommendedTinaExec(
-                        environment = environment(),
-                        context = appContext,
-                        fullCommand = fullCommand
-                    )
-                }
-                if (useToolchainShimEnvironment) {
-                    applyToolchainShimEnvironment(environment(), toolchainId)
-                }
-                applyExtraEnvironment(environment(), extraEnvironment)
-                redirectErrorStream(true)
+        val processBuilder = ProcessBuilder(fullCommand).apply {
+            directory(workingDir)
+            com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.configureEnvironment(
+                this,
+                nativeLibDir,
+                toolchainManager.getBinDir(toolchainId).absolutePath,
+                tmpDir = appContext.cacheDir.absolutePath,
+                homeDir = appContext.filesDir.absolutePath
+            )
+            if (!useRecommendedTinaExec) {
+                // 避免继承外层诊断页或其它链路残留的 tina-exec 环境。
+                clearTinaExecEnvironment(environment())
             }
-            Timber.tag(TAG).d(
-                DiagnosticLogFormatter.format(
-                    prefix = "Native exec policy",
-                    "tinaExec" to if (useRecommendedTinaExec) "enabled" else "disabled",
-                    "shimEnv" to if (useToolchainShimEnvironment) "enabled" else "disabled",
-                    "extraEnvKeys" to extraEnvironment.keys
-                        .sorted()
-                        .joinToString(",")
-                        .ifBlank { "<none>" }
+            if (useRecommendedTinaExec) {
+                NativeExecutableRunner.applyRecommendedTinaExec(
+                    environment = environment(),
+                    context = appContext,
+                    fullCommand = fullCommand
                 )
+            }
+            if (useToolchainShimEnvironment) {
+                applyToolchainShimEnvironment(environment(), toolchainId)
+            }
+            applyExtraEnvironment(environment(), extraEnvironment)
+            redirectErrorStream(true)
+        }
+        Timber.tag(TAG).d(
+            DiagnosticLogFormatter.format(
+                prefix = "Native exec policy",
+                "tinaExec" to if (useRecommendedTinaExec) "enabled" else "disabled",
+                "shimEnv" to if (useToolchainShimEnvironment) "enabled" else "disabled",
+                "extraEnvKeys" to extraEnvironment.keys
+                    .sorted()
+                    .joinToString(",")
+                    .ifBlank { "<none>" }
             )
-            NativeExecutableRunner.logExecutionDiagnostics(
-                tag = TAG,
-                executable = executable,
-                args = args,
-                fullCommand = fullCommand,
-                workingDir = workingDir,
-                environment = processBuilder.environment().toMap(),
-                toolchainBinDir = toolchainManager.getBinDir(toolchainId).absolutePath
-            )
+        )
+        NativeExecutableRunner.logExecutionDiagnostics(
+            tag = TAG,
+            executable = executable,
+            args = args,
+            fullCommand = fullCommand,
+            workingDir = workingDir,
+            environment = processBuilder.environment().toMap(),
+            toolchainBinDir = toolchainManager.getBinDir(toolchainId).absolutePath
+        )
 
-            val startedAt = System.currentTimeMillis()
-            val process = processBuilder.start()
-            val output = StringBuilder()
-            val outputLock = Any()
-            val readerDone = CountDownLatch(1)
-            val readerError = AtomicReference<Throwable?>(null)
+        val startedAt = System.currentTimeMillis()
+        val process = processBuilder.start()
+        val output = StringBuilder()
+        val outputLock = Any()
+        val readerDone = CountDownLatch(1)
+        val readerError = AtomicReference<Throwable?>(null)
 
-            // 持续读取输出，确保 onOutputLine 在进程运行期间就能收到日志。
-            thread(
-                name = "NativeCMakeBuildExecutor-output",
-                isDaemon = true
-            ) {
-                try {
-                    process.inputStream.bufferedReader().use { reader ->
-                        reader.lineSequence().forEach { line ->
-                            synchronized(outputLock) {
-                                appendCommandOutputLine(output, line, onOutputLine)
-                            }
-                            Timber.tag(TAG).v(line)
+        // 持续读取输出，确保 onOutputLine 在进程运行期间就能收到日志。
+        thread(
+            name = "NativeCMakeBuildExecutor-output",
+            isDaemon = true
+        ) {
+            try {
+                process.inputStream.bufferedReader().use { reader ->
+                    reader.lineSequence().forEach { line ->
+                        synchronized(outputLock) {
+                            appendCommandOutputLine(output, line, onOutputLine)
                         }
+                        Timber.tag(TAG).v(line)
                     }
-                } catch (t: Throwable) {
-                    readerError.set(t)
-                } finally {
-                    readerDone.countDown()
                 }
+            } catch (t: Throwable) {
+                readerError.set(t)
+            } finally {
+                readerDone.countDown()
             }
+        }
 
-            // 与输出读取并行等待进程结束，超时后可以真正中断构建。
-            val processExit = waitForProcessExit(process, timeout)
-            if (!readerDone.await(2, TimeUnit.SECONDS)) {
-                Timber.tag(TAG).w("Timed out waiting for native cmake output reader to finish")
-            }
-            readerError.get()?.let { error ->
-                Timber.tag(TAG).w(error, "Native cmake output reader failed")
-            }
-            val finalOutput = synchronized(outputLock) { output.toString() }
-            val durationMs = System.currentTimeMillis() - startedAt
-            val resultSummary = buildNativeCommandResultSummary(
-                executable = executable,
-                fullCommand = fullCommand,
-                workingDir = workingDir,
-                timeoutMs = timeout,
-                durationMs = durationMs,
-                finished = processExit.finished,
-                exitCode = processExit.exitCode,
-                output = finalOutput
-            )
-            if (processExit.finished && processExit.exitCode == 0) {
-                Timber.tag(TAG).d(resultSummary)
-            } else {
-                Timber.tag(TAG).w(resultSummary)
-            }
-            if (!processExit.finished) {
-                Timber.tag(TAG).w("Native cmake command timed out after %d ms", timeout)
-            }
-            if (processExit.exitCode != 0) {
-                NativeExecutableRunner.logFailureDiagnostics(
-                    tag = TAG,
-                    executable = executable,
-                    output = finalOutput,
-                    toolchainBinDir = toolchainManager.getBinDir().absolutePath
-                )
-            }
-
-            CommandResult(
-                exitCode = processExit.exitCode,
-                output = finalOutput
-            )
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to execute native command")
+        // 与输出读取并行等待进程结束，超时后可以真正中断构建。
+        val processExit = waitForProcessExit(process, timeout)
+        if (!readerDone.await(2, TimeUnit.SECONDS)) {
+            Timber.tag(TAG).w("Timed out waiting for native cmake output reader to finish")
+        }
+        readerError.get()?.let { error ->
+            Timber.tag(TAG).w(error, "Native cmake output reader failed")
+        }
+        val finalOutput = synchronized(outputLock) { output.toString() }
+        val durationMs = System.currentTimeMillis() - startedAt
+        val resultSummary = buildNativeCommandResultSummary(
+            executable = executable,
+            fullCommand = fullCommand,
+            workingDir = workingDir,
+            timeoutMs = timeout,
+            durationMs = durationMs,
+            finished = processExit.finished,
+            exitCode = processExit.exitCode,
+            output = finalOutput
+        )
+        if (processExit.finished && processExit.exitCode == 0) {
+            Timber.tag(TAG).d(resultSummary)
+        } else {
+            Timber.tag(TAG).w(resultSummary)
+        }
+        if (!processExit.finished) {
+            Timber.tag(TAG).w("Native cmake command timed out after %d ms", timeout)
+        }
+        if (processExit.exitCode != 0) {
             NativeExecutableRunner.logFailureDiagnostics(
                 tag = TAG,
-                executable = command.firstOrNull().orEmpty(),
-                output = e.message ?: "unknown error",
+                executable = executable,
+                output = finalOutput,
                 toolchainBinDir = toolchainManager.getBinDir().absolutePath
             )
-            CommandResult(
-                exitCode = -1,
-                output = "Exception: ${e.message}"
-            )
         }
+
+        CommandResult(
+            exitCode = processExit.exitCode,
+            output = finalOutput
+        )
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Failed to execute native command")
+        NativeExecutableRunner.logFailureDiagnostics(
+            tag = TAG,
+            executable = command.firstOrNull().orEmpty(),
+            output = e.message ?: "unknown error",
+            toolchainBinDir = toolchainManager.getBinDir().absolutePath
+        )
+        CommandResult(
+            exitCode = -1,
+            output = "Exception: ${e.message}"
+        )
     }
 
     private fun applyExtraEnvironment(

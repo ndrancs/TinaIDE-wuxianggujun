@@ -29,7 +29,6 @@ class PRootEnvironment(
         org.koin.core.context.GlobalContext.get().get()
     }
 
-
     private val rootfsProfileStore: RootfsProfileStore by lazy {
         RootfsProfileStore(this.context, configManager)
     }
@@ -67,9 +66,7 @@ class PRootEnvironment(
         }
     }
 
-    fun getActiveGuestPackageManager(): RootfsPackageManager {
-        return rootfsProfileStore.getActiveProfile().packageManager
-    }
+    fun getActiveGuestPackageManager(): RootfsPackageManager = rootfsProfileStore.getActiveProfile().packageManager
 
     fun isInstalled(): Boolean {
         val activeProfile = rootfsProfileStore.getActiveProfileOrNull() ?: return false
@@ -78,12 +75,10 @@ class PRootEnvironment(
 
     fun needsUpdate(): Boolean = false
 
-    suspend fun initialize(progress: (Float) -> Unit = {}): Result<Unit> {
-        return SelfHostedLinuxDistroRuntime.createFromAssets(context, configManager)
-            .installDistro { installProgress ->
-                progress(installProgress.progress)
-            }.map { }
-    }
+    suspend fun initialize(progress: (Float) -> Unit = {}): Result<Unit> = SelfHostedLinuxDistroRuntime.createFromAssets(context, configManager)
+        .installDistro { installProgress ->
+            progress(installProgress.progress)
+        }.map { }
 
     suspend fun clean(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
@@ -101,11 +96,9 @@ class PRootEnvironment(
         }
     }
 
-    override fun isAvailable(): Boolean {
-        return runCatching {
-            !PRootBootstrap.isInstalling() && isInstalled() && !needsUpdate()
-        }.getOrDefault(false)
-    }
+    override fun isAvailable(): Boolean = runCatching {
+        !PRootBootstrap.isInstalling() && isInstalled() && !needsUpdate()
+    }.getOrDefault(false)
 
     override suspend fun execute(
         command: List<String>,
@@ -137,15 +130,13 @@ class PRootEnvironment(
         env: Map<String, String> = emptyMap(),
         timeout: Long? = 60_000,
         stdin: String? = null,
-    ): PRootResult {
-        return getPRootManager().execute(
-            command = command,
-            workDir = workDir,
-            env = env,
-            timeout = timeout,
-            stdin = stdin,
-        )
-    }
+    ): PRootResult = getPRootManager().execute(
+        command = command,
+        workDir = workDir,
+        env = env,
+        timeout = timeout,
+        stdin = stdin,
+    )
 
     override fun startInteractive(
         command: List<String>,
@@ -166,27 +157,23 @@ class PRootEnvironment(
         command: String,
         timeout: Long = 30_000,
         workDir: String = "/workspace",
-    ): RunResult {
-        return getPRootManager().execute(
-            command = listOf("/bin/sh", "-c", command),
-            workDir = workDir,
-            timeout = timeout,
-        )
-    }
+    ): RunResult = getPRootManager().execute(
+        command = listOf("/bin/sh", "-c", command),
+        workDir = workDir,
+        timeout = timeout,
+    )
 
     suspend fun executeShellWithEnv(
         command: String,
         env: Map<String, String>,
         timeout: Long = 30_000,
         workDir: String = "/workspace",
-    ): RunResult {
-        return getPRootManager().execute(
-            command = listOf("/bin/sh", "-c", command),
-            workDir = workDir,
-            env = env,
-            timeout = timeout,
-        )
-    }
+    ): RunResult = getPRootManager().execute(
+        command = listOf("/bin/sh", "-c", command),
+        workDir = workDir,
+        env = env,
+        timeout = timeout,
+    )
 
     suspend fun isCompilerAvailable(
         compilerType: CompilerType = CompilerType.CLANG,
@@ -216,25 +203,19 @@ class PRootEnvironment(
         return readVersion(command)
     }
 
-    suspend fun isDebuggerAvailable(): Boolean {
-        return isCommandAvailable(pathResolver.getLldb())
-    }
+    suspend fun isDebuggerAvailable(): Boolean = isCommandAvailable(pathResolver.getLldb())
 
-    suspend fun probeClangVersion(): PRootResult {
-        return probeVersion(pathResolver.getCCompiler(CompilerType.CLANG))
-    }
+    suspend fun probeClangVersion(): PRootResult = probeVersion(pathResolver.getCCompiler(CompilerType.CLANG))
 
     suspend fun probeVersion(
         command: String,
         versionArg: String = "--version",
         timeout: Long = 10_000,
-    ): PRootResult {
-        return getPRootManager().execute(
-            command = listOf(command, versionArg),
-            workDir = "/",
-            timeout = timeout,
-        )
-    }
+    ): PRootResult = getPRootManager().execute(
+        command = listOf(command, versionArg),
+        workDir = "/",
+        timeout = timeout,
+    )
 
     suspend fun isCommandAvailable(command: String): Boolean {
         val normalized = command.trim()
@@ -253,13 +234,11 @@ class PRootEnvironment(
         ).exitCode == 0
     }
 
-    suspend fun queryInstalledPackageVersions(packages: List<String>): Map<String, String?> {
-        return GuestSystemPackageManager.queryInstalledVersions(
-            linuxEnvironment = this,
-            packageManager = getActiveGuestPackageManager(),
-            packages = packages,
-        )
-    }
+    suspend fun queryInstalledPackageVersions(packages: List<String>): Map<String, String?> = GuestSystemPackageManager.queryInstalledVersions(
+        linuxEnvironment = this,
+        packageManager = getActiveGuestPackageManager(),
+        packages = packages,
+    )
 
     suspend fun checkLinuxDistroHealth(): LinuxDistroRootfsHealthReport {
         val packageManager = rootfsProfileStore.getActiveProfileOrNull()?.packageManager
@@ -279,9 +258,7 @@ class PRootEnvironment(
             .firstOrNull { it.isNotEmpty() }
     }
 
-    private fun shellEscape(value: String): String {
-        return "'" + value.replace("'", "'\\''") + "'"
-    }
+    private fun shellEscape(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 }
 
 internal class PRootInteractiveAdapter(

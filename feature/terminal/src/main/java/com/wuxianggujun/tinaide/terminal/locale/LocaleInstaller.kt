@@ -1,16 +1,16 @@
 package com.wuxianggujun.tinaide.terminal.locale
 
 import android.content.Context
-import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
-import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironmentProvider
-import com.wuxianggujun.tinaide.core.terminal.ILocaleInstaller
-import com.wuxianggujun.tinaide.core.terminal.LocaleInstallResult
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
+import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
+import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.proot.GuestSystemPackageManager
 import com.wuxianggujun.tinaide.core.proot.RootfsPackageManager
 import com.wuxianggujun.tinaide.core.proot.displayName
 import com.wuxianggujun.tinaide.core.proot.resolveGuestPackageManager
+import com.wuxianggujun.tinaide.core.terminal.ILocaleInstaller
+import com.wuxianggujun.tinaide.core.terminal.LocaleInstallResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -175,22 +175,20 @@ private data class LocaleInstallPlan(
 private fun buildInstallPlan(
     locale: String,
     packageManager: RootfsPackageManager,
-): LocaleInstallPlan? {
-    return when (packageManager) {
-        RootfsPackageManager.APK -> LocaleInstallPlan(
-            packages = listOf("musl-locales", "musl-locales-lang"),
-        )
-        RootfsPackageManager.APT -> LocaleInstallPlan(
-            packages = listOf("locales"),
-            configureCommand = buildGlibcLocaleCommand(locale),
-        )
-        RootfsPackageManager.PACMAN -> LocaleInstallPlan(
-            packages = listOf("glibc", "glibc-locales"),
-            configureCommand = buildGlibcLocaleCommand(locale),
-        )
-        RootfsPackageManager.DNF,
-        RootfsPackageManager.UNKNOWN -> null
-    }
+): LocaleInstallPlan? = when (packageManager) {
+    RootfsPackageManager.APK -> LocaleInstallPlan(
+        packages = listOf("musl-locales", "musl-locales-lang"),
+    )
+    RootfsPackageManager.APT -> LocaleInstallPlan(
+        packages = listOf("locales"),
+        configureCommand = buildGlibcLocaleCommand(locale),
+    )
+    RootfsPackageManager.PACMAN -> LocaleInstallPlan(
+        packages = listOf("glibc", "glibc-locales"),
+        configureCommand = buildGlibcLocaleCommand(locale),
+    )
+    RootfsPackageManager.DNF,
+    RootfsPackageManager.UNKNOWN -> null
 }
 
 private fun buildGlibcLocaleCommand(locale: String): String {
@@ -217,5 +215,3 @@ private fun buildGlibcLocaleCommand(locale: String): String {
         fi
     """.trimIndent()
 }
-
-

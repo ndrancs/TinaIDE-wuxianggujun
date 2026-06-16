@@ -41,9 +41,12 @@ class PluginStateSnapshotTest {
             .inOrder()
         assertThat(snapshot.installedVersions)
             .containsExactly(
-                "system.disabled", "1.0.0",
-                "config.enabled", "2.3.4",
-                "system.enabled", "3.0.0",
+                "system.disabled",
+                "1.0.0",
+                "config.enabled",
+                "2.3.4",
+                "system.enabled",
+                "3.0.0",
             )
         assertThat(snapshot.enabledCapabilities)
             .containsExactly("featureA", PluginCapabilities.LINUX_ENVIRONMENT)
@@ -59,17 +62,15 @@ class PluginStateSnapshotTest {
         type: String,
         enabled: Boolean,
         capabilities: List<String>? = null,
-    ): InstalledPlugin {
-        return InstalledPlugin(
-            manifest = PluginManifest(
-                id = id,
-                name = id,
-                version = version,
-                type = type,
-                capabilities = capabilities,
-            ),
-            directory = File(id),
-            enabled = enabled,
-        )
-    }
+    ): InstalledPlugin = InstalledPlugin(
+        manifest = PluginManifest(
+            id = id,
+            name = id,
+            version = version,
+            type = type,
+            capabilities = capabilities,
+        ),
+        directory = File(id),
+        enabled = enabled,
+    )
 }

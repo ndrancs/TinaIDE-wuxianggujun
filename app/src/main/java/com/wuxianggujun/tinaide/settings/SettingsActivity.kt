@@ -65,6 +65,7 @@ internal object SettingsActivitySupport {
         initialRoute: SettingsRoute? = null,
         initialHelpDocumentId: String? = null,
         initialPluginDetailId: String? = null,
+        initialPackageSearchQuery: String? = null,
     ): Intent = Intent(context, SettingsActivity::class.java).apply {
         if (context !is Activity) {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -76,6 +77,9 @@ internal object SettingsActivitySupport {
         initialPluginDetailId
             ?.takeUnless { it.isBlank() }
             ?.let { putExtra(SettingsActivity.EXTRA_INITIAL_PLUGIN_DETAIL_ID, it) }
+        initialPackageSearchQuery
+            ?.takeUnless { it.isBlank() }
+            ?.let { putExtra(SettingsActivity.EXTRA_INITIAL_PACKAGE_SEARCH_QUERY, it) }
     }
 
     fun extractInitialRouteId(intent: Intent): String? = intent.getStringExtra(SettingsActivity.EXTRA_INITIAL_ROUTE)
@@ -86,6 +90,10 @@ internal object SettingsActivitySupport {
 
     fun extractInitialPluginDetailId(intent: Intent): String? = intent.getStringExtra(SettingsActivity.EXTRA_INITIAL_PLUGIN_DETAIL_ID)
         ?.takeUnless { it.isBlank() }
+
+    fun extractInitialPackageSearchQuery(intent: Intent): String? = intent.getStringExtra(
+        SettingsActivity.EXTRA_INITIAL_PACKAGE_SEARCH_QUERY
+    )?.takeUnless { it.isBlank() }
 
     fun resolveInitialRoute(routeId: String?): SettingsRoute = routeId?.takeUnless { it.isBlank() }?.let(initialRoutes::get) ?: SettingsRoute.Root
 
@@ -143,6 +151,7 @@ class SettingsActivity :
         const val EXTRA_INITIAL_ROUTE = "extra_initial_route"
         const val EXTRA_INITIAL_HELP_DOCUMENT_ID = "extra_initial_help_document_id"
         const val EXTRA_INITIAL_PLUGIN_DETAIL_ID = "extra_initial_plugin_detail_id"
+        const val EXTRA_INITIAL_PACKAGE_SEARCH_QUERY = "extra_initial_package_search_query"
         const val EXTRA_PROJECT_ROOT = "extra_project_root"
 
         fun start(
@@ -165,6 +174,16 @@ class SettingsActivity :
                     context = context,
                     initialRoute = SettingsRoute.Plugins,
                     initialPluginDetailId = pluginId,
+                )
+            )
+        }
+
+        fun startPackages(context: Context, searchQuery: String? = null) {
+            context.startActivity(
+                SettingsActivitySupport.buildStartIntent(
+                    context = context,
+                    initialRoute = SettingsRoute.Packages,
+                    initialPackageSearchQuery = searchQuery,
                 )
             )
         }
@@ -203,6 +222,7 @@ class SettingsActivity :
         val targetProjectRoot = intent.getStringExtra(EXTRA_PROJECT_ROOT)?.takeUnless { it.isBlank() }
         val initialHelpDocumentId = SettingsActivitySupport.extractInitialHelpDocumentId(intent)
         val initialPluginDetailId = SettingsActivitySupport.extractInitialPluginDetailId(intent)
+        val initialPackageSearchQuery = SettingsActivitySupport.extractInitialPackageSearchQuery(intent)
         settingsViewModel.setTargetProjectRoot(targetProjectRoot)
         initialHelpDocumentId?.let(helpViewModel::selectDocumentById)
 
@@ -285,7 +305,10 @@ class SettingsActivity :
                         FeedbackScreen(onNavigateBack = onBack)
                     },
                     packagesContent = { onBack ->
-                        PackageManagerScreen(onNavigateBack = onBack)
+                        PackageManagerScreen(
+                            onNavigateBack = onBack,
+                            initialSearchQuery = initialPackageSearchQuery
+                        )
                     },
                     onNavigateToDependencyInstall = {
                         startActivity(DependencyInstallActivity.createIntent(this@SettingsActivity))

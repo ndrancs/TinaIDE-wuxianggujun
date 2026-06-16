@@ -10,6 +10,7 @@ package com.wuxianggujun.tinaide.core.terminal
 enum class TerminalBackend {
     /** 宿主环境（Android 原生） */
     HOST,
+
     /** PRoot 环境（Linux 模拟） */
     PROOT
 }
@@ -24,10 +25,13 @@ enum class TerminalBackend {
 enum class SessionStatus {
     /** 正在启动 */
     STARTING,
+
     /** 运行中 */
     RUNNING,
+
     /** 已退出 */
     EXITED,
+
     /** 错误 */
     ERROR
 }

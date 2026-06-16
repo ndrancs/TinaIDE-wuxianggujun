@@ -45,7 +45,5 @@ class EditorPopupChromeTest {
         assertThat(colors.borderColor.alpha).isGreaterThan(colors.dividerColor.alpha)
     }
 
-    private fun androidx.compose.ui.graphics.Color.perceivedBrightness(): Float {
-        return (red * 0.299f) + (green * 0.587f) + (blue * 0.114f)
-    }
+    private fun androidx.compose.ui.graphics.Color.perceivedBrightness(): Float = (red * 0.299f) + (green * 0.587f) + (blue * 0.114f)
 }

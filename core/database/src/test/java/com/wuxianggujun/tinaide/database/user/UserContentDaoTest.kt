@@ -70,35 +70,31 @@ class UserContentDaoTest {
         pluginId: String,
         name: String,
         synced: Boolean
-    ): FavoriteEntity {
-        return FavoriteEntity(
-            id = id,
-            pluginId = pluginId,
-            name = name,
-            description = null,
-            iconUrl = null,
-            category = "tool",
-            tags = null,
-            latestVersion = "1.0.0",
-            addedAt = "2026-01-01T00:00:00Z",
-            synced = synced
-        )
-    }
+    ): FavoriteEntity = FavoriteEntity(
+        id = id,
+        pluginId = pluginId,
+        name = name,
+        description = null,
+        iconUrl = null,
+        category = "tool",
+        tags = null,
+        latestVersion = "1.0.0",
+        addedAt = "2026-01-01T00:00:00Z",
+        synced = synced
+    )
 
     private fun download(
         id: String,
         itemType: String,
         itemId: String,
         downloadedAt: String
-    ): DownloadHistoryEntity {
-        return DownloadHistoryEntity(
-            id = id,
-            itemType = itemType,
-            itemId = itemId,
-            version = "1.0.0",
-            fileSize = 1024L,
-            downloadedAt = downloadedAt,
-            synced = true
-        )
-    }
+    ): DownloadHistoryEntity = DownloadHistoryEntity(
+        id = id,
+        itemType = itemType,
+        itemId = itemId,
+        version = "1.0.0",
+        fileSize = 1024L,
+        downloadedAt = downloadedAt,
+        synced = true
+    )
 }

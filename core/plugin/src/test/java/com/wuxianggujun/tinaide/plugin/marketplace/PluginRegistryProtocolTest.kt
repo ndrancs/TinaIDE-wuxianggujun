@@ -2,8 +2,10 @@ package com.wuxianggujun.tinaide.plugin.marketplace
 
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.network.ApiResult
+import com.wuxianggujun.tinaide.core.network.registry.GitHubRegistryConfig
 import com.wuxianggujun.tinaide.core.network.registry.RegistryEndpoint
 import com.wuxianggujun.tinaide.core.network.registry.RegistryUrl
+import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
@@ -171,31 +173,138 @@ class PluginRegistryProtocolTest {
             .inOrder()
     }
 
-    private fun registryUrl(baseUrl: String, path: String): RegistryUrl {
-        val endpoint = RegistryEndpoint(name = "test", baseUrl = baseUrl)
+    @Test
+    fun api_shouldFallbackToPublicProxyForIndexDetailAndDownload(): Unit = runBlocking {
+        val rawBaseUrl = GitHubRegistryConfig.GITHUB_RAW_BASE_URL
+        val proxyPrefix = GitHubRegistryConfig.PUBLIC_GITHUB_PROXY_PREFIXES.first()
+        val officialIndexUrl = registryUrl("GitHub Raw", rawBaseUrl, "plugins/index.v2.json")
+        val proxyIndexUrl = registryUrl(
+            name = "proxy",
+            baseUrl = proxyPrefix + rawBaseUrl,
+            path = "plugins/index.v2.json",
+            urlPrefix = proxyPrefix,
+        )
+        val proxyDetailUrl = proxyPrefix + "$rawBaseUrl/plugins/tinaide.plugin.example/plugin.json"
+        val githubDownloadUrl = "https://github.com/wuxianggujun/TinaIDE-Registry/releases/download/" +
+            "plugins/example.tinaplug"
+        val proxyDownloadUrl = proxyPrefix + githubDownloadUrl
+        val interceptor = FakeRegistryInterceptor(
+            mapOf(
+                officialIndexUrl.url to RegistryResponse(code = 503),
+                proxyIndexUrl.url to RegistryResponse(
+                    body = """
+                    {
+                      "schema_version": 2,
+                      "plugins": [
+                        {
+                          "id": "tinaide.plugin.example",
+                          "plugin_id": "tinaide.plugin.example",
+                          "name": "Example",
+                          "publisher": {
+                            "id": "tinaide",
+                            "display_name": "TinaIDE"
+                          },
+                          "latest_version": "1.1.0",
+                          "detail_url": "plugins/tinaide.plugin.example/plugin.json",
+                          "created_at": "2026-06-01T00:00:00Z",
+                          "updated_at": "2026-06-06T00:00:00Z"
+                        }
+                      ]
+                    }
+                    """.trimIndent()
+                ),
+                proxyDetailUrl to RegistryResponse(
+                    body = """
+                    {
+                      "id": "tinaide.plugin.example",
+                      "plugin_id": "tinaide.plugin.example",
+                      "name": "Example",
+                      "publisher": {
+                        "id": "tinaide",
+                        "display_name": "TinaIDE"
+                      },
+                      "versions": [
+                        {
+                          "version": "1.1.0",
+                          "version_code": 2,
+                          "file_size": 7,
+                          "download_url": "$githubDownloadUrl",
+                          "created_at": "2026-06-06T00:00:00Z"
+                        }
+                      ],
+                      "created_at": "2026-06-01T00:00:00Z",
+                      "updated_at": "2026-06-06T00:00:00Z"
+                    }
+                    """.trimIndent()
+                ),
+                proxyDownloadUrl to RegistryResponse(
+                    body = "content",
+                    contentType = "application/octet-stream",
+                ),
+            )
+        )
+        val api = pluginApi(listOf(officialIndexUrl, proxyIndexUrl), interceptor.client())
+        val tempDir = Files.createTempDirectory("plugin-registry-proxy-test").toFile()
+
+        try {
+            val result = api.downloadPlugin(
+                pluginId = "tinaide.plugin.example",
+                targetFile = tempDir.resolve("example.tinaplug"),
+            )
+
+            assertThat(result).isInstanceOf(ApiResult.Success::class.java)
+            assertThat((result as ApiResult.Success).data.readText()).isEqualTo("content")
+            assertThat(interceptor.requestedUrls)
+                .containsExactly(officialIndexUrl.url, proxyIndexUrl.url, proxyDetailUrl, proxyDownloadUrl)
+                .inOrder()
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    private fun registryUrl(
+        baseUrl: String,
+        path: String,
+    ): RegistryUrl = registryUrl("test", baseUrl, path)
+
+    private fun registryUrl(
+        name: String,
+        baseUrl: String,
+        path: String,
+        urlPrefix: String? = null,
+    ): RegistryUrl {
+        val endpoint = RegistryEndpoint(name = name, baseUrl = baseUrl, urlPrefix = urlPrefix)
         return RegistryUrl(endpoint = endpoint, url = "$baseUrl/$path")
     }
 
     private fun pluginApi(
         v2IndexUrl: RegistryUrl,
         client: OkHttpClient,
+    ): PluginMarketplaceApi = pluginApi(listOf(v2IndexUrl), client)
+
+    private fun pluginApi(
+        indexUrls: List<RegistryUrl>,
+        client: OkHttpClient,
     ): PluginMarketplaceApi {
         val constructor = PluginMarketplaceApi::class.java.getDeclaredConstructor(
             List::class.java,
             OkHttpClient::class.java,
             OkHttpClient::class.java,
+            String::class.java,
         )
         constructor.isAccessible = true
         return constructor.newInstance(
-            listOf(v2IndexUrl),
+            indexUrls,
             client,
             client,
+            null,
         ) as PluginMarketplaceApi
     }
 
     private data class RegistryResponse(
         val code: Int = 200,
         val body: String = "",
+        val contentType: String = "application/json",
     )
 
     private class FakeRegistryInterceptor(
@@ -217,7 +326,7 @@ class PluginRegistryProtocolTest {
                 .protocol(Protocol.HTTP_1_1)
                 .code(registryResponse.code)
                 .message(if (registryResponse.code in 200..299) "OK" else "Error")
-                .body(registryResponse.body.toResponseBody("application/json".toMediaType()))
+                .body(registryResponse.body.toResponseBody(registryResponse.contentType.toMediaType()))
                 .build()
         }
     }

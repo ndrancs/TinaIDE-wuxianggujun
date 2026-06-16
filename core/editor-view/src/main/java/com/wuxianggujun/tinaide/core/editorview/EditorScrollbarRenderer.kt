@@ -3,10 +3,8 @@ package com.wuxianggujun.tinaide.core.editorview
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import kotlin.math.max
 
 internal enum class ScrollbarAxis {
@@ -38,34 +36,29 @@ internal data class ScrollbarGeometry(
     val thumbEndPx: Float
         get() = thumbStartPx + thumbLengthPx
 
-    fun containsThumb(position: Offset): Boolean {
-        return when (axis) {
-            ScrollbarAxis.Vertical -> {
-                position.x in touchCrossStartPx..touchCrossEndPx &&
-                    position.y in (thumbStartPx - thumbTouchPaddingPx)..(thumbEndPx + thumbTouchPaddingPx)
-            }
+    fun containsThumb(position: Offset): Boolean = when (axis) {
+        ScrollbarAxis.Vertical -> {
+            position.x in touchCrossStartPx..touchCrossEndPx &&
+                position.y in (thumbStartPx - thumbTouchPaddingPx)..(thumbEndPx + thumbTouchPaddingPx)
+        }
 
-            ScrollbarAxis.Horizontal -> {
-                position.x in (thumbStartPx - thumbTouchPaddingPx)..(thumbEndPx + thumbTouchPaddingPx) &&
-                    position.y in touchCrossStartPx..touchCrossEndPx
-            }
+        ScrollbarAxis.Horizontal -> {
+            position.x in (thumbStartPx - thumbTouchPaddingPx)..(thumbEndPx + thumbTouchPaddingPx) &&
+                position.y in touchCrossStartPx..touchCrossEndPx
         }
     }
 
-    fun containsTrack(position: Offset): Boolean {
-        return when (axis) {
-            ScrollbarAxis.Vertical -> {
-                position.x in touchCrossStartPx..touchCrossEndPx &&
-                    position.y in trackStartPx..trackEndPx
-            }
+    fun containsTrack(position: Offset): Boolean = when (axis) {
+        ScrollbarAxis.Vertical -> {
+            position.x in touchCrossStartPx..touchCrossEndPx &&
+                position.y in trackStartPx..trackEndPx
+        }
 
-            ScrollbarAxis.Horizontal -> {
-                position.x in trackStartPx..trackEndPx &&
-                    position.y in touchCrossStartPx..touchCrossEndPx
-            }
+        ScrollbarAxis.Horizontal -> {
+            position.x in trackStartPx..trackEndPx &&
+                position.y in touchCrossStartPx..touchCrossEndPx
         }
     }
-
 }
 
 internal data class EditorScrollbarLayout(

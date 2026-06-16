@@ -2,9 +2,9 @@ package com.wuxianggujun.tinaide.extensions
 
 import android.content.Context
 import android.widget.Toast
-import com.wuxianggujun.tinaide.utils.ToastUtil
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
+import com.wuxianggujun.tinaide.utils.ToastUtil
 
 /**
  * Context 扩展函数
@@ -63,4 +63,3 @@ fun Context.handleErrorWithToast(error: Throwable, prefix: String = "") {
     }
     toastError(message)
 }
-

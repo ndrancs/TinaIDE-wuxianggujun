@@ -10,7 +10,7 @@ data class ReplacementItem(
     val newText: String,
     val matchStart: Int,
     val matchEnd: Int,
-    val isSelected: Boolean = true    // 用户可取消选择
+    val isSelected: Boolean = true
 )
 
 /**

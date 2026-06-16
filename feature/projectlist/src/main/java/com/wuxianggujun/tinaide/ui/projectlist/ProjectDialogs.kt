@@ -1,6 +1,5 @@
 package com.wuxianggujun.tinaide.ui.projectlist
 
-import com.wuxianggujun.tinaide.core.common.simplifyPath
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -9,22 +8,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.wuxianggujun.tinaide.core.common.simplifyPath
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.project.ProjectBuildSystem
 import com.wuxianggujun.tinaide.project.ProjectListItem
-import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
-import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaDangerButton
-import com.wuxianggujun.tinaide.ui.compose.components.TinaOutlinedButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaAlertDialog
+import com.wuxianggujun.tinaide.ui.compose.components.TinaDangerButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogCard
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogContentColumn
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogMessageCard
-import com.wuxianggujun.tinaide.ui.compose.components.TinaSemanticColors
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogTitleText
+import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
+import com.wuxianggujun.tinaide.ui.compose.components.TinaSemanticColors
 import com.wuxianggujun.tinaide.ui.compose.components.TinaTextButton
 import com.wuxianggujun.tinaide.ui.compose.icons.rememberTinaPainter
 import java.io.File
-import com.wuxianggujun.tinaide.core.i18n.Strings
 
 /**
  * Git 克隆对话框
@@ -175,6 +173,7 @@ fun GitCloneDialog(
         }
     )
 }
+
 /**
  * 重命名项目对话框
  */
@@ -230,6 +229,7 @@ fun RenameProjectDialog(
         }
     )
 }
+
 /**
  * 项目信息对话框
  */
@@ -319,6 +319,7 @@ fun ProjectInfoDialog(
         }
     )
 }
+
 /**
  * 删除确认对话框
  */

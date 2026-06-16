@@ -172,7 +172,7 @@
 - [编译项目](build-project.md)
 - [编译器设置说明](compiler-settings.md)
 - [终端与开发环境排障](terminal-troubleshooting.md)
-- [常见问题](faq.md)
+- [已知问题](known-issues.md)
 
 ## Android 依赖包的 include 和源码使用
 

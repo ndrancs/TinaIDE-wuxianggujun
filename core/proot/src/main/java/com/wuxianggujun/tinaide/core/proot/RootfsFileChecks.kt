@@ -19,17 +19,13 @@ internal object RootfsFileChecks {
         rootDir: File,
         pathInRootfs: String,
         readLinkTarget: (File) -> String? = ::readLinkTarget,
-    ): Boolean {
-        return resolveExistingFile(rootDir, pathInRootfs, readLinkTarget) != null
-    }
+    ): Boolean = resolveExistingFile(rootDir, pathInRootfs, readLinkTarget) != null
 
     fun isDirectory(
         rootDir: File,
         pathInRootfs: String,
         readLinkTarget: (File) -> String? = ::readLinkTarget,
-    ): Boolean {
-        return resolveExistingFile(rootDir, pathInRootfs, readLinkTarget)?.isDirectory == true
-    }
+    ): Boolean = resolveExistingFile(rootDir, pathInRootfs, readLinkTarget)?.isDirectory == true
 
     fun readTextOrNull(
         rootDir: File,
@@ -89,9 +85,7 @@ internal object RootfsFileChecks {
         return segments.joinToString("/")
     }
 
-    private fun readLinkTarget(file: File): String? {
-        return runCatching { Os.readlink(file.absolutePath) }
-            .recoverCatching { Files.readSymbolicLink(file.toPath()).toString() }
-            .getOrNull()
-    }
+    private fun readLinkTarget(file: File): String? = runCatching { Os.readlink(file.absolutePath) }
+        .recoverCatching { Files.readSymbolicLink(file.toPath()).toString() }
+        .getOrNull()
 }

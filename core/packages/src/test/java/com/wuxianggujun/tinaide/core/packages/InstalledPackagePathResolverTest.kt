@@ -5,13 +5,13 @@ import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.packages.model.InstallType
 import com.wuxianggujun.tinaide.core.packages.model.Platform
 import com.wuxianggujun.tinaide.core.packages.store.LocalInstallStateStore
+import java.io.File
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 class InstalledPackagePathResolverTest {

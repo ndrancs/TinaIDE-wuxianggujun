@@ -27,4 +27,3 @@ interface BookmarkRepository {
 
     suspend fun pruneMissingFiles(projectPath: String): Int
 }
-

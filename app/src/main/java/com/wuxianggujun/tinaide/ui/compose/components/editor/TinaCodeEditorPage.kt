@@ -64,9 +64,9 @@ import com.wuxianggujun.tinaide.core.textengine.Position
 import com.wuxianggujun.tinaide.core.textengine.RopeTextBuffer
 import com.wuxianggujun.tinaide.core.textengine.TextChange
 import com.wuxianggujun.tinaide.core.textengine.TextChangeListener
-import com.wuxianggujun.tinaide.core.treesitter.TreeSitterFoldingProvider
 import com.wuxianggujun.tinaide.core.treesitter.TreeSitterHighlighter
 import com.wuxianggujun.tinaide.editor.session.DocumentSession
+import com.wuxianggujun.tinaide.editor.session.EditorViewState
 import com.wuxianggujun.tinaide.search.CodeSearchEngine
 import com.wuxianggujun.tinaide.search.CodeSearchResult
 import com.wuxianggujun.tinaide.ui.compose.components.EditorStatus
@@ -107,7 +107,8 @@ fun TinaCodeEditorPage(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val buffer = remember(tab.id) { RopeTextBuffer() }
+    val runtime = remember(tab.id, state) { state.getOrCreateCodeEditorRuntime(tab) }
+    val buffer = runtime.buffer
     val textSnapshot = remember(buffer) { VersionedBufferTextSnapshot(buffer) }
     val textContentProvider = remember(tab.id, buffer) { TinaTextContentProvider(buffer) }
     val codeSearchEngine = remember(tab.id, textContentProvider) { CodeSearchEngine(textContentProvider) }
@@ -130,20 +131,9 @@ fun TinaCodeEditorPage(
             }
         )
     }
-    val editorState = remember(tab.id) {
-        EditorState(
-            textBuffer = buffer,
-            file = tab.file,
-            projectRootPath = state.getEditorProjectRootPathOrNull(),
-            config = EditorConfig.fromPrefs()
-        )
-    }
-    val syntaxHighlighter = remember(tab.id, tab.file.absolutePath, context.applicationContext) {
-        TreeSitterHighlighter.create(context.applicationContext, tab.file)
-    }
-    val foldingProvider = remember(tab.id, tab.file.absolutePath, context.applicationContext) {
-        TreeSitterFoldingProvider.create(context.applicationContext, tab.file)
-    }
+    val editorState = runtime.editorState
+    val syntaxHighlighter = remember(tab.id, runtime) { state.getOrCreateSyntaxHighlighter(tab) }
+    val foldingProvider = remember(tab.id, runtime) { state.getOrCreateFoldingProvider(tab) }
     val breakpointStore: BreakpointStore = koinInject()
     val bookmarkRepository: IBookmarkRepository = koinInject()
     val bookmarkProjectRootPath = state.getBookmarksProjectRootPathOrNull()
@@ -158,7 +148,7 @@ fun TinaCodeEditorPage(
     val latestOnCursorPositionChanged by rememberUpdatedState(onCursorPositionChanged)
     val latestOnFileEncodingChanged by rememberUpdatedState(onFileEncodingChanged)
 
-    var loading by remember(tab.id) { mutableStateOf(true) }
+    var loading by remember(tab.id) { mutableStateOf(!runtime.isContentLoaded) }
     var loadError by remember(tab.id) { mutableStateOf<String?>(null) }
     // 300ms 内加载完就不显示进度条，避免小文件一闪而过造成的 UI 抖动
     val showLoadingIndicator by produceState(initialValue = false, loading) {
@@ -194,13 +184,6 @@ fun TinaCodeEditorPage(
             if (editorState.highlighter === syntaxHighlighter) {
                 editorState.highlighter = null
             }
-            syntaxHighlighter?.dispose()
-        }
-    }
-
-    DisposableEffect(tab.id, foldingProvider) {
-        onDispose {
-            foldingProvider?.dispose()
         }
     }
 
@@ -261,7 +244,10 @@ fun TinaCodeEditorPage(
 
     DisposableEffect(tab.id, state, editorState, buffer, codeSearchEngine) {
         val editorCallback = EditorContainerState.CodeEditorCallback(
-            goToPosition = { line, column ->
+            goToPosition = goToPosition@ { line, column ->
+                if (loading || loadError != null) {
+                    return@goToPosition false
+                }
                 editorState.gotoLine(line, column)
                 true
             },
@@ -373,6 +359,7 @@ fun TinaCodeEditorPage(
             tabId = tab.id,
             state = state,
             buffer = buffer,
+            editorState = editorState,
             textSnapshot = textSnapshot
         ) { canUndo, canRedo, change ->
             state.updateTabState(
@@ -574,16 +561,58 @@ fun TinaCodeEditorPage(
     }
 
     LaunchedEffect(tab.id) {
+        if (runtime.isContentLoaded) {
+            loading = false
+            loadError = null
+            ensureTreeSitterPrepared(
+                runtime = runtime,
+                editorState = editorState,
+                syntaxHighlighter = syntaxHighlighter,
+                textSnapshot = textSnapshot
+            )
+            return@LaunchedEffect
+        }
+
         loading = true
         loadError = null
-        val detectedCharset = FileEncodingDetector.detectCharset(tab.file)
-        binding.withSuppressed { buffer.loadFromFile(tab.file, detectedCharset) }
-            .onSuccess {
-                refreshTreeSitterAfterBufferLoad(
+        val detachedSnapshot = state.getTabDetachedEditorSnapshot(tab.id)
+        if (detachedSnapshot != null) {
+            runCatching {
+                binding.withSuppressed { buffer.replaceAll(detachedSnapshot.text) }
+                ensureTreeSitterPrepared(
+                    runtime = runtime,
                     editorState = editorState,
                     syntaxHighlighter = syntaxHighlighter,
                     textSnapshot = textSnapshot
                 )
+                restoreEditorViewState(editorState, detachedSnapshot.viewState)
+                state.markTabDetachedEditorSnapshotRestored(tab.id, detachedSnapshot)
+                state.updateTabState(
+                    tabId = tab.id,
+                    isDirty = detachedSnapshot.isDirty,
+                    canUndo = buffer.canUndo(),
+                    canRedo = buffer.canRedo()
+                )
+                state.markCodeEditorRuntimeLoaded(tab.id)
+            }.onSuccess {
+                loading = false
+            }.onFailure { error ->
+                loadError = error.message ?: Strings.editor_load_failed.strOr(context)
+                loading = false
+            }
+            return@LaunchedEffect
+        }
+
+        val detectedCharset = FileEncodingDetector.detectCharset(tab.file)
+        binding.withSuppressed { buffer.loadFromFile(tab.file, detectedCharset) }
+            .onSuccess {
+                ensureTreeSitterPrepared(
+                    runtime = runtime,
+                    editorState = editorState,
+                    syntaxHighlighter = syntaxHighlighter,
+                    textSnapshot = textSnapshot
+                )
+                restoreEditorViewState(editorState, state.getTabEditorViewState(tab.id))
                 state.markTabEditorSnapshotClean(tab.id, detectedCharset)
                 state.updateTabState(
                     tabId = tab.id,
@@ -591,6 +620,7 @@ fun TinaCodeEditorPage(
                     canUndo = buffer.canUndo(),
                     canRedo = buffer.canRedo()
                 )
+                state.markCodeEditorRuntimeLoaded(tab.id)
                 loading = false
             }
             .onFailure { error ->
@@ -613,19 +643,10 @@ fun TinaCodeEditorPage(
                 if (attachmentState.loading || attachmentState.loadError != null) {
                     return@collect
                 }
-                // clangd 目前是按 tab 建立会话，非活动页必须及时释放，避免同一项目并发拉起多个 clangd。
                 if (attachmentState.isActive) {
                     state.attachTinaLspForTab(tab.id, tab.file) { textSnapshot.readText() }
-                } else {
-                    state.releaseTinaLspForTab(tab.id)
                 }
             }
-    }
-
-    DisposableEffect(tab.id, state) {
-        onDispose {
-            state.releaseTinaLspForTab(tab.id)
-        }
     }
 
     LaunchedEffect(tab.id, state) {
@@ -815,11 +836,14 @@ fun TinaCodeEditorPage(
                                 val detectedCharset = FileEncodingDetector.detectCharset(tab.file)
                                 binding.withSuppressed { buffer.loadFromFile(tab.file, detectedCharset) }
                                     .onSuccess {
-                                        refreshTreeSitterAfterBufferLoad(
+                                        runtime.isTreeSitterSnapshotReady = false
+                                        ensureTreeSitterPrepared(
+                                            runtime = runtime,
                                             editorState = editorState,
                                             syntaxHighlighter = syntaxHighlighter,
                                             textSnapshot = textSnapshot
                                         )
+                                        restoreEditorViewState(editorState, state.getTabEditorViewState(tab.id))
                                         state.markTabEditorSnapshotClean(tab.id, detectedCharset)
                                         state.updateTabState(
                                             tabId = tab.id,
@@ -827,6 +851,7 @@ fun TinaCodeEditorPage(
                                             canUndo = buffer.canUndo(),
                                             canRedo = buffer.canRedo()
                                         )
+                                        state.markCodeEditorRuntimeLoaded(tab.id)
                                         loading = false
                                     }
                                     .onFailure {
@@ -854,6 +879,7 @@ private class TextBufferSessionBinding(
     private val tabId: String,
     private val state: EditorContainerState,
     private val buffer: RopeTextBuffer,
+    private val editorState: EditorState,
     private val textSnapshot: VersionedBufferTextSnapshot,
     private val onBufferEdited: (canUndo: Boolean, canRedo: Boolean, change: TextChange) -> Unit
 ) : DocumentSession.EditorBinding,
@@ -923,6 +949,13 @@ private class TextBufferSessionBinding(
     }
 
     override fun currentDocumentVersion(): Long = buffer.version
+
+    override fun currentViewState(): EditorViewState = EditorViewState(
+        cursorLine = editorState.cursorPosition.line,
+        cursorColumn = editorState.cursorPosition.column,
+        scrollX = editorState.scrollOffsetXPx.roundToInt(),
+        scrollY = editorState.scrollOffsetPx.roundToInt()
+    )
 }
 
 private class VersionedBufferTextSnapshot(
@@ -1236,6 +1269,21 @@ internal fun String.toEditorSemanticTokenTypeOrNull(): SemanticTokenType? = when
     else -> null
 }
 
+private suspend fun ensureTreeSitterPrepared(
+    runtime: EditorContainerState.CodeEditorRuntime,
+    editorState: EditorState,
+    syntaxHighlighter: TreeSitterHighlighter?,
+    textSnapshot: VersionedBufferTextSnapshot
+) {
+    if (runtime.isTreeSitterSnapshotReady) return
+    refreshTreeSitterAfterBufferLoad(
+        editorState = editorState,
+        syntaxHighlighter = syntaxHighlighter,
+        textSnapshot = textSnapshot
+    )
+    runtime.isTreeSitterSnapshotReady = true
+}
+
 private suspend fun refreshTreeSitterAfterBufferLoad(
     editorState: EditorState,
     syntaxHighlighter: TreeSitterHighlighter?,
@@ -1246,6 +1294,13 @@ private suspend fun refreshTreeSitterAfterBufferLoad(
     // 阻塞直到首个渲染快照就位：首帧不再闪默认色。
     withContext(Dispatchers.IO) { highlighter.openDocumentBlocking(text) }
     editorState.notifyHighlightChanged()
+}
+
+private fun restoreEditorViewState(editorState: EditorState, viewState: EditorViewState?) {
+    if (viewState == null) return
+    editorState.gotoLine(viewState.cursorLine, viewState.cursorColumn)
+    editorState.scrollOffsetXPx = viewState.scrollX.coerceAtLeast(0).toFloat()
+    editorState.scrollOffsetPx = viewState.scrollY.coerceAtLeast(0).toFloat()
 }
 
 private fun String.toEditorSemanticTokenModifierOrNull(): SemanticTokenModifier? = when (trim().lowercase().replace('-', '_')) {

@@ -5,25 +5,45 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class Platform {
-    @SerialName("linux") LINUX,
-    @SerialName("android") ANDROID
+    @SerialName("linux")
+    LINUX,
+
+    @SerialName("android")
+    ANDROID
 }
 
 @Serializable
 enum class InstallType {
-    @SerialName("apt") APT, // 历史协议值，当前 Linux guest 会按发行版包管理器安装系统包
-    @SerialName("download") DOWNLOAD,
-    @SerialName("script") SCRIPT
+    @SerialName("apt")
+    APT,
+
+    // 历史协议值，当前 Linux guest 会按发行版包管理器安装系统包
+    @SerialName("download")
+    DOWNLOAD,
+
+    @SerialName("script")
+    SCRIPT
 }
 
 @Serializable
 enum class PackageArtifactType {
-    @SerialName("source") SOURCE,
-    @SerialName("header") HEADER,
-    @SerialName("static") STATIC,
-    @SerialName("shared") SHARED,
-    @SerialName("executable") EXECUTABLE,
-    @SerialName("mixed") MIXED
+    @SerialName("source")
+    SOURCE,
+
+    @SerialName("header")
+    HEADER,
+
+    @SerialName("static")
+    STATIC,
+
+    @SerialName("shared")
+    SHARED,
+
+    @SerialName("executable")
+    EXECUTABLE,
+
+    @SerialName("mixed")
+    MIXED
 }
 
 @Serializable
@@ -36,7 +56,7 @@ data class GUIPackage(
     val homepage: String? = null,
     val linux: PlatformPackage? = null,
     val android: PlatformPackage? = null,
-    @SerialName("is_bundled") val isBundled: Boolean = false // 是否为内置包（从 assets/bundled_packages 安装）
+    @SerialName("is_bundled") val isBundled: Boolean = false
 )
 
 @Serializable
@@ -44,7 +64,7 @@ data class PlatformPackage(
     val version: String,
     @SerialName("artifact_type") val artifactType: PackageArtifactType = PackageArtifactType.MIXED,
     @SerialName("install_type") val installType: InstallType,
-    @SerialName("apt_package") val aptPackage: String? = null, // 历史字段名，当前承载 Linux 系统包名
+    @SerialName("apt_package") val aptPackage: String? = null,
     val size: Long? = null,
     @SerialName("download_url") val downloadUrl: String? = null,
     @SerialName("download_sources") val downloadSources: List<DownloadSource>? = null,
@@ -63,7 +83,7 @@ data class PackageVersion(
     val version: String,
     @SerialName("artifact_type") val artifactType: PackageArtifactType = PackageArtifactType.MIXED,
     @SerialName("install_type") val installType: InstallType,
-    @SerialName("apt_package") val aptPackage: String? = null, // 历史字段名，当前承载 Linux 系统包名
+    @SerialName("apt_package") val aptPackage: String? = null,
     @SerialName("apt_repository") val aptRepository: String? = null,
     @SerialName("download_size") val downloadSize: Long? = null,
     @SerialName("download_url") val downloadUrl: String? = null,

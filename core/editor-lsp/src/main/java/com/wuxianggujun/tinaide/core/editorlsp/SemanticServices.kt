@@ -13,4 +13,3 @@ data class SignatureHelpResult(
     val activeSignature: Int,
     val activeParameter: Int
 )
-

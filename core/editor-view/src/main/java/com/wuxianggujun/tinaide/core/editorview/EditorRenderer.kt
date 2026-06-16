@@ -7,7 +7,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
-import com.wuxianggujun.tinaide.core.textengine.TextScanKernel
 import com.wuxianggujun.tinaide.core.textengine.TextChange
 import timber.log.Timber
 
@@ -48,6 +47,7 @@ internal class EditorRenderer(
     private var totalCacheMisses: Long = 0L
 
     private val reusableFontMetrics = Paint.FontMetrics()
+
     // 跨帧复用：避免每帧 new EditorRenderFrameContext + new lineTextProvider 捕获闭包。
     private val reusableFrameContext = EditorRenderFrameContext(textRenderer)
     private var cachedHitZonesTextSize = 0f
@@ -309,8 +309,12 @@ internal class EditorRenderer(
                     badgeMargin = textRenderer.badgeMargin,
                     badgeWidth = textRenderer.badgeWidth
                 )
-            } else null
-        } else null
+            } else {
+                null
+            }
+        } else {
+            null
+        }
 
         val clipLeft = if (state.pinLineNumber) textStartX else 0f
         drawScope.clipRect(
@@ -342,9 +346,7 @@ internal class EditorRenderer(
         }
     }
 
-    override fun contentStartX(state: EditorState, lineNumberPaint: Paint): Float {
-        return hitZones(state, lineNumberPaint).textStartX
-    }
+    override fun contentStartX(state: EditorState, lineNumberPaint: Paint): Float = hitZones(state, lineNumberPaint).textStartX
 
     override fun hitZones(state: EditorState, lineNumberPaint: Paint): EditorHitZones {
         val textSize = lineNumberPaint.textSize

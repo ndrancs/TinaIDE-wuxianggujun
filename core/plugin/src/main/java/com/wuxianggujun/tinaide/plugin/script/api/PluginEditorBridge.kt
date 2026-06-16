@@ -120,4 +120,3 @@ object PluginEditorBridgeHolder {
         bridge.set(null)
     }
 }
-

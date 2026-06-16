@@ -6,13 +6,13 @@ import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
@@ -26,8 +26,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -933,25 +933,21 @@ private fun resolveUserProjectTemplateRenameErrorRes(
 
 private fun resolveUserProjectTemplateVariableErrorRes(
     error: UserProjectTemplateVariableInputError
-): Int {
-    return when (error) {
-        UserProjectTemplateVariableInputError.MISSING_SEPARATOR ->
-            Strings.settings_user_templates_variables_error_missing_separator
-        UserProjectTemplateVariableInputError.INVALID_NAME ->
-            Strings.settings_user_templates_variables_error_invalid_name
-        UserProjectTemplateVariableInputError.EMPTY_VALUE ->
-            Strings.settings_user_templates_variables_error_empty_value
-    }
+): Int = when (error) {
+    UserProjectTemplateVariableInputError.MISSING_SEPARATOR ->
+        Strings.settings_user_templates_variables_error_missing_separator
+    UserProjectTemplateVariableInputError.INVALID_NAME ->
+        Strings.settings_user_templates_variables_error_invalid_name
+    UserProjectTemplateVariableInputError.EMPTY_VALUE ->
+        Strings.settings_user_templates_variables_error_empty_value
 }
 
-private fun resolveUserProjectTemplateBuildSystemLabelRes(buildSystem: ProjectBuildSystem): Int {
-    return when (buildSystem) {
-        ProjectBuildSystem.SINGLE_FILE -> Strings.settings_user_templates_build_system_single_file
-        ProjectBuildSystem.CMAKE -> Strings.tag_cmake
-        ProjectBuildSystem.MAKE -> Strings.tag_makefile
-        ProjectBuildSystem.PLUGIN -> Strings.tag_plugin
-        ProjectBuildSystem.UNKNOWN -> Strings.settings_user_templates_build_system_unknown
-    }
+private fun resolveUserProjectTemplateBuildSystemLabelRes(buildSystem: ProjectBuildSystem): Int = when (buildSystem) {
+    ProjectBuildSystem.SINGLE_FILE -> Strings.settings_user_templates_build_system_single_file
+    ProjectBuildSystem.CMAKE -> Strings.tag_cmake
+    ProjectBuildSystem.MAKE -> Strings.tag_makefile
+    ProjectBuildSystem.PLUGIN -> Strings.tag_plugin
+    ProjectBuildSystem.UNKNOWN -> Strings.settings_user_templates_build_system_unknown
 }
 
 private fun buildUserProjectTemplateBuildSystemOptions(): List<ProjectSettingsOptionSpec<String>> = listOf(
@@ -962,12 +958,10 @@ private fun buildUserProjectTemplateBuildSystemOptions(): List<ProjectSettingsOp
     ProjectSettingsOptionSpec(ProjectBuildSystem.PLUGIN.name, Strings.tag_plugin),
 )
 
-private fun resolveUserProjectTemplateBuildSystemValue(value: String): ProjectBuildSystem? {
-    return if (value == USER_TEMPLATE_METADATA_AUTO_VALUE) {
-        null
-    } else {
-        ProjectBuildSystem.entries.firstOrNull { it.name == value }
-    }
+private fun resolveUserProjectTemplateBuildSystemValue(value: String): ProjectBuildSystem? = if (value == USER_TEMPLATE_METADATA_AUTO_VALUE) {
+    null
+} else {
+    ProjectBuildSystem.entries.firstOrNull { it.name == value }
 }
 
 private fun buildUserProjectTemplateLanguageOptions(): List<ProjectSettingsOptionSpec<String>> = listOf(
@@ -985,29 +979,25 @@ private fun buildUserProjectTemplateLanguageOptions(): List<ProjectSettingsOptio
     ProjectSettingsOptionSpec(ProjectLanguage.MIXED.name, Strings.settings_user_templates_language_mixed),
 )
 
-private fun resolveUserProjectTemplateLanguageValue(value: String): ProjectLanguage? {
-    return if (value == USER_TEMPLATE_METADATA_AUTO_VALUE) {
-        null
-    } else {
-        ProjectLanguage.entries.firstOrNull { it.name == value }
-    }
+private fun resolveUserProjectTemplateLanguageValue(value: String): ProjectLanguage? = if (value == USER_TEMPLATE_METADATA_AUTO_VALUE) {
+    null
+} else {
+    ProjectLanguage.entries.firstOrNull { it.name == value }
 }
 
-private fun resolveUserProjectTemplateLanguageLabelRes(language: ProjectLanguage): Int {
-    return when (language) {
-        ProjectLanguage.C -> Strings.settings_user_templates_language_c
-        ProjectLanguage.CPP -> Strings.settings_user_templates_language_cpp
-        ProjectLanguage.JAVA -> Strings.tag_java
-        ProjectLanguage.KOTLIN -> Strings.tag_kotlin
-        ProjectLanguage.PYTHON -> Strings.tag_python
-        ProjectLanguage.RUST -> Strings.tag_rust
-        ProjectLanguage.GO -> Strings.tag_go
-        ProjectLanguage.JAVASCRIPT -> Strings.tag_javascript
-        ProjectLanguage.TYPESCRIPT -> Strings.tag_typescript
-        ProjectLanguage.SHELL -> Strings.tag_shell
-        ProjectLanguage.MIXED -> Strings.settings_user_templates_language_mixed
-        ProjectLanguage.UNKNOWN -> Strings.settings_user_templates_build_system_unknown
-    }
+private fun resolveUserProjectTemplateLanguageLabelRes(language: ProjectLanguage): Int = when (language) {
+    ProjectLanguage.C -> Strings.settings_user_templates_language_c
+    ProjectLanguage.CPP -> Strings.settings_user_templates_language_cpp
+    ProjectLanguage.JAVA -> Strings.tag_java
+    ProjectLanguage.KOTLIN -> Strings.tag_kotlin
+    ProjectLanguage.PYTHON -> Strings.tag_python
+    ProjectLanguage.RUST -> Strings.tag_rust
+    ProjectLanguage.GO -> Strings.tag_go
+    ProjectLanguage.JAVASCRIPT -> Strings.tag_javascript
+    ProjectLanguage.TYPESCRIPT -> Strings.tag_typescript
+    ProjectLanguage.SHELL -> Strings.tag_shell
+    ProjectLanguage.MIXED -> Strings.settings_user_templates_language_mixed
+    ProjectLanguage.UNKNOWN -> Strings.settings_user_templates_build_system_unknown
 }
 
 @Composable

@@ -2,12 +2,12 @@ package com.wuxianggujun.tinaide.core.ndk
 
 import android.content.Context
 import com.google.common.truth.Truth.assertThat
+import java.io.File
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 class ToolchainConfigManagerTest {
@@ -77,14 +77,12 @@ class ToolchainConfigManagerTest {
     private fun toolchainInfo(
         id: String,
         path: String = "toolchains/$id"
-    ): ToolchainInfo {
-        return ToolchainInfo(
-            id = id,
-            name = id,
-            version = "18",
-            type = ToolchainType.CUSTOM,
-            path = path,
-            installedAt = 100L
-        )
-    }
+    ): ToolchainInfo = ToolchainInfo(
+        id = id,
+        name = id,
+        version = "18",
+        type = ToolchainType.CUSTOM,
+        path = path,
+        installedAt = 100L
+    )
 }

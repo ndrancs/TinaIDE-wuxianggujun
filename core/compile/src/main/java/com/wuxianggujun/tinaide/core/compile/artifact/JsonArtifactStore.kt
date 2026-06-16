@@ -1,11 +1,11 @@
 package com.wuxianggujun.tinaide.core.compile.artifact
 
+import java.io.File
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import timber.log.Timber
-import java.io.File
 
 /**
  * 基于每个 buildDir 一份 JSON 文件的简单产物存储。
@@ -67,6 +67,5 @@ class JsonArtifactStore(
 
     private fun storeDir(buildDir: File): File = File(buildDir, STORE_DIR)
 
-    private fun fileFor(id: ArtifactId, buildDir: File): File =
-        File(storeDir(buildDir), "${id.storageKey()}.json")
+    private fun fileFor(id: ArtifactId, buildDir: File): File = File(storeDir(buildDir), "${id.storageKey()}.json")
 }

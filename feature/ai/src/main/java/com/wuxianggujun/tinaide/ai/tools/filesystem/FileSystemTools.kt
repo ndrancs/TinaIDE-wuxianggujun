@@ -107,6 +107,7 @@ object WriteFileTool : AiTool {
             "Write content to a file, creating it if it doesn't exist or overwriting if it does. Automatically creates parent directories if needed. Use for generating new files or updating existing ones."
         )
     override val category = ToolCategory.FILE_SYSTEM
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")
@@ -473,6 +474,7 @@ object CreateDirectoryTool : AiTool {
             "Create a new directory in the file system"
         )
     override val category = ToolCategory.FILE_SYSTEM
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")
@@ -558,6 +560,7 @@ object MoveFileTool : AiTool {
             "Move or rename a file or directory"
         )
     override val category = ToolCategory.FILE_SYSTEM
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")
@@ -664,6 +667,7 @@ object CopyFileTool : AiTool {
             "Copy a file or directory to a new location"
         )
     override val category = ToolCategory.FILE_SYSTEM
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")
@@ -845,6 +849,7 @@ object ReplaceTextTool : AiTool {
             "Find and replace text in a file. Supports replacing first occurrence or all occurrences. Automatically syncs with open editor tabs."
         )
     override val category = ToolCategory.FILE_SYSTEM
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")
@@ -968,6 +973,7 @@ object ReplaceLineTool : AiTool {
             "Replace the content of a specific line in a file. Line numbers start from 1. Automatically syncs with open editor tabs."
         )
     override val category = ToolCategory.FILE_SYSTEM
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")
@@ -1076,6 +1082,7 @@ object InsertLineTool : AiTool {
             "Insert a new line before or after a specific line number in a file. Line numbers start from 1. Automatically syncs with open editor tabs."
         )
     override val category = ToolCategory.FILE_SYSTEM
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")

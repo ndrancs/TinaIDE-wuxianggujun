@@ -21,7 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
@@ -58,12 +61,26 @@ internal fun FileTreeItem(
             .widthIn(min = containerWidth)
             .onGloballyPositioned { coordinates ->
                 val bounds = coordinates.boundsInRoot()
-                boundsHolder.anchorInRoot = Offset(bounds.left, bounds.bottom)
+                boundsHolder.boundsInRoot = bounds
             }
             .background(backgroundColor)
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val down = event.changes.firstOrNull { change ->
+                            change.pressed && !change.previousPressed
+                        }
+                        if (down != null) {
+                            boundsHolder.lastPointerInRoot =
+                                boundsHolder.boundsInRoot.topLeft + down.position
+                        }
+                    }
+                }
+            }
             .combinedClickable(
                 onClick = { onClick(node) },
-                onLongClick = { onLongClick(node, boundsHolder.anchorInRoot) }
+                onLongClick = { onLongClick(node, boundsHolder.longPressAnchorInRoot()) }
             )
             .padding(vertical = 8.dp)
             .padding(start = (node.level * 16).dp, end = 16.dp)
@@ -123,7 +140,26 @@ private fun rememberFileTreeIconPainter(iconSource: FileTreeIconSource) = when (
 }
 
 private class FileTreeItemBoundsHolder {
-    var anchorInRoot: Offset = Offset.Zero
+    var boundsInRoot: Rect = Rect.Zero
+    var lastPointerInRoot: Offset? = null
+
+    fun longPressAnchorInRoot(): Offset = resolveFileTreeItemLongPressAnchor(
+        boundsInRoot = boundsInRoot,
+        pointerInRoot = lastPointerInRoot
+    )
+}
+
+internal fun resolveFileTreeItemLongPressAnchor(
+    boundsInRoot: Rect,
+    pointerInRoot: Offset?
+): Offset {
+    if (pointerInRoot != null && pointerInRoot in boundsInRoot) {
+        return pointerInRoot
+    }
+    return Offset(
+        x = boundsInRoot.center.x,
+        y = boundsInRoot.bottom
+    )
 }
 
 /**

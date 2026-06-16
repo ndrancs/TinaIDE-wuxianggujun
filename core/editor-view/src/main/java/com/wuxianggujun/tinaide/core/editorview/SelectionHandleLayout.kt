@@ -14,6 +14,17 @@ internal data class SelectionHandleLayout(
     val drawRadiusPx: Float,
     val hitRadiusPx: Float
 ) {
+    fun viewportDragAnchor(kind: SelectionHandleKind, scrollOffsetXPx: Float): Offset {
+        val center = when (kind) {
+            SelectionHandleKind.START -> startCenter
+            SelectionHandleKind.END -> endCenter
+        }
+        return Offset(
+            x = center.x - scrollOffsetXPx,
+            y = center.y - drawRadiusPx * SELECTION_HANDLE_KNOB_Y_OFFSET_RATIO
+        )
+    }
+
     fun hitTest(pointInContent: Offset): SelectionHandleKind? {
         val hitRadiusSquared = hitRadiusPx * hitRadiusPx
         val startDistanceSquared = distanceSquared(pointInContent, startCenter)
@@ -59,7 +70,7 @@ internal fun resolveSelectionHandleLayout(
     val maxRadius = maxOf(state.config.selectionHandleMinRadiusPx, state.config.selectionHandleMaxRadiusPx)
     val drawRadius = (state.lineHeightPx * state.config.selectionHandleRadiusRatio)
         .coerceIn(minRadius, maxRadius)
-    val knobYOffset = drawRadius * 0.92f
+    val knobYOffset = drawRadius * SELECTION_HANDLE_KNOB_Y_OFFSET_RATIO
     val maxLine = state.textBuffer.lineCount - 1
     val startLine = startPos.line.coerceIn(0, maxLine)
     val endLine = endPos.line.coerceIn(0, maxLine)
@@ -122,3 +133,5 @@ internal fun resolveSelectionHandleLayout(
         hitRadiusPx = hitRadius
     )
 }
+
+private const val SELECTION_HANDLE_KNOB_Y_OFFSET_RATIO = 0.92f

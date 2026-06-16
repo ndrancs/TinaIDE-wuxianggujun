@@ -2,6 +2,8 @@ package com.wuxianggujun.tinaide.search
 
 import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
 import com.wuxianggujun.tinaide.core.lang.ProjectPathFilters
+import java.io.File
+import java.nio.charset.Charset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -9,8 +11,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.nio.charset.Charset
 
 /**
  * 项目级搜索引擎
@@ -66,7 +66,9 @@ class ProjectSearchEngine(
             } catch (e: Exception) {
                 null
             }
-        } else null
+        } else {
+            null
+        }
 
         projectDir.walkTopDown()
             .onEnter { dir ->
@@ -110,7 +112,9 @@ class ProjectSearchEngine(
             } catch (e: Exception) {
                 null
             }
-        } else null
+        } else {
+            null
+        }
 
         projectDir.walkTopDown()
             .onEnter { dir ->
@@ -206,12 +210,16 @@ class ProjectSearchEngine(
                 val contextBefore = if (options.contextLines > 0) {
                     (maxOf(0, index - options.contextLines) until index)
                         .map { lines[it].trim() }
-                } else emptyList()
+                } else {
+                    emptyList()
+                }
 
                 val contextAfter = if (options.contextLines > 0) {
                     ((index + 1)..minOf(lines.lastIndex, index + options.contextLines))
                         .map { lines[it].trim() }
-                } else emptyList()
+                } else {
+                    emptyList()
+                }
 
                 if (pattern != null) {
                     // 正则搜索
@@ -291,7 +299,5 @@ class ProjectSearchEngine(
     /**
      * 获取搜索结果的文件分组
      */
-    fun groupByFile(results: List<ProjectSearchResult>): Map<File, List<ProjectSearchResult>> {
-        return results.groupBy { it.file }
-    }
+    fun groupByFile(results: List<ProjectSearchResult>): Map<File, List<ProjectSearchResult>> = results.groupBy { it.file }
 }

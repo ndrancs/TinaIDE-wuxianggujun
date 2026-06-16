@@ -17,7 +17,9 @@ import com.wuxianggujun.tinaide.core.config.ShortcutAction
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.plugin.InstalledPlugin
 import com.wuxianggujun.tinaide.plugin.PluginManager
-import com.wuxianggujun.tinaide.plugin.ResolvedHostMenuItem
+import com.wuxianggujun.tinaide.plugin.ResolvedPluginCommand
+import com.wuxianggujun.tinaide.plugin.ResolvedPluginCommandSource
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistry
 import com.wuxianggujun.tinaide.project.ProjectApkExportType
 import com.wuxianggujun.tinaide.ui.compose.state.editor.EditorContainerState
 import java.io.File
@@ -29,7 +31,8 @@ private const val COMMAND_PACKAGE_APK = "project.packageApk"
 private const val COMMAND_GLOBAL_SEARCH = "view.globalSearch"
 private const val COMMAND_WORKSPACE_EXIT = HostCommands.PROJECT_CLOSE
 
-private val DEFAULT_TOP_BAR_COMMAND_IDS = listOf(
+private val DEFAULT_OVERFLOW_MENU_COMMAND_IDS = listOf(
+    HostCommands.VIEW_COMMAND_PALETTE,
     COMMAND_GLOBAL_SEARCH,
     HostCommands.VIEW_TOGGLE_TERMINAL,
     HostCommands.VIEW_SETTINGS,
@@ -55,14 +58,12 @@ internal data class MainActivityCommandAvailability(
     val currentBuildSystem: BuildSystem,
 )
 
-internal fun resolveCanPackageApk(buildUiState: MainActivityBuildUiState): Boolean {
-    return when (buildUiState.apkExportType) {
-        null,
-        ProjectApkExportType.DISABLED -> false
+internal fun resolveCanPackageApk(buildUiState: MainActivityBuildUiState): Boolean = when (buildUiState.apkExportType) {
+    null,
+    ProjectApkExportType.DISABLED -> false
 
-        ProjectApkExportType.TERMINAL -> buildUiState.hasTerminalApkExportOptions
-        else -> true
-    }
+    ProjectApkExportType.TERMINAL -> buildUiState.hasTerminalApkExportOptions
+    else -> true
 }
 
 @Composable
@@ -110,21 +111,16 @@ internal fun rememberMainActivityCommands(
 @Composable
 internal fun rememberMainActivityOverflowCommands(
     commands: List<MainActivityCommand>,
-    pinnedCommandIds: List<String>,
-): List<MainActivityCommand> = remember(commands, pinnedCommandIds) {
-    selectMainActivityOverflowCommands(commands, pinnedCommandIds)
+): List<MainActivityCommand> = remember(commands) {
+    selectMainActivityOverflowCommands(commands)
 }
 
 internal fun selectMainActivityOverflowCommands(
     commands: List<MainActivityCommand>,
-    pinnedCommandIds: List<String>,
 ): List<MainActivityCommand> {
     val commandById = commands.associateBy(MainActivityCommand::id)
-    val preferredIds = pinnedCommandIds.takeIf { it.isNotEmpty() } ?: DEFAULT_TOP_BAR_COMMAND_IDS
-    return preferredIds.mapNotNull(commandById::get).take(MAX_TOP_BAR_COMMANDS)
+    return DEFAULT_OVERFLOW_MENU_COMMAND_IDS.mapNotNull(commandById::get)
 }
-
-private const val MAX_TOP_BAR_COMMANDS = 3
 
 private fun buildMainActivityCommands(
     availability: MainActivityCommandAvailability,
@@ -354,6 +350,11 @@ private fun buildMainActivityCommands(
         execute = callbacks.onOpenGlobalSearch
     )
     addHostCommand(
+        id = HostCommands.VIEW_COMMAND_PALETTE,
+        availability = availability,
+        execute = callbacks.onOpenCommandPalette
+    )
+    addHostCommand(
         id = HostCommands.EDITOR_TOGGLE_BOOKMARK,
         availability = availability,
         execute = callbacks.onToggleBookmark
@@ -401,10 +402,7 @@ private fun resolvePluginEditorToolbarCommands(
 ): List<MainActivityCommand> {
     if (activeFile == null || hostCommandExecutor == null) return emptyList()
 
-    val pluginNameById = enabledPlugins.associate { plugin ->
-        plugin.manifest.id to plugin.manifest.name
-    }
-    return pluginManager.resolveEditorToolbarMenuItems(
+    return pluginManager.resolveEditorToolbarCommands(
         installedPlugins = enabledPlugins,
         file = activeFile,
         isDirty = isDirty
@@ -412,23 +410,35 @@ private fun resolvePluginEditorToolbarCommands(
         item.toCommand(
             activeFile = activeFile,
             isDirty = isDirty,
-            pluginName = pluginNameById[item.pluginId] ?: item.pluginId,
             hostCommandExecutor = hostCommandExecutor
         )
     }
 }
 
-private fun ResolvedHostMenuItem.toCommand(
+private fun ResolvedPluginCommand.toCommand(
     activeFile: File,
     isDirty: Boolean,
-    pluginName: String,
     hostCommandExecutor: HostCommandExecutor,
 ): MainActivityCommand {
     val commandId = commandId.trim()
+    val availability = when (source) {
+        ResolvedPluginCommandSource.HOST -> null
+        ResolvedPluginCommandSource.PLUGIN -> PluginCommandRegistry.availability(commandId, pluginId)
+    }
+    val disabledReason = availability
+        ?.errorMessage
+        ?.takeIf(String::isNotBlank)
+        ?.let(MainActivityCommandText::Literal)
     return MainActivityCommand(
-        id = "pluginToolbar:$pluginId:$group:$commandId",
+        id = buildPluginToolbarCommandId(
+            pluginId = pluginId,
+            group = group,
+            commandId = commandId
+        ),
         title = MainActivityCommandText.Literal(title),
         category = MainActivityCommandCategory.PLUGIN,
+        enabled = availability?.available ?: true,
+        disabledReason = disabledReason,
         keywords = listOf("plugin", pluginId, pluginName, commandId),
         source = MainActivityCommandSource.PLUGIN,
         sourceName = pluginName,
@@ -487,18 +497,16 @@ private fun MutableList<MainActivityCommand>.addHostCommand(
     )
 }
 
-private fun MainActivityCommandAvailability.isEnabled(descriptor: HostCommandDescriptor): Boolean {
-    return when (descriptor.availability) {
-        HostCommandAvailability.ALWAYS -> true
-        HostCommandAvailability.ACTIVE_FILE -> hasActiveFile
-        HostCommandAvailability.DIRTY_ACTIVE_FILE -> hasActiveFile && isDirty
-        HostCommandAvailability.ACTIVE_EDITOR -> hasActiveFile
-        HostCommandAvailability.BASIC_LSP_NAVIGATION -> isBasicLspNavigationAvailable
-        HostCommandAvailability.ADVANCED_LSP_NAVIGATION -> isAdvancedLspNavigationAvailable
-        HostCommandAvailability.LSP_REFACTOR -> isLspRefactorAvailable
-        HostCommandAvailability.HEADER_SOURCE_SWITCH -> isHeaderSourceSwitchAvailable
-        HostCommandAvailability.NAVIGATE_BACK -> canNavigateBack
-        HostCommandAvailability.NAVIGATE_FORWARD -> canNavigateForward
-        HostCommandAvailability.NOT_COMPILING -> !isCompiling
-    }
+private fun MainActivityCommandAvailability.isEnabled(descriptor: HostCommandDescriptor): Boolean = when (descriptor.availability) {
+    HostCommandAvailability.ALWAYS -> true
+    HostCommandAvailability.ACTIVE_FILE -> hasActiveFile
+    HostCommandAvailability.DIRTY_ACTIVE_FILE -> hasActiveFile && isDirty
+    HostCommandAvailability.ACTIVE_EDITOR -> hasActiveFile
+    HostCommandAvailability.BASIC_LSP_NAVIGATION -> isBasicLspNavigationAvailable
+    HostCommandAvailability.ADVANCED_LSP_NAVIGATION -> isAdvancedLspNavigationAvailable
+    HostCommandAvailability.LSP_REFACTOR -> isLspRefactorAvailable
+    HostCommandAvailability.HEADER_SOURCE_SWITCH -> isHeaderSourceSwitchAvailable
+    HostCommandAvailability.NAVIGATE_BACK -> canNavigateBack
+    HostCommandAvailability.NAVIGATE_FORWARD -> canNavigateForward
+    HostCommandAvailability.NOT_COMPILING -> !isCompiling
 }

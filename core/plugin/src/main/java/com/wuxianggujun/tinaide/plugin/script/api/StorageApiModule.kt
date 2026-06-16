@@ -17,7 +17,10 @@ class StorageApiModule(private val context: Context) : PluginApiModule {
         lua.push { L: Lua ->
             withPermission(this.runtime, L, namespace, "get", PluginPermission.STORAGE_LOCAL) {
                 val key = L.getStringArg(1)
-                if (key == null) { L.pushNil(); return@withPermission 1 }
+                if (key == null) {
+                    L.pushNil()
+                    return@withPermission 1
+                }
                 val fullKey = "$pluginId:$key"
                 val prefs = context.getSharedPreferences("plugin_storage", Context.MODE_PRIVATE)
                 val value = prefs.getString(fullKey, null)

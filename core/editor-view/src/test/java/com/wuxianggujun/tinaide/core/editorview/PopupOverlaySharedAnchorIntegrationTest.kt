@@ -269,16 +269,14 @@ class PopupOverlaySharedAnchorIntegrationTest {
             )
         }
 
-        private fun resolveAnchor(): CursorPopupAnchor {
-            return CursorPopupAnchorResolver.resolve(
-                state = state,
-                contentStartXPx = state.contentStartXPx,
-                textPaint = textPaint,
-                lineLayoutCache = lineLayoutCache,
-                fontSizePx = fontSizePx,
-                lineTextProvider = buffer::getLine,
-                textScanCache = EditorTextScanCache()
-            )
-        }
+        private fun resolveAnchor(): CursorPopupAnchor = CursorPopupAnchorResolver.resolve(
+            state = state,
+            contentStartXPx = state.contentStartXPx,
+            textPaint = textPaint,
+            lineLayoutCache = lineLayoutCache,
+            fontSizePx = fontSizePx,
+            lineTextProvider = buffer::getLine,
+            textScanCache = EditorTextScanCache()
+        )
     }
 }

@@ -89,26 +89,22 @@ class EditorHardwareKeyboardInputTest {
         assertThat(state.cursorOffset).isEqualTo(1)
     }
 
-    private fun createConnection(state: EditorState): EditorInputConnection {
-        return EditorInputConnection(
-            targetView = EditorInputHostView(ApplicationProvider.getApplicationContext<Context>()),
-            state = state,
-            onInsertedText = {},
-            onNonInsertEdit = {}
-        )
-    }
+    private fun createConnection(state: EditorState): EditorInputConnection = EditorInputConnection(
+        targetView = EditorInputHostView(ApplicationProvider.getApplicationContext<Context>()),
+        state = state,
+        onInsertedText = {},
+        onNonInsertEdit = {}
+    )
 
     private fun keyDown(
         keyCode: Int,
         metaState: Int = 0
-    ): KeyEvent {
-        return KeyEvent(
-            0L,
-            0L,
-            KeyEvent.ACTION_DOWN,
-            keyCode,
-            0,
-            metaState
-        )
-    }
+    ): KeyEvent = KeyEvent(
+        0L,
+        0L,
+        KeyEvent.ACTION_DOWN,
+        keyCode,
+        0,
+        metaState
+    )
 }

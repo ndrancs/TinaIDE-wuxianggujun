@@ -15,10 +15,10 @@ import com.wuxianggujun.tinaide.cmake.parser.Token
  * 命令作用域
  */
 enum class CommandScope {
-    SCRIPTING,   // 脚本命令 - 始终可用
-    PROJECT,     // 项目命令 - 仅在 CMake 项目中可用
-    CTEST,       // CTest 命令
-    DEPRECATED   // 已弃用命令
+    SCRIPTING, // 脚本命令 - 始终可用
+    PROJECT, // 项目命令 - 仅在 CMake 项目中可用
+    CTEST, // CTest 命令
+    DEPRECATED // 已弃用命令
 }
 
 /**
@@ -78,9 +78,19 @@ data class MessageCommand(
     override val scope = CommandScope.SCRIPTING
 
     enum class MessageMode {
-        FATAL_ERROR, SEND_ERROR, WARNING, AUTHOR_WARNING,
-        DEPRECATION, NOTICE, STATUS, VERBOSE, DEBUG, TRACE,
-        CHECK_START, CHECK_PASS, CHECK_FAIL
+        FATAL_ERROR,
+        SEND_ERROR,
+        WARNING,
+        AUTHOR_WARNING,
+        DEPRECATION,
+        NOTICE,
+        STATUS,
+        VERBOSE,
+        DEBUG,
+        TRACE,
+        CHECK_START,
+        CHECK_PASS,
+        CHECK_FAIL
     }
 }
 
@@ -379,11 +389,23 @@ data class ListCommand(
     override val scope = CommandScope.SCRIPTING
 
     enum class ListOperation {
-        LENGTH, GET, JOIN, SUBLIST,
-        FIND, APPEND, FILTER, INSERT,
-        POP_BACK, POP_FRONT, PREPEND,
-        REMOVE_ITEM, REMOVE_AT, REMOVE_DUPLICATES,
-        REVERSE, SORT, TRANSFORM
+        LENGTH,
+        GET,
+        JOIN,
+        SUBLIST,
+        FIND,
+        APPEND,
+        FILTER,
+        INSERT,
+        POP_BACK,
+        POP_FRONT,
+        PREPEND,
+        REMOVE_ITEM,
+        REMOVE_AT,
+        REMOVE_DUPLICATES,
+        REVERSE,
+        SORT,
+        TRANSFORM
     }
 }
 
@@ -399,10 +421,35 @@ data class StringCommand(
     override val scope = CommandScope.SCRIPTING
 
     enum class StringOperation {
-        FIND, REPLACE, REGEX, APPEND, PREPEND, CONCAT, JOIN,
-        TOLOWER, TOUPPER, LENGTH, SUBSTRING, STRIP, GENEX_STRIP, REPEAT,
-        COMPARE, MD5, SHA1, SHA224, SHA256, SHA384, SHA512,
-        ASCII, HEX, CONFIGURE, MAKE_C_IDENTIFIER, RANDOM, TIMESTAMP, UUID, JSON
+        FIND,
+        REPLACE,
+        REGEX,
+        APPEND,
+        PREPEND,
+        CONCAT,
+        JOIN,
+        TOLOWER,
+        TOUPPER,
+        LENGTH,
+        SUBSTRING,
+        STRIP,
+        GENEX_STRIP,
+        REPEAT,
+        COMPARE,
+        MD5,
+        SHA1,
+        SHA224,
+        SHA256,
+        SHA384,
+        SHA512,
+        ASCII,
+        HEX,
+        CONFIGURE,
+        MAKE_C_IDENTIFIER,
+        RANDOM,
+        TIMESTAMP,
+        UUID,
+        JSON
     }
 }
 
@@ -418,13 +465,43 @@ data class FileCommand(
     override val scope = CommandScope.SCRIPTING
 
     enum class FileOperation {
-        READ, STRINGS, MD5, SHA1, SHA224, SHA256, SHA384, SHA512,
-        WRITE, APPEND, TOUCH, TOUCH_NOCREATE, GENERATE, CONFIGURE,
-        GLOB, GLOB_RECURSE, MAKE_DIRECTORY, REMOVE, REMOVE_RECURSE,
-        RENAME, COPY_FILE, COPY, SIZE, READ_SYMLINK, CREATE_LINK,
-        CHMOD, CHMOD_RECURSE, REAL_PATH, RELATIVE_PATH,
-        TO_CMAKE_PATH, TO_NATIVE_PATH, DOWNLOAD, UPLOAD, LOCK,
-        ARCHIVE_CREATE, ARCHIVE_EXTRACT, GET_RUNTIME_DEPENDENCIES
+        READ,
+        STRINGS,
+        MD5,
+        SHA1,
+        SHA224,
+        SHA256,
+        SHA384,
+        SHA512,
+        WRITE,
+        APPEND,
+        TOUCH,
+        TOUCH_NOCREATE,
+        GENERATE,
+        CONFIGURE,
+        GLOB,
+        GLOB_RECURSE,
+        MAKE_DIRECTORY,
+        REMOVE,
+        REMOVE_RECURSE,
+        RENAME,
+        COPY_FILE,
+        COPY,
+        SIZE,
+        READ_SYMLINK,
+        CREATE_LINK,
+        CHMOD,
+        CHMOD_RECURSE,
+        REAL_PATH,
+        RELATIVE_PATH,
+        TO_CMAKE_PATH,
+        TO_NATIVE_PATH,
+        DOWNLOAD,
+        UPLOAD,
+        LOCK,
+        ARCHIVE_CREATE,
+        ARCHIVE_EXTRACT,
+        GET_RUNTIME_DEPENDENCIES
     }
 }
 
@@ -877,7 +954,13 @@ data class SetPropertyCommand(
     override val scope = CommandScope.SCRIPTING
 
     enum class PropertyScope {
-        GLOBAL, DIRECTORY, TARGET, SOURCE, INSTALL, TEST, CACHE
+        GLOBAL,
+        DIRECTORY,
+        TARGET,
+        SOURCE,
+        INSTALL,
+        TEST,
+        CACHE
     }
 }
 
@@ -898,7 +981,14 @@ data class GetPropertyCommand(
     override val scope = CommandScope.SCRIPTING
 
     enum class PropertyScope {
-        GLOBAL, DIRECTORY, TARGET, SOURCE, INSTALL, TEST, CACHE, VARIABLE
+        GLOBAL,
+        DIRECTORY,
+        TARGET,
+        SOURCE,
+        INSTALL,
+        TEST,
+        CACHE,
+        VARIABLE
     }
 }
 
@@ -1076,8 +1166,16 @@ data class GetFilenameComponentCommand(
     override val scope = CommandScope.SCRIPTING
 
     enum class FilenameMode {
-        DIRECTORY, NAME, EXT, NAME_WE, LAST_EXT, NAME_WLE,
-        PATH, ABSOLUTE, REALPATH, PROGRAM
+        DIRECTORY,
+        NAME,
+        EXT,
+        NAME_WE,
+        LAST_EXT,
+        NAME_WLE,
+        PATH,
+        ABSOLUTE,
+        REALPATH,
+        PROGRAM
     }
 }
 

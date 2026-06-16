@@ -21,9 +21,9 @@ import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.linux.LinuxRunModePolicy
 import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
-import timber.log.Timber
 import java.io.File
 import java.security.MessageDigest
+import timber.log.Timber
 
 /**
  * Make 构建策略。
@@ -137,8 +137,7 @@ class MakeStrategy(
         }
     }
 
-    override suspend fun getTargets(ctx: BuildContext): List<TargetInfo> =
-        loadTargets(ctx.projectRoot, ctx.buildDir, ctx.options.resolvedRunMode)
+    override suspend fun getTargets(ctx: BuildContext): List<TargetInfo> = loadTargets(ctx.projectRoot, ctx.buildDir, ctx.options.resolvedRunMode)
 
     // ---------- 私有助手 ----------
 
@@ -146,12 +145,10 @@ class MakeStrategy(
         projectRoot: File,
         buildDir: File,
         runMode: LinuxRunModePolicy.RunMode,
-    ): List<TargetInfo> {
-        return if (isNativeMode(runMode)) {
-            nativeEngine.getTargets(projectRoot, buildDir)
-        } else {
-            prootEngine.getTargets(projectRoot, buildDir)
-        }
+    ): List<TargetInfo> = if (isNativeMode(runMode)) {
+        nativeEngine.getTargets(projectRoot, buildDir)
+    } else {
+        prootEngine.getTargets(projectRoot, buildDir)
     }
 
     private suspend fun wrapArtifact(
@@ -213,11 +210,9 @@ class MakeStrategy(
         return "$buildType-$runMode"
     }
 
-    private fun isNativeMode(runMode: LinuxRunModePolicy.RunMode): Boolean =
-        runMode == LinuxRunModePolicy.RunMode.NATIVE
+    private fun isNativeMode(runMode: LinuxRunModePolicy.RunMode): Boolean = runMode == LinuxRunModePolicy.RunMode.NATIVE
 
-    private fun collectSourceFiles(projectRoot: File): List<File> =
-        TrackedInputCollector.collectMakeInputs(projectRoot, SOURCE_EXTENSIONS)
+    private fun collectSourceFiles(projectRoot: File): List<File> = TrackedInputCollector.collectMakeInputs(projectRoot, SOURCE_EXTENSIONS)
 
     private fun captureSourceRef(file: File, projectRoot: File): SourceRef = SourceRef(
         relativePath = file.toRelativeString(projectRoot),
@@ -229,7 +224,11 @@ class MakeStrategy(
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
             val buffer = ByteArray(64 * 1024)
-            while (true) { val n = input.read(buffer); if (n <= 0) break; digest.update(buffer, 0, n) }
+            while (true) {
+                val n = input.read(buffer)
+                if (n <= 0) break
+                digest.update(buffer, 0, n)
+            }
         }
         val bytes = digest.digest()
         return buildString(32) {

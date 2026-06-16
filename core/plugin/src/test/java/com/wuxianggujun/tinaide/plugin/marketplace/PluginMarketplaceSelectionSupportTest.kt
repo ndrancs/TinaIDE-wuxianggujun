@@ -57,19 +57,17 @@ class PluginMarketplaceSelectionSupportTest {
         assertThat(updated.plugins).hasSize(1)
     }
 
-    private fun pluginSummary(pluginId: String): PluginSummary {
-        return PluginSummary(
-            id = "server-$pluginId",
-            pluginId = pluginId,
-            name = "Plugin $pluginId",
-            description = "desc",
-            category = "tools",
-            publisher = PluginPublisher(
-                id = "publisher-$pluginId",
-                displayName = "Publisher $pluginId",
-            ),
-            latestVersion = "1.0.0",
-            updatedAt = "2026-04-22T00:00:00Z",
-        )
-    }
+    private fun pluginSummary(pluginId: String): PluginSummary = PluginSummary(
+        id = "server-$pluginId",
+        pluginId = pluginId,
+        name = "Plugin $pluginId",
+        description = "desc",
+        category = "tools",
+        publisher = PluginPublisher(
+            id = "publisher-$pluginId",
+            displayName = "Publisher $pluginId",
+        ),
+        latestVersion = "1.0.0",
+        updatedAt = "2026-04-22T00:00:00Z",
+    )
 }

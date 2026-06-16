@@ -4,12 +4,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Process
 import com.wuxianggujun.tinaide.core.common.AppVersionInfoReader
-import com.wuxianggujun.tinaide.storage.ExternalFileIntents
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.proot.InstallLogManager
 import com.wuxianggujun.tinaide.core.proot.PRootBootstrap
 import com.wuxianggujun.tinaide.core.util.CrashLogPrivacyClassifier
+import com.wuxianggujun.tinaide.storage.ExternalFileIntents
 import com.wuxianggujun.tinaide.storage.ProjectPaths
 import java.io.BufferedReader
 import java.io.File

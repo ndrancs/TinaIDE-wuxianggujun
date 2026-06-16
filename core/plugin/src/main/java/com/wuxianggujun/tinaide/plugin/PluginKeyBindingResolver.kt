@@ -24,14 +24,12 @@ data class ResolvedPluginKeyBinding(
         event: KeyEvent,
         isDirty: Boolean,
         editorFocus: Boolean
-    ): Boolean {
-        return shortcut.matches(event) &&
-            PluginKeyBindingResolver.matchesWhen(
-                whenExpression = whenExpression,
-                isDirty = isDirty,
-                editorFocus = editorFocus
-            )
-    }
+    ): Boolean = shortcut.matches(event) &&
+        PluginKeyBindingResolver.matchesWhen(
+            whenExpression = whenExpression,
+            isDirty = isDirty,
+            editorFocus = editorFocus
+        )
 }
 
 @Serializable
@@ -171,40 +169,34 @@ object PluginKeyBindingResolver {
         whenExpression: String?,
         isDirty: Boolean,
         editorFocus: Boolean
-    ): Boolean {
-        return when (whenExpression?.trim().orEmpty()) {
-            "" -> true
-            "isDirty" -> isDirty
-            "!isDirty" -> !isDirty
-            "isDirty == true" -> isDirty
-            "isDirty == false" -> !isDirty
-            "editorFocus" -> editorFocus
-            "!editorFocus" -> !editorFocus
-            "editorFocus == true" -> editorFocus
-            "editorFocus == false" -> !editorFocus
-            else -> false
-        }
+    ): Boolean = when (whenExpression?.trim().orEmpty()) {
+        "" -> true
+        "isDirty" -> isDirty
+        "!isDirty" -> !isDirty
+        "isDirty == true" -> isDirty
+        "isDirty == false" -> !isDirty
+        "editorFocus" -> editorFocus
+        "!editorFocus" -> !editorFocus
+        "editorFocus == true" -> editorFocus
+        "editorFocus == false" -> !editorFocus
+        else -> false
     }
 
-    internal fun isSupportedWhenExpression(whenExpression: String?): Boolean {
-        return when (whenExpression?.trim().orEmpty()) {
-            "",
-            "isDirty",
-            "!isDirty",
-            "isDirty == true",
-            "isDirty == false",
-            "editorFocus",
-            "!editorFocus",
-            "editorFocus == true",
-            "editorFocus == false" -> true
-            else -> false
-        }
+    internal fun isSupportedWhenExpression(whenExpression: String?): Boolean = when (whenExpression?.trim().orEmpty()) {
+        "",
+        "isDirty",
+        "!isDirty",
+        "isDirty == true",
+        "isDirty == false",
+        "editorFocus",
+        "!editorFocus",
+        "editorFocus == true",
+        "editorFocus == false" -> true
+        else -> false
     }
 
-    fun isCommandSupported(binding: ResolvedPluginKeyBinding): Boolean {
-        return HostCommands.isSupported(binding.commandId) ||
-            PluginCommandRegistry.isRegistered(binding.commandId, binding.pluginId)
-    }
+    fun isCommandSupported(binding: ResolvedPluginKeyBinding): Boolean = HostCommands.isSupported(binding.commandId) ||
+        PluginCommandRegistry.isRegistered(binding.commandId, binding.pluginId)
 
     private fun keyCodeForToken(token: String): Int? {
         val normalized = token.normalizeKeyToken()
@@ -225,12 +217,10 @@ object PluginKeyBindingResolver {
         return keyCode.takeIf { it != KeyEvent.KEYCODE_UNKNOWN }
     }
 
-    private fun String.normalizeKeyToken(): String {
-        return trim()
-            .replace(" ", "")
-            .replace("-", "_")
-            .uppercase()
-    }
+    private fun String.normalizeKeyToken(): String = trim()
+        .replace(" ", "")
+        .replace("-", "_")
+        .uppercase()
 
     private val keyCodeAliases = mapOf(
         "TAB" to KeyEvent.KEYCODE_TAB,

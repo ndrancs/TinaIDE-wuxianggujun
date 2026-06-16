@@ -1,9 +1,9 @@
 package com.wuxianggujun.tinaide.project
 
 import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
-import kotlinx.serialization.decodeFromString
 import java.io.File
 import java.util.UUID
+import kotlinx.serialization.decodeFromString
 import timber.log.Timber
 
 object ProjectMetadataStore {
@@ -18,9 +18,7 @@ object ProjectMetadataStore {
     /** 当前 IDE 版本，由 Application 初始化时设置 */
     var currentIdeVersion: String = "unknown"
 
-    fun getMetaFile(projectRoot: File): File {
-        return File(File(projectRoot, META_DIR_NAME), META_FILE_NAME)
-    }
+    fun getMetaFile(projectRoot: File): File = File(File(projectRoot, META_DIR_NAME), META_FILE_NAME)
 
     /**
      * 读取项目元数据，如果需要会自动补全缺失字段
@@ -230,25 +228,21 @@ object ProjectMetadataStore {
         )
     }
 
-    private fun normalizeMetadata(metadata: ProjectMetadata): ProjectMetadata {
-        return metadata.copy(
-            schemaVersion = PROJECT_METADATA_SCHEMA_CURRENT,
-            cppStandard = metadata.normalizedCppStandardValue(),
-            nativeApiLevel = normalizeNativeApiLevel(metadata.nativeApiLevel),
-            nativeIncludeDirs = normalizePathEntries(metadata.nativeIncludeDirs),
-            nativeLibraryDirs = normalizePathEntries(metadata.nativeLibraryDirs),
-            nativeRuntimeDirs = normalizePathEntries(metadata.nativeRuntimeDirs),
-            nativeCFlags = normalizeFlagValue(metadata.nativeCFlags),
-            nativeCppFlags = normalizeFlagValue(metadata.nativeCppFlags),
-            nativeLdFlags = normalizeFlagValue(metadata.nativeLdFlags),
-            nativeLdLibs = normalizeFlagValue(metadata.nativeLdLibs),
-            nativeCMakeArgs = normalizePathEntries(metadata.nativeCMakeArgs)
-        )
-    }
+    private fun normalizeMetadata(metadata: ProjectMetadata): ProjectMetadata = metadata.copy(
+        schemaVersion = PROJECT_METADATA_SCHEMA_CURRENT,
+        cppStandard = metadata.normalizedCppStandardValue(),
+        nativeApiLevel = normalizeNativeApiLevel(metadata.nativeApiLevel),
+        nativeIncludeDirs = normalizePathEntries(metadata.nativeIncludeDirs),
+        nativeLibraryDirs = normalizePathEntries(metadata.nativeLibraryDirs),
+        nativeRuntimeDirs = normalizePathEntries(metadata.nativeRuntimeDirs),
+        nativeCFlags = normalizeFlagValue(metadata.nativeCFlags),
+        nativeCppFlags = normalizeFlagValue(metadata.nativeCppFlags),
+        nativeLdFlags = normalizeFlagValue(metadata.nativeLdFlags),
+        nativeLdLibs = normalizeFlagValue(metadata.nativeLdLibs),
+        nativeCMakeArgs = normalizePathEntries(metadata.nativeCMakeArgs)
+    )
 
-    private fun normalizeNativeApiLevel(nativeApiLevel: Int?): Int? {
-        return nativeApiLevel?.takeIf { it in 21..35 }
-    }
+    private fun normalizeNativeApiLevel(nativeApiLevel: Int?): Int? = nativeApiLevel?.takeIf { it in 21..35 }
 
     private fun normalizePathEntries(paths: List<String>): List<String> {
         if (paths.isEmpty()) return emptyList()

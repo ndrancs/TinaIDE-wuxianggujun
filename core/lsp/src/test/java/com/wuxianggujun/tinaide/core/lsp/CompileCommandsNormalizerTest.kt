@@ -1,14 +1,14 @@
 package com.wuxianggujun.tinaide.core.lsp
 
 import com.google.common.truth.Truth.assertThat
+import java.io.File
+import kotlin.io.path.createTempDirectory
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
-import java.io.File
-import kotlin.io.path.createTempDirectory
 
 class CompileCommandsNormalizerTest {
 
@@ -251,12 +251,10 @@ class CompileCommandsNormalizerTest {
         }
     }
 
-    private fun readArguments(targetFile: File): List<String> {
-        return json.parseToJsonElement(targetFile.readText())
-            .jsonArray
-            .single()
-            .jsonObject["arguments"]!!
-            .jsonArray
-            .map { it.jsonPrimitive.contentOrNull.orEmpty() }
-    }
+    private fun readArguments(targetFile: File): List<String> = json.parseToJsonElement(targetFile.readText())
+        .jsonArray
+        .single()
+        .jsonObject["arguments"]!!
+        .jsonArray
+        .map { it.jsonPrimitive.contentOrNull.orEmpty() }
 }

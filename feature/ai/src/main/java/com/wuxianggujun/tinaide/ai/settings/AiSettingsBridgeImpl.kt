@@ -6,9 +6,10 @@ import com.wuxianggujun.tinaide.ai.api.AuthStrategy
 import com.wuxianggujun.tinaide.ai.channel.AiChannelRepository
 import com.wuxianggujun.tinaide.ai.config.AiPreferences
 import com.wuxianggujun.tinaide.ai.tools.config.ToolConfigManager
-import com.wuxianggujun.tinaide.core.config.ai.AiAccessMode
 import com.wuxianggujun.tinaide.core.config.ai.AiConfig
+import com.wuxianggujun.tinaide.core.config.ai.AiGenerationSettings
 import com.wuxianggujun.tinaide.core.config.ai.AiModelLoadResult
+import com.wuxianggujun.tinaide.core.config.ai.AiProvider
 import com.wuxianggujun.tinaide.core.config.ai.AiSettingsBridge
 import com.wuxianggujun.tinaide.core.config.ai.AiToolSettingsItem
 import com.wuxianggujun.tinaide.core.network.ApiResult
@@ -35,10 +36,7 @@ class AiSettingsBridgeImpl(
 
     private val modelCache = ConcurrentHashMap<String, CachedModels>()
 
-    override suspend fun loadModels(config: AiConfig): AiModelLoadResult = when (config.accessMode) {
-        AiAccessMode.TINA_GATEWAY -> AiModelLoadResult.ConfigurationRequired
-        AiAccessMode.CUSTOM_BYOK -> loadCustomModels(config)
-    }
+    override suspend fun loadModels(config: AiConfig): AiModelLoadResult = loadCustomModels(config)
 
     override fun getToolItems(context: Context): List<AiToolSettingsItem> = ToolConfigManager.getAllToolConfigs(context)
         .sortedWith(compareBy({ it.category.ordinal }, { it.name }))
@@ -69,19 +67,35 @@ class AiSettingsBridgeImpl(
             ?: return AiModelLoadResult.ConfigurationRequired
         val apiKey = channelRepository.getApiKey(channelId)
 
+        return fetchModels(
+            provider = channel.provider,
+            endpoint = channel.baseUrl,
+            model = config.generation.model,
+            apiKey = apiKey,
+        )
+    }
+
+    private suspend fun fetchModels(
+        provider: AiProvider,
+        endpoint: String,
+        model: String,
+        apiKey: String,
+    ): AiModelLoadResult {
         val now = System.currentTimeMillis()
-        val cacheKey = "byok:${channel.baseUrl}:${apiKey.hashCode()}"
+        val cacheKey = "byok:$endpoint:${apiKey.hashCode()}"
         modelCache[cacheKey]?.takeIf { it.isFresh(now) }?.let {
             return AiModelLoadResult.Success(it.models)
         }
 
-        val effectiveConfig = config.copy(
-            generation = config.generation.copy(model = channel.model),
+        val effectiveConfig = AiConfig(
+            generation = AiGenerationSettings(
+                model = model.ifBlank { provider.defaultModels.firstOrNull().orEmpty() },
+            ),
         )
 
         val client = apiClientFactory(
             effectiveConfig,
-            channel.baseUrl,
+            endpoint,
             AuthStrategy.Bearer(apiKey),
         )
         return when (val result = client.listModels()) {
@@ -94,14 +108,14 @@ class AiSettingsBridgeImpl(
                 Timber.tag(TAG).e("Load custom models failed: %s", result.message)
                 AiModelLoadResult.Failure(
                     message = result.message,
-                    fallbackModels = channel.provider.defaultModels,
+                    fallbackModels = provider.defaultModels,
                 )
             }
             is ApiResult.NetworkError -> {
                 Timber.tag(TAG).e("Load custom models network error: %s", result.message)
                 AiModelLoadResult.Failure(
                     message = result.message,
-                    fallbackModels = channel.provider.defaultModels,
+                    fallbackModels = provider.defaultModels,
                 )
             }
         }

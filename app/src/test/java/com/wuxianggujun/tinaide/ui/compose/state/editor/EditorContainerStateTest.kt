@@ -2,6 +2,7 @@ package com.wuxianggujun.tinaide.ui.compose.state.editor
 
 import android.app.Application
 import android.content.Context
+import android.os.Looper
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.config.ConfigChangeListener
 import com.wuxianggujun.tinaide.core.config.ConfigKey
@@ -20,6 +21,7 @@ import com.wuxianggujun.tinaide.ui.compose.components.editor.EditorToolBarState
 import io.mockk.every
 import io.mockk.mockk
 import java.io.File
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -28,6 +30,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -953,6 +956,77 @@ class EditorContainerStateTest {
     }
 
     @Test
+    fun openFileAndGoToPosition_shouldRetryOriginalPositionUntilEditorReady() {
+        val file = File(context.cacheDir, "RetryJumpTarget.kt").apply {
+            writeText("fun jump() = Unit")
+        }
+        val editorTab = EditorTab(id = "tab-1", file = file)
+        every { editorManager.openFile(file) } returns editorTab
+        every { editorManager.getOpenTabs() } returns listOf(editorTab)
+        every { editorManager.getActiveTabId() } returns "tab-1"
+
+        setTabs(
+            managerTabs = listOf(editorTab),
+            activeTabId = "tab-1"
+        )
+
+        var attempts = 0
+        var navigatedLine = -1
+        var navigatedColumn = -1
+        state.registerCodeEditorCallback(
+            tabId = "tab-1",
+            callback = EditorContainerState.CodeEditorCallback(
+                goToPosition = { line, column ->
+                    attempts++
+                    if (attempts < 3) {
+                        false
+                    } else {
+                        navigatedLine = line
+                        navigatedColumn = column
+                        true
+                    }
+                },
+                selectAll = { false },
+                replaceSelection = { false },
+                replaceWholeText = { false },
+                applyTextEdits = { false },
+                toggleLineComment = { false },
+                replaceAll = { _, _, _, _ -> 0 },
+                undo = { false },
+                redo = { false },
+                insertTextAtCursor = {},
+                cursorPosition = { EditorContainerState.CursorSnapshot(0, 0) },
+                setSelectionRange = { _, _, _, _ -> false },
+                readAllText = { "" },
+                readSelection = { null }
+            )
+        )
+
+        assertThat(state.openFileAndGoToPosition(file, line = 12, column = 5)).isTrue()
+        shadowOf(Looper.getMainLooper()).idleFor(150, TimeUnit.MILLISECONDS)
+
+        assertThat(attempts).isAtLeast(3)
+        assertThat(navigatedLine).isEqualTo(12)
+        assertThat(navigatedColumn).isEqualTo(5)
+    }
+
+    @Test
+    fun syncFromManager_shouldKeepPreviousTabLspStatusWhenOnlyActiveTabChanges() {
+        val firstFile = File(context.cacheDir, "First.kt")
+        val secondFile = File(context.cacheDir, "Second.kt")
+        val tabs = listOf(
+            EditorTab(id = "tab-1", file = firstFile),
+            EditorTab(id = "tab-2", file = secondFile)
+        )
+        setTabs(managerTabs = tabs, activeTabId = "tab-1")
+        setLspStatus("tab-1", EditorStatus.Ready)
+
+        setTabs(managerTabs = tabs, activeTabId = "tab-2")
+
+        assertThat(state.getLspStatus("tab-1")).isEqualTo(EditorStatus.Ready)
+    }
+
+    @Test
     fun requestCloseActiveTab_shouldCloseCurrentSelection() {
         setTabs(
             managerTabs = listOf(
@@ -1465,6 +1539,41 @@ class EditorContainerStateTest {
     }
 
     @Test
+    fun codeEditorRuntimeCache_shouldEvictOldCleanUnmountedTabsOverLimit() {
+        val managerTabs = createCodeTabs(EditorContainerState.CODE_EDITOR_RUNTIME_CACHE_LIMIT + 2)
+        setTabs(managerTabs, activeTabId = managerTabs.last().id)
+
+        managerTabs.forEach { tab ->
+            state.getOrCreateCodeEditorRuntime(state.tabs.first { it.id == tab.id })
+            state.markCodeEditorRuntimeLoaded(tab.id)
+        }
+
+        assertThat(state.isCodeEditorRuntimeLoaded("tab-1")).isFalse()
+        assertThat(state.isCodeEditorRuntimeLoaded("tab-2")).isFalse()
+        assertThat(state.isCodeEditorRuntimeLoaded(managerTabs.last().id)).isTrue()
+        assertThat(managerTabs.count { state.isCodeEditorRuntimeLoaded(it.id) })
+            .isAtMost(EditorContainerState.CODE_EDITOR_RUNTIME_CACHE_LIMIT)
+    }
+
+    @Test
+    fun codeEditorRuntimeCache_shouldKeepDirtyUnmountedTabsOverLimit() {
+        val managerTabs = createCodeTabs(EditorContainerState.CODE_EDITOR_RUNTIME_CACHE_LIMIT + 2)
+        setTabs(managerTabs, activeTabId = managerTabs.last().id)
+        state.updateTabState(tabId = "tab-1", isDirty = true, canUndo = true, canRedo = false)
+
+        managerTabs.forEach { tab ->
+            state.getOrCreateCodeEditorRuntime(state.tabs.first { it.id == tab.id })
+            state.markCodeEditorRuntimeLoaded(tab.id)
+        }
+
+        assertThat(state.isCodeEditorRuntimeLoaded("tab-1")).isTrue()
+        assertThat(state.isCodeEditorRuntimeLoaded("tab-2")).isFalse()
+        assertThat(state.isCodeEditorRuntimeLoaded(managerTabs.last().id)).isTrue()
+        assertThat(managerTabs.count { state.isCodeEditorRuntimeLoaded(it.id) })
+            .isAtMost(EditorContainerState.CODE_EDITOR_RUNTIME_CACHE_LIMIT)
+    }
+
+    @Test
     fun activeTabEditStateAccessors_shouldReflectUpdatedTabState() {
         setActiveTab()
 
@@ -1568,6 +1677,13 @@ class EditorContainerStateTest {
         state.syncFromManager(
             managerTabs = managerTabs,
             activeTabId = activeTabId
+        )
+    }
+
+    private fun createCodeTabs(count: Int): List<EditorTab> = (1..count).map { index ->
+        EditorTab(
+            id = "tab-$index",
+            file = File(context.cacheDir, "File$index.kt")
         )
     }
 

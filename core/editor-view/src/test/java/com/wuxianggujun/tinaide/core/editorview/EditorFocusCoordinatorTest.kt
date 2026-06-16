@@ -94,13 +94,11 @@ class EditorFocusCoordinatorTest {
     private fun createController(
         state: EditorState,
         scope: TestScope
-    ): EditorInteractionController {
-        return EditorInteractionController(
-            state = state,
-            coroutineScope = scope,
-            focusRequester = FocusRequester(),
-            keyboardController = null,
-            inputMethodManager = null
-        )
-    }
+    ): EditorInteractionController = EditorInteractionController(
+        state = state,
+        coroutineScope = scope,
+        focusRequester = FocusRequester(),
+        keyboardController = null,
+        inputMethodManager = null
+    )
 }

@@ -120,11 +120,9 @@ class SearchHistoryManager(context: Context) {
     /**
      * 获取最近的搜索历史（不含收藏）
      */
-    fun getRecentHistory(limit: Int = 10): List<SearchHistoryEntry> {
-        return _history.value
-            .filter { !it.isFavorite }
-            .take(limit)
-    }
+    fun getRecentHistory(limit: Int = 10): List<SearchHistoryEntry> = _history.value
+        .filter { !it.isFavorite }
+        .take(limit)
 
     /**
      * 搜索历史记录
@@ -188,11 +186,14 @@ class SearchHistoryManager(context: Context) {
                     put("id", entry.id)
                     put("query", entry.query)
                     entry.replacement?.let { put("replacement", it) }
-                    put("options", JSONObject().apply {
-                        put("caseSensitive", entry.options.caseSensitive)
-                        put("useRegex", entry.options.useRegex)
-                        put("wholeWord", entry.options.wholeWord)
-                    })
+                    put(
+                        "options",
+                        JSONObject().apply {
+                            put("caseSensitive", entry.options.caseSensitive)
+                            put("useRegex", entry.options.useRegex)
+                            put("wholeWord", entry.options.wholeWord)
+                        }
+                    )
                     put("timestamp", entry.timestamp)
                     put("isFavorite", entry.isFavorite)
                 }

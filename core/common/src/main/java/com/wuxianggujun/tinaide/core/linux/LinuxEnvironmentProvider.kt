@@ -13,4 +13,3 @@ interface LinuxEnvironmentProvider {
 object UnavailableLinuxEnvironmentProvider : LinuxEnvironmentProvider {
     override fun get(): LinuxEnvironment = UnavailableLinuxEnvironment
 }
-

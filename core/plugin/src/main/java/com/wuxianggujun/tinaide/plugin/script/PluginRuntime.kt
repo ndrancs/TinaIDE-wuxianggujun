@@ -3,23 +3,23 @@ package com.wuxianggujun.tinaide.plugin.script
 import android.content.Context
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
-import com.wuxianggujun.tinaide.plugin.PluginManifest
 import com.wuxianggujun.tinaide.plugin.PluginLogEventCodes
 import com.wuxianggujun.tinaide.plugin.PluginLogEventKeys
 import com.wuxianggujun.tinaide.plugin.PluginLogManager
+import com.wuxianggujun.tinaide.plugin.PluginManifest
 import com.wuxianggujun.tinaide.plugin.PluginNetworkHostRules
+import java.io.File
+import java.nio.ByteBuffer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import party.iroiro.luajava.Lua
 import party.iroiro.luajava.JFunction
+import party.iroiro.luajava.Lua
 import party.iroiro.luajava.LuaException
 import party.iroiro.luajava.lua54.Lua54
 import party.iroiro.luajava.value.LuaFunction
 import party.iroiro.luajava.value.LuaValue
 import timber.log.Timber
-import java.io.File
-import java.nio.ByteBuffer
 
 sealed class PluginExecutionResult {
     data class Success(val value: Any?) : PluginExecutionResult()
@@ -98,7 +98,8 @@ class ScriptPluginRuntime(
     }
 
     private fun Lua.configureSandbox() {
-        run("""
+        run(
+            """
             -- Remove dangerous functions for sandboxing
             os.execute = nil
             os.exit = nil
@@ -118,79 +119,78 @@ class ScriptPluginRuntime(
                 if debug.setfenv then debug.setfenv = nil end
                 if debug.setcstacklimit then debug.setcstacklimit = nil end
             end
-        """.trimIndent())
+            """.trimIndent()
+        )
     }
 
-    override suspend fun execute(script: String): PluginExecutionResult =
-        withContext(Dispatchers.Default) {
-            val lua = luaState
-            if (!_isInitialized || lua == null) {
-                return@withContext PluginExecutionResult.Error("Plugin not initialized")
-            }
-
-            if (!apiCallLimiter.tryAcquire()) {
-                return@withContext PluginExecutionResult.Error("API rate limit exceeded")
-            }
-
-            try {
-                withTimeout(config.maxExecutionTimeMs) {
-                    Timber.tag(TAG).d("Executing Lua script in plugin: $pluginId")
-                    lua.run(script)
-                    val result = if (lua.top > 0) lua.get().toJavaObject() else null
-                    PluginExecutionResult.Success(result)
-                }
-            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-                Timber.tag(TAG).w("Lua script execution timed out: $pluginId")
-                PluginExecutionResult.Timeout
-            } catch (e: LuaException) {
-                Timber.tag(TAG).e(e, "Lua script execution failed: $pluginId")
-                PluginExecutionResult.Error(e.message ?: "Unknown Lua error", e.stackTraceToString())
-            } catch (e: Exception) {
-                Timber.tag(TAG).e(e, "Lua script execution failed: $pluginId")
-                PluginExecutionResult.Error(e.message ?: "Unknown error", e.stackTraceToString())
-            }
+    override suspend fun execute(script: String): PluginExecutionResult = withContext(Dispatchers.Default) {
+        val lua = luaState
+        if (!_isInitialized || lua == null) {
+            return@withContext PluginExecutionResult.Error("Plugin not initialized")
         }
 
-    override suspend fun callFunction(name: String, vararg args: Any?): PluginExecutionResult =
-        withContext(Dispatchers.Default) {
-            val lua = luaState
-            if (!_isInitialized || lua == null) {
-                return@withContext PluginExecutionResult.Error("Plugin not initialized")
-            }
-
-            if (!apiCallLimiter.tryAcquire()) {
-                return@withContext PluginExecutionResult.Error("API rate limit exceeded")
-            }
-
-            try {
-                withTimeout(config.maxExecutionTimeMs) {
-                    Timber.tag(TAG).d("Calling Lua function $name in plugin: $pluginId")
-                    
-                    lua.getGlobal(name)
-                    if (lua.isNil(-1)) {
-                        lua.pop(1)
-                        return@withTimeout PluginExecutionResult.Error("Function '$name' not found")
-                    }
-
-                    args.forEach { arg ->
-                        lua.pushAny(arg)
-                    }
-
-                    lua.pCall(args.size, 1)
-                    val result = if (lua.top > 0) lua.get().toJavaObject() else null
-                    PluginExecutionResult.Success(result)
-                }
-            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-                Timber.tag(TAG).w("Lua function call timed out: $pluginId.$name")
-                PluginExecutionResult.Timeout
-            } catch (e: LuaException) {
-                Timber.tag(TAG).e(e, "Lua function call failed: $pluginId.$name")
-                PluginExecutionResult.Error(e.message ?: "Unknown Lua error", e.stackTraceToString())
-            } catch (e: Exception) {
-                Timber.tag(TAG).e(e, "Lua function call failed: $pluginId.$name")
-                PluginExecutionResult.Error(e.message ?: "Unknown error", e.stackTraceToString())
-            }
+        if (!apiCallLimiter.tryAcquire()) {
+            return@withContext PluginExecutionResult.Error("API rate limit exceeded")
         }
+
+        try {
+            withTimeout(config.maxExecutionTimeMs) {
+                Timber.tag(TAG).d("Executing Lua script in plugin: $pluginId")
+                lua.run(script)
+                val result = if (lua.top > 0) lua.get().toJavaObject() else null
+                PluginExecutionResult.Success(result)
+            }
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Timber.tag(TAG).w("Lua script execution timed out: $pluginId")
+            PluginExecutionResult.Timeout
+        } catch (e: LuaException) {
+            Timber.tag(TAG).e(e, "Lua script execution failed: $pluginId")
+            PluginExecutionResult.Error(e.message ?: "Unknown Lua error", e.stackTraceToString())
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Lua script execution failed: $pluginId")
+            PluginExecutionResult.Error(e.message ?: "Unknown error", e.stackTraceToString())
+        }
+    }
+
+    override suspend fun callFunction(name: String, vararg args: Any?): PluginExecutionResult = withContext(Dispatchers.Default) {
+        val lua = luaState
+        if (!_isInitialized || lua == null) {
+            return@withContext PluginExecutionResult.Error("Plugin not initialized")
+        }
+
+        if (!apiCallLimiter.tryAcquire()) {
+            return@withContext PluginExecutionResult.Error("API rate limit exceeded")
+        }
+
+        try {
+            withTimeout(config.maxExecutionTimeMs) {
+                Timber.tag(TAG).d("Calling Lua function $name in plugin: $pluginId")
+
+                lua.getGlobal(name)
+                if (lua.isNil(-1)) {
+                    lua.pop(1)
+                    return@withTimeout PluginExecutionResult.Error("Function '$name' not found")
+                }
+
+                args.forEach { arg ->
+                    lua.pushAny(arg)
+                }
+
+                lua.pCall(args.size, 1)
+                val result = if (lua.top > 0) lua.get().toJavaObject() else null
+                PluginExecutionResult.Success(result)
+            }
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Timber.tag(TAG).w("Lua function call timed out: $pluginId.$name")
+            PluginExecutionResult.Timeout
+        } catch (e: LuaException) {
+            Timber.tag(TAG).e(e, "Lua function call failed: $pluginId.$name")
+            PluginExecutionResult.Error(e.message ?: "Unknown Lua error", e.stackTraceToString())
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Lua function call failed: $pluginId.$name")
+            PluginExecutionResult.Error(e.message ?: "Unknown error", e.stackTraceToString())
+        }
+    }
 
     override fun registerGlobal(name: String, value: Any?) {
         luaState?.let { lua ->
@@ -221,15 +221,11 @@ class ScriptPluginRuntime(
         }
     }
 
-    fun checkPermission(permission: PluginPermission): Boolean {
-        return resolvePermissionAccess(permission).granted
-    }
+    fun checkPermission(permission: PluginPermission): Boolean = resolvePermissionAccess(permission).granted
 
     fun getManifest(): PluginManifest = manifest
 
-    fun checkAnyPermission(vararg permissions: PluginPermission): Boolean {
-        return resolvePermissionAccess(*permissions).granted
-    }
+    fun checkAnyPermission(vararg permissions: PluginPermission): Boolean = resolvePermissionAccess(*permissions).granted
 
     fun resolvePermissionAccess(vararg permissions: PluginPermission): PluginPermissionAccessResult {
         require(permissions.isNotEmpty()) { "At least one permission is required" }
@@ -305,9 +301,7 @@ class ScriptPluginRuntime(
 
     fun checkNetworkLimit(): Boolean = networkLimiter.tryAcquire()
 
-    fun getAllowedHosts(): Set<String> {
-        return allowedHosts
-    }
+    fun getAllowedHosts(): Set<String> = allowedHosts
 
     private fun isPermissionGranted(permission: PluginPermission): Boolean {
         if (permission !in declaredPermissions) return false
@@ -317,13 +311,11 @@ class ScriptPluginRuntime(
     private fun describePermissionDenial(
         permission: PluginPermission,
         denialReason: PluginPermissionDenialReason
-    ): String {
-        return when (denialReason) {
-            PluginPermissionDenialReason.NOT_DECLARED ->
-                Strings.plugin_error_permission_not_declared.strOr(context, permission.id)
-            PluginPermissionDenialReason.NOT_GRANTED ->
-                Strings.plugin_error_permission_not_granted.strOr(context, permission.id)
-        }
+    ): String = when (denialReason) {
+        PluginPermissionDenialReason.NOT_DECLARED ->
+            Strings.plugin_error_permission_not_declared.strOr(context, permission.id)
+        PluginPermissionDenialReason.NOT_GRANTED ->
+            Strings.plugin_error_permission_not_granted.strOr(context, permission.id)
     }
 
     private fun buildPermissionDeniedLogMessage(
@@ -331,23 +323,21 @@ class ScriptPluginRuntime(
         apiMethod: String,
         permission: PluginPermission,
         denialReason: PluginPermissionDenialReason
-    ): String {
-        return when (denialReason) {
-            PluginPermissionDenialReason.NOT_DECLARED ->
-                Strings.plugin_log_permission_denied_not_declared.strOr(
-                    context,
-                    apiNamespace,
-                    apiMethod,
-                    permission.id
-                )
-            PluginPermissionDenialReason.NOT_GRANTED ->
-                Strings.plugin_log_permission_denied_not_granted.strOr(
-                    context,
-                    apiNamespace,
-                    apiMethod,
-                    permission.id
-                )
-        }
+    ): String = when (denialReason) {
+        PluginPermissionDenialReason.NOT_DECLARED ->
+            Strings.plugin_log_permission_denied_not_declared.strOr(
+                context,
+                apiNamespace,
+                apiMethod,
+                permission.id
+            )
+        PluginPermissionDenialReason.NOT_GRANTED ->
+            Strings.plugin_log_permission_denied_not_granted.strOr(
+                context,
+                apiNamespace,
+                apiMethod,
+                permission.id
+            )
     }
 }
 

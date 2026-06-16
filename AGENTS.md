@@ -98,7 +98,7 @@ TinaIDE 是 Android 上的 C/C++ IDE。当前默认运行链路是 **native tina
 - `feature/`：用户可见功能切片，如 AI、设置、工作区、编辑器、帮助。
 - `external/`：第三方源码或本地 fork；改动前先确认上游边界和子模块状态。
 - `tools/`：构建、i18n、toolchain、插件 starter、APK/R8 分析等脚本。
-- `build-logic/`：Gradle convention plugins；ABI 聚合、版本递增、toolchain assets 校验、Tree-sitter 生成、mapping 备份/上传等已有能力不要重复实现。
+- `build-logic/`：Gradle convention plugins；ABI 聚合、版本递增、toolchain assets 校验、Tree-sitter 生成、mapping 备份等已有能力不要重复实现。
 
 **常用命令**：
 
@@ -139,7 +139,7 @@ TinaIDE 是 Android 上的 C/C++ IDE。当前默认运行链路是 **native tina
 **高风险红线**：
 
 - 不要把 PRoot 当默认 C/C++ 编译链路。
-- 不要把 Release 构建当普通只读验证；Release 可能递增 `version.properties` 并备份 R8 mapping。mapping 上传默认关闭，除非用户明确要求，不得设置 `tina.releaseMapping.uploadEnabled=true`。
+- 不要把 Release 构建当普通只读验证；Release 可能递增 `version.properties` 并备份 R8 mapping。mapping 文件仅由公开构建逻辑做本地归档。
 - 不要恢复或复制 `docs/workflows/receive-release.yml` 到 `.github/workflows/`；旧 `repository_dispatch` 私有仓库发布链路已废弃。
 - `README_EN.md` 存在历史口径；涉及构建、DI、工具链时以中文 README、`docs/开发指南.md`、`docs/架构概览.md`、当前代码和配置为准。
 - App 内帮助不直接读取 `docs/`；面向用户的帮助内容需同步检查 `feature/help/src/main/assets/help/*.md`。

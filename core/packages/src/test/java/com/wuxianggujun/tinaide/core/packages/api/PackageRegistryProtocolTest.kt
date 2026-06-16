@@ -2,6 +2,7 @@ package com.wuxianggujun.tinaide.core.packages.api
 
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.network.ApiResult
+import com.wuxianggujun.tinaide.core.network.registry.GitHubRegistryConfig
 import com.wuxianggujun.tinaide.core.network.registry.GitHubRegistryProxySettings
 import com.wuxianggujun.tinaide.core.network.registry.RegistryEndpoint
 import com.wuxianggujun.tinaide.core.network.registry.RegistryUrl
@@ -194,7 +195,7 @@ class PackageRegistryProtocolTest {
         assertThat((versionsResult as ApiResult.Success).data.android?.single()?.version).isEqualTo("3.2.0")
         assertThat(downloadResult).isInstanceOf(ApiResult.Success::class.java)
         val downloadInfo = (downloadResult as ApiResult.Success).data
-        assertThat(downloadInfo.sources.single().url).isEqualTo("$baseUrl/packages/sdl3/3.2.0/sdl3.tar.xz")
+        assertThat(downloadInfo.sources.first().url).isEqualTo("$baseUrl/packages/sdl3/3.2.0/sdl3.tar.xz")
         assertThat(interceptor.requestedUrls)
             .containsExactly(v2IndexUrl.url, detailUrl)
             .inOrder()
@@ -243,13 +244,111 @@ class PackageRegistryProtocolTest {
             .inOrder()
     }
 
-    private fun registryUrl(baseUrl: String, path: String): RegistryUrl {
-        val endpoint = RegistryEndpoint(name = "test", baseUrl = baseUrl)
+    @Test
+    fun api_shouldFallbackToPublicProxyAndReturnMirroredDownloadSources(): Unit = runBlocking {
+        val rawBaseUrl = GitHubRegistryConfig.GITHUB_RAW_BASE_URL
+        val proxyPrefix = GitHubRegistryConfig.PUBLIC_GITHUB_PROXY_PREFIXES.first()
+        val officialIndexUrl = registryUrl("GitHub Raw", rawBaseUrl, "packages/index.v2.json")
+        val proxyIndexUrl = registryUrl(
+            name = "proxy",
+            baseUrl = proxyPrefix + rawBaseUrl,
+            path = "packages/index.v2.json",
+            urlPrefix = proxyPrefix,
+        )
+        val proxyDetailUrl = proxyPrefix + "$rawBaseUrl/packages/sdl3/package.json"
+        val githubDownloadUrl = "https://github.com/wuxianggujun/TinaIDE-Registry/releases/download/" +
+            "packages/sdl3.tar.xz"
+        val interceptor = FakeRegistryInterceptor(
+            mapOf(
+                officialIndexUrl.url to RegistryResponse(code = 503),
+                proxyIndexUrl.url to RegistryResponse(
+                    body = """
+                    {
+                      "schema_version": 2,
+                      "categories": [
+                        { "id": "runtime", "name": "Runtime", "sort_order": 0 }
+                      ],
+                      "packages": [
+                        {
+                          "id": "sdl3",
+                          "name": "SDL3",
+                          "category": "runtime",
+                          "detail_url": "packages/sdl3/package.json",
+                          "android": {
+                            "version": "3.2.0",
+                            "artifact_type": "shared",
+                            "install_type": "download",
+                            "is_latest": true
+                          }
+                        }
+                      ]
+                    }
+                    """.trimIndent()
+                ),
+                proxyDetailUrl to RegistryResponse(
+                    body = """
+                    {
+                      "package": {
+                        "id": "sdl3",
+                        "name": "SDL3",
+                        "category": "runtime"
+                      },
+                      "versions": {
+                        "android": [
+                          {
+                            "id": 2,
+                            "package_id": "sdl3",
+                            "platform": "android",
+                            "version": "3.2.0",
+                            "artifact_type": "shared",
+                            "install_type": "download",
+                            "download_size": 1024,
+                            "download_url": "$githubDownloadUrl",
+                            "is_latest": true
+                          }
+                        ]
+                      }
+                    }
+                    """.trimIndent()
+                ),
+            )
+        )
+        val api = packageApi(listOf(officialIndexUrl, proxyIndexUrl), interceptor.client())
+
+        val result = api.getDownloadInfo("sdl3", 2)
+
+        assertThat(result).isInstanceOf(ApiResult.Success::class.java)
+        val downloadInfo = (result as ApiResult.Success).data
+        assertThat(downloadInfo.sources.map { it.url })
+            .containsAtLeast(proxyPrefix + githubDownloadUrl, githubDownloadUrl)
+            .inOrder()
+        assertThat(interceptor.requestedUrls)
+            .containsExactly(officialIndexUrl.url, proxyIndexUrl.url, proxyDetailUrl)
+            .inOrder()
+    }
+
+    private fun registryUrl(
+        baseUrl: String,
+        path: String,
+    ): RegistryUrl = registryUrl("test", baseUrl, path)
+
+    private fun registryUrl(
+        name: String,
+        baseUrl: String,
+        path: String,
+        urlPrefix: String? = null,
+    ): RegistryUrl {
+        val endpoint = RegistryEndpoint(name = name, baseUrl = baseUrl, urlPrefix = urlPrefix)
         return RegistryUrl(endpoint = endpoint, url = "$baseUrl/$path")
     }
 
     private fun packageApi(
         v2IndexUrl: RegistryUrl,
+        client: OkHttpClient,
+    ): PackageApiClient = packageApi(listOf(v2IndexUrl), client)
+
+    private fun packageApi(
+        indexUrls: List<RegistryUrl>,
         client: OkHttpClient,
     ): PackageApiClient {
         val constructor = PackageApiClient::class.java.getDeclaredConstructor(
@@ -259,7 +358,7 @@ class PackageRegistryProtocolTest {
         )
         constructor.isAccessible = true
         return constructor.newInstance(
-            listOf(v2IndexUrl),
+            indexUrls,
             client,
             GitHubRegistryProxySettings(),
         ) as PackageApiClient

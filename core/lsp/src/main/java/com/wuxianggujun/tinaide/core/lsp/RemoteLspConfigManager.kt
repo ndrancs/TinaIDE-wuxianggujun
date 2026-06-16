@@ -10,14 +10,12 @@ import kotlinx.coroutines.flow.asStateFlow
  * 远程 LSP 同步模式
  */
 enum class RemoteLspSyncMode(val value: String) {
-    AUTO("auto"),           // 自动判断
+    AUTO("auto"), // 自动判断
     LIGHTWEIGHT("lightweight"), // 轻量模式
-    PROJECT("project");     // 项目模式
+    PROJECT("project"); // 项目模式
 
     companion object {
-        fun fromString(value: String): RemoteLspSyncMode {
-            return entries.find { it.value == value } ?: AUTO
-        }
+        fun fromString(value: String): RemoteLspSyncMode = entries.find { it.value == value } ?: AUTO
     }
 }
 
@@ -25,14 +23,12 @@ enum class RemoteLspSyncMode(val value: String) {
  * 远程 LSP 同步方案
  */
 enum class RemoteLspSyncMethod(val value: String) {
-    BUILTIN("builtin"),     // 内置 WebSocket 同步
-    RSYNC("rsync"),         // rsync 增量同步
-    MANUAL("manual");       // 手动同步
+    BUILTIN("builtin"), // 内置 WebSocket 同步
+    RSYNC("rsync"), // rsync 增量同步
+    MANUAL("manual"); // 手动同步
 
     companion object {
-        fun fromString(value: String): RemoteLspSyncMethod {
-            return entries.find { it.value == value } ?: BUILTIN
-        }
+        fun fromString(value: String): RemoteLspSyncMethod = entries.find { it.value == value } ?: BUILTIN
     }
 }
 
@@ -40,10 +36,10 @@ enum class RemoteLspSyncMethod(val value: String) {
  * 远程 LSP 连接状态
  */
 enum class RemoteLspConnectionState {
-    DISCONNECTED,   // 未连接
-    CONNECTING,     // 连接中
-    CONNECTED,      // 已连接
-    ERROR           // 连接错误
+    DISCONNECTED, // 未连接
+    CONNECTING, // 连接中
+    CONNECTED, // 已连接
+    ERROR // 连接错误
 }
 
 /**
@@ -56,8 +52,8 @@ data class RemoteLspConfig(
     val syncMode: RemoteLspSyncMode = RemoteLspSyncMode.AUTO,
     val syncMethod: RemoteLspSyncMethod = RemoteLspSyncMethod.BUILTIN,
     val rsyncModule: String = "tina-workspace",
-    val rsyncPort: Int = 873,  // rsync daemon 默认端口
-    val remoteWorkspaceRootUri: String = "" // 可选：用于 MANUAL/RSYNC 的远端根 URI
+    val rsyncPort: Int = 873,
+    val remoteWorkspaceRootUri: String = ""
 ) {
     fun getNormalizedHostForConnection(): String {
         val trimmed = host.trim()
@@ -70,9 +66,7 @@ data class RemoteLspConfig(
     /**
      * 检查配置是否有效（可以尝试连接）
      */
-    fun isValid(): Boolean {
-        return enabled && host.isNotBlank() && port in 1..65535
-    }
+    fun isValid(): Boolean = enabled && host.isNotBlank() && port in 1..65535
 
     /**
      * 获取 WebSocket URL
@@ -99,10 +93,8 @@ object RemoteLspConfigManager {
         refresh()
     }
 
-    private fun requireConfigManager(): IConfigManager {
-        return checkNotNull(configManager) {
-            "RemoteLspConfigManager is not installed. Call RemoteLspConfigManager.install(configManager) from app init."
-        }
+    private fun requireConfigManager(): IConfigManager = checkNotNull(configManager) {
+        "RemoteLspConfigManager is not installed. Call RemoteLspConfigManager.install(configManager) from app init."
     }
 
     // 配置状态流
@@ -150,18 +142,16 @@ object RemoteLspConfigManager {
     /**
      * 从持久化存储加载配置
      */
-    private fun loadConfig(configManager: IConfigManager): RemoteLspConfig {
-        return RemoteLspConfig(
-            enabled = configManager.get(ConfigKeys.RemoteLspEnabled),
-            host = configManager.get(ConfigKeys.RemoteLspHost),
-            port = configManager.get(ConfigKeys.RemoteLspPort),
-            syncMode = RemoteLspSyncMode.fromString(configManager.get(ConfigKeys.RemoteLspSyncMode)),
-            syncMethod = RemoteLspSyncMethod.fromString(configManager.get(ConfigKeys.RemoteLspSyncMethod)),
-            rsyncModule = configManager.get(ConfigKeys.RemoteLspRsyncModule),
-            rsyncPort = configManager.get(ConfigKeys.RemoteLspRsyncPort),
-            remoteWorkspaceRootUri = configManager.get(ConfigKeys.RemoteLspWorkspaceRootUri)
-        )
-    }
+    private fun loadConfig(configManager: IConfigManager): RemoteLspConfig = RemoteLspConfig(
+        enabled = configManager.get(ConfigKeys.RemoteLspEnabled),
+        host = configManager.get(ConfigKeys.RemoteLspHost),
+        port = configManager.get(ConfigKeys.RemoteLspPort),
+        syncMode = RemoteLspSyncMode.fromString(configManager.get(ConfigKeys.RemoteLspSyncMode)),
+        syncMethod = RemoteLspSyncMethod.fromString(configManager.get(ConfigKeys.RemoteLspSyncMethod)),
+        rsyncModule = configManager.get(ConfigKeys.RemoteLspRsyncModule),
+        rsyncPort = configManager.get(ConfigKeys.RemoteLspRsyncPort),
+        remoteWorkspaceRootUri = configManager.get(ConfigKeys.RemoteLspWorkspaceRootUri)
+    )
 
     /**
      * 刷新配置（从持久化存储重新加载）

@@ -25,9 +25,11 @@ internal class IncrementalTreeSitterHighlightState(
     private companion object {
         // LRU 下限：小文件也保证 16k 行 entry。
         private const val MIN_LINE_CACHE_SIZE = 16_384
+
         // LRU 硬上限：按内存估算 (lineCount * ~200B)，100k 行≈20MB，覆盖 Chromium / Linux kernel 级单文件。
         private const val MAX_LINE_CACHE_HARD_LIMIT = 100_000
         private const val DEFAULT_OPEN_BLOCKING_TIMEOUT_MS = 5000L
+
         // 分块大小：每块覆盖 ~2k 行，作为 prewarm 调度单位。
         private const val PREWARM_CHUNK_LINES = 2048
 
@@ -93,6 +95,7 @@ internal class IncrementalTreeSitterHighlightState(
     private var currentText: StringBuilder? = null
     private var currentLineCount = 0
     private var renderSnapshotStale = false
+
     // 视口提示：bulk prewarm 以此为中心螺旋扩展分块顺序，保证可视区最先着色。
     // 外部可多次刷新，读写争用低；用 @Volatile 让 worker 线程读到最新值。
     @Volatile
@@ -233,9 +236,7 @@ internal class IncrementalTreeSitterHighlightState(
         return spans
     }
 
-    fun readSnapshot(text: String): SafeTsTree? {
-        return synchronized(lock) { renderSnapshot?.takeIf { it.text == text }?.safeTree }
-    }
+    fun readSnapshot(text: String): SafeTsTree? = synchronized(lock) { renderSnapshot?.takeIf { it.text == text }?.safeTree }
 
     override fun close() {
         val snapshot: SafeTsTree?
@@ -704,9 +705,7 @@ internal class IncrementalTreeSitterHighlightState(
 
 private fun LinkedHashMap<Int, List<HighlightLineSegment>>.applyTextChange(
     change: TextChange
-): LinkedHashMap<Int, List<HighlightLineSegment>> {
-    return HighlightLineCacheUpdater.applyTextChange(this, HighlightLineCacheChange.from(change))
-}
+): LinkedHashMap<Int, List<HighlightLineSegment>> = HighlightLineCacheUpdater.applyTextChange(this, HighlightLineCacheChange.from(change))
 
 private fun applyChangeToText(builder: StringBuilder, change: TextChange) {
     val safeStart = change.startOffset.coerceIn(0, builder.length)

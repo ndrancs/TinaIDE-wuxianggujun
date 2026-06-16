@@ -10,7 +10,15 @@ object TinaServerEnvironment {
     var serverConfigHmacSecret: String = ""
         private set
 
-    fun initialize(serverConfigHmacSecret: String) {
+    @Volatile
+    var serverConfigSignatureRequired: Boolean = false
+        private set
+
+    fun initialize(
+        serverConfigHmacSecret: String,
+        serverConfigSignatureRequired: Boolean = false,
+    ) {
         this.serverConfigHmacSecret = serverConfigHmacSecret.trim()
+        this.serverConfigSignatureRequired = serverConfigSignatureRequired
     }
 }

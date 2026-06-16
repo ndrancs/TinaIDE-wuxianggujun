@@ -54,9 +54,9 @@ internal val completionPopupKindSlotSize = 18.dp
 internal val completionPopupKindIconSize = 14.dp
 internal val completionPopupLabelFontSize = 13.sp
 internal val completionPopupDetailFontSize = 10.sp
-internal const val completionPopupTag = "editor_completion_popup"
-internal const val completionPopupRowTagPrefix = "editor_completion_popup_row_"
-internal const val completionPopupKindIconTagPrefix = "editor_completion_popup_kind_icon_"
+internal const val COMPLETION_POPUP_TAG = "editor_completion_popup"
+internal const val COMPLETION_POPUP_ROW_TAG_PREFIX = "editor_completion_popup_row_"
+internal const val COMPLETION_POPUP_KIND_ICON_TAG_PREFIX = "editor_completion_popup_kind_icon_"
 
 @Composable
 internal fun EditorCompletionPopup(
@@ -91,7 +91,7 @@ internal fun EditorCompletionPopup(
         EditorPopupScaffold(
             colors = popupColors,
             modifier = Modifier
-                .testTag(completionPopupTag)
+                .testTag(COMPLETION_POPUP_TAG)
                 .width(popupWidthDp)
                 .heightIn(max = popupHeightDp),
             contentModifier = Modifier.fillMaxWidth()
@@ -119,8 +119,11 @@ internal fun EditorCompletionPopup(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                if (isSelected) popupColors.selectedSurfaceColor
-                                else popupColors.containerColor
+                                if (isSelected) {
+                                    popupColors.selectedSurfaceColor
+                                } else {
+                                    popupColors.containerColor
+                                }
                             )
                             .testTag(completionPopupRowTag(index))
                             .clickable {
@@ -209,79 +212,75 @@ internal data class CompletionKindStyle(
     val tintColor: Color
 )
 
-internal fun completionKindStyle(kind: EditorCompletionKind): CompletionKindStyle {
-    return when (kind) {
-        EditorCompletionKind.FUNCTION ->
-            CompletionKindStyle(CompletionKindIconKey.CALLABLE, Color(0xFFBD6A7D))
-        EditorCompletionKind.METHOD ->
-            CompletionKindStyle(CompletionKindIconKey.CALLABLE, Color(0xFFBD6A7D))
-        EditorCompletionKind.CONSTRUCTOR ->
-            CompletionKindStyle(CompletionKindIconKey.CALLABLE, Color(0xFFBD6A7D))
-        EditorCompletionKind.FIELD ->
-            CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
-        EditorCompletionKind.VARIABLE ->
-            CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
-        EditorCompletionKind.CLASS ->
-            CompletionKindStyle(CompletionKindIconKey.CODE, Color(0xFF4A8FB0))
-        EditorCompletionKind.INTERFACE ->
-            CompletionKindStyle(CompletionKindIconKey.CODE, Color(0xFF5D9B50))
-        EditorCompletionKind.MODULE ->
-            CompletionKindStyle(CompletionKindIconKey.MODULE, Color(0xFF4A8FB0))
-        EditorCompletionKind.PROPERTY ->
-            CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFF8E6FC8))
-        EditorCompletionKind.UNIT ->
-            CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFF7D8791))
-        EditorCompletionKind.VALUE ->
-            CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
-        EditorCompletionKind.ENUM ->
-            CompletionKindStyle(CompletionKindIconKey.CODE, Color(0xFF4A8FB0))
-        EditorCompletionKind.KEYWORD ->
-            CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFFCC7832))
-        EditorCompletionKind.SNIPPET ->
-            CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFF7D8791))
-        EditorCompletionKind.COLOR ->
-            CompletionKindStyle(CompletionKindIconKey.COLOR, Color(0xFFBD6A7D))
-        EditorCompletionKind.FILE ->
-            CompletionKindStyle(CompletionKindIconKey.FILE, Color(0xFF7D8791))
-        EditorCompletionKind.REFERENCE ->
-            CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFF7D8791))
-        EditorCompletionKind.FOLDER ->
-            CompletionKindStyle(CompletionKindIconKey.FOLDER, Color(0xFF7D8791))
-        EditorCompletionKind.ENUM_MEMBER ->
-            CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFF4A8FB0))
-        EditorCompletionKind.CONSTANT ->
-            CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
-        EditorCompletionKind.STRUCT ->
-            CompletionKindStyle(CompletionKindIconKey.CODE, Color(0xFF8E6FC8))
-        EditorCompletionKind.EVENT ->
-            CompletionKindStyle(CompletionKindIconKey.EVENT, Color(0xFF7D8791))
-        EditorCompletionKind.OPERATOR ->
-            CompletionKindStyle(CompletionKindIconKey.OPERATOR, Color(0xFFD06A81))
-        EditorCompletionKind.TYPE_PARAMETER ->
-            CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
-        EditorCompletionKind.TEXT ->
-            CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFF7D8791))
-    }
+internal fun completionKindStyle(kind: EditorCompletionKind): CompletionKindStyle = when (kind) {
+    EditorCompletionKind.FUNCTION ->
+        CompletionKindStyle(CompletionKindIconKey.CALLABLE, Color(0xFFBD6A7D))
+    EditorCompletionKind.METHOD ->
+        CompletionKindStyle(CompletionKindIconKey.CALLABLE, Color(0xFFBD6A7D))
+    EditorCompletionKind.CONSTRUCTOR ->
+        CompletionKindStyle(CompletionKindIconKey.CALLABLE, Color(0xFFBD6A7D))
+    EditorCompletionKind.FIELD ->
+        CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
+    EditorCompletionKind.VARIABLE ->
+        CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
+    EditorCompletionKind.CLASS ->
+        CompletionKindStyle(CompletionKindIconKey.CODE, Color(0xFF4A8FB0))
+    EditorCompletionKind.INTERFACE ->
+        CompletionKindStyle(CompletionKindIconKey.CODE, Color(0xFF5D9B50))
+    EditorCompletionKind.MODULE ->
+        CompletionKindStyle(CompletionKindIconKey.MODULE, Color(0xFF4A8FB0))
+    EditorCompletionKind.PROPERTY ->
+        CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFF8E6FC8))
+    EditorCompletionKind.UNIT ->
+        CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFF7D8791))
+    EditorCompletionKind.VALUE ->
+        CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
+    EditorCompletionKind.ENUM ->
+        CompletionKindStyle(CompletionKindIconKey.CODE, Color(0xFF4A8FB0))
+    EditorCompletionKind.KEYWORD ->
+        CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFFCC7832))
+    EditorCompletionKind.SNIPPET ->
+        CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFF7D8791))
+    EditorCompletionKind.COLOR ->
+        CompletionKindStyle(CompletionKindIconKey.COLOR, Color(0xFFBD6A7D))
+    EditorCompletionKind.FILE ->
+        CompletionKindStyle(CompletionKindIconKey.FILE, Color(0xFF7D8791))
+    EditorCompletionKind.REFERENCE ->
+        CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFF7D8791))
+    EditorCompletionKind.FOLDER ->
+        CompletionKindStyle(CompletionKindIconKey.FOLDER, Color(0xFF7D8791))
+    EditorCompletionKind.ENUM_MEMBER ->
+        CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFF4A8FB0))
+    EditorCompletionKind.CONSTANT ->
+        CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
+    EditorCompletionKind.STRUCT ->
+        CompletionKindStyle(CompletionKindIconKey.CODE, Color(0xFF8E6FC8))
+    EditorCompletionKind.EVENT ->
+        CompletionKindStyle(CompletionKindIconKey.EVENT, Color(0xFF7D8791))
+    EditorCompletionKind.OPERATOR ->
+        CompletionKindStyle(CompletionKindIconKey.OPERATOR, Color(0xFFD06A81))
+    EditorCompletionKind.TYPE_PARAMETER ->
+        CompletionKindStyle(CompletionKindIconKey.PROPERTY, Color(0xFFB98A2C))
+    EditorCompletionKind.TEXT ->
+        CompletionKindStyle(CompletionKindIconKey.DESCRIPTION, Color(0xFF7D8791))
 }
 
-private fun CompletionKindIconKey.imageVector(): ImageVector {
-    return when (this) {
-        CompletionKindIconKey.CALLABLE -> Icons.Default.Functions
-        CompletionKindIconKey.CODE -> Icons.Default.Code
-        CompletionKindIconKey.MODULE -> Icons.Default.Source
-        CompletionKindIconKey.PROPERTY -> Icons.Default.Tag
-        CompletionKindIconKey.DESCRIPTION -> Icons.Default.Description
-        CompletionKindIconKey.FILE -> Icons.AutoMirrored.Filled.InsertDriveFile
-        CompletionKindIconKey.FOLDER -> Icons.Default.Folder
-        CompletionKindIconKey.EVENT -> Icons.Default.Warning
-        CompletionKindIconKey.OPERATOR -> Icons.Default.Build
-        CompletionKindIconKey.COLOR -> Icons.Default.Palette
-    }
+private fun CompletionKindIconKey.imageVector(): ImageVector = when (this) {
+    CompletionKindIconKey.CALLABLE -> Icons.Default.Functions
+    CompletionKindIconKey.CODE -> Icons.Default.Code
+    CompletionKindIconKey.MODULE -> Icons.Default.Source
+    CompletionKindIconKey.PROPERTY -> Icons.Default.Tag
+    CompletionKindIconKey.DESCRIPTION -> Icons.Default.Description
+    CompletionKindIconKey.FILE -> Icons.AutoMirrored.Filled.InsertDriveFile
+    CompletionKindIconKey.FOLDER -> Icons.Default.Folder
+    CompletionKindIconKey.EVENT -> Icons.Default.Warning
+    CompletionKindIconKey.OPERATOR -> Icons.Default.Build
+    CompletionKindIconKey.COLOR -> Icons.Default.Palette
 }
 
-internal fun completionPopupRowTag(index: Int): String = "$completionPopupRowTagPrefix$index"
+internal fun completionPopupRowTag(index: Int): String = "$COMPLETION_POPUP_ROW_TAG_PREFIX$index"
 
-internal fun completionPopupKindIconTag(index: Int): String = "$completionPopupKindIconTagPrefix$index"
+internal fun completionPopupKindIconTag(index: Int): String = "$COMPLETION_POPUP_KIND_ICON_TAG_PREFIX$index"
 
 internal fun highlightMatchedChars(
     label: String,

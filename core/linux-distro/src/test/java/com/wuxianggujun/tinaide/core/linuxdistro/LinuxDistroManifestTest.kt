@@ -85,28 +85,87 @@ class LinuxDistroManifestTest {
             .isNotNull()
     }
 
-    private fun distro(id: String): DistroDefinition {
-        return DistroDefinition(
-            id = id,
-            family = DistroFamily.ALPINE,
-            displayName = "Alpine",
-            packageManager = DistroPackageManager.APK,
-            defaultReleaseId = "3.20",
-            releases = listOf(
-                DistroRelease(
-                    id = "3.20",
-                    version = "3.20",
-                    displayName = "Alpine 3.20",
-                    artifacts = listOf(
-                        DistroArtifact(
-                            architecture = DistroArchitecture.AARCH64,
-                            url = "https://example.test/rootfs.tar.gz",
-                            format = DistroArchiveFormat.TAR_GZ,
-                            checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "abc123")
-                        )
+    @Test
+    fun parser_shouldDecodeMirrorRulesAndExposeThemViaCatalog() {
+        val manifest = LinuxDistroManifestParser.decode(
+            """
+            {
+              "schemaVersion": 1,
+              "mirrors": [
+                {
+                  "matchPrefix": "https://dl-cdn.alpinelinux.org/",
+                  "replaceWith": "https://mirrors.tuna.tsinghua.edu.cn/"
+                }
+              ],
+              "distros": [
+                {
+                  "id": "alpine",
+                  "family": "ALPINE",
+                  "displayName": "Alpine",
+                  "packageManager": "APK",
+                  "defaultReleaseId": "3.20",
+                  "releases": [
+                    {
+                      "id": "3.20",
+                      "version": "3.20",
+                      "displayName": "Alpine 3.20",
+                      "artifacts": [
+                        {
+                          "architecture": "AARCH64",
+                          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/rootfs.tar.gz",
+                          "format": "TAR_GZ",
+                          "checksum": {
+                            "algorithm": "SHA256",
+                            "value": "ABC123"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent()
+        )
+        val catalog = ManifestLinuxDistroCatalog(manifest)
+
+        val rule = catalog.mirrorRules().single()
+        assertThat(rule.deriveOrNull("https://dl-cdn.alpinelinux.org/alpine/v3.23/rootfs.tar.gz"))
+            .isEqualTo("https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.23/rootfs.tar.gz")
+        assertThat(rule.deriveOrNull("https://other.example/rootfs.tar.gz")).isNull()
+    }
+
+    @Test
+    fun manifest_shouldDefaultToEmptyMirrorsWhenAbsent() {
+        val manifest = LinuxDistroManifest(
+            schemaVersion = LinuxDistroManifest.CURRENT_SCHEMA_VERSION,
+            distros = listOf(distro("alpine"))
+        )
+
+        assertThat(manifest.mirrors).isEmpty()
+        assertThat(ManifestLinuxDistroCatalog(manifest).mirrorRules()).isEmpty()
+    }
+
+    private fun distro(id: String): DistroDefinition = DistroDefinition(
+        id = id,
+        family = DistroFamily.ALPINE,
+        displayName = "Alpine",
+        packageManager = DistroPackageManager.APK,
+        defaultReleaseId = "3.20",
+        releases = listOf(
+            DistroRelease(
+                id = "3.20",
+                version = "3.20",
+                displayName = "Alpine 3.20",
+                artifacts = listOf(
+                    DistroArtifact(
+                        architecture = DistroArchitecture.AARCH64,
+                        url = "https://example.test/rootfs.tar.gz",
+                        format = DistroArchiveFormat.TAR_GZ,
+                        checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "abc123")
                     )
                 )
             )
         )
-    }
+    )
 }

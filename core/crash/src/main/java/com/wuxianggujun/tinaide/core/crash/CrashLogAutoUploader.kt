@@ -13,7 +13,7 @@ import timber.log.Timber
  * - 只在主进程运行（由调用方保证）；
  * - 启动后立即尝试上传一次，避免只依赖 JobScheduler 被系统延迟；
  * - JobScheduler 仍作为网络不可用、进程被杀、系统限流时的兜底重试；
- * - 默认开启，用户可在设置中关闭；
+ * - 默认关闭，用户可在设置中明确开启；
  * - 对已上传 tombstone 做去重，避免重复上报。
  */
 object CrashLogAutoUploader {

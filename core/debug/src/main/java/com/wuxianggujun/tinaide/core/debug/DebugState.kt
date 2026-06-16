@@ -49,21 +49,21 @@ sealed class DebugState {
 
 /** 暂停原因 */
 enum class PauseReason {
-    ENTRY,          // 首次入口
-    BREAKPOINT,     // 命中断点
-    STEP,           // 单步完成
-    EXCEPTION,      // 异常
-    SIGNAL,         // 信号
-    USER_REQUEST    // 用户请求暂停
+    ENTRY, // 首次入口
+    BREAKPOINT, // 命中断点
+    STEP, // 单步完成
+    EXCEPTION, // 异常
+    SIGNAL, // 信号
+    USER_REQUEST // 用户请求暂停
 }
 
 /** 终止原因 */
 enum class TerminateReason {
-    NORMAL_EXIT,    // 正常退出
-    CRASH,          // 崩溃
-    TIMEOUT,        // 超时
-    USER_STOP,      // 用户停止
-    ERROR           // 内部错误
+    NORMAL_EXIT, // 正常退出
+    CRASH, // 崩溃
+    TIMEOUT, // 超时
+    USER_STOP, // 用户停止
+    ERROR // 内部错误
 }
 
 /** 源码位置 */
@@ -83,8 +83,8 @@ data class Breakpoint(
     val enabled: Boolean = true,
     val condition: String? = null,
     val hitCount: Int = 0,
-    val address: Long = 0,        // 实际设置的地址
-    val verified: Boolean = false  // 是否已在调试器中验证
+    val address: Long = 0,
+    val verified: Boolean = false
 )
 
 /** 调用栈帧 */
@@ -101,5 +101,5 @@ data class Variable(
     val name: String,
     val value: String,
     val type: String?,
-    val variablesReference: Int = 0  // 非0表示有子变量
+    val variablesReference: Int = 0
 )

@@ -51,6 +51,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gyf.immersionbar.ktx.immersionBar
+import com.wuxianggujun.tinaide.core.i18n.AppStrings
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
+import com.wuxianggujun.tinaide.storage.ExternalFileIntents
 import com.wuxianggujun.tinaide.storage.ProjectPaths
 import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
 import com.wuxianggujun.tinaide.ui.compose.components.TinaConfirmDialog
@@ -60,17 +64,13 @@ import com.wuxianggujun.tinaide.ui.compose.components.TinaOverlayPanelSurface
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPanelSegmentButton
 import com.wuxianggujun.tinaide.ui.compose.components.tinaBackAction
 import com.wuxianggujun.tinaide.ui.theme.TinaIDETheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import com.wuxianggujun.tinaide.storage.ExternalFileIntents
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.AppStrings
-import com.wuxianggujun.tinaide.core.i18n.strOr
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PRootLogActivity : ComponentActivity() {
 
@@ -601,5 +601,3 @@ private fun readFileTailUtf8(file: File, maxBytes: Long): String {
         }.onFailure { append(it.message ?: AppStrings.get(Strings.proot_log_read_failed)) }
     }
 }
-
-

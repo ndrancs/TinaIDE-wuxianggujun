@@ -67,5 +67,4 @@ class ApiEnvelopeParserTest {
         assertThat(ApiEnvelopeParser.formatApiError("E1", "   ")).isEqualTo("E1")
         assertThat(ApiEnvelopeParser.formatApiError("E1", "failed")).isEqualTo("E1: failed")
     }
-
 }

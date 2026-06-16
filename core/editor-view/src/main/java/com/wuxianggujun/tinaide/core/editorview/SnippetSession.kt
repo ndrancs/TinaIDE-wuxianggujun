@@ -26,9 +26,7 @@ internal data class SnippetSession(
     }
 
     /** 当前步骤的第一个（主）占位符，用于移动光标 */
-    fun currentPlaceholder(): SnippetPlaceholderInfo? {
-        return parsed.placeholders.getOrNull(currentStep)
-    }
+    fun currentPlaceholder(): SnippetPlaceholderInfo? = parsed.placeholders.getOrNull(currentStep)
 
     /**
      * 前进到下一个不同 tabstopIndex 的步骤。
@@ -68,9 +66,7 @@ internal data class SnippetSession(
         return copy(currentStep = groupStart)
     }
 
-    fun absoluteOffsetOf(placeholder: SnippetPlaceholderInfo): Int {
-        return baseOffset + placeholder.offsetInText
-    }
+    fun absoluteOffsetOf(placeholder: SnippetPlaceholderInfo): Int = baseOffset + placeholder.offsetInText
 
     /**
      * 对当前 tabstop 分组应用一次同步编辑。
@@ -139,7 +135,8 @@ internal data class SnippetSession(
             val phEnd = ph.offsetInText + ph.length
             val isCurrentPlaceholder = (index == currentStep)
             val editWithinCurrentPlaceholder = isCurrentPlaceholder &&
-                relativeEditOffset >= ph.offsetInText && relativeEditOffset <= phEnd
+                relativeEditOffset >= ph.offsetInText &&
+                relativeEditOffset <= phEnd
 
             when {
                 // 编辑发生在当前占位符内部 → 调整长度

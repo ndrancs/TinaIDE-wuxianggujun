@@ -6,11 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -50,8 +48,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import org.intellij.markdown.MarkdownElementTypes
@@ -176,7 +174,9 @@ private fun ViewerNode(
                 val start = eol?.endOffset ?: node.children[contentStartIdx].startOffset
                 val end = node.children.findLast { it.type == MarkdownTokenTypes.CODE_FENCE_CONTENT }?.endOffset ?: start
                 if (end > start) content.substring(start, end).trimIndent() else ""
-            } else ""
+            } else {
+                ""
+            }
             if (codeText.isNotEmpty()) {
                 SimpleCodeBlock(
                     code = codeText,
@@ -198,7 +198,11 @@ private fun ViewerNode(
         }
 
         MarkdownElementTypes.UNORDERED_LIST -> {
-            val bullet = when (listLevel % 3) { 0 -> "•"; 1 -> "◦"; else -> "▪" }
+            val bullet = when (listLevel % 3) {
+                0 -> "•"
+                1 -> "◦"
+                else -> "▪"
+            }
             Column(modifier = modifier.padding(start = (listLevel * 8).dp, top = 2.dp, bottom = 2.dp)) {
                 node.children.fastForEach { child ->
                     if (child.type == MarkdownElementTypes.LIST_ITEM) {
@@ -356,7 +360,9 @@ private fun AnnotatedString.Builder.appendInline(
                 withLink(createLinkAnnotation(dest, onLinkClick)) {
                     withStyle(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)) { append(text) }
                 }
-            } else append(text)
+            } else {
+                append(text)
+            }
         }
 
         node.type == MarkdownElementTypes.AUTOLINK -> {
@@ -377,15 +383,13 @@ private fun AnnotatedString.Builder.appendInline(
 private fun createLinkAnnotation(
     url: String,
     onLinkClick: ((String) -> Unit)?
-): LinkAnnotation {
-    return if (onLinkClick == null) {
-        LinkAnnotation.Url(url)
-    } else {
-        LinkAnnotation.Clickable(
-            tag = url,
-            linkInteractionListener = { onLinkClick(url) }
-        )
-    }
+): LinkAnnotation = if (onLinkClick == null) {
+    LinkAnnotation.Url(url)
+} else {
+    LinkAnnotation.Clickable(
+        tag = url,
+        linkInteractionListener = { onLinkClick(url) }
+    )
 }
 
 // ── 列表项 ──────────────────────────────────────────────
@@ -473,14 +477,25 @@ private fun SimpleCodeBlock(
 
 private fun ASTNode.findRecursive(vararg types: org.intellij.markdown.IElementType): ASTNode? {
     if (type in types) return this
-    for (child in children) { child.findRecursive(*types)?.let { return it } }
+    for (child in children) {
+        child.findRecursive(*types)?.let { return it }
+    }
     return null
 }
 
 private fun List<ASTNode>.trimMarkers(type: org.intellij.markdown.IElementType, count: Int): List<ASTNode> {
     if (isEmpty() || count <= 0) return this
-    var start = 0; var end = size
-    var t = 0; while (start < end && t < count && this[start].type == type) { start++; t++ }
-    t = 0; while (end > start && t < count && this[end - 1].type == type) { end--; t++ }
+    var start = 0
+    var end = size
+    var t = 0
+    while (start < end && t < count && this[start].type == type) {
+        start++
+        t++
+    }
+    t = 0
+    while (end > start && t < count && this[end - 1].type == type) {
+        end--
+        t++
+    }
     return subList(start, end)
 }

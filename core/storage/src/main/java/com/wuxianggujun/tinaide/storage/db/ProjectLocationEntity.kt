@@ -35,25 +35,21 @@ data class ProjectLocationEntity(
     @ColumnInfo(name = "registered")
     val registered: Long = System.currentTimeMillis()
 ) {
-    fun toDomainModel(): ProjectLocation {
-        return ProjectLocation(
-            projectId = projectId,
-            projectDirName = projectDirName,
-            sourceRootPath = sourceRootPath,
-            registered = registered
-        )
-    }
+    fun toDomainModel(): ProjectLocation = ProjectLocation(
+        projectId = projectId,
+        projectDirName = projectDirName,
+        sourceRootPath = sourceRootPath,
+        registered = registered
+    )
 
     companion object {
         const val LEGACY_PENDING_SOURCE_ROOT_PREFIX = "__legacy_pending__/"
 
-        fun fromDomainModel(location: ProjectLocation): ProjectLocationEntity {
-            return ProjectLocationEntity(
-                projectId = location.projectId,
-                projectDirName = location.projectDirName,
-                sourceRootPath = location.sourceRootPath,
-                registered = location.registered
-            )
-        }
+        fun fromDomainModel(location: ProjectLocation): ProjectLocationEntity = ProjectLocationEntity(
+            projectId = location.projectId,
+            projectDirName = location.projectDirName,
+            sourceRootPath = location.sourceRootPath,
+            registered = location.registered
+        )
     }
 }

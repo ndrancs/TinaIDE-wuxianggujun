@@ -7,6 +7,7 @@ import com.wuxianggujun.tinaide.plugin.EditorThemeIndex
 import com.wuxianggujun.tinaide.plugin.InstalledPlugin
 import com.wuxianggujun.tinaide.plugin.PluginManager
 import com.wuxianggujun.tinaide.plugin.ThemeConfig
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,13 +17,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.io.File
 import timber.log.Timber
 
 class PluginEditorThemeRegistry(
     private val context: Context,
     private val pluginManager: PluginManager
-) : ServiceLifecycle, EditorThemeIndex {
+) : ServiceLifecycle,
+    EditorThemeIndex {
 
     companion object {
         private const val TAG = "PluginEditorThemeRegistry"
@@ -89,11 +90,9 @@ class PluginEditorThemeRegistry(
      *
      * 解析阶段已做结构化校验，这里仅做业务必填项检查
      */
-    private fun isValidThemeConfig(config: ThemeConfig): Boolean {
-        return runCatching {
-            config.name.isNotEmpty() && config.colors.isNotEmpty()
-        }.getOrDefault(false)
-    }
+    private fun isValidThemeConfig(config: ThemeConfig): Boolean = runCatching {
+        config.name.isNotEmpty() && config.colors.isNotEmpty()
+    }.getOrDefault(false)
 
     private fun resolveFileSafely(pluginDir: File, relativePath: String): File? {
         if (relativePath.isBlank()) return null

@@ -42,6 +42,13 @@ data class BuildOptions(
      * 始终为合法值（21..35），默认 API 28。
      */
     val sysrootApiLevel: Int = MakeCommandOverrides.DEFAULT_SYSROOT_API_LEVEL,
+    /**
+     * Active Android sysroot / NDK runtime profile captured at build planning time.
+     *
+     * It participates in artifact fingerprints so switching libc++_shared.so/sysroot
+     * cannot accidentally reuse stale build outputs.
+     */
+    val sysrootProfileId: String? = null,
     val nativeCFlags: String = "",
     val nativeCppFlags: String = "",
     val nativeLdFlags: String = "",
@@ -93,9 +100,7 @@ data class BuildOptions(
          * 根据 CPU 核心数计算默认并行任务数
          * 范围限制在 1-8 之间，避免过多任务导致内存不足
          */
-        fun defaultParallelJobs(): Int {
-            return Runtime.getRuntime().availableProcessors().coerceIn(1, 8)
-        }
+        fun defaultParallelJobs(): Int = Runtime.getRuntime().availableProcessors().coerceIn(1, 8)
     }
 }
 
@@ -106,13 +111,11 @@ enum class CMakeBuildTypeOption(val cmakeValue: String) {
     MIN_SIZE_REL("MinSizeRel");
 
     companion object {
-        fun fromValue(value: String?): CMakeBuildTypeOption {
-            return when (value?.trim()) {
-                RELEASE.cmakeValue -> RELEASE
-                REL_WITH_DEB_INFO.cmakeValue -> REL_WITH_DEB_INFO
-                MIN_SIZE_REL.cmakeValue -> MIN_SIZE_REL
-                else -> DEBUG
-            }
+        fun fromValue(value: String?): CMakeBuildTypeOption = when (value?.trim()) {
+            RELEASE.cmakeValue -> RELEASE
+            REL_WITH_DEB_INFO.cmakeValue -> REL_WITH_DEB_INFO
+            MIN_SIZE_REL.cmakeValue -> MIN_SIZE_REL
+            else -> DEBUG
         }
     }
 }
@@ -122,11 +125,9 @@ enum class CMakeGeneratorOption(val cmakeValue: String) {
     NINJA("Ninja");
 
     companion object {
-        fun fromValue(value: String?): CMakeGeneratorOption {
-            return when (value?.trim()) {
-                UNIX_MAKEFILES.cmakeValue -> UNIX_MAKEFILES
-                else -> NINJA
-            }
+        fun fromValue(value: String?): CMakeGeneratorOption = when (value?.trim()) {
+            UNIX_MAKEFILES.cmakeValue -> UNIX_MAKEFILES
+            else -> NINJA
         }
     }
 }

@@ -39,6 +39,7 @@ class CMakeBuildExecutor(
     timeoutConfig: CompileTimeoutConfig? = null
 ) {
     private val appContext = context.applicationContext
+
     // 超时配置管理器（支持注入共享实例）
     private val timeoutConfig: CompileTimeoutConfig = timeoutConfig ?: CompileTimeoutConfig(context)
     private val toolchainPathResolver by lazy { ToolchainPathResolver(appContext) }
@@ -79,9 +80,7 @@ class CMakeBuildExecutor(
              * 根据 CPU 核心数计算默认并行任务数
              * 范围限制在 1-8 之间
              */
-            fun defaultParallelJobs(): Int {
-                return Runtime.getRuntime().availableProcessors().coerceIn(1, 8)
-            }
+            fun defaultParallelJobs(): Int = Runtime.getRuntime().availableProcessors().coerceIn(1, 8)
         }
     }
 
@@ -117,7 +116,7 @@ class CMakeBuildExecutor(
             timeout = timeoutConfig.getEnvCheckTimeout()
         )
         if (!result.isSuccess) return null
-        
+
         // 解析版本号：cmake version 3.26.4
         val versionLine = result.stdout.lines().firstOrNull() ?: return null
         val match = Regex("""cmake version (\d+\.\d+\.\d+)""").find(versionLine)
@@ -183,7 +182,7 @@ class CMakeBuildExecutor(
             append(" -B $guestBuildDir")
             append(" -DCMAKE_BUILD_TYPE=${options.buildType.cmakeValue}")
             append(" -G \"${options.generator.cmakeValue}\"")
-            
+
             // 设置编译器（只允许来自路径解析器或显式传入的路径）
             append(" -DCMAKE_C_COMPILER=$resolvedCCompiler")
             append(" -DCMAKE_CXX_COMPILER=$resolvedCxxCompiler")
@@ -211,7 +210,7 @@ class CMakeBuildExecutor(
                 append(" -DCMAKE_C_STANDARD_LIBRARIES=${shellQuotePosix(projectStandardLibraries)}")
                 append(" -DCMAKE_CXX_STANDARD_LIBRARIES=${shellQuotePosix(projectStandardLibraries)}")
             }
-            
+
             if (options.generateCompileCommands) {
                 append(" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
             }
@@ -253,7 +252,7 @@ class CMakeBuildExecutor(
         // 将宿主路径转换为 PRoot guest 路径
         val prootManager = prootEnv.getPRootManager()
         val guestBuildDir = prootManager.toGuestPath(buildDir.absolutePath)
-        
+
         val buildCommand = buildString {
             append("cmake --build $guestBuildDir")
             if (target != null) {
@@ -298,7 +297,7 @@ class CMakeBuildExecutor(
         // 将宿主路径转换为 PRoot guest 路径
         val prootManager = prootEnv.getPRootManager()
         val guestBuildDir = prootManager.toGuestPath(buildDir.absolutePath)
-        
+
         val result = prootEnv.executeShell(
             "cmake --build $guestBuildDir --target clean",
             timeout = timeoutConfig.getCMakeCleanTimeout()
@@ -317,14 +316,14 @@ class CMakeBuildExecutor(
         // 将宿主路径转换为 PRoot guest 路径
         val prootManager = prootEnv.getPRootManager()
         val guestBuildDir = prootManager.toGuestPath(buildDir.absolutePath)
-        
+
         val result = prootEnv.executeShell(
             "cmake --build $guestBuildDir --target help",
             timeout = timeoutConfig.getCMakeHelpTimeout()
         )
-        
+
         if (!result.isSuccess) return emptyList()
-        
+
         return parseTargetsFromHelp(result.stdout)
     }
 
@@ -344,40 +343,40 @@ class CMakeBuildExecutor(
      */
     private fun findBuildOutput(buildDir: File, target: String?): String? {
         if (target == null) return null
-        
+
         // 策略1：直接在构建目录下查找
         val directPath = File(buildDir, target)
         if (directPath.exists() && directPath.isFile && directPath.canExecute()) {
             return directPath.absolutePath
         }
-        
+
         // 策略2：检查常见的子目录
         val commonSubdirs = listOf(
-            "",           // 根目录
-            "bin",        // 常见的可执行文件目录
-            "src",        // 源码目录（有时编译产物在这里）
-            "Debug",      // MSVC/CLion 风格
-            "Release",    // MSVC/CLion 风格
-            "build",      // 嵌套构建目录
-            "CMakeFiles"  // CMake 内部目录（不太常见但有可能）
+            "", // 根目录
+            "bin", // 常见的可执行文件目录
+            "src", // 源码目录（有时编译产物在这里）
+            "Debug", // MSVC/CLion 风格
+            "Release", // MSVC/CLion 风格
+            "build", // 嵌套构建目录
+            "CMakeFiles" // CMake 内部目录（不太常见但有可能）
         )
-        
+
         for (subdir in commonSubdirs) {
             val searchDir = if (subdir.isEmpty()) buildDir else File(buildDir, subdir)
             if (!searchDir.exists() || !searchDir.isDirectory) continue
-            
+
             val candidate = File(searchDir, target)
             if (candidate.exists() && candidate.isFile && candidate.canExecute()) {
                 return candidate.absolutePath
             }
         }
-        
+
         // 策略3：回退到遍历整个构建目录（但限制深度以避免过长时间）
         val executable = buildDir.walkTopDown()
-            .maxDepth(5)  // 限制遍历深度
+            .maxDepth(5) // 限制遍历深度
             .filter { it.isFile && it.canExecute() && it.nameWithoutExtension == target }
             .firstOrNull()
-        
+
         return executable?.absolutePath ?: findFallbackSharedLibraryOutput(buildDir)
     }
 
@@ -407,19 +406,15 @@ class CMakeBuildExecutor(
     /**
      * 解析 cmake --build --target help 输出
      */
-    private fun parseTargetsFromHelp(output: String): List<String> {
-        return output.lines()
-            .filter { it.startsWith("...") }
-            .map { it.removePrefix("...").trim() }
-            .filter { it.isNotBlank() }
-    }
+    private fun parseTargetsFromHelp(output: String): List<String> = output.lines()
+        .filter { it.startsWith("...") }
+        .map { it.removePrefix("...").trim() }
+        .filter { it.isNotBlank() }
 
     /**
      * 解析编译诊断信息
      */
-    private fun parseDiagnostics(output: String): List<BuildDiagnostic> {
-        return BuildDiagnosticParser.parse(output)
-    }
+    private fun parseDiagnostics(output: String): List<BuildDiagnostic> = BuildDiagnosticParser.parse(output)
 
     private fun buildPackageEnvironment(
         packagePaths: InstalledPackagePathResolver.PackagePaths,
@@ -456,13 +451,11 @@ class CMakeBuildExecutor(
         }
     }
 
-    private fun mergeFlagSegments(vararg values: String): String {
-        return values.asSequence()
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .joinToString(" ")
-    }
+    private fun mergeFlagSegments(vararg values: String): String = values.asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .joinToString(" ")
 
     private fun mergeCppFlags(cppFlags: String, cppStandard: String?): String {
         val normalizedFlags = cppFlags.trim()

@@ -162,9 +162,7 @@ class LinuxDistroRootfsHealthCheckerTest {
     }
     private fun LinuxDistroRootfsHealthReport.check(
         probe: LinuxDistroRootfsHealthProbe,
-    ): LinuxDistroRootfsHealthCheck {
-        return checks.single { check -> check.probe == probe }
-    }
+    ): LinuxDistroRootfsHealthCheck = checks.single { check -> check.probe == probe }
 
     private class FakeLinuxEnvironment(
         private val available: Boolean,
@@ -206,46 +204,30 @@ class LinuxDistroRootfsHealthCheckerTest {
 
         override fun toGuestPath(hostPath: String): String = hostPath
 
-        private fun commandAvailability(command: String): LinuxExecutionResult {
-            return if (command in availableCommands) success() else failure()
-        }
+        private fun commandAvailability(command: String): LinuxExecutionResult = if (command in availableCommands) success() else failure()
 
-        private fun commandVersion(command: String, version: String): LinuxExecutionResult {
-            return if (command in availableCommands) success(stdout = version) else failure()
-        }
+        private fun commandVersion(command: String, version: String): LinuxExecutionResult = if (command in availableCommands) success(stdout = version) else failure()
 
-        private fun success(stdout: String = ""): LinuxExecutionResult {
-            return LinuxExecutionResult(
-                exitCode = 0,
-                stdout = stdout,
-                stderr = "",
-                durationMs = 1L,
-            )
-        }
+        private fun success(stdout: String = ""): LinuxExecutionResult = LinuxExecutionResult(
+            exitCode = 0,
+            stdout = stdout,
+            stderr = "",
+            durationMs = 1L,
+        )
 
-        private fun failure(): LinuxExecutionResult {
-            return LinuxExecutionResult(
-                exitCode = 1,
-                stdout = "",
-                stderr = "not found",
-                durationMs = 1L,
-            )
-        }
+        private fun failure(): LinuxExecutionResult = LinuxExecutionResult(
+            exitCode = 1,
+            stdout = "",
+            stderr = "not found",
+            durationMs = 1L,
+        )
     }
 }
 
-private fun List<String>.isExecutablePathProbe(): Boolean {
-    return size >= 3 && this[0] == "/bin/test" && this[1] == "-x"
-}
+private fun List<String>.isExecutablePathProbe(): Boolean = size >= 3 && this[0] == "/bin/test" && this[1] == "-x"
 
-private fun List<String>.extractExecutablePathProbeName(): String {
-    return getOrNull(2).orEmpty()
-}
+private fun List<String>.extractExecutablePathProbeName(): String = getOrNull(2).orEmpty()
 
-private fun List<String>.isCommandProbe(): Boolean {
-    return size >= 3 && this[0] == "/bin/sh" && this[1] == "-lc" && this[2].contains("command -v")
-}
+private fun List<String>.isCommandProbe(): Boolean = size >= 3 && this[0] == "/bin/sh" && this[1] == "-lc" && this[2].contains("command -v")
 
-private fun List<String>.extractCommandProbeName(): String {
-    return Regex("command -v '([^']+)'").find(this[2])?.groupValues?.get(1).orEmpty()
-}
+private fun List<String>.extractCommandProbeName(): String = Regex("command -v '([^']+)'").find(this[2])?.groupValues?.get(1).orEmpty()

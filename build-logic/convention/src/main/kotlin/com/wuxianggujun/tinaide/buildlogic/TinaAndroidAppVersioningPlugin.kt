@@ -13,7 +13,7 @@ import org.gradle.kotlin.dsl.configure
  *
  * apply() 阶段根据 `gradle.startParameter.taskNames` 判断本次构建是否包含 release
  * assemble/bundle/install，若是则**先自增**再读取版本号，这样 manifest、extension、
- * mapping upload、脚本重命名读到的是同一个值。
+ * mapping backup、脚本重命名读到的是同一个值。
  * GitHub tag 发版使用提交中已锁定的 version.properties，不再二次自增，
  * 避免 tag、APK manifest 与 changelog 版本错位。
  */

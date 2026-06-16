@@ -65,8 +65,6 @@ class BundledCppSnippetsAssetTest {
         }
     }
 
-    private fun projectRoot(): File {
-        return generateSequence(File("").absoluteFile) { it.parentFile }
-            .first { File(it, "settings.gradle.kts").exists() }
-    }
+    private fun projectRoot(): File = generateSequence(File("").absoluteFile) { it.parentFile }
+        .first { File(it, "settings.gradle.kts").exists() }
 }

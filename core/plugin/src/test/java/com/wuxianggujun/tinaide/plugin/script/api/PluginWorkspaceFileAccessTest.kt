@@ -1,11 +1,11 @@
 package com.wuxianggujun.tinaide.plugin.script.api
 
 import com.google.common.truth.Truth.assertThat
+import java.io.File
+import java.nio.file.Files
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import java.nio.file.Files
 
 class PluginWorkspaceFileAccessTest {
 

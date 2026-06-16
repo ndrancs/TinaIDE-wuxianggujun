@@ -25,17 +25,13 @@ inline fun withPermission(
     return block()
 }
 
-fun Lua.getStringArg(index: Int): String? =
-    if (top >= index && !isNil(index)) toString(index) else null
+fun Lua.getStringArg(index: Int): String? = if (top >= index && !isNil(index)) toString(index) else null
 
-fun Lua.getIntArg(index: Int): Int? =
-    if (top >= index && !isNil(index)) toInteger(index).toInt() else null
+fun Lua.getIntArg(index: Int): Int? = if (top >= index && !isNil(index)) toInteger(index).toInt() else null
 
-fun Lua.getLongArg(index: Int): Long? =
-    if (top >= index && !isNil(index)) toInteger(index) else null
+fun Lua.getLongArg(index: Int): Long? = if (top >= index && !isNil(index)) toInteger(index) else null
 
-fun Lua.getBoolArg(index: Int): Boolean? =
-    if (top >= index && !isNil(index)) toBoolean(index) else null
+fun Lua.getBoolArg(index: Int): Boolean? = if (top >= index && !isNil(index)) toBoolean(index) else null
 
 fun Lua.pushSuccess(value: Boolean, errorMsg: String? = null): Int {
     push(value)

@@ -1,6 +1,5 @@
 package com.wuxianggujun.tinaide.ui.projectlist
 
-import com.wuxianggujun.tinaide.core.common.simplifyPath
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -17,25 +16,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.wuxianggujun.tinaide.core.common.simplifyPath
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.project.ProjectBuildSystem
 import com.wuxianggujun.tinaide.project.ProjectListItem
 import com.wuxianggujun.tinaide.ui.compose.components.ProjectIcon
-import com.wuxianggujun.tinaide.ui.compose.components.TinaDropdownMenuDangerItem
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDropdownMenu
+import com.wuxianggujun.tinaide.ui.compose.components.TinaDropdownMenuDangerItem
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDropdownMenuDivider
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDropdownMenuItem
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDropdownMenuSectionHeader
 import com.wuxianggujun.tinaide.ui.compose.components.TinaDropdownMenuSectionTitle
 import com.wuxianggujun.tinaide.ui.compose.components.TinaSemanticColors
-import com.wuxianggujun.tinaide.project.ProjectBuildSystem
-import com.wuxianggujun.tinaide.project.ProjectLanguage
 import java.io.File
-import com.wuxianggujun.tinaide.core.i18n.Strings
 
 /**
  * 项目列表卡片 - 符合设计图样式
@@ -81,7 +79,7 @@ fun ProjectListCard(
             }
         }
     }
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -110,9 +108,9 @@ fun ProjectListCard(
                 projectName = project.displayName,
                 size = 48.dp
             )
-            
+
             Spacer(Modifier.width(16.dp))
-            
+
             // 项目信息
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -134,9 +132,9 @@ fun ProjectListCard(
                         ProjectTagChip(tag = tag)
                     }
                 }
-                
+
                 Spacer(Modifier.height(4.dp))
-                
+
                 Text(
                     text = simplifyPath(project.dir.absolutePath, context),
                     style = MaterialTheme.typography.bodySmall,
@@ -144,7 +142,7 @@ fun ProjectListCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                
+
                 // 如果是 Git 项目，显示分支信息
                 if (isGitProject) {
                     Spacer(Modifier.height(4.dp))
@@ -180,7 +178,7 @@ fun ProjectListCard(
                     )
                 }
             }
-            
+
             // 更多操作按钮 + 下拉菜单
             Box {
                 IconButton(onClick = { showMenu = true }) {
@@ -190,7 +188,7 @@ fun ProjectListCard(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                
+
                 // 下拉菜单
                 ProjectActionMenu(
                     expanded = showMenu,
@@ -230,7 +228,7 @@ fun ProjectActionMenu(
                 )
             }
         )
-        
+
         // 重命名
         TinaDropdownMenuItem(
             text = { Text(stringResource(Strings.action_rename)) },
@@ -243,7 +241,7 @@ fun ProjectActionMenu(
                 )
             }
         )
-        
+
         // 导出项目
         TinaDropdownMenuItem(
             text = { Text(stringResource(Strings.action_export_project)) },
@@ -282,7 +280,7 @@ fun ProjectActionMenu(
                 )
             }
         )
-        
+
         TinaDropdownMenuDivider()
         TinaDropdownMenuSectionHeader {
             TinaDropdownMenuSectionTitle(
@@ -290,7 +288,7 @@ fun ProjectActionMenu(
                 color = MaterialTheme.colorScheme.error
             )
         }
-        
+
         // 删除项目
         TinaDropdownMenuDangerItem(
             text = { Text(stringResource(Strings.action_delete_project)) },

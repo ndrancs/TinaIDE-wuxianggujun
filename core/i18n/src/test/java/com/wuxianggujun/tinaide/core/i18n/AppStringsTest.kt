@@ -29,13 +29,11 @@ class AppStringsTest {
         assertThat(text).doesNotContain("null")
     }
 
-    private fun fakeStringContext(): Context {
-        return mockk {
-            every { getString(Strings.app_name) } returns "TinaIDE"
-            every { getString(Strings.log_export_app_name) } returns "应用名称: %1\$s"
-            every { getString(Strings.log_export_app_name, *anyVararg()) } answers {
-                "应用名称: %1\$s".format(*args.drop(1).toTypedArray())
-            }
+    private fun fakeStringContext(): Context = mockk {
+        every { getString(Strings.app_name) } returns "TinaIDE"
+        every { getString(Strings.log_export_app_name) } returns "应用名称: %1\$s"
+        every { getString(Strings.log_export_app_name, *anyVararg()) } answers {
+            "应用名称: %1\$s".format(*args.drop(1).toTypedArray())
         }
     }
 }

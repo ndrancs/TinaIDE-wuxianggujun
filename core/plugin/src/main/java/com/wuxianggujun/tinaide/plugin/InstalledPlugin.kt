@@ -7,4 +7,3 @@ data class InstalledPlugin(
     val directory: File,
     val enabled: Boolean
 )
-

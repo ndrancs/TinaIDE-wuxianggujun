@@ -17,6 +17,7 @@ object CppProjectScanner {
     enum class ScanMode {
         /** 全量递归扫描（最准确，但在大项目中开销较大） */
         FULL,
+
         /**
          * LSP 轻量扫描：尽量避免递归 walkTopDown，仅收集必要的 include 目录与当前文件。
          *
@@ -136,16 +137,12 @@ object CppProjectScanner {
         )
     }
 
-    fun collectSourceFiles(projectPath: String): List<String> =
-        scanProject(projectPath).sourceFiles
+    fun collectSourceFiles(projectPath: String): List<String> = scanProject(projectPath).sourceFiles
 
-    fun collectIncludeDirs(projectPath: String): List<String> =
-        scanProject(projectPath).includeDirs
+    fun collectIncludeDirs(projectPath: String): List<String> = scanProject(projectPath).includeDirs
 
-    fun hasCppSources(sourceFiles: List<String>): Boolean {
-        return sourceFiles.any { file ->
-            val ext = file.substringAfterLast('.', "")
-            CxxFileSupport.isCxxSourceExtension(ext) || ext.equals("mm", true)
-        }
+    fun hasCppSources(sourceFiles: List<String>): Boolean = sourceFiles.any { file ->
+        val ext = file.substringAfterLast('.', "")
+        CxxFileSupport.isCxxSourceExtension(ext) || ext.equals("mm", true)
     }
 }

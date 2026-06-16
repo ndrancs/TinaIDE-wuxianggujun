@@ -82,15 +82,13 @@ object CrashLogUploader {
         return shouldRetry
     }
 
-    private fun findPendingUploadableTombstones(context: Context): List<File> {
-        return NativeCrashHandler.getAllTombstones(context)
-            .asSequence()
-            .filter { it.exists() && it.isFile && it.canRead() && it.length() > 0L }
-            .filterNot { CrashUploadState.isUploaded(context, it.name) }
-            .filterNot { shouldSkipUpload(context, it) }
-            .sortedWith(compareBy<File> { it.lastModified() }.thenBy { it.name })
-            .toList()
-    }
+    private fun findPendingUploadableTombstones(context: Context): List<File> = NativeCrashHandler.getAllTombstones(context)
+        .asSequence()
+        .filter { it.exists() && it.isFile && it.canRead() && it.length() > 0L }
+        .filterNot { CrashUploadState.isUploaded(context, it.name) }
+        .filterNot { shouldSkipUpload(context, it) }
+        .sortedWith(compareBy<File> { it.lastModified() }.thenBy { it.name })
+        .toList()
 
     private suspend fun uploadSingle(context: Context, latest: File): Boolean {
         if (!latest.exists() || !latest.canRead()) {

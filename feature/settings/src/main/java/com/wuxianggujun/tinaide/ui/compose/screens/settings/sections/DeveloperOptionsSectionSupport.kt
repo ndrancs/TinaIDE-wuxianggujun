@@ -1,8 +1,8 @@
 package com.wuxianggujun.tinaide.ui.compose.screens.settings.sections
 
 import androidx.annotation.StringRes
-import com.wuxianggujun.tinaide.core.network.server.ServerConfigResponse
 import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.network.server.ServerConfigResponse
 
 internal data class DeveloperDiagnosticsControlsState(
     val lspCompileCommandsSelectionLogControlEnabled: Boolean,

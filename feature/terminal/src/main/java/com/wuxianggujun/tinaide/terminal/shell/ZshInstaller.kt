@@ -1,16 +1,16 @@
 package com.wuxianggujun.tinaide.terminal.shell
 
 import android.content.Context
-import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
-import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironmentProvider
-import com.wuxianggujun.tinaide.core.terminal.IShellInstaller
-import com.wuxianggujun.tinaide.core.terminal.ShellInstallResult
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
+import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
+import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.proot.GuestSystemPackageManager
 import com.wuxianggujun.tinaide.core.proot.RootfsPackageManager
 import com.wuxianggujun.tinaide.core.proot.displayName
 import com.wuxianggujun.tinaide.core.proot.resolveGuestPackageManager
+import com.wuxianggujun.tinaide.core.terminal.IShellInstaller
+import com.wuxianggujun.tinaide.core.terminal.ShellInstallResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

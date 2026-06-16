@@ -65,17 +65,6 @@ if [ -z "${NDK}" ]; then
     exit 1
 fi
 
-echo ""
-echo "============================================"
-log_info "TinaIDE NDK Sysroot 统一打包"
-echo "============================================"
-  echo "  目标架构:    ${TARGET_ARCH}"
-echo "  Android ABI: ${ANDROID_ABI}"
-echo "  NDK:         ${NDK}"
-echo "  输出目录:    ${OUTPUT_DIR}"
-echo "============================================"
-echo ""
-
 # 检查 NDK
 if [ ! -d "${NDK}" ]; then
     log_error "NDK not found: ${NDK}"
@@ -87,6 +76,26 @@ if [ ! -d "${TOOLCHAIN}" ]; then
     log_error "Toolchain not found: ${TOOLCHAIN}"
     exit 1
 fi
+NDK_VERSION="${NDK_VERSION:-$(basename "${NDK}" | sed 's/^android-ndk-//')}"
+LLVM_VERSION="$(
+    {
+        ls -1 "${TOOLCHAIN}/lib/clang" 2>/dev/null || true
+        ls -1 "${TOOLCHAIN}/lib64/clang" 2>/dev/null || true
+    } | sort -V | tail -n 1
+)"
+
+echo ""
+echo "============================================"
+log_info "TinaIDE NDK Sysroot 统一打包"
+echo "============================================"
+  echo "  目标架构:    ${TARGET_ARCH}"
+echo "  Android ABI: ${ANDROID_ABI}"
+echo "  NDK:         ${NDK}"
+echo "  NDK Version: ${NDK_VERSION}"
+echo "  LLVM:        ${LLVM_VERSION:-unknown}"
+echo "  输出目录:    ${OUTPUT_DIR}"
+echo "============================================"
+echo ""
 
 # ============ 自动检测可用的 API 级别 ============
 
@@ -293,11 +302,18 @@ ARCH=${SHORT_ARCH}
 ABI=${ANDROID_ABI}
 API_LEVELS=${PACKAGED_APIS[*]}
 TOOLCHAIN_TRIPLE=${TOOLCHAIN_TRIPLE}
+NDK_VERSION=${NDK_VERSION}
+NDK_LLVM_VERSION=${LLVM_VERSION}
+LLVM_VERSION=${LLVM_VERSION}
 CREATED_AT=$(date -Iseconds)
 EOF
 
 # 输出文件名（统一打包）
-OUTPUT_FILE="${OUTPUT_DIR}/android-sysroot-${SHORT_ARCH}-all.tar.xz"
+if [ -n "${SYSROOT_OUTPUT_NAME:-}" ]; then
+    OUTPUT_FILE="${OUTPUT_DIR}/${SYSROOT_OUTPUT_NAME}"
+else
+    OUTPUT_FILE="${OUTPUT_DIR}/android-sysroot-${SHORT_ARCH}-all.tar.xz"
+fi
 
 log_info "  打包中..."
 tar -cJf "${OUTPUT_FILE}" -C "${TEMP_DIR}" android-sysroot

@@ -1,12 +1,16 @@
 package com.wuxianggujun.tinaide.plugin
 
 import android.content.Context
-import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import com.wuxianggujun.tinaide.core.ServiceLifecycle
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
+import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
 import com.wuxianggujun.tinaide.project.ProjectApkExportType
 import com.wuxianggujun.tinaide.project.ProjectLanguage
 import com.wuxianggujun.tinaide.project.ProjectTemplateOption
 import com.wuxianggujun.tinaide.project.ProjectTemplateSpec
+import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,11 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.util.UUID
 import timber.log.Timber
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
 
 class PluginManager(
     private val context: Context
@@ -245,10 +245,8 @@ class PluginManager(
         prefs.edit().putBoolean(PREF_ENABLED_PREFIX + pluginId, enabled).apply()
     }
 
-    private fun resolvePluginEnabled(manifest: PluginManifest): Boolean {
-        return getStoredPluginEnabledOrNull(manifest.id)
-            ?: getDefaultEnabledValue(manifest)
-    }
+    private fun resolvePluginEnabled(manifest: PluginManifest): Boolean = getStoredPluginEnabledOrNull(manifest.id)
+        ?: getDefaultEnabledValue(manifest)
 
     private fun getStoredPluginEnabledOrNull(pluginId: String): Boolean? {
         val key = PREF_ENABLED_PREFIX + pluginId
@@ -256,9 +254,7 @@ class PluginManager(
         return prefs.getBoolean(key, true)
     }
 
-    private fun getDefaultEnabledValue(manifest: PluginManifest): Boolean {
-        return !manifest.type.equals(PluginTypes.SYSTEM, ignoreCase = true)
-    }
+    private fun getDefaultEnabledValue(manifest: PluginManifest): Boolean = !manifest.type.equals(PluginTypes.SYSTEM, ignoreCase = true)
 
     private fun validateManifest(manifest: PluginManifest, pluginDir: File) {
         PluginManifestValidator.validate(
@@ -357,40 +353,26 @@ class PluginManager(
         return JsonSerializer.decodeFromFileOrNull<PluginManifest>(manifestFile)
     }
 
-    fun listInstalledPlugins(): List<InstalledPlugin> {
-        return _pluginStateFlow.value.installedPlugins
-    }
+    fun listInstalledPlugins(): List<InstalledPlugin> = _pluginStateFlow.value.installedPlugins
 
-    fun listEnabledPlugins(): List<InstalledPlugin> {
-        return _pluginStateFlow.value.enabledPlugins
-    }
+    fun listEnabledPlugins(): List<InstalledPlugin> = _pluginStateFlow.value.enabledPlugins
 
-    fun getInstalledPlugin(pluginId: String): InstalledPlugin? {
-        return _pluginStateFlow.value.installedPlugins.find { it.manifest.id == pluginId }
-    }
+    fun getInstalledPlugin(pluginId: String): InstalledPlugin? = _pluginStateFlow.value.installedPlugins.find { it.manifest.id == pluginId }
 
-    fun getEnabledPlugin(pluginId: String): InstalledPlugin? {
-        return _pluginStateFlow.value.enabledPlugins.find { it.manifest.id == pluginId }
-    }
+    fun getEnabledPlugin(pluginId: String): InstalledPlugin? = _pluginStateFlow.value.enabledPlugins.find { it.manifest.id == pluginId }
 
-    fun isPluginInstalled(pluginId: String): Boolean {
-        return _pluginStateFlow.value.isInstalled(pluginId)
-    }
+    fun isPluginInstalled(pluginId: String): Boolean = _pluginStateFlow.value.isInstalled(pluginId)
 
-    fun getInstalledVersion(pluginId: String): String? {
-        return _pluginStateFlow.value.getInstalledVersion(pluginId)
-    }
+    fun getInstalledVersion(pluginId: String): String? = _pluginStateFlow.value.getInstalledVersion(pluginId)
 
-    fun listProjectTemplateOptions(): List<ProjectTemplateOption> {
-        return _pluginStateFlow.value.enabledPlugins.asSequence()
-            .flatMap { plugin ->
-                plugin.manifest.contributions?.projectTemplates.orEmpty()
-                    .asSequence()
-                    .mapNotNull { template -> resolveProjectTemplateOption(plugin, template) }
-            }
-            .sortedBy { it.displayName.lowercase() }
-            .toList()
-    }
+    fun listProjectTemplateOptions(): List<ProjectTemplateOption> = _pluginStateFlow.value.enabledPlugins.asSequence()
+        .flatMap { plugin ->
+            plugin.manifest.contributions?.projectTemplates.orEmpty()
+                .asSequence()
+                .mapNotNull { template -> resolveProjectTemplateOption(plugin, template) }
+        }
+        .sortedBy { it.displayName.lowercase() }
+        .toList()
 
     fun listApkExportOptions(projectType: ProjectApkExportType): List<ResolvedPluginApkExport> {
         val options = _pluginStateFlow.value.enabledPlugins.asSequence()
@@ -433,52 +415,75 @@ class PluginManager(
         installedPlugins: List<InstalledPlugin>,
         file: File,
         isDirectory: Boolean
-    ): List<ResolvedHostMenuItem> {
-        return PluginMenuResolver.resolveFileTreeContextMenuItems(
-            context = context,
-            installedPlugins = installedPlugins,
-            file = file,
-            isDirectory = isDirectory
-        )
-    }
+    ): List<ResolvedHostMenuItem> = PluginMenuResolver.resolveFileTreeContextMenuItems(
+        context = context,
+        installedPlugins = installedPlugins,
+        file = file,
+        isDirectory = isDirectory
+    )
+
+    fun resolveFileTreeContextCommands(
+        installedPlugins: List<InstalledPlugin>,
+        file: File,
+        isDirectory: Boolean
+    ): List<ResolvedPluginCommand> = PluginMenuResolver.resolveFileTreeContextCommands(
+        context = context,
+        installedPlugins = installedPlugins,
+        file = file,
+        isDirectory = isDirectory
+    )
 
     fun resolveFileTreeIcons(
         installedPlugins: List<InstalledPlugin>
-    ): List<ResolvedPluginFileIcon> {
-        return PluginFileIconResolver.resolve(installedPlugins)
-    }
+    ): List<ResolvedPluginFileIcon> = PluginFileIconResolver.resolve(installedPlugins)
 
     fun resolveEditorContextMenuItems(
         installedPlugins: List<InstalledPlugin>,
         file: File,
         isDirty: Boolean
-    ): List<ResolvedHostMenuItem> {
-        return PluginMenuResolver.resolveEditorContextMenuItems(
-            context = context,
-            installedPlugins = installedPlugins,
-            file = file,
-            isDirty = isDirty
-        )
-    }
+    ): List<ResolvedHostMenuItem> = PluginMenuResolver.resolveEditorContextMenuItems(
+        context = context,
+        installedPlugins = installedPlugins,
+        file = file,
+        isDirty = isDirty
+    )
+
+    fun resolveEditorContextCommands(
+        installedPlugins: List<InstalledPlugin>,
+        file: File,
+        isDirty: Boolean
+    ): List<ResolvedPluginCommand> = PluginMenuResolver.resolveEditorContextCommands(
+        context = context,
+        installedPlugins = installedPlugins,
+        file = file,
+        isDirty = isDirty
+    )
 
     fun resolveEditorToolbarMenuItems(
         installedPlugins: List<InstalledPlugin>,
         file: File,
         isDirty: Boolean
-    ): List<ResolvedHostMenuItem> {
-        return PluginMenuResolver.resolveEditorToolbarMenuItems(
-            context = context,
-            installedPlugins = installedPlugins,
-            file = file,
-            isDirty = isDirty
-        )
-    }
+    ): List<ResolvedHostMenuItem> = PluginMenuResolver.resolveEditorToolbarMenuItems(
+        context = context,
+        installedPlugins = installedPlugins,
+        file = file,
+        isDirty = isDirty
+    )
+
+    fun resolveEditorToolbarCommands(
+        installedPlugins: List<InstalledPlugin>,
+        file: File,
+        isDirty: Boolean
+    ): List<ResolvedPluginCommand> = PluginMenuResolver.resolveEditorToolbarCommands(
+        context = context,
+        installedPlugins = installedPlugins,
+        file = file,
+        isDirty = isDirty
+    )
 
     fun resolveKeyBindings(
         installedPlugins: List<InstalledPlugin>
-    ): List<ResolvedPluginKeyBinding> {
-        return PluginKeyBindingResolver.resolve(installedPlugins)
-    }
+    ): List<ResolvedPluginKeyBinding> = PluginKeyBindingResolver.resolve(installedPlugins)
 
     private fun resolveProjectTemplateOption(
         plugin: InstalledPlugin,
@@ -566,19 +571,15 @@ class PluginManager(
         )
     }
 
-    private fun parseProjectApkExportType(value: String): ProjectApkExportType? {
-        return ProjectApkExportType.entries.firstOrNull { entry ->
-            entry.name.equals(value.trim(), ignoreCase = true)
-        }
+    private fun parseProjectApkExportType(value: String): ProjectApkExportType? = ProjectApkExportType.entries.firstOrNull { entry ->
+        entry.name.equals(value.trim(), ignoreCase = true)
     }
 
-    private fun normalizePluginApkTemplateType(value: String): String? {
-        return when (value.trim().lowercase()) {
-            "native_activity", "native-activity", "nativeactivity" -> "native_activity"
-            "sdl3" -> "sdl3"
-            "terminal" -> "terminal"
-            else -> null
-        }
+    private fun normalizePluginApkTemplateType(value: String): String? = when (value.trim().lowercase()) {
+        "native_activity", "native-activity", "nativeactivity" -> "native_activity"
+        "sdl3" -> "sdl3"
+        "terminal" -> "terminal"
+        else -> null
     }
 
     private fun parseProjectLanguage(value: String?): ProjectLanguage {
@@ -586,4 +587,3 @@ class PluginManager(
         return if (language == ProjectLanguage.UNKNOWN) ProjectLanguage.CPP else language
     }
 }
-

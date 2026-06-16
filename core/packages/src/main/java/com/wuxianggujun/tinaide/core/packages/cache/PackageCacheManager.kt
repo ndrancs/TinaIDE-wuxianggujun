@@ -3,11 +3,10 @@ package com.wuxianggujun.tinaide.core.packages.cache
 import android.content.Context
 import com.wuxianggujun.tinaide.core.packages.model.GUIPackage
 import com.wuxianggujun.tinaide.core.packages.model.PackageCategory
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
-import timber.log.Timber
 import java.io.File
+import kotlinx.serialization.Serializable
+import timber.log.Timber
 
 class PackageCacheManager(
     context: Context,
@@ -128,16 +127,14 @@ class PackageCacheManager(
         }
     }
 
-    private fun loadCacheMeta(): Map<String, Long> {
-        return try {
-            if (metaFile.exists()) {
-                JsonSerializer.decodeFromFileOrNull<Map<String, Long>>(metaFile) ?: emptyMap()
-            } else {
-                emptyMap()
-            }
-        } catch (e: Exception) {
+    private fun loadCacheMeta(): Map<String, Long> = try {
+        if (metaFile.exists()) {
+            JsonSerializer.decodeFromFileOrNull<Map<String, Long>>(metaFile) ?: emptyMap()
+        } else {
             emptyMap()
         }
+    } catch (e: Exception) {
+        emptyMap()
     }
 
     private fun cleanupIfNeeded() {
@@ -163,19 +160,15 @@ class PackageCacheManager(
         }
     }
 
-    fun getCacheSize(): Long {
-        return cacheDir.walkTopDown().sumOf { it.length() }
-    }
+    fun getCacheSize(): Long = cacheDir.walkTopDown().sumOf { it.length() }
 
-    fun getCacheInfo(): CacheInfo {
-        return CacheInfo(
-            totalSize = getCacheSize(),
-            packagesLastUpdated = if (packagesFile.exists()) packagesFile.lastModified() else null,
-            categoriesLastUpdated = if (categoriesFile.exists()) categoriesFile.lastModified() else null,
-            isPackagesCacheValid = isCacheValid(packagesFile),
-            isCategoriesCacheValid = isCacheValid(categoriesFile)
-        )
-    }
+    fun getCacheInfo(): CacheInfo = CacheInfo(
+        totalSize = getCacheSize(),
+        packagesLastUpdated = if (packagesFile.exists()) packagesFile.lastModified() else null,
+        categoriesLastUpdated = if (categoriesFile.exists()) categoriesFile.lastModified() else null,
+        isPackagesCacheValid = isCacheValid(packagesFile),
+        isCategoriesCacheValid = isCacheValid(categoriesFile)
+    )
 
     fun clearCache() {
         cacheDir.listFiles()?.forEach { it.delete() }

@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * TinaIDE 按钮组件库
- * 
+ *
  * 按钮类型：
  * - Primary: 主要操作按钮（填充样式）
  * - Secondary: 次要操作按钮（色调样式）
@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * 主要操作按钮（填充样式）
- * 
+ *
  * 用于页面中最重要的操作，如"确认"、"下一步"、"保存"等
  */
 @Composable
@@ -84,7 +84,7 @@ fun TinaPrimaryButtonLarge(
 
 /**
  * 次要操作按钮（色调样式）
- * 
+ *
  * 用于次要操作，如"编辑"、"查看详情"等
  */
 @Composable
@@ -143,7 +143,7 @@ fun TinaOutlinedButton(
 
 /**
  * 文本按钮（低强调）
- * 
+ *
  * 用于低优先级操作，如"跳过"、"稍后"等
  */
 @Composable
@@ -168,7 +168,7 @@ fun TinaTextButton(
 
 /**
  * 危险操作按钮
- * 
+ *
  * 用于删除、清除等危险操作
  */
 @Composable

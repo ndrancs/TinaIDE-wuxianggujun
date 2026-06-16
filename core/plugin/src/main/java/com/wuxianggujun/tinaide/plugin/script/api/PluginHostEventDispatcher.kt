@@ -228,28 +228,24 @@ data class EditorSelectionPayload(
     val endLine: Int,
     val endColumn: Int
 ) {
-    fun toMap(): Map<String, Any?> {
-        return mapOf(
-            "text" to text,
-            "startLine" to startLine,
-            "startColumn" to startColumn,
-            "endLine" to endLine,
-            "endColumn" to endColumn
-        )
-    }
-}
-
-private fun Diagnostic.toEventMap(): Map<String, Any?> {
-    return mapOf(
-        "fileUri" to fileUri,
-        "fileName" to fileName,
-        "line" to line,
-        "column" to column,
+    fun toMap(): Map<String, Any?> = mapOf(
+        "text" to text,
+        "startLine" to startLine,
+        "startColumn" to startColumn,
         "endLine" to endLine,
-        "endColumn" to endColumn,
-        "message" to message,
-        "severity" to severity.name.lowercase(),
-        "source" to source,
-        "code" to code
+        "endColumn" to endColumn
     )
 }
+
+private fun Diagnostic.toEventMap(): Map<String, Any?> = mapOf(
+    "fileUri" to fileUri,
+    "fileName" to fileName,
+    "line" to line,
+    "column" to column,
+    "endLine" to endLine,
+    "endColumn" to endColumn,
+    "message" to message,
+    "severity" to severity.name.lowercase(),
+    "source" to source,
+    "code" to code
+)

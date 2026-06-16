@@ -4,14 +4,14 @@ import android.content.Context
 import com.wuxianggujun.tinaide.core.common.io.TarExtractor
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import timber.log.Timber
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.security.MessageDigest
 import java.util.Properties
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 class AndroidNativeToolchainManager(private val context: Context) {
 
@@ -98,15 +98,13 @@ class AndroidNativeToolchainManager(private val context: Context) {
      * @param toolchainId 工具链 ID，null 表示使用全局激活的工具链
      * @return 工具链安装目录
      */
-    fun getInstallDir(toolchainId: String?): File {
-        return if (toolchainId == null) {
-            installDirInternal
-        } else {
-            configManager.getToolchainDir(toolchainId).takeIf { it.exists() }
-                ?: throw IllegalStateException(
-                    Strings.toolchain_error_not_found.strOr(context, toolchainId)
-                )
-        }
+    fun getInstallDir(toolchainId: String?): File = if (toolchainId == null) {
+        installDirInternal
+    } else {
+        configManager.getToolchainDir(toolchainId).takeIf { it.exists() }
+            ?: throw IllegalStateException(
+                Strings.toolchain_error_not_found.strOr(context, toolchainId)
+            )
     }
 
     /**
@@ -122,9 +120,7 @@ class AndroidNativeToolchainManager(private val context: Context) {
      */
     fun getConfigManager(): ToolchainConfigManager = configManager
 
-    fun isInstalled(expectedVersion: String? = null): Boolean {
-        return isInstalledInternal(expectedVersion = expectedVersion, expectedFingerprint = null)
-    }
+    fun isInstalled(expectedVersion: String? = null): Boolean = isInstalledInternal(expectedVersion = expectedVersion, expectedFingerprint = null)
 
     /**
      * 检查“当前 assets 规范”对应的工具链是否已安装。
@@ -148,9 +144,7 @@ class AndroidNativeToolchainManager(private val context: Context) {
         return activeId == buildBuiltinToolchainId(spec) && isInstalledForCurrentAssets()
     }
 
-    fun isInstalledForAssetVariant(variantId: String): Boolean {
-        return isInstalledForAssetSpec(assetVariantId = variantId.trim().takeIf { it.isNotBlank() })
-    }
+    fun isInstalledForAssetVariant(variantId: String): Boolean = isInstalledForAssetSpec(assetVariantId = variantId.trim().takeIf { it.isNotBlank() })
 
     private fun isInstalledForAssetSpec(assetVariantId: String?): Boolean {
         val spec = readAssetSpec(assetVariantId) ?: return false
@@ -306,9 +300,7 @@ class AndroidNativeToolchainManager(private val context: Context) {
         }.getOrNull()
     }
 
-    fun builtinToolchainIdForAssetVariant(variantId: String): String? {
-        return readAssetSpec(variantId)?.let(::buildBuiltinToolchainId)
-    }
+    fun builtinToolchainIdForAssetVariant(variantId: String): String? = readAssetSpec(variantId)?.let(::buildBuiltinToolchainId)
 
     private fun assetSpecPath(assetVariantId: String?): String {
         val normalized = assetVariantId?.trim()?.takeIf { it.isNotBlank() }
@@ -323,11 +315,9 @@ class AndroidNativeToolchainManager(private val context: Context) {
         return listOfNotNull(BUILTIN_ID_PREFIX + spec.version, variantSuffix).joinToString("-")
     }
 
-    private fun builtinToolchainName(spec: AssetSpec): String {
-        return when (spec.variantId) {
-            "patched" -> Strings.toolchain_builtin_patched_name.strOr(context)
-            else -> Strings.toolchain_builtin_name.strOr(context)
-        }
+    private fun builtinToolchainName(spec: AssetSpec): String = when (spec.variantId) {
+        "patched" -> Strings.toolchain_builtin_patched_name.strOr(context)
+        else -> Strings.toolchain_builtin_name.strOr(context)
     }
 
     /**
@@ -367,26 +357,26 @@ class AndroidNativeToolchainManager(private val context: Context) {
 
                 onProgress?.invoke(0.7f)
 
-            // 查找工具链根目录
-            val extractedRoot = findExtractedToolchainRoot(tempDir)
-                ?: return@withContext Result.failure(
-                    IllegalStateException(
-                        Strings.toolchain_import_error_invalid_archive.strOr(context)
+                // 查找工具链根目录
+                val extractedRoot = findExtractedToolchainRoot(tempDir)
+                    ?: return@withContext Result.failure(
+                        IllegalStateException(
+                            Strings.toolchain_import_error_invalid_archive.strOr(context)
+                        )
                     )
-                )
 
                 // 验证工具链完整性
                 val clang = File(extractedRoot, "bin/clang")
                 val clangxx = File(extractedRoot, "bin/clang++")
                 val clangResource = File(extractedRoot, "lib/clang")
 
-            if (!clang.isFile || !clangxx.isFile || !clangResource.isDirectory) {
-                return@withContext Result.failure(
-                    IllegalStateException(
-                        Strings.toolchain_import_error_missing_files.strOr(context)
+                if (!clang.isFile || !clangxx.isFile || !clangResource.isDirectory) {
+                    return@withContext Result.failure(
+                        IllegalStateException(
+                            Strings.toolchain_import_error_missing_files.strOr(context)
+                        )
                     )
-                )
-            }
+                }
 
                 // 读取版本信息（如果存在）
                 val version = readToolchainVersion(extractedRoot)
@@ -440,24 +430,20 @@ class AndroidNativeToolchainManager(private val context: Context) {
 
     suspend fun install(
         onProgress: ((Float) -> Unit)? = null,
-    ): Result<Unit> {
-        return installFromAssetSpec(
-            assetVariantId = null,
-            activateIfNeeded = true,
-            onProgress = onProgress
-        ).map { Unit }
-    }
+    ): Result<Unit> = installFromAssetSpec(
+        assetVariantId = null,
+        activateIfNeeded = true,
+        onProgress = onProgress
+    ).map { Unit }
 
     suspend fun installAssetVariant(
         variantId: String,
         onProgress: ((Float) -> Unit)? = null,
-    ): Result<String> {
-        return installFromAssetSpec(
-            assetVariantId = variantId.trim().takeIf { it.isNotBlank() },
-            activateIfNeeded = false,
-            onProgress = onProgress
-        )
-    }
+    ): Result<String> = installFromAssetSpec(
+        assetVariantId = variantId.trim().takeIf { it.isNotBlank() },
+        activateIfNeeded = false,
+        onProgress = onProgress
+    )
 
     private suspend fun installFromAssetSpec(
         assetVariantId: String?,
@@ -482,12 +468,10 @@ class AndroidNativeToolchainManager(private val context: Context) {
                 )
             }
 
-            fun assetExists(path: String): Boolean {
-                return try {
-                    context.assets.open(path).use { true }
-                } catch (_: java.io.IOException) {
-                    false
-                }
+            fun assetExists(path: String): Boolean = try {
+                context.assets.open(path).use { true }
+            } catch (_: java.io.IOException) {
+                false
             }
 
             if (!assetExists(spec.baseTarXz)) {
@@ -638,9 +622,7 @@ class AndroidNativeToolchainManager(private val context: Context) {
         }
     }
 
-    private fun readInstalledToolchainVersion(toolchainDir: File): String? {
-        return readToolchainVersion(toolchainDir)
-    }
+    private fun readInstalledToolchainVersion(toolchainDir: File): String? = readToolchainVersion(toolchainDir)
 
     private fun resolveInstallDirForCheck(expectedVersion: String?): File? {
         configManager.getActiveToolchainDir()?.takeIf { it.isDirectory }?.let { return it }

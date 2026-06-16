@@ -1,9 +1,9 @@
 package com.wuxianggujun.tinaide.core.proot
 
 import com.google.common.truth.Truth.assertThat
-import org.junit.Test
 import java.io.File
 import java.nio.file.Files
+import org.junit.Test
 
 class RootfsFileChecksTest {
 
@@ -68,16 +68,12 @@ class RootfsFileChecksTest {
         assertThat(isDirectory).isTrue()
     }
 
-    private fun createTempRootfs(): File {
-        return Files.createTempDirectory("rootfs-checks").toFile().apply {
-            deleteOnExit()
-        }
+    private fun createTempRootfs(): File = Files.createTempDirectory("rootfs-checks").toFile().apply {
+        deleteOnExit()
     }
 
-    private fun fakeReadLink(rootDir: File, linkTargets: Map<String, String>): (File) -> String? {
-        return { file ->
-            val relativePath = file.relativeTo(rootDir).invariantSeparatorsPath
-            linkTargets[relativePath]
-        }
+    private fun fakeReadLink(rootDir: File, linkTargets: Map<String, String>): (File) -> String? = { file ->
+        val relativePath = file.relativeTo(rootDir).invariantSeparatorsPath
+        linkTargets[relativePath]
     }
 }

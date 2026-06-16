@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,14 +24,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.key
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,10 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.terminal.session.SessionStatus
 import com.wuxianggujun.tinaide.terminal.session.TerminalSessionState
 import com.wuxianggujun.tinaide.terminal.shell.TerminalBackend
@@ -56,7 +55,6 @@ import com.wuxianggujun.tinaide.ui.compose.components.TinaDialogTitleText
 import com.wuxianggujun.tinaide.ui.compose.components.TinaPrimaryButton
 import com.wuxianggujun.tinaide.ui.compose.components.TinaTextButton
 import kotlin.math.abs
-import com.wuxianggujun.tinaide.core.i18n.Strings
 
 /**
  * 终端标签栏
@@ -77,10 +75,10 @@ fun TerminalTabBar(
     // 重命名对话框状态
     var renameDialogSession by remember { mutableStateOf<TerminalSessionState?>(null) }
     val scrollState = rememberScrollState()
-    
+
     // 记录上一次的会话数量，只在新增标签页时滚动
     var previousSessionCount by remember { mutableStateOf(sessions.size) }
-    
+
     // 新增标签页后自动滚动到最右侧（只在数量增加时触发，避免其他情况下的滚动）
     LaunchedEffect(sessions.size) {
         if (sessions.size > previousSessionCount && sessions.isNotEmpty()) {
@@ -115,7 +113,9 @@ fun TerminalTabBar(
                         onClose = { onTabClose(session.id) },
                         onLongClick = if (onTabRename != null) {
                             { renameDialogSession = session }
-                        } else null,
+                        } else {
+                            null
+                        },
                         showCloseButton = sessions.size > 1
                     )
                 }
@@ -141,7 +141,7 @@ fun TerminalTabBar(
                 )
             }
         }
-        
+
         // 底部分隔线 - 使用更明显的颜色
         Box(
             modifier = Modifier
@@ -331,4 +331,3 @@ private fun TerminalTab(
         }
     }
 }
-

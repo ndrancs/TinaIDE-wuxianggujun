@@ -1,8 +1,8 @@
 package com.wuxianggujun.tinaide.core.compile
 
 import com.wuxianggujun.tinaide.core.compile.artifact.Artifact
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * 把内部构建产物映射成 UI 可消费的展示模型，并尽量导出到项目目录。

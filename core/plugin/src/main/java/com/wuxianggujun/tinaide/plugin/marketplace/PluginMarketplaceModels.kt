@@ -71,11 +71,9 @@ data class PluginDetail(
     @SerialName("updated_at")
     val updatedAt: String
 ) {
-    fun latestVersionEntry(): PluginVersion? {
-        return versions.maxWithOrNull(
-            compareBy<PluginVersion> { it.versionCode }.thenBy { it.version }
-        )
-    }
+    fun latestVersionEntry(): PluginVersion? = versions.maxWithOrNull(
+        compareBy<PluginVersion> { it.versionCode }.thenBy { it.version }
+    )
 }
 
 @Serializable

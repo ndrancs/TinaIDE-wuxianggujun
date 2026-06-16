@@ -72,7 +72,7 @@
 - 查看调用栈
 - 查看变量
 
-如果调试器不可用，通常说明开发环境还没部署完整，或者当前设备的 PRoot / LLDB 环境需要重新准备。
+如果调试器不可用，通常说明开发环境还没部署完整，或者 Linux / PRoot 调试环境中的 LLDB 需要重新准备。基础编译和运行仍优先走 native toolchain，不要把调试环境问题直接当成默认编译链路问题。
 
 ## 终端中的自定义构建
 
@@ -148,4 +148,4 @@
 - [项目设置说明](project-settings.md)
 - [依赖包管理说明](package-manager.md)
 - [CMake 配置指南](cmake-guide.md)
-- [常见问题](faq.md)
+- [已知问题](known-issues.md)

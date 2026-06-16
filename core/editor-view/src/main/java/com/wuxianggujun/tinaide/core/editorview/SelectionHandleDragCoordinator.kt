@@ -64,6 +64,10 @@ internal class SelectionHandleDragCoordinator(
                 SelectionHandleKind.START -> currentRange.end
                 SelectionHandleKind.END -> currentRange.start
             }
+            val pointerToTextAnchorDelta = down.position - layout.viewportDragAnchor(
+                kind = handleKind,
+                scrollOffsetXPx = state.scrollOffsetXPx
+            )
             onActiveHandleChanged(handleKind)
             onContextMenuVisibilityChanged(false)
             cancelPendingCompletionRequest()
@@ -72,6 +76,7 @@ internal class SelectionHandleDragCoordinator(
                     down = down,
                     handleKind = handleKind,
                     fixedAnchorOffset = fixedAnchorOffset,
+                    pointerToTextAnchorDelta = pointerToTextAnchorDelta,
                     contentStartXPx = contentStartXPx,
                     canvasWidthPx = canvasWidthPx,
                     canvasHeightPx = canvasHeightPx,
@@ -95,6 +100,7 @@ internal class SelectionHandleDragCoordinator(
         down: PointerInputChange,
         handleKind: SelectionHandleKind,
         fixedAnchorOffset: Int,
+        pointerToTextAnchorDelta: Offset = Offset.Zero,
         contentStartXPx: Float,
         canvasWidthPx: Float,
         canvasHeightPx: Float,
@@ -171,11 +177,12 @@ internal class SelectionHandleDragCoordinator(
                     }
                 }
 
-                val visualLine = state.visualLineFromViewportY(change.position.y)
+                val adjustedPosition = change.position - pointerToTextAnchorDelta
+                val visualLine = state.visualLineFromViewportY(adjustedPosition.y)
                 val line = state.docLineForVisualLine(visualLine)
                 val visualStartColumn = state.visualLineStartColumn(visualLine)
                 val visualEndColumn = state.visualLineEndColumn(visualLine)
-                val contentX = (change.position.x - contentStartXPx + state.scrollOffsetXPx).coerceAtLeast(0f)
+                val contentX = (adjustedPosition.x - contentStartXPx + state.scrollOffsetXPx).coerceAtLeast(0f)
                 val textVersion = state.textBuffer.version
                 val lineText = if (line == lastLine && textVersion == lastLineTextVersion) {
                     lastLineText ?: lineTextLookup.lineText(line)

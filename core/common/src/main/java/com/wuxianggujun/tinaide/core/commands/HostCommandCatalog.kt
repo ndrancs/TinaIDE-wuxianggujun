@@ -510,27 +510,17 @@ object HostCommandCatalog {
     private val descriptorsById: Map<String, HostCommandDescriptor> =
         descriptors.associateBy { it.id }
 
-    fun descriptorOrNull(commandId: String): HostCommandDescriptor? {
-        return descriptorsById[commandId.trim()]
-    }
+    fun descriptorOrNull(commandId: String): HostCommandDescriptor? = descriptorsById[commandId.trim()]
 
-    fun requireDescriptor(commandId: String): HostCommandDescriptor {
-        return descriptorOrNull(commandId)
-            ?: error("Unknown host command: ${commandId.trim()}")
-    }
+    fun requireDescriptor(commandId: String): HostCommandDescriptor = descriptorOrNull(commandId)
+        ?: error("Unknown host command: ${commandId.trim()}")
 
-    fun isSupported(commandId: String): Boolean {
-        return descriptorOrNull(commandId) != null
-    }
+    fun isSupported(commandId: String): Boolean = descriptorOrNull(commandId) != null
 
     @StringRes
-    fun titleResOrNull(commandId: String): Int? {
-        return descriptorOrNull(commandId)?.titleRes
-    }
+    fun titleResOrNull(commandId: String): Int? = descriptorOrNull(commandId)?.titleRes
 
-    fun getAllCommandIds(): List<String> {
-        return descriptors.map(HostCommandDescriptor::id)
-    }
+    fun getAllCommandIds(): List<String> = descriptors.map(HostCommandDescriptor::id)
 
     fun getCommandsByCategory(category: String): List<String> {
         val prefix = "$category."
@@ -545,34 +535,29 @@ object HostCommandCatalog {
         availability: HostCommandAvailability = HostCommandAvailability.ALWAYS,
         defaultShortcut: HostCommandShortcut? = null,
         surfaces: Set<HostCommandSurface> = HostCommandDescriptor.defaultSurfaces
-    ): HostCommandDescriptor {
-        return HostCommandDescriptor(
-            id = id,
-            titleRes = titleRes,
-            category = category,
-            keywords = keywords,
-            availability = availability,
-            defaultShortcut = defaultShortcut,
-            surfaces = if (defaultShortcut == null) {
-                surfaces
-            } else {
-                surfaces + HostCommandSurface.KEYBOARD_SHORTCUT
-            }
-        )
-    }
+    ): HostCommandDescriptor = HostCommandDescriptor(
+        id = id,
+        titleRes = titleRes,
+        category = category,
+        keywords = keywords,
+        availability = availability,
+        defaultShortcut = defaultShortcut,
+        surfaces = if (defaultShortcut == null) {
+            surfaces
+        } else {
+            surfaces + HostCommandSurface.KEYBOARD_SHORTCUT
+        }
+    )
 
     private fun shortcut(
         keyCode: Int,
         ctrl: Boolean = false,
         shift: Boolean = false,
         alt: Boolean = false
-    ): HostCommandShortcut {
-        return HostCommandShortcut(
-            keyCode = keyCode,
-            ctrl = ctrl,
-            shift = shift,
-            alt = alt
-        )
-    }
-
+    ): HostCommandShortcut = HostCommandShortcut(
+        keyCode = keyCode,
+        ctrl = ctrl,
+        shift = shift,
+        alt = alt
+    )
 }

@@ -13,13 +13,9 @@ class GutterRenderer(
     private val collapsedPath = Path()
     private var templateIconBox = -1f
 
-    fun widthForLineHeight(lineHeightPx: Float): Float {
-        return maxOf(minWidthPx, lineHeightPx.coerceAtLeast(1f))
-    }
+    fun widthForLineHeight(lineHeightPx: Float): Float = maxOf(minWidthPx, lineHeightPx.coerceAtLeast(1f))
 
-    fun width(state: EditorState): Float {
-        return widthForLineHeight(state.lineHeightPx)
-    }
+    fun width(state: EditorState): Float = widthForLineHeight(state.lineHeightPx)
 
     fun draw(
         drawScope: DrawScope,

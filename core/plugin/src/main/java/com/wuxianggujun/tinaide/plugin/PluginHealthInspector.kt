@@ -529,9 +529,10 @@ internal object PluginHealthInspector {
 
             val hasMatchers = icon.extensions.orEmpty()
                 .mapNotNull(::normalizeExtension)
-                .isNotEmpty() || icon.fileNames.orEmpty()
-                .mapNotNull(::normalizeFileName)
-                .isNotEmpty()
+                .isNotEmpty() ||
+                icon.fileNames.orEmpty()
+                    .mapNotNull(::normalizeFileName)
+                    .isNotEmpty()
             if (!hasMatchers) {
                 issues += PluginDiagnosticIssue(
                     severity = PluginDiagnosticSeverity.WARNING,
@@ -567,11 +568,9 @@ internal object PluginHealthInspector {
         }
     }
 
-    private fun findDuplicatePermissionIds(permissions: List<String>): Set<String> {
-        return permissions
-            .mapNotNull { PluginPermission.fromId(it)?.id }
-            .findDuplicates()
-    }
+    private fun findDuplicatePermissionIds(permissions: List<String>): Set<String> = permissions
+        .mapNotNull { PluginPermission.fromId(it)?.id }
+        .findDuplicates()
 
     private fun buildRequirementLines(
         context: Context,
@@ -645,73 +644,59 @@ internal object PluginHealthInspector {
         )
     }
 
-    private fun List<String>.findDuplicates(): Set<String> {
-        return groupingBy { it }
-            .eachCount()
-            .filterValues { it > 1 }
-            .keys
+    private fun List<String>.findDuplicates(): Set<String> = groupingBy { it }
+        .eachCount()
+        .filterValues { it > 1 }
+        .keys
+
+    private fun normalizeExtension(raw: String?): String? = raw
+        ?.trim()
+        ?.removePrefix(".")
+        ?.lowercase()
+        ?.takeIf { it.isNotEmpty() }
+
+    private fun normalizeFileName(raw: String?): String? = raw
+        ?.trim()
+        ?.lowercase()
+        ?.takeIf { it.isNotEmpty() }
+
+    private fun normalizeRequirementItems(items: List<String>?): List<String> = items.orEmpty()
+        .asSequence()
+        .map { item -> item.trim() }
+        .filter { item -> item.isNotBlank() }
+        .distinct()
+        .sorted()
+        .toList()
+
+    private fun isSupportedFileTreeWhenExpression(whenExpr: String?): Boolean = when (whenExpr?.trim().orEmpty()) {
+        "" -> true
+        "isDirectory",
+        "isFile",
+        "!isDirectory",
+        "!isFile",
+        "isDirectory == true",
+        "isDirectory == false",
+        "isFile == true",
+        "isFile == false" -> true
+
+        else -> false
     }
 
-    private fun normalizeExtension(raw: String?): String? {
-        return raw
+    private fun isSupportedEditorWhenExpression(whenExpr: String?): Boolean = when (whenExpr?.trim().orEmpty()) {
+        "" -> true
+        "isDirty",
+        "!isDirty",
+        "isDirty == true",
+        "isDirty == false" -> true
+
+        else -> false
+    }
+
+    private fun resolveCurrentAppVersion(context: Context): String? = runCatching {
+        context.packageManager
+            .getPackageInfo(context.packageName, 0)
+            .versionName
             ?.trim()
-            ?.removePrefix(".")
-            ?.lowercase()
-            ?.takeIf { it.isNotEmpty() }
-    }
-
-    private fun normalizeFileName(raw: String?): String? {
-        return raw
-            ?.trim()
-            ?.lowercase()
-            ?.takeIf { it.isNotEmpty() }
-    }
-
-    private fun normalizeRequirementItems(items: List<String>?): List<String> {
-        return items.orEmpty()
-            .asSequence()
-            .map { item -> item.trim() }
-            .filter { item -> item.isNotBlank() }
-            .distinct()
-            .sorted()
-            .toList()
-    }
-
-    private fun isSupportedFileTreeWhenExpression(whenExpr: String?): Boolean {
-        return when (whenExpr?.trim().orEmpty()) {
-            "" -> true
-            "isDirectory",
-            "isFile",
-            "!isDirectory",
-            "!isFile",
-            "isDirectory == true",
-            "isDirectory == false",
-            "isFile == true",
-            "isFile == false" -> true
-
-            else -> false
-        }
-    }
-
-    private fun isSupportedEditorWhenExpression(whenExpr: String?): Boolean {
-        return when (whenExpr?.trim().orEmpty()) {
-            "" -> true
-            "isDirty",
-            "!isDirty",
-            "isDirty == true",
-            "isDirty == false" -> true
-
-            else -> false
-        }
-    }
-
-    private fun resolveCurrentAppVersion(context: Context): String? {
-        return runCatching {
-            context.packageManager
-                .getPackageInfo(context.packageName, 0)
-                .versionName
-                ?.trim()
-                ?.takeIf { it.isNotBlank() }
-        }.getOrNull()
-    }
+            ?.takeIf { it.isNotBlank() }
+    }.getOrNull()
 }

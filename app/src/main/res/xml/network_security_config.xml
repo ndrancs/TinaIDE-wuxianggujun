@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    网络安全配置
-
-    允许明文通信（HTTP/WS），用于：
-    - 远程 LSP 服务器连接（ws://pc-ip:port）
-    - 本地开发和调试（127.0.0.1、localhost）
-
-    注意：TinaIDE 作为开发工具需要连接各种本地/远程服务器
--->
 <network-security-config>
-    <!-- 允许所有明文通信（开发工具必需） -->
+    <!--
+        Remote LSP uses ws://host:port today, including LAN hosts configured by the user.
+        Keep cleartext enabled at the platform layer so that feature remains usable.
+        Sensitive server config responses are still protected by Release HMAC verification.
+    -->
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />

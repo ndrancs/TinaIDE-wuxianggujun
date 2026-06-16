@@ -15,16 +15,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wuxianggujun.tinaide.core.i18n.Drawables
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.proot.PRootBootstrap
 import com.wuxianggujun.tinaide.ui.compose.components.TinaOverlayPanelSurface
 import com.wuxianggujun.tinaide.ui.compose.components.TinaShapes
-import com.wuxianggujun.tinaide.core.i18n.Strings
 
 /**
  * 分组显示的包安装列表
@@ -42,7 +41,7 @@ fun GroupedPackageInstallList(
     // 按状态分组
     val installingPackages = packages.filter {
         it.status == PRootBootstrap.PackageStatus.DOWNLOADING ||
-        it.status == PRootBootstrap.PackageStatus.INSTALLING
+            it.status == PRootBootstrap.PackageStatus.INSTALLING
     }
     val pendingPackages = packages.filter { it.status == PRootBootstrap.PackageStatus.PENDING }
     val completedPackages = packages.filter { it.status == PRootBootstrap.PackageStatus.COMPLETED }
@@ -273,8 +272,11 @@ private fun PackageGroupHeader(
             Icon(
                 painter = rememberWorkspacePainter(Drawables.ic_arrow_down),
                 contentDescription = stringResource(
-                    if (expanded) Strings.content_desc_collapse
-                    else Strings.content_desc_expand
+                    if (expanded) {
+                        Strings.content_desc_collapse
+                    } else {
+                        Strings.content_desc_expand
+                    }
                 ),
                 modifier = Modifier
                     .size(20.dp)
@@ -284,4 +286,3 @@ private fun PackageGroupHeader(
         }
     }
 }
-

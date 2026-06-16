@@ -37,6 +37,127 @@
 - 本项目不使用 `Unreleased` / `未发布` 区块。
 - 所有变更必须归档到明确的版本号区块（版本号来源：`version.properties` 的 `versionName`）。
 
+## [0.18.5] - 2026-06-12
+
+### Added
+- 新增可切换的 Android Sysroot / NDK Runtime profile 体系：内置 `r25c`、`r26d`、`r27c` 多版本 sysroot 资产，并通过 `profiles.json` 记录 sha256、API Level、toolchain triple、NDK/LLVM 版本等元数据；编译器设置页现在可以查看并切换当前 NDK Runtime，也支持导入自定义 sysroot profile。
+- 新增 Linux 发行版远程清单链路：发行版 registry 可从远端更新并带本地缓存，网络失败时自动回落内置清单，便于后续修复 rootfs 下载地址而无需更新 App。
+- 新增 Linux rootfs 下载镜像回落规则：官方源失败后可按清单中的镜像规则尝试清华、中科大、阿里等镜像；用户主动取消下载时立即停止，不再继续尝试下一个镜像。
+- 新增插件市场、首页市场与依赖包安装下载的取消能力：长时间下载/安装时界面显示取消入口，底层 OkHttp call 可随协程取消一起终止。
+
+### Changed
+- 重构编辑器状态核心 `EditorState`：将补全排序、签名帮助归一化、折叠管理、悬浮/签名控制、最大行宽跟踪、视觉行映射等职责拆分到独立类/纯函数，降低单类复杂度并补齐对应单元测试。
+- 内置 sysroot 资产从单个 `*-all.tar.xz` 调整为多版本 profile 资产，构建资产校验同步验证 `profiles.json` 与每个 tarball 的 sha256，避免打包缺失或 profile 元数据漂移。
+- 编译指纹 schema 升级并纳入 `sysrootProfileId`，切换 NDK Runtime 后不会误复用旧编译产物；`BuildOptions` 与有效构建配置会携带当前 active sysroot profile。
+- Clang resource dir 自动探测补充 LLVM 20/21/22，兼容更新的 NDK/LLVM 运行时。
+- Native CMake 构建中的重试提示改走 i18n 字符串资源，避免用户可见中文硬编码。
+- Alpine rootfs 锁定到 `v3.23`，不再依赖 `latest-stable` 滚动路径，减少上游路径变化导致的 404 风险。
+
+### Fixed
+- 修复应用启动时项目路径映射在装配线程（可能是主线程）同步读数据库导致的启动卡顿隐患：`ProjectLocationManager` 初始化不再使用 `runBlocking`，改为在 IO 协程中按"加载映射 → 迁移遗留项目 → 注册私有项目"的原有顺序异步执行；缓存改用 `ConcurrentHashMap` 并以锁保护复合读改写，避免初始化协程与外部 `openProject` 并发时的数据竞争。
+- 修复依赖安装页工具链就绪检测在主线程同步等待 PRoot 进程探测可能引发 ANR 的问题：`DependencyInstallViewModel` 的 `isToolchainReady` / `needsToolchainInstall` 改为 `suspend` 并在 IO 调度器执行，初始 UI 先呈现"准备中"，真正的就绪结果由协程回填，移除了 `runBlocking`。
+- 修复安装日志导出使用 `GlobalScope` 启动协程导致的泄漏风险：`InstallLogActivity` 改用 `lifecycleScope` + `Dispatchers.IO`，UI 回调改用 `withContext(Dispatchers.Main)` 替代 `runOnUiThread`，Activity 销毁后不再有悬挂协程回调已销毁界面。
+- 修复讯飞输入法在编辑器内触发“全选”只选中 ExtractedText 窗口的问题：`getExtractedText()` 继续只返回局部窗口，但 selection 坐标改为窗口相对坐标，并识别输入法对整个窗口的 `setSelection(0, window.length)` 操作为全文件全选。
+- 修复 ExtractedText 增量协议误报：窗口返回时 `partialStartOffset` / `partialEndOffset` 统一置为 `-1`，避免输入法把局部窗口当成增量 patch。
+- 修复编辑器 IME 删除逻辑的边界问题：删除前优先处理选区，并新增 code point 级删除，避免 emoji / surrogate pair 被删成半个字符。
+- 修复 LSP 补全项返回较早、用户继续输入后再选择补全时残留字符的问题：应用 LSP `textEdit` 前会按当前光标前缀扩展匹配范围，前缀不匹配或光标已离开原范围时拒绝旧补全，避免 `op` 选择 `operator` 后变成 `operatorp`。
+- 修复编辑器双击/长按选词在 `operator+`、`operator-` 等贴靠符号后缀附近不稳定的问题：选词落点若命中紧贴标识符的少量符号后缀，会回退选择前面的标识符，但不会跨过空白；同时修正选择句柄拖动的文本锚点偏移，避免拖动时按手指/光标位置而不是句柄对应文本边界更新选区。
+- 修复长按代码内容会主动拉起软键盘的问题：长按现在只请求编辑器焦点、同步选区并显示上下文菜单，不再调用会显示输入法的焦点请求，避免长按选择或粘贴时被键盘打断。
+- 修复侧边栏文件树长按菜单总是贴在左侧的问题：文件/文件夹行会记录真实按下位置作为菜单锚点，若没有有效触点再回退到行底部中心，避免整行宽度撑满抽屉时锚点固定到左下角。
+- 修复可取消下载没有真正取消底层网络请求的问题：可恢复下载器和插件市场 API 改为可取消执行，取消时保留临时文件以便后续续传，不再弹出误导性的失败提示。
+
+### Documentation
+- 更新编译器设置帮助和设置概览，说明 NDK Runtime profile、内置/自定义 sysroot 与切换后的编译指纹行为。
+- 更新工具链与 Linux 发行版维护文档，补充 sysroot profile 资产同步、校验脚本、远程发行版 registry 清单和镜像回落发布流程。
+- 新增 `.plan.md` 记录 Linux 发行版下载“远程清单 + 镜像回落”的实施计划，便于后续继续迭代和回溯设计边界。
+
+### Verification
+- `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorInputConnectionUtilsTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorInputConnectionExtractedTextTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorInputConnectionEditTest" --console=plain`
+- `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorCompletionStateTest" --console=plain`
+- `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorPopupComposeSmokeTest" --tests "com.wuxianggujun.tinaide.core.editorview.PopupOverlaySharedAnchorIntegrationTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorOverlaysIntegrationTest" --console=plain`
+- `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorSnippetChoiceCompletionTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorCompletionStateTest" --console=plain`
+- `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorStateSelectWordTest" --tests "com.wuxianggujun.tinaide.core.editorview.SelectionHandleLayoutTest" --console=plain`
+- `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorGestureCoordinatorLongPressTest" --console=plain`
+- `./gradlew :app:testArm64DebugUnitTest --tests "com.wuxianggujun.tinaide.ui.compose.components.FileTreeItemLongPressAnchorTest" --console=plain`
+- `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorGestureHandlerTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorGestureCoordinatorCtrlClickTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorPopupComposeSmokeTest" --tests "com.wuxianggujun.tinaide.core.editorview.PopupOverlaySharedAnchorIntegrationTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorOverlaysIntegrationTest" --console=plain`
+- `./gradlew :core:editor-view:testDebugUnitTest --console=plain`
+- `./gradlew :core:editor-view:compileDebugKotlin --console=plain`
+
+## [0.18.4] - 2026-06-12
+
+### Fixed
+- 修复“先创建 C/C++ 项目再安装依赖包”时编辑器持续报头文件找不到的假错（如安装 SDL3 后 clangd 仍提示找不到 SDL3 头文件，但实际编译运行正常）。现在区分 Tina 兜底生成与 CMake/外部导出的 `compile_commands.json`：兜底数据库会随已安装包指纹变化自动失效重建，外部权威数据库仍直接复用。
+- 修复“项目开着时安装包、但当前没有打开 C/C++ 文件”这条路径下编译数据库缓存不刷新的问题：依赖包变更事件现在会无条件失效 `LspEditorManager` 的内存编译缓存，并在缓存命中时再次校验包指纹做自愈兜底，避免下次打开文件时复用过时配置。
+- 修复 SDL 项目运行时偶发因加载到上一次残留的系统库脏副本（如 `libmediandk.so`）而崩溃的问题：每次 stage 运行库前先清空该项目的暂存目录；同时把 OS 提供的 NDK 系统库清单统一收敛到 `AndroidSystemLibraries`，避免 SDL 运行与 APK 导出两处各自维护、口径不一致。
+
+### Documentation
+- 新增设计文档《compile_commands 与依赖包同步机制》（`docs/design/CompileCommands-Package-Sync-Design.md`），记录 compile_commands 来源区分、包指纹失效与缓存自愈的完整链路；并在 LSP 调试指南补充“装包后 clangd 仍报找不到头文件”的排查小节。
+
+## [0.18.3] - 2026-06-11
+
+### Changed
+- AI 助手连接方式收敛为自定义 BYOK 渠道，彻底移除官方统一网关入口、配置策略和相关兜底分支，避免开源版继续展示不可用的网关模式。
+- 渠道管理只保留渠道名称、服务商、API 地址和 API Key；模型配置统一移到 AI 助手的“模型”设置项，避免同一个模型在渠道配置和助手设置中重复维护。
+- AI 助手模型选择支持从当前激活渠道拉取模型列表，并保留“自定义模型”入口，用户既可以从服务端列表选择，也可以手动输入模型名称。
+- 编辑渠道时会从加密存储读取已保存的 API Key 并回填到输入框；默认密码遮挡，支持点击显示和复制，也支持清空后保存以删除该渠道 Key。
+- AI 运行时不再从渠道记录读取模型名：渠道只提供服务商、Base URL 和加密 Key，实际请求模型统一来自 `AiConfig.generation.model`。
+- 编辑器 Tree-sitter highlighter / folding provider 生命周期改由编辑器运行时复用管理，减少标签页切换或内容重载时的重复初始化。
+
+### Fixed
+- 修复长按代码编辑器空白区域时上下文菜单默认展开“代码”子菜单的问题，现在代码子菜单默认收起。
+- 修复添加/编辑 AI 渠道时模型配置位置不清晰的问题，避免渠道级模型字段覆盖 AI 助手中选择的模型。
+
+### Removed
+- 删除 `AiAccessMode`、`AiConfigStrategy` 及对应测试，清理官方统一网关相关的历史配置和测试入口。
+- 删除无入口的 CI toolchain 资产维护记录和 Native CMake linker64 排障记录，并移除帮助中心中已被“关于与日志”和“已知问题”覆盖的反馈、我的、开发者选项与 FAQ 短文档。
+
+### Documentation
+- 更新 AI 设置帮助文档和设置概览，说明当前仅保留渠道管理、模型选择与工具调用相关配置。
+- 帮助中心保留 30 篇注册文档；FAQ 分类收敛到“已知问题”，并补入开源版在线能力、BYOK、插件市场和反馈入口说明。
+
+### Verification
+- `py tools/i18n/check_all.py`
+- `git diff --check`
+- 按要求未运行 Gradle 编译。
+
+## [0.18.2] - 2026-06-09
+
+### Changed
+- GitHub Registry 代理配置支持更完整的 URL 解析和 fallback 规则，依赖包与插件市场访问 GitHub 注册表时更稳定。
+- 编译、终端启动、APK 导出和 SDL 运行链路补齐运行时路径处理，减少 Android 运行环境下路径错位导致的启动失败。
+- 顶栏和命令入口继续收束，编辑器运行时状态增加更明确的缓存与资源复用能力。
+- App 更新检查增加更完整的 GitHub Release 解析与回归测试，减少网络响应格式差异导致的更新提示异常。
+
+### Fixed
+- 修复 GitHub 代理 fallback、包注册表协议解析和插件市场协议解析的边界问题。
+- 修复部分运行时库解析路径在 APK 导出或 SDL 启动场景下不一致的问题。
+
+### Verification
+- 新增/更新 GitHub Registry、Package Registry、Plugin Registry、LaunchEnvironment、AppUpdateChecker、SDL runtime 和 APK runtime resolver 相关单元测试覆盖。
+
+## [0.18.1] - 2026-06-08
+
+### Changed
+- CI APK 构建链路不再依赖 Git LFS checkout：`dev-build`、手动 PR APK 构建和 Release 构建均改为 `lfs: false`，构建前通过 GitHub Release `toolchain-v0.2.4` 恢复 tina-toolchain 资产并执行 sha256 校验，避免 LFS 带宽耗尽导致 checkout 阶段失败。
+- `dev-build` 与 PR APK 构建改为手动触发，减少公开仓库中不必要的 Actions 资源消耗；Release workflow 仍保留 tag / 手动 release 构建入口。
+- 依赖包安装体验继续补齐：包依赖预览、原生库提示和自动安装链路更清晰，减少用户创建 C/C++ 项目后手动补依赖的步骤。
+- 文档按当前开源仓库事实源刷新，明确默认 native tina-toolchain + Android sysroot 链路、MT 管理器私有目录暴露边界、文档维护状态和 CI toolchain 资产维护流程。
+
+### Removed
+- 移除 release R8 mapping 上传到私有服务器的构建链路，公开 build-logic 仅保留 `backupMappingFiles` 本地归档能力，不再注册 `uploadMappingFiles`，也不再提供 `tina.releaseMapping.uploadEnabled` / `tina.releaseMapping.serverUrl` 配置入口。
+
+### Fixed
+- 修复 AI 工具安全测试、ktlint 和文档口径相关问题，保证当前开源分支能在禁用 LFS checkout 后继续通过关键构建校验。
+- 强化存储路径和 MT 管理器访问边界的安全测试覆盖，避免默认暴露不应公开的私有目录。
+
+### Verification
+- `bash tools/ci/restore-tina-toolchain-assets.sh arm64 x86_64`
+- `.\gradlew.bat :build-logic:convention:compileKotlin --console=plain --no-daemon`
+- `.\gradlew.bat :app:verifyTinaToolchainAssets --console=plain --no-daemon`
+- `.\gradlew.bat :app:tasks --all --console=plain --no-daemon`
+- `.\gradlew.bat :app:compileArm64DebugKotlin --console=plain --no-daemon`
+- `git diff --check`
+
 ## [0.18.0] - 2026-06-06
 
 ### Added
@@ -287,7 +408,7 @@
 
 ### Added
 - **帮助中心扩展为“快速开始 + 设置索引 + 排障说明”三层结构**：
-  - 新增 [`about-and-logs.md`](app/src/main/assets/help/about-and-logs.md)、[`ai-settings.md`](app/src/main/assets/help/ai-settings.md)、[`appearance-settings.md`](app/src/main/assets/help/appearance-settings.md)、[`compiler-settings.md`](app/src/main/assets/help/compiler-settings.md)、[`developer-options.md`](app/src/main/assets/help/developer-options.md)、[`editor-settings.md`](app/src/main/assets/help/editor-settings.md)、[`feedback-guide.md`](app/src/main/assets/help/feedback-guide.md)、[`git-settings.md`](app/src/main/assets/help/git-settings.md)、[`keyboard-settings.md`](app/src/main/assets/help/keyboard-settings.md)、[`linux-storage.md`](app/src/main/assets/help/linux-storage.md)、[`lsp-settings.md`](app/src/main/assets/help/lsp-settings.md)、[`package-manager.md`](app/src/main/assets/help/package-manager.md)、[`plugins-settings.md`](app/src/main/assets/help/plugins-settings.md)、[`profile-edit.md`](app/src/main/assets/help/profile-edit.md)、[`project-settings.md`](app/src/main/assets/help/project-settings.md)、[`settings-overview.md`](app/src/main/assets/help/settings-overview.md)、[`terminal-settings.md`](app/src/main/assets/help/terminal-settings.md) 与 [`terminal-troubleshooting.md`](app/src/main/assets/help/terminal-troubleshooting.md)，并更新 [`HelpRepository.kt`](feature/help/src/main/java/com/wuxianggujun/tinaide/core/help/HelpRepository.kt) 与多语言字符串：帮助中心现在把设置项、常见运维动作和反馈入口串成完整索引，用户不需要在设置页和历史文档之间来回找入口。
+  - 新增 about-and-logs、ai-settings、appearance-settings、compiler-settings、developer-options、editor-settings、feedback-guide、git-settings、keyboard-settings、linux-storage、lsp-settings、package-manager、plugins-settings、profile-edit、project-settings、settings-overview、terminal-settings 与 terminal-troubleshooting，并更新 `HelpRepository.kt` 与多语言字符串：帮助中心现在把设置项、常见运维动作和反馈入口串成完整索引，用户不需要在设置页和历史文档之间来回找入口。
 - **文件树补齐插件图标贡献与路径过滤公共层**：
   - 新增 [`FileTreeIconResolver.kt`](app/src/main/java/com/wuxianggujun/tinaide/ui/compose/components/FileTreeIconResolver.kt)、[`PluginFileIconResolver.kt`](core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/PluginFileIconResolver.kt) 与 [`ProjectPathFilters.kt`](core/lang/src/main/java/com/wuxianggujun/tinaide/core/lang/ProjectPathFilters.kt)，并补充对应测试：工程树现在支持插件按文件名/扩展名贡献图标，同时把搜索、监听、同步共用的高噪声目录过滤规则抽成单一来源，避免各模块各写一套排除名单。
 - **插件状态与市场安装态补齐公共快照模型**：
@@ -379,9 +500,9 @@
 - **构建脚本第三轮第 3 步完成，Tree-sitter 同步/注册生成链路迁入 build-logic 插件，同时修复 registry 生成空 entries 的回归**：
   - 新增 [`TinaTreeSitterSupport.kt`](build-logic/convention/src/main/kotlin/com/wuxianggujun/tinaide/buildlogic/TinaTreeSitterSupport.kt)、[`TinaTreeSitterQueriesSync.kt`](build-logic/convention/src/main/kotlin/com/wuxianggujun/tinaide/buildlogic/TinaTreeSitterQueriesSync.kt)、[`TinaGenerateTreeSitterLanguageRegistryTask.kt`](build-logic/convention/src/main/kotlin/com/wuxianggujun/tinaide/buildlogic/TinaGenerateTreeSitterLanguageRegistryTask.kt) 与 [`TinaAndroidAppTreeSitterPlugin.kt`](build-logic/convention/src/main/kotlin/com/wuxianggujun/tinaide/buildlogic/TinaAndroidAppTreeSitterPlugin.kt)，并更新 [`build.gradle.kts`](build-logic/convention/build.gradle.kts) 与 [`build.gradle.kts`](app/build.gradle.kts)：`syncTreeSitterQueries`、`generateTreeSitterLanguageRegistry`、主源集 `srcDir` 注入与 `preBuild` 挂接统一收口到 `tina.android.app.treesitter`；`app/build.gradle.kts` 不再内联 Tree-sitter 下载/解压、grammar 绑定解析、Kotlin 注册表拼装逻辑，同时移除相关 `java.net.URI` / `ZipInputStream` / `JFile` 冗余 import。
   - grammar 语言枚举改为直接从 [`core/tree-sitter/build.gradle.kts`](core/tree-sitter/build.gradle.kts) 所在 project 的 `implementation` 配置读取（`:core:tree-sitter` 为单一数据源），并通过 `evaluationDependsOn(":core:tree-sitter")` 确保 configure-on-demand 下也能拿到依赖；顺手修复了 registry 在 grammar 依赖迁到 `:core:tree-sitter` 后一直生成空 `entries` 的回归（现在 `GeneratedTreeSitterLanguageRegistry.entries` 会完整枚举 16 个 grammar）。
-- **构建脚本第三轮第 4 步完成，release R8 mapping 备份/上传链路迁入 build-logic 插件（release 默认开启）**：
-  - 新增 [`TinaMappingFileBackup.kt`](build-logic/convention/src/main/kotlin/com/wuxianggujun/tinaide/buildlogic/TinaMappingFileBackup.kt)、[`TinaMappingFileUpload.kt`](build-logic/convention/src/main/kotlin/com/wuxianggujun/tinaide/buildlogic/TinaMappingFileUpload.kt) 与 [`TinaAndroidAppMappingPlugin.kt`](build-logic/convention/src/main/kotlin/com/wuxianggujun/tinaide/buildlogic/TinaAndroidAppMappingPlugin.kt)，并更新 [`build.gradle.kts`](build-logic/convention/build.gradle.kts) 与 [`build.gradle.kts`](app/build.gradle.kts)：`backupMappingFiles`、`uploadMappingFiles` 任务以及 `assemble*Release` / `bundle*Release` 的 `finalizedBy` 挂接统一收口到 `tina.android.app.mapping`；`app/build.gradle.kts` 不再内联 gzip 压缩 + multipart 上传实现，同时清理 `DataOutputStream` / `ByteArrayOutputStream` / `GZIPOutputStream` / `HttpURLConnection` / `URL` / `LocalDateTime` / `DateTimeFormatter` 以及 `appVersionCode` / `appVersionName` 的 `by extra` 冗余 import 与本地变量。
-  - 新增可配置 gradle 属性：`tina.releaseMapping.enabled`（默认 `true`，即 release 默认开启备份与上传）、`tina.releaseMapping.serverUrl`（默认 `https://tinaide.wuxianggujun.com`）；当 `tina.releaseMapping.enabled=false` 时插件会跳过 `finalizedBy` 挂接并让两个任务 `onlyIf` 直接 no-op，保持与旧行为兼容。
+- **构建脚本第三轮第 4 步完成，release R8 mapping 备份链路迁入 build-logic 插件（release 默认开启备份）**：
+  - 新增 [`TinaMappingFileBackup.kt`](build-logic/convention/src/main/kotlin/com/wuxianggujun/tinaide/buildlogic/TinaMappingFileBackup.kt) 与 [`TinaAndroidAppMappingPlugin.kt`](build-logic/convention/src/main/kotlin/com/wuxianggujun/tinaide/buildlogic/TinaAndroidAppMappingPlugin.kt)，并更新 [`build.gradle.kts`](build-logic/convention/build.gradle.kts) 与 [`build.gradle.kts`](app/build.gradle.kts)：`backupMappingFiles` 任务以及 `assemble*Release` / `bundle*Release` 的 `finalizedBy` 挂接统一收口到 `tina.android.app.mapping`；`app/build.gradle.kts` 不再内联 mapping 备份实现，同时清理 `LocalDateTime` / `DateTimeFormatter` 以及 `appVersionName` 的 `by extra` 冗余 import 与本地变量。
+  - 新增可配置 gradle 属性：`tina.releaseMapping.enabled`（默认 `true`）与 `tina.releaseMapping.backupEnabled`（默认 `true`）；当 `tina.releaseMapping.enabled=false` 时插件会跳过 `finalizedBy` 挂接并让备份任务 `onlyIf` 直接 no-op，保持与旧行为兼容。
 - **MainActivity 继续按“高价值低风险”策略收口 LSP 导航与构建对话框装配，主界面职责进一步变薄**：
   - 新增 [`LspNavigationDelegate.kt`](app/src/main/java/com/wuxianggujun/tinaide/ui/LspNavigationDelegate.kt)、[`MainActivityScreenState.kt`](app/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/main/MainActivityScreenState.kt)、[`MainActivityBuildUiStateTest.kt`](app/src/test/java/com/wuxianggujun/tinaide/ui/compose/screens/main/MainActivityBuildUiStateTest.kt)、[`MainActivityLocationDialogStateTest.kt`](app/src/test/java/com/wuxianggujun/tinaide/ui/compose/screens/main/MainActivityLocationDialogStateTest.kt)、[`LspNavigationDelegateTest.kt`](app/src/test/java/com/wuxianggujun/tinaide/ui/LspNavigationDelegateTest.kt) 与 [`MainActivityNavigationHelperTest.kt`](app/src/test/java/com/wuxianggujun/tinaide/ui/MainActivityNavigationHelperTest.kt)，并更新 [`MainActivity.kt`](app/src/main/java/com/wuxianggujun/tinaide/MainActivity.kt)、[`MainActivityDialogs.kt`](app/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/main/MainActivityDialogs.kt)、[`MainActivityNavigationHelper.kt`](app/src/main/java/com/wuxianggujun/tinaide/ui/MainActivityNavigationHelper.kt)、[`MainActivityHostCommandExecutor.kt`](app/src/main/java/com/wuxianggujun/tinaide/ui/commands/MainActivityHostCommandExecutor.kt)：LSP 跳转结果处理、运行配置/APK 打包状态、部分快捷键和命令执行装配继续从 Activity 主体中拆出，保留 Compose 组合层的前提下减少命令式逻辑噪声。
 - **MainActivity 再次收口顶栏/侧滑栏回调与 Compose 状态桥接，继续减少 Activity 装配噪声**：
@@ -779,7 +900,7 @@
   - 更新 [`DownloadPackageBackend.kt`](core/packages/src/main/java/com/wuxianggujun/tinaide/core/packages/backend/DownloadPackageBackend.kt)、[`BundledPackagesInstaller.kt`](core/packages/src/main/java/com/wuxianggujun/tinaide/core/packages/BundledPackagesInstaller.kt)：下载包现在支持 `zip / tar / tar.gz / tgz / tar.xz / txz / tar.zst`，同时会校验归档路径安全、自动识别归档格式，并在内置包缺少 `package.json` 时触发重装修复。
 - **编辑器补全、高亮与语义 token 链路收口到“可退化、可缓存”的状态模型**：
   - 更新 [`CompletionProvider.kt`](core/editor-lsp/src/main/java/com/wuxianggujun/tinaide/core/editorlsp/CompletionProvider.kt)、[`LspEditorManager.kt`](app/src/main/java/com/wuxianggujun/tinaide/ui/compose/state/editor/LspEditorManager.kt)、[`TinaCodeEditorPage.kt`](app/src/main/java/com/wuxianggujun/tinaide/ui/compose/components/editor/TinaCodeEditorPage.kt)、[`EditorState.kt`](core/editor-view/src/main/java/com/wuxianggujun/tinaide/core/editorview/EditorState.kt)、[`TextRenderer.kt`](core/editor-view/src/main/java/com/wuxianggujun/tinaide/core/editorview/TextRenderer.kt)：LSP completion 改为显式区分成功/瞬时失败/超时的结果模型，首屏可预热，加载中会保留上一批候选；可见区高亮缓存与语义 token 也支持增量复用，减少补全闪烁与高亮重复计算。
-  - 更新 [`EditorOverlays.kt`](core/editor-view/src/main/java/com/wuxianggujun/tinaide/core/editorview/EditorOverlays.kt)、[`EditorKeyboardShortcuts.kt`](core/editor-view/src/main/java/com/wuxianggujun/tinaide/core/editorview/EditorKeyboardShortcuts.kt)、[`Completion-Performance-Analysis.md`](docs/design/Completion-Performance-Analysis.md)、[`TinaEditor-Highlight-Pipeline-Review.md`](docs/design/TinaEditor-Highlight-Pipeline-Review.md)：补全弹层、快捷键行为和设计文档统一对齐新的状态机与性能分析结论。
+  - 更新 [`EditorOverlays.kt`](core/editor-view/src/main/java/com/wuxianggujun/tinaide/core/editorview/EditorOverlays.kt)、[`EditorKeyboardShortcuts.kt`](core/editor-view/src/main/java/com/wuxianggujun/tinaide/core/editorview/EditorKeyboardShortcuts.kt)、历史设计稿 `Completion-Performance-Analysis.md`、[`TinaEditor-Highlight-Pipeline-Review.md`](docs/design/TinaEditor-Highlight-Pipeline-Review.md)：补全弹层、快捷键行为和设计文档统一对齐新的状态机与性能分析结论。
 - **原生执行 / 构建 / 格式化 / rsync / PRoot 链路统一注入 `tina-exec`**：
   - 更新 [`NativeExecutableRunner.kt`](core/common/src/main/java/com/wuxianggujun/tinaide/core/util/NativeExecutableRunner.kt)、[`AndroidElfExecutor.kt`](core/common/src/main/java/com/wuxianggujun/tinaide/core/util/AndroidElfExecutor.kt)、[`ProgramRunner.kt`](core/compile/src/main/java/com/wuxianggujun/tinaide/core/compile/ProgramRunner.kt)、[`NativeMakeBuildStrategy.kt`](core/compile/src/main/java/com/wuxianggujun/tinaide/core/compile/NativeMakeBuildStrategy.kt)、[`SingleFileBuildStrategy.kt`](core/compile/src/main/java/com/wuxianggujun/tinaide/core/compile/SingleFileBuildStrategy.kt)、[`NativeCMakeBuildExecutor.kt`](core/compile/src/main/java/com/wuxianggujun/tinaide/core/compile/cmake/NativeCMakeBuildExecutor.kt)、[`NativeCodeFormatter.kt`](core/compile/src/main/java/com/wuxianggujun/tinaide/core/format/NativeCodeFormatter.kt)、[`RsyncSyncProvider.kt`](core/lsp/src/main/java/com/wuxianggujun/tinaide/core/lsp/RsyncSyncProvider.kt)：native 进程启动时会按 direct/linker 模式自动注入合适的 preload，编译、格式化和 rsync 的派生子进程行为也跟主执行链统一。
 - **APK 导出模板升级为带权限引导的可执行壳**：
@@ -1071,7 +1192,7 @@
   - 更新 [`TinaServerApi.kt`](core/auth/src/main/java/com/wuxianggujun/tinaide/auth/api/TinaServerApi.kt) 与 [`strings.xml`](core/i18n/src/main/res/values/strings.xml)、[`strings.xml`](core/i18n/src/main/res/values-en/strings.xml)：补充 AI 额度查询 / 兑换接口及中英文文案。
 - **编辑器 snippet 补全会话能力落地**：
   - 新增 [`SnippetParser.kt`](core/editor-view/src/main/java/com/wuxianggujun/tinaide/core/editorview/SnippetParser.kt) 与 [`SnippetSession.kt`](core/editor-view/src/main/java/com/wuxianggujun/tinaide/core/editorview/SnippetSession.kt)：支持补全项 snippet 解析、占位符会话与跳转。
-  - 新增 [`Editor-Completion-System-Design.md`](docs/design/Editor-Completion-System-Design.md)：沉淀编辑器补全系统设计与 snippet 占位符处理方案。
+  - 新增历史设计稿 `Editor-Completion-System-Design.md`：沉淀编辑器补全系统设计与 snippet 占位符处理方案。
 - **工程约定与混淆文档补充**：
   - 新增 [`proguard-rules-reference.md`](docs/proguard-rules-reference.md)、[`project-conventions.md`](docs/project-conventions.md)、[`tina-server-ai-system-issues-analysis.md`](docs/tina-server-ai-system-issues-analysis.md)：补充混淆规则说明、项目约定与 AI 系统问题分析文档。
 
@@ -1293,7 +1414,7 @@
 - **测试与文档补充**：
   - 新增 [`TransformGestureFocusResolverTest.kt`](core/editor-view/src/test/java/com/wuxianggujun/tinaide/core/editorview/TransformGestureFocusResolverTest.kt)：覆盖手势焦点解析边界场景。
   - 新增调试文档：[`text-layout-technologies.md`](docs/debug/text-layout-technologies.md)、[`zoom-offset-issue-analysis.md`](docs/debug/zoom-offset-issue-analysis.md)、[`zoom-offset-root-cause-analysis.md`](docs/debug/zoom-offset-root-cause-analysis.md)。
-  - 新增设计文档：[`smart-wrap-implementation.md`](docs/design/smart-wrap-implementation.md)。
+  - 新增历史设计稿 `smart-wrap-implementation.md`。
 
 ### Changed
 - **编辑器核心链路重构与性能优化**：
@@ -2237,7 +2358,7 @@
   - 更新 `docs/API-Reference.md`：补充新增 API 文档
   - 更新 `docs/README.md`：更新项目文档索引
   - 更新 `docs/LSP-服务接入与Clangd启动（小白向）.md`：补充 LSP 服务接入说明
-  - 更新 `docs/clangd-completion-fast-path.md`：优化 clangd 补全快速路径说明
+  - 更新历史专题稿 `clangd-completion-fast-path.md`：优化 clangd 补全快速路径说明
   - 更新 `docs/planning/Next-Steps-2026-02.md`：更新下一步计划
   - 新增 `docs/clang-android-exec-fix.md`：clang Android exec 修复说明
   - 新增 `docs/clang-android-exec-lessons.md`：clang Android exec 经验总结

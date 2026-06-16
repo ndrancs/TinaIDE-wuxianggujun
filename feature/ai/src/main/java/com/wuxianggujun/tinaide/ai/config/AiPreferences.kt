@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.wuxianggujun.tinaide.core.config.ai.AiConfig
 import com.wuxianggujun.tinaide.core.config.ai.AiConfigProvider
-import com.wuxianggujun.tinaide.core.config.ai.AiConfigStrategy
 import com.wuxianggujun.tinaide.core.config.ai.AiGenerationSettings
 import com.wuxianggujun.tinaide.core.config.ai.AiNetworkSettings
 import com.wuxianggujun.tinaide.core.config.ai.AiPromptSettings
@@ -38,17 +37,13 @@ class AiPreferences(
     private val json = JsonSerializer.default
 
     private fun loadConfig(): AiConfig {
-        val modeRaw = prefs.getString(KEY_ACCESS_MODE, null)
-        val accessMode = AiConfigStrategy.resolveAccessMode(modeRaw)
-
-        if (modeRaw == null) {
-            prefs.edit().putString(KEY_ACCESS_MODE, accessMode.name).apply()
+        if (prefs.contains(KEY_LEGACY_ACCESS_MODE)) {
+            prefs.edit().remove(KEY_LEGACY_ACCESS_MODE).apply()
         }
 
         val fallbackSummaryPrompt = AiConfig.DEFAULT_SUMMARY_PROMPT
 
         return AiConfig(
-            accessMode = accessMode,
             activeChannelId = prefs.getString(KEY_ACTIVE_CHANNEL_ID, null)?.takeIf { it.isNotBlank() },
             generation = AiGenerationSettings(
                 model = prefs.getString(KEY_MODEL, "") ?: "",
@@ -79,32 +74,30 @@ class AiPreferences(
     }
 
     override fun saveConfig(config: AiConfig) {
-        val effective = AiConfigStrategy.normalizeForOpenSource(config)
-
         prefs.edit().apply {
-            putString(KEY_ACCESS_MODE, effective.accessMode.name)
-            if (effective.activeChannelId.isNullOrBlank()) {
+            remove(KEY_LEGACY_ACCESS_MODE)
+            if (config.activeChannelId.isNullOrBlank()) {
                 remove(KEY_ACTIVE_CHANNEL_ID)
             } else {
-                putString(KEY_ACTIVE_CHANNEL_ID, effective.activeChannelId)
+                putString(KEY_ACTIVE_CHANNEL_ID, config.activeChannelId)
             }
-            putString(KEY_MODEL, effective.generation.model)
-            putInt(KEY_MAX_TOKENS, effective.generation.maxTokens)
-            putFloat(KEY_TEMPERATURE, effective.generation.temperature)
-            putString(KEY_IMAGE_DETAIL, effective.generation.imageDetail)
-            putString(KEY_SYSTEM_PROMPT, effective.prompt.systemPrompt)
-            putString(KEY_SUMMARY_PROMPT, effective.prompt.summaryPrompt)
-            putBoolean(KEY_ENABLE_TOOLS, effective.tools.enableTools)
-            putBoolean(KEY_ALLOW_DANGEROUS_TOOLS_AUTO, effective.tools.allowDangerousToolsAuto)
-            putBoolean(KEY_ENABLE_DEEP_THINKING, effective.thinking.enableDeepThinking)
-            putInt(KEY_BUDGET_TOKENS, effective.thinking.budgetTokens)
-            putInt(KEY_TIMEOUT, effective.network.timeout)
-            putInt(KEY_RETRY_COUNT, effective.network.retryCount)
-            putInt(KEY_RETRY_DELAY_SECONDS, effective.network.retryDelaySeconds)
+            putString(KEY_MODEL, config.generation.model)
+            putInt(KEY_MAX_TOKENS, config.generation.maxTokens)
+            putFloat(KEY_TEMPERATURE, config.generation.temperature)
+            putString(KEY_IMAGE_DETAIL, config.generation.imageDetail)
+            putString(KEY_SYSTEM_PROMPT, config.prompt.systemPrompt)
+            putString(KEY_SUMMARY_PROMPT, config.prompt.summaryPrompt)
+            putBoolean(KEY_ENABLE_TOOLS, config.tools.enableTools)
+            putBoolean(KEY_ALLOW_DANGEROUS_TOOLS_AUTO, config.tools.allowDangerousToolsAuto)
+            putBoolean(KEY_ENABLE_DEEP_THINKING, config.thinking.enableDeepThinking)
+            putInt(KEY_BUDGET_TOKENS, config.thinking.budgetTokens)
+            putInt(KEY_TIMEOUT, config.network.timeout)
+            putInt(KEY_RETRY_COUNT, config.network.retryCount)
+            putInt(KEY_RETRY_DELAY_SECONDS, config.network.retryDelaySeconds)
             apply()
         }
 
-        _configFlow.value = effective
+        _configFlow.value = config
     }
 
     override fun getCurrentConfig(): AiConfig = _configFlow.value
@@ -130,7 +123,7 @@ class AiPreferences(
     }
 
     companion object {
-        private const val KEY_ACCESS_MODE = "access_mode"
+        private const val KEY_LEGACY_ACCESS_MODE = "access_mode"
         private const val KEY_MODEL = "model"
         private const val KEY_ACTIVE_CHANNEL_ID = "active_channel_id"
         private const val KEY_MAX_TOKENS = "max_tokens"

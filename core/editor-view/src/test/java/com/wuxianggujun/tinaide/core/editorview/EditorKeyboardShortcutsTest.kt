@@ -789,41 +789,37 @@ class EditorKeyboardShortcutsTest {
         event: ComposeKeyEvent,
         onAfterTextEdit: () -> Unit = {},
         onApplySelectedCompletion: () -> Boolean = { false }
-    ): Boolean {
-        return handleEditorShortcut(
-            event = event,
-            state = state,
-            onCopy = {},
-            onCut = {},
-            readPasteText = { null },
-            onAfterTextEdit = onAfterTextEdit,
-            onRequestCompletion = {},
-            onRequestSignatureHelp = {},
-            onCycleSignatureHelp = { false },
-            onCompletionNavigate = { false },
-            onApplySelectedCompletion = onApplySelectedCompletion,
-            onDismissCompletion = {},
-            onDismissSignatureHelp = {},
-            onIncreaseFont = {},
-            onDecreaseFont = {}
-        )
-    }
+    ): Boolean = handleEditorShortcut(
+        event = event,
+        state = state,
+        onCopy = {},
+        onCut = {},
+        readPasteText = { null },
+        onAfterTextEdit = onAfterTextEdit,
+        onRequestCompletion = {},
+        onRequestSignatureHelp = {},
+        onCycleSignatureHelp = { false },
+        onCompletionNavigate = { false },
+        onApplySelectedCompletion = onApplySelectedCompletion,
+        onDismissCompletion = {},
+        onDismissSignatureHelp = {},
+        onIncreaseFont = {},
+        onDecreaseFont = {}
+    )
 
     private fun keyDownEvent(
         keyCode: Int,
         metaState: Int = 0
-    ): ComposeKeyEvent {
-        return ComposeKeyEvent(
-            AndroidKeyEvent(
-                0L,
-                0L,
-                AndroidKeyEvent.ACTION_DOWN,
-                keyCode,
-                0,
-                metaState
-            )
+    ): ComposeKeyEvent = ComposeKeyEvent(
+        AndroidKeyEvent(
+            0L,
+            0L,
+            AndroidKeyEvent.ACTION_DOWN,
+            keyCode,
+            0,
+            metaState
         )
-    }
+    )
 
     private fun createState(text: String): EditorState {
         val buffer = RopeTextBuffer().apply { insert(0, text) }

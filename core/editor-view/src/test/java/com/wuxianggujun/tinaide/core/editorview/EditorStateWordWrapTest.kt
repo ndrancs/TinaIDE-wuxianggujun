@@ -75,23 +75,21 @@ class EditorStateWordWrapTest {
         buffer: RopeTextBuffer,
         wrapColumns: Int,
         tabSize: Int
-    ): EditorState {
-        return EditorState(
-            textBuffer = buffer,
-            config = EditorConfig(
-                wordWrap = true,
-                codeFolding = false,
-                tabSize = tabSize
-            )
-        ).apply {
-            updateMetrics(
-                lineHeightPx = 1f,
-                charWidthPx = 1f,
-                viewportHeightPx = 100f,
-                viewportWidthPx = wrapColumns.toFloat(),
-                contentStartXPx = 0f
-            )
-        }
+    ): EditorState = EditorState(
+        textBuffer = buffer,
+        config = EditorConfig(
+            wordWrap = true,
+            codeFolding = false,
+            tabSize = tabSize
+        )
+    ).apply {
+        updateMetrics(
+            lineHeightPx = 1f,
+            charWidthPx = 1f,
+            viewportHeightPx = 100f,
+            viewportWidthPx = wrapColumns.toFloat(),
+            contentStartXPx = 0f
+        )
     }
 
     private data class WrapCase(

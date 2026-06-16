@@ -50,7 +50,7 @@
 - CMake / Make / clang-format 的运行模式
 - CMake 构建类型、生成器、并行任务数
 - 格式化风格
-- 当前工具链与 sysroot 状态
+- 当前工具链、NDK Runtime 与 sysroot 状态
 - 导入工具链、导入 sysroot
 - 重新部署开发环境
 
@@ -172,9 +172,8 @@
 
 ## AI
 
-适合管理模型接入和工具行为：
+适合管理本地 BYOK 渠道、模型和工具行为：
 
-- AI 接入模式
 - 渠道管理
 - 当前模型
 - 工具开关
@@ -236,9 +235,9 @@
 
 进入后可以看到诊断、后端调试和测试工具相关选项。普通用户不建议随意修改。
 
-对应的专门说明可看：
+更多关于日志、反馈和开发者选项的说明可看：
 
-- [开发者选项说明](developer-options.md)
+- [关于与日志](about-and-logs.md)
 
 ## 关于
 
@@ -249,7 +248,7 @@
 - 导出日志
 - 上传日志
 - 查看 PRoot 日志
-- 崩溃日志自动上传
+- 崩溃日志自动上传开关（默认关闭）
 - 清空日志
 - 开源许可证
 
@@ -281,7 +280,6 @@
 - [Git 设置说明](git-settings.md)
 - [Linux 系统与存储](linux-storage.md)
 - [关于与日志](about-and-logs.md)
-- [开发者选项说明](developer-options.md)
 - [项目设置说明](project-settings.md)
 - [编译器设置说明](compiler-settings.md)
 - [外观设置说明](appearance-settings.md)
@@ -293,4 +291,4 @@
 - [代码补全](code-completion.md)
 - [终端使用](terminal-usage.md)
 - [Git 基础](git-basics.md)
-- [常见问题](faq.md)
+- [已知问题](known-issues.md)

@@ -35,9 +35,7 @@ enum class DistroArchitecture(val androidAbis: Set<String>) {
     I686(setOf("x86"));
 
     companion object {
-        fun fromAndroidAbi(abi: String): DistroArchitecture? {
-            return entries.firstOrNull { architecture -> abi in architecture.androidAbis }
-        }
+        fun fromAndroidAbi(abi: String): DistroArchitecture? = entries.firstOrNull { architecture -> abi in architecture.androidAbis }
     }
 }
 
@@ -48,13 +46,11 @@ enum class DistroArchiveFormat {
     TAR_XZ,
     TAR_ZST;
 
-    fun compressionType(): TarExtractor.CompressionType {
-        return when (this) {
-            TAR -> TarExtractor.CompressionType.NONE
-            TAR_GZ -> TarExtractor.CompressionType.GZIP
-            TAR_XZ -> TarExtractor.CompressionType.XZ
-            TAR_ZST -> TarExtractor.CompressionType.ZSTD
-        }
+    fun compressionType(): TarExtractor.CompressionType = when (this) {
+        TAR -> TarExtractor.CompressionType.NONE
+        TAR_GZ -> TarExtractor.CompressionType.GZIP
+        TAR_XZ -> TarExtractor.CompressionType.XZ
+        TAR_ZST -> TarExtractor.CompressionType.ZSTD
     }
 }
 
@@ -74,6 +70,32 @@ data class DistroChecksum(
 
     @Transient
     val normalizedValue: String = value.lowercase()
+}
+
+/**
+ * 镜像替换规则（清单级）。
+ *
+ * 下载时若 artifact 的 url 以 [matchPrefix] 开头，则可派生出
+ * 把该前缀替换为 [replaceWith] 后的镜像候选地址，用于在官方源不可达时回落。
+ * 一条规则覆盖某发行版全部架构，避免逐 artifact 重复列镜像 URL。
+ */
+@Serializable
+data class DistroMirrorRule(
+    val matchPrefix: String,
+    val replaceWith: String,
+) {
+    init {
+        require(matchPrefix.startsWith("https://") || matchPrefix.startsWith("http://")) {
+            "Mirror matchPrefix must be http(s): $matchPrefix"
+        }
+        require(replaceWith.startsWith("https://") || replaceWith.startsWith("http://")) {
+            "Mirror replaceWith must be http(s): $replaceWith"
+        }
+    }
+
+    /** 若 [url] 命中本规则前缀则返回派生后的镜像地址，否则返回 null。 */
+    fun deriveOrNull(url: String): String? =
+        if (url.startsWith(matchPrefix)) replaceWith + url.removePrefix(matchPrefix) else null
 }
 
 @Serializable
@@ -106,9 +128,7 @@ data class DistroRelease(
         require(displayName.isNotBlank()) { "Release display name must not be blank." }
     }
 
-    fun artifactFor(architecture: DistroArchitecture): DistroArtifact? {
-        return artifacts.firstOrNull { artifact -> artifact.architecture == architecture }
-    }
+    fun artifactFor(architecture: DistroArchitecture): DistroArtifact? = artifacts.firstOrNull { artifact -> artifact.architecture == architecture }
 }
 
 @Serializable
@@ -134,13 +154,9 @@ data class DistroDefinition(
         }
     }
 
-    fun defaultRelease(): DistroRelease? {
-        return releases.firstOrNull { release -> release.id == defaultReleaseId }
-    }
+    fun defaultRelease(): DistroRelease? = releases.firstOrNull { release -> release.id == defaultReleaseId }
 
-    fun release(releaseId: String?): DistroRelease? {
-        return if (releaseId.isNullOrBlank()) defaultRelease() else releases.firstOrNull { it.id == releaseId }
-    }
+    fun release(releaseId: String?): DistroRelease? = if (releaseId.isNullOrBlank()) defaultRelease() else releases.firstOrNull { it.id == releaseId }
 }
 
 data class ResolvedDistroArtifact(
@@ -149,6 +165,4 @@ data class ResolvedDistroArtifact(
     val artifact: DistroArtifact,
 )
 
-internal fun String.isSafeId(): Boolean {
-    return isNotBlank() && all { char -> char.isLetterOrDigit() || char == '-' || char == '_' || char == '.' }
-}
+internal fun String.isSafeId(): Boolean = isNotBlank() && all { char -> char.isLetterOrDigit() || char == '-' || char == '_' || char == '.' }

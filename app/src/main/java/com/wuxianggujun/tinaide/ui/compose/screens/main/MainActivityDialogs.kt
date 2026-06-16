@@ -18,6 +18,11 @@ import com.wuxianggujun.tinaide.core.compile.RunConfigurationManager
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.lsp.LocationItem
+import com.wuxianggujun.tinaide.core.packages.PackageManagerImpl
+import com.wuxianggujun.tinaide.core.packages.api.PackageApiClient
+import com.wuxianggujun.tinaide.core.packages.model.GUIPackage
+import com.wuxianggujun.tinaide.core.packages.store.LocalInstallStateStore
+import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
 import com.wuxianggujun.tinaide.editor.IEditorManager
 import com.wuxianggujun.tinaide.editor.session.SaveReason
 import com.wuxianggujun.tinaide.editor.session.SaveResult
@@ -27,6 +32,7 @@ import com.wuxianggujun.tinaide.extensions.toastSuccess
 import com.wuxianggujun.tinaide.plugin.PluginManager
 import com.wuxianggujun.tinaide.plugin.ResolvedPluginApkExport
 import com.wuxianggujun.tinaide.project.ProjectApkExportType
+import com.wuxianggujun.tinaide.settings.SettingsActivity
 import com.wuxianggujun.tinaide.ui.GitViewModel
 import com.wuxianggujun.tinaide.ui.MainActivityActionsViewModel
 import com.wuxianggujun.tinaide.ui.MainActivityNavigationHelper
@@ -520,6 +526,16 @@ internal fun MainActivityApkPackageDialog(
         com.wuxianggujun.tinaide.plugin.PluginLogManager.getInstance(context.applicationContext)
     }
     val pluginManager = remember(context) { PluginManager.getInstance(context.applicationContext) }
+    val packageManager = remember(context) {
+        val appContext = context.applicationContext
+        PackageManagerImpl(
+            context = appContext,
+            apiClient = PackageApiClient.getInstance(appContext),
+            installStateStore = LocalInstallStateStore(appContext),
+            prootEnv = PRootEnvironment(appContext)
+        )
+    }
+    var availablePackages by remember { mutableStateOf<List<GUIPackage>>(emptyList()) }
     val enabledPlugins by pluginManager.enabledPluginsFlow.collectAsStateWithLifecycle()
     val exportPayload = remember(
         state.showApkPackageDialog,
@@ -536,7 +552,8 @@ internal fun MainActivityApkPackageDialog(
                 )
                 MainActivityApkExportPayload(
                     soFiles = resolution.packagedLibraries,
-                    executableFile = resolution.executableFile
+                    executableFile = resolution.executableFile,
+                    missingLibraries = resolution.missingLibraries
                 )
             }
 
@@ -551,7 +568,8 @@ internal fun MainActivityApkPackageDialog(
                 )
                 MainActivityApkExportPayload(
                     soFiles = resolution.packagedLibraries,
-                    executableFile = null
+                    executableFile = null,
+                    missingLibraries = resolution.missingLibraries
                 )
             }
         }
@@ -605,6 +623,13 @@ internal fun MainActivityApkPackageDialog(
         null -> BUILTIN_APK_TEMPLATE_NATIVE
     }
 
+    LaunchedEffect(state.showApkPackageDialog) {
+        if (!state.showApkPackageDialog) return@LaunchedEffect
+        packageManager.getAvailablePackages(pageSize = 200)
+            .onSuccess { availablePackages = it }
+            .onFailure { availablePackages = emptyList() }
+    }
+
     LaunchedEffect(
         state.showApkPackageDialog,
         state.apkExportType,
@@ -632,13 +657,20 @@ internal fun MainActivityApkPackageDialog(
         outputDir = outputDir,
         templateOptions = templateOptions,
         initialTemplateOptionId = initialTemplateOptionId,
+        missingLibraries = exportPayload.missingLibraries,
+        availablePackages = availablePackages,
+        onOpenPackageManager = { searchQuery ->
+            state.closeApkPackageDialog()
+            SettingsActivity.startPackages(context, searchQuery)
+        },
         onDismiss = state::closeApkPackageDialog
     )
 }
 
 private data class MainActivityApkExportPayload(
     val soFiles: List<File>,
-    val executableFile: File?
+    val executableFile: File?,
+    val missingLibraries: List<String>
 )
 
 private fun toApkExportTemplateOption(

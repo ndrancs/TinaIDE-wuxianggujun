@@ -78,9 +78,7 @@ interface LinuxDistroInstallationRegistry {
 class FileLinuxDistroInstallationRegistry(
     private val registryFile: File,
 ) : LinuxDistroInstallationRegistry {
-    override fun list(): List<InstalledLinuxDistro> {
-        return readSnapshot().installations.sortedBy { installation -> installation.displayName.lowercase() }
-    }
+    override fun list(): List<InstalledLinuxDistro> = readSnapshot().installations.sortedBy { installation -> installation.displayName.lowercase() }
 
     override fun find(distroId: String): InstalledLinuxDistro? {
         require(distroId.isSafeId()) { "Unsafe distro id: $distroId" }
@@ -176,9 +174,7 @@ interface LinuxDistroRootfsProbe {
 }
 
 object BasicLinuxDistroRootfsProbe : LinuxDistroRootfsProbe {
-    override fun hasBootShell(rootfsDir: File): Boolean {
-        return rootfsDir.isDirectory && SHELL_CANDIDATES.any { relativePath -> File(rootfsDir, relativePath).isFile }
-    }
+    override fun hasBootShell(rootfsDir: File): Boolean = rootfsDir.isDirectory && SHELL_CANDIDATES.any { relativePath -> File(rootfsDir, relativePath).isFile }
 
     private val SHELL_CANDIDATES = listOf(
         "bin/sh",

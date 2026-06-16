@@ -4,6 +4,8 @@ import android.content.Context
 import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
+import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -15,8 +17,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * PRoot 环境初始化引导。
@@ -33,8 +33,7 @@ object PRootBootstrap {
     private val configManager: IConfigManager
         get() = org.koin.core.context.GlobalContext.get().get()
 
-    private fun createSelfHostedLinuxDistroRuntime(context: Context): SelfHostedLinuxDistroRuntime =
-        SelfHostedLinuxDistroRuntime.createFromAssets(context, configManager)
+    private fun createSelfHostedLinuxDistroRuntime(context: Context): SelfHostedLinuxDistroRuntime = SelfHostedLinuxDistroRuntime.createFromAssets(context, configManager)
 
     private fun defaultDistroId(): String = SelfHostedLinuxDistroRuntime.DEFAULT_DISTRO_ID
 
@@ -48,9 +47,7 @@ object PRootBootstrap {
         return RootfsProfileStore(appContext, configManager).getActiveProfile()
     }
 
-    fun getActiveRootfsPath(context: Context): String {
-        return getActiveProfile(context).rootfsPath
-    }
+    fun getActiveRootfsPath(context: Context): String = getActiveProfile(context).rootfsPath
 
     private fun getActiveProfileOrNull(context: Context): RootfsProfile? {
         val appContext = context.applicationContext

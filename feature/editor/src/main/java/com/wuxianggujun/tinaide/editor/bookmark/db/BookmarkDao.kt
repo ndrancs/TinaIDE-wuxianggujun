@@ -90,24 +90,28 @@ interface BookmarkDao {
     /**
      * 查找下一个书签（用于导航）
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM bookmarks
         WHERE project_path = :projectPath
         AND (file_path > :currentFilePath OR (file_path = :currentFilePath AND line > :currentLine))
         ORDER BY file_path ASC, line ASC
         LIMIT 1
-    """)
+    """
+    )
     suspend fun findNext(projectPath: String, currentFilePath: String, currentLine: Int): BookmarkEntity?
 
     /**
      * 查找上一个书签（用于导航）
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM bookmarks
         WHERE project_path = :projectPath
         AND (file_path < :currentFilePath OR (file_path = :currentFilePath AND line < :currentLine))
         ORDER BY file_path DESC, line DESC
         LIMIT 1
-    """)
+    """
+    )
     suspend fun findPrevious(projectPath: String, currentFilePath: String, currentLine: Int): BookmarkEntity?
 }

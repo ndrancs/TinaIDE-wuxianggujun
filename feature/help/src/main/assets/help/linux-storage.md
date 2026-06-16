@@ -160,12 +160,19 @@
 
 - **MT 访问**
 
-它和文件访问能力有关，适合在需要和外部文件管理 / 文档树交互时使用。
+它默认关闭。开启后，仅允许 MT 管理器访问 TinaIDE 自己的四类目录：
+
+- `data`
+- `Android/data`
+- `Android/obb`
+- `user_de_data`
+
+它适合在需要用 MT 管理器处理 TinaIDE 应用目录时临时开启。不要把它理解成开放整机存储或其他应用目录。
 
 如果你遇到：
 
-- 某些外部文件访问不顺
-- 和存储访问相关的交互异常
+- MT 管理器看不到 TinaIDE 应用目录
+- 需要临时查看或整理 TinaIDE 自己的应用数据
 
 可以检查这里是不是符合你的预期。
 
@@ -328,4 +335,4 @@
 - [关于与日志](about-and-logs.md)
 - [终端与开发环境排障](terminal-troubleshooting.md)
 - [终端使用](terminal-usage.md)
-- [常见问题](faq.md)
+- [已知问题](known-issues.md)

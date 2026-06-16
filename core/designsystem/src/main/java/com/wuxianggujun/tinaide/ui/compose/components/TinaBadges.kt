@@ -54,7 +54,7 @@ fun TinaStatusBadge(
         BadgeStatus.ERROR -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
         BadgeStatus.INFO -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
     }
-    
+
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(TinaShapes.ExtraSmallCorner),

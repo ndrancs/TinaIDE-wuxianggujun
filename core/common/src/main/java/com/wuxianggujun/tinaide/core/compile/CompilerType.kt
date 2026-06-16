@@ -49,9 +49,7 @@ enum class CompilerType(
     /**
      * 获取本地化的显示名称
      */
-    fun getDisplayName(context: Context): String {
-        return context.getString(displayNameResId)
-    }
+    fun getDisplayName(context: Context): String = context.getString(displayNameResId)
 
     /**
      * 获取编译器的简短标识符（用于日志、配置文件等）
@@ -65,9 +63,6 @@ enum class CompilerType(
          * @param id 编译器 ID（"clang" 或 "gcc"）
          * @return 对应的 CompilerType，未找到则返回 CLANG
          */
-        fun fromId(id: String): CompilerType {
-            return values().find { it.getId() == id.lowercase() } ?: CLANG
-        }
+        fun fromId(id: String): CompilerType = values().find { it.getId() == id.lowercase() } ?: CLANG
     }
 }
-

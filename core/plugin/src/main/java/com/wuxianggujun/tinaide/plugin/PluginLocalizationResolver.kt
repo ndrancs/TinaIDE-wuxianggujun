@@ -61,14 +61,12 @@ object PluginLocalizationResolver {
     private fun applyLocalization(
         manifest: PluginManifest,
         localization: PluginLocalization,
-    ): PluginManifest {
-        return manifest.copy(
-            name = localization.name.notBlankOrNull() ?: manifest.name,
-            description = localization.description.notBlankOrNull() ?: manifest.description,
-            configuration = localizeConfiguration(manifest.configuration, localization.configuration),
-            contributions = localizeContributions(manifest.contributions, localization.contributions),
-        )
-    }
+    ): PluginManifest = manifest.copy(
+        name = localization.name.notBlankOrNull() ?: manifest.name,
+        description = localization.description.notBlankOrNull() ?: manifest.description,
+        configuration = localizeConfiguration(manifest.configuration, localization.configuration),
+        contributions = localizeContributions(manifest.contributions, localization.contributions),
+    )
 
     private fun localizeConfiguration(
         configuration: PluginConfiguration?,
@@ -144,8 +142,7 @@ object PluginLocalizationResolver {
         name = localization?.name.notBlankOrNull() ?: toolchain.name
     )
 
-    private fun normalizeLocaleKey(key: String): String =
-        key.trim().replace('_', '-').lowercase(Locale.ROOT)
+    private fun normalizeLocaleKey(key: String): String = key.trim().replace('_', '-').lowercase(Locale.ROOT)
 
     private fun resolveContextLocale(context: Context): Locale {
         val locales = context.resources.configuration.locales

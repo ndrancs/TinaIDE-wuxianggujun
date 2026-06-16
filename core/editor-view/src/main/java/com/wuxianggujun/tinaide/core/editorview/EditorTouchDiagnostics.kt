@@ -2,8 +2,8 @@ package com.wuxianggujun.tinaide.core.editorview
 
 import android.os.SystemClock
 import com.wuxianggujun.tinaide.core.config.Prefs
-import timber.log.Timber
 import java.util.Locale
+import timber.log.Timber
 
 internal enum class EditorTouchLogCategory {
     INTERNAL,
@@ -16,31 +16,19 @@ internal enum class EditorTouchLogCategory {
 internal class EditorTouchDiagnostics {
     private val throttledLogTimestamps = HashMap<String, Long>()
 
-    fun isEnabled(): Boolean {
-        return Prefs.developerOptionsEnabled &&
-            Prefs.devDiagnosticsEnabled &&
-            Prefs.editorTouchDiagnosticsEnabled
-    }
+    fun isEnabled(): Boolean = Prefs.developerOptionsEnabled &&
+        Prefs.devDiagnosticsEnabled &&
+        Prefs.editorTouchDiagnosticsEnabled
 
-    fun isVerboseEnabled(): Boolean {
-        return isEnabled() && Prefs.devEditorTouchInternalLogEnabled
-    }
+    fun isVerboseEnabled(): Boolean = isEnabled() && Prefs.devEditorTouchInternalLogEnabled
 
-    fun isScaleEnabled(): Boolean {
-        return isEnabled() && Prefs.devEditorTouchScaleLogEnabled
-    }
+    fun isScaleEnabled(): Boolean = isEnabled() && Prefs.devEditorTouchScaleLogEnabled
 
-    fun isFocusEnabled(): Boolean {
-        return isEnabled() && Prefs.devEditorTouchFocusLogEnabled
-    }
+    fun isFocusEnabled(): Boolean = isEnabled() && Prefs.devEditorTouchFocusLogEnabled
 
-    fun isScrollEnabled(): Boolean {
-        return isEnabled() && Prefs.devEditorTouchScrollLogEnabled
-    }
+    fun isScrollEnabled(): Boolean = isEnabled() && Prefs.devEditorTouchScrollLogEnabled
 
-    fun isFlingEnabled(): Boolean {
-        return isEnabled() && Prefs.devEditorTouchFlingLogEnabled
-    }
+    fun isFlingEnabled(): Boolean = isEnabled() && Prefs.devEditorTouchFlingLogEnabled
 
     fun isEnabled(category: EditorTouchLogCategory): Boolean {
         if (!isEnabled()) return false
@@ -86,9 +74,7 @@ internal class EditorTouchDiagnostics {
         return true
     }
 
-    private fun tagFor(category: EditorTouchLogCategory): String {
-        return "EditorTouchDiag.${category.name.lowercase(Locale.ROOT)}"
-    }
+    private fun tagFor(category: EditorTouchLogCategory): String = "EditorTouchDiag.${category.name.lowercase(Locale.ROOT)}"
 
     @Synchronized
     private fun tryAcquireThrottle(

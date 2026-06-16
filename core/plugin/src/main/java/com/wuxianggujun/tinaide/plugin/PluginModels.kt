@@ -1,12 +1,12 @@
 package com.wuxianggujun.tinaide.plugin
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerialName
 import com.wuxianggujun.tinaide.plugin.lsp.LspServerConfig
 import com.wuxianggujun.tinaide.plugin.lsp.LspToolchainConfig
 import com.wuxianggujun.tinaide.project.ProjectApkExportType
-import kotlinx.serialization.json.JsonElement
 import java.io.File
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 /**
  * 插件清单（manifest.json）
@@ -34,7 +34,8 @@ data class PluginManifest(
     val optionalPermissions: List<String>? = null,
     val networkHosts: List<String>? = null,
     val locales: PluginLocales? = null,
-    val isBundled: Boolean = false // 是否为内置插件（从 assets/bundled_plugins 或 assets/plugins 安装）
+    // 是否为内置插件（从 assets/bundled_plugins 或 assets/plugins 安装）
+    val isBundled: Boolean = false
 )
 
 @Serializable

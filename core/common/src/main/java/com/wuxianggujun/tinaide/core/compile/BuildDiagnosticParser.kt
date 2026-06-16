@@ -29,11 +29,9 @@ object BuildDiagnosticParser {
         return parseLines(output.lineSequence())
     }
 
-    fun parseLines(lines: Sequence<String>): List<BuildDiagnostic> {
-        return lines
-            .mapNotNull { parseLine(it.trimEnd()) }
-            .toList()
-    }
+    fun parseLines(lines: Sequence<String>): List<BuildDiagnostic> = lines
+        .mapNotNull { parseLine(it.trimEnd()) }
+        .toList()
 
     private fun parseLine(line: String): BuildDiagnostic? {
         if (line.isBlank()) return null
@@ -73,13 +71,10 @@ object BuildDiagnosticParser {
         return null
     }
 
-    private fun toSeverity(raw: String): BuildDiagnostic.Severity {
-        return when (raw.lowercase()) {
-            "warning" -> BuildDiagnostic.Severity.WARNING
-            "note" -> BuildDiagnostic.Severity.NOTE
-            // "fatal error"/"error" 都视为 ERROR
-            else -> BuildDiagnostic.Severity.ERROR
-        }
+    private fun toSeverity(raw: String): BuildDiagnostic.Severity = when (raw.lowercase()) {
+        "warning" -> BuildDiagnostic.Severity.WARNING
+        "note" -> BuildDiagnostic.Severity.NOTE
+        // "fatal error"/"error" 都视为 ERROR
+        else -> BuildDiagnostic.Severity.ERROR
     }
 }
-

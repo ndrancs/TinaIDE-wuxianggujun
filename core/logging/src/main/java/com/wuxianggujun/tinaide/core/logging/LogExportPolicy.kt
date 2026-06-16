@@ -156,9 +156,7 @@ internal enum class LogBundleSource(
         LogExportProfile.SERVER_UPLOAD -> includedInServerUpload
     }
 
-    fun manifestEntryName(logcatEntryName: String): String {
-        return if (this == LOGCAT) logcatEntryName else entryName
-    }
+    fun manifestEntryName(logcatEntryName: String): String = if (this == LOGCAT) logcatEntryName else entryName
 
     fun reasonFor(profile: LogExportProfile): String = when (profile) {
         LogExportProfile.LOCAL_EXPORT -> localExportReason
@@ -208,11 +206,9 @@ internal data class LogExportPolicy(
             )
         }
 
-        private fun resolveSources(profile: LogExportProfile): Set<LogBundleSource> {
-            return LogBundleSource.values()
-                .filter { it.includedIn(profile) }
-                .toSet()
-        }
+        private fun resolveSources(profile: LogExportProfile): Set<LogBundleSource> = LogBundleSource.values()
+            .filter { it.includedIn(profile) }
+            .toSet()
     }
 }
 

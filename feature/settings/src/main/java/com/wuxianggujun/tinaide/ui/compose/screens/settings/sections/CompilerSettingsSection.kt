@@ -23,6 +23,7 @@ import com.wuxianggujun.tinaide.core.format.FormatStyle
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.ndk.AndroidNativeToolchainManager
 import com.wuxianggujun.tinaide.core.ndk.AndroidSysrootManager
+import com.wuxianggujun.tinaide.core.ndk.SysrootProfileInfo
 import com.wuxianggujun.tinaide.core.ndk.displayLabel
 import com.wuxianggujun.tinaide.ui.compose.components.TinaConfirmDialog
 import com.wuxianggujun.tinaide.ui.compose.components.TinaSingleChoiceDialog
@@ -57,7 +58,7 @@ internal fun CompilerSettingsSection(viewModel: SettingsViewModel) {
     val toastToolchainImportSuccess = stringResource(Strings.toolchain_import_success)
     val toastToolchainImportFailedTemplate = stringResource(Strings.toolchain_import_failed)
     val toastSysrootImporting = stringResource(Strings.sysroot_import_in_progress)
-    val toastSysrootImportSuccess = stringResource(Strings.sysroot_import_success)
+    val toastSysrootImportSuccessTemplate = stringResource(Strings.sysroot_import_success_with_profile)
     val toastSysrootImportFailedTemplate = stringResource(Strings.sysroot_import_failed)
 
     var showOptimizationDialog by remember { mutableStateOf(false) }
@@ -70,6 +71,7 @@ internal fun CompilerSettingsSection(viewModel: SettingsViewModel) {
     var showCmakeGeneratorDialog by remember { mutableStateOf(false) }
     var showCmakeParallelJobsDialog by remember { mutableStateOf(false) }
     var showFormatStyleDialog by remember { mutableStateOf(false) }
+    var nativeEnvironmentRefreshKey by remember { mutableStateOf(0) }
 
     // 工具链导入状态
     var toolchainImportState by remember { mutableStateOf<ToolchainImportState>(ToolchainImportState.Idle) }
@@ -238,9 +240,22 @@ internal fun CompilerSettingsSection(viewModel: SettingsViewModel) {
                         }
                     }
                     val sysrootManager = AndroidSysrootManager(context)
-                    sysrootManager.importFromFile(tempFile).getOrThrow()
+                    val profileId = sysrootManager.importFromFile(
+                        archiveFile = tempFile,
+                        profileName = CompilerSettingsSectionSupport.resolveArchiveBaseName(fileName)
+                    ).getOrThrow()
+                    val activeProfile = sysrootManager.getActiveProfile()
                     tempFile.delete()
-                    Toast.makeText(context, toastSysrootImportSuccess, Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        String.format(
+                            Locale.getDefault(),
+                            toastSysrootImportSuccessTemplate,
+                            activeProfile?.displayLabel(context) ?: profileId
+                        ),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    nativeEnvironmentRefreshKey++
                 } catch (e: Exception) {
                     val errorMessage = when {
                         e.message?.contains("invalid", ignoreCase = true) == true ->
@@ -387,13 +402,18 @@ internal fun CompilerSettingsSection(viewModel: SettingsViewModel) {
     val currentArch = remember { AndroidSysrootManager.Companion.Arch.current() }
 
     var toolchainConfig by remember { mutableStateOf(com.wuxianggujun.tinaide.core.ndk.InstalledToolchainConfig(null, emptyList())) }
+    var sysrootProfiles by remember { mutableStateOf<List<SysrootProfileInfo>>(emptyList()) }
+    var activeSysrootProfile by remember { mutableStateOf<SysrootProfileInfo?>(null) }
     var sysrootInstalled by remember { mutableStateOf(false) }
     var showToolchainSelectorDialog by remember { mutableStateOf(false) }
+    var showSysrootProfileSelectorDialog by remember { mutableStateOf(false) }
 
     // 检查工具链状态
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    androidx.compose.runtime.LaunchedEffect(nativeEnvironmentRefreshKey) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             toolchainConfig = configManager.readConfig()
+            sysrootProfiles = sysrootManager.listProfiles(currentArch)
+            activeSysrootProfile = sysrootManager.getActiveProfile(currentArch)
             sysrootInstalled = sysrootManager.isInstalled(currentArch)
         }
     }
@@ -407,6 +427,15 @@ internal fun CompilerSettingsSection(viewModel: SettingsViewModel) {
             value = activeToolchain?.displayLabel(context)
                 ?: stringResource(Strings.toolchain_status_not_installed),
             onClick = { showToolchainSelectorDialog = true },
+            showDivider = true
+        )
+
+        SettingsClickableItem(
+            title = stringResource(Strings.settings_active_sysroot_profile),
+            subtitle = stringResource(Strings.settings_active_sysroot_profile_desc),
+            value = activeSysrootProfile?.displayLabel(context)
+                ?: stringResource(Strings.sysroot_status_not_installed),
+            onClick = { showSysrootProfileSelectorDialog = true },
             showDivider = true
         )
 
@@ -435,6 +464,52 @@ internal fun CompilerSettingsSection(viewModel: SettingsViewModel) {
             onClick = { sysrootImportLauncher.launch("*/*") },
             showDivider = false
         )
+    }
+
+    // Sysroot / NDK Runtime 选择对话框
+    if (showSysrootProfileSelectorDialog) {
+        val options = sysrootProfiles.map { profile ->
+            profile.id to profile.displayLabel(context)
+        }
+        if (options.isNotEmpty()) {
+            TinaSingleChoiceDialog(
+                title = stringResource(Strings.dialog_title_select_sysroot_profile),
+                options = options,
+                selectedValue = activeSysrootProfile?.id ?: "",
+                onSelected = { selectedId ->
+                    scope.launch {
+                        try {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                sysrootManager.activateOrInstallProfile(selectedId, currentArch).getOrThrow()
+                                sysrootProfiles = sysrootManager.listProfiles(currentArch)
+                                activeSysrootProfile = sysrootManager.getActiveProfile(currentArch)
+                                sysrootInstalled = sysrootManager.isInstalled(currentArch)
+                            }
+                            Toast.makeText(
+                                context,
+                                context.getString(Strings.sysroot_profile_switch_success),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(
+                                context,
+                                context.getString(Strings.sysroot_profile_switch_failed, e.message ?: ""),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                    showSysrootProfileSelectorDialog = false
+                },
+                onDismiss = { showSysrootProfileSelectorDialog = false }
+            )
+        } else {
+            showSysrootProfileSelectorDialog = false
+            Toast.makeText(
+                context,
+                stringResource(Strings.sysroot_profile_no_available),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     // 工具链选择对话框

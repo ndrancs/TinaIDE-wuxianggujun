@@ -221,4 +221,4 @@
 - [Linux 系统与存储](linux-storage.md)
 - [终端使用](terminal-usage.md)
 - [编译项目](build-project.md)
-- [常见问题](faq.md)
+- [已知问题](known-issues.md)

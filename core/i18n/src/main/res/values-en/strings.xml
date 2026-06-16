@@ -172,7 +172,36 @@
   <string name="plugins_details_runtime_state">Runtime state: %1$s</string>
   <string name="plugins_details_runtime_error">Last error: %1$s</string>
   <string name="plugins_details_dir">Directory: %1$s</string>
-  <string name="plugins_details_contrib_summary">Contributions: themes %1$d · file tree menus %2$d · editor menus %3$d</string>
+  <string name="plugins_details_contrib_summary">Contributions: themes %1$d · file tree menus %2$d · editor menus %3$d · toolbar menus %4$d</string>
+  <string name="plugins_commands_title">Command contributions</string>
+  <string name="plugins_commands_summary">%1$d command(s) · %2$d available · %3$d issue(s)</string>
+  <string name="plugins_commands_metadata">%1$s · %2$s · %3$s</string>
+  <string name="plugins_commands_id">Command ID: %1$s</string>
+  <string name="plugins_commands_group">Group: %1$s</string>
+  <string name="plugins_commands_when">When: %1$s</string>
+  <string name="plugins_commands_missing_command_id_value">Missing command ID</string>
+  <string name="plugins_commands_surface_editor_context">Editor context</string>
+  <string name="plugins_commands_surface_editor_toolbar">Editor toolbar</string>
+  <string name="plugins_commands_surface_file_tree_context">File tree context</string>
+  <string name="plugins_commands_source_host">Host command</string>
+  <string name="plugins_commands_source_plugin">Plugin command</string>
+  <string name="plugins_commands_source_unknown">Unknown source</string>
+  <string name="plugins_commands_status_available">Available</string>
+  <string name="plugins_commands_status_missing_command_id">Missing command ID</string>
+  <string name="plugins_commands_status_missing_declaration">Missing command declaration</string>
+  <string name="plugins_commands_status_missing_registration">Runtime not registered</string>
+  <string name="plugins_commands_status_unavailable">Currently unavailable</string>
+  <string name="plugins_commands_status_execution_failed">Execution failed</string>
+  <string name="plugins_commands_status_message">Reason: %1$s</string>
+  <string name="plugins_commands_filter_issues">Issues</string>
+  <string name="plugins_commands_filter_available">Available</string>
+  <string name="plugins_commands_diagnostic_missing_registration">Command "%1$s" is declared in manifest, but it is not registered at runtime.</string>
+  <string name="plugins_commands_diagnostic_missing_registration_reason">Command "%1$s" is declared in manifest, but runtime registration failed: %2$s</string>
+  <string name="plugins_commands_diagnostic_unavailable">Command "%1$s" is currently unavailable: %2$s</string>
+  <string name="plugins_commands_diagnostic_unavailable_unknown">Command "%1$s" is currently unavailable.</string>
+  <string name="plugins_commands_diagnostic_execution_failed">Command "%1$s" failed during its last execution: %2$s</string>
+  <string name="plugins_commands_diagnostic_runtime_fix_hint">Confirm the script registers this command, inspect logs, then reload the plugin manually.</string>
+  <string name="plugins_commands_diagnostic_permission_fix_hint">Declare command.execute and grant it in the permissions view, then retry.</string>
   <string name="plugins_details_requirements_title">Declared dependencies</string>
   <string name="plugins_details_requirements_toolchain_recommended">Recommended toolchain: %1$s</string>
   <string name="plugins_details_requirements_toolchain_optional">Optional toolchain: %1$s</string>
@@ -615,7 +644,7 @@
   <string name="settings_linux_rootfs_path">Rootfs Path</string>
   <string name="value_default">Default</string>
   <string name="settings_mt_access">MT Manager Access</string>
-  <string name="settings_mt_access_desc">Allow MT Manager to access app private directory (no ROOT required)</string>
+  <string name="settings_mt_access_desc">Off by default. When enabled, MT Manager can access only TinaIDE data, Android/data, Android/obb, and user_de_data directories.</string>
 
   <!-- Storage Cleanup -->
   <string name="settings_title_storage_cleanup">Storage Cleanup</string>
@@ -891,6 +920,8 @@
   <string name="settings_compiler_scope_hint">Scope: these are global defaults. Optimization and threads apply to single-file/Make; CMake build type, generator, and parallel jobs apply only to CMake. Compiler/toolchain/output mode are set in Run Configuration.</string>
   <string name="settings_cat_toolchain_management">Toolchain Management</string>
   <string name="settings_active_toolchain">Active Toolchain</string>
+  <string name="settings_active_sysroot_profile">Active NDK Runtime</string>
+  <string name="settings_active_sysroot_profile_desc">Build, run, LSP, and APK export use this sysroot/libc++_shared.so</string>
   <string name="toolchain_builtin_name">Built-in Toolchain</string>
   <string name="toolchain_builtin_patched_name">Built-in Toolchain (patched)</string>
   <string name="settings_sysroot_status">Sysroot Status</string>
@@ -898,14 +929,25 @@
   <string name="sysroot_status_installed">Installed</string>
   <string name="sysroot_status_not_installed">Not Installed</string>
   <string name="dialog_title_select_toolchain">Select Toolchain</string>
+  <string name="dialog_title_select_sysroot_profile">Select NDK Runtime</string>
   <string name="toolchain_switch_success">Toolchain switched successfully</string>
   <string name="toolchain_switch_failed">Failed to switch toolchain: %1$s</string>
+  <string name="sysroot_profile_switch_success">NDK Runtime switched successfully</string>
+  <string name="sysroot_profile_switch_failed">Failed to switch NDK Runtime: %1$s</string>
+  <string name="sysroot_profile_no_available">No NDK Runtime available</string>
+  <string name="sysroot_profile_builtin_name">Built-in Android Sysroot</string>
+  <string name="sysroot_profile_custom_name">Custom Android Sysroot</string>
+  <string name="sysroot_profile_legacy_name">Legacy Android Sysroot</string>
+  <string name="sysroot_profile_api_unknown">Unknown</string>
+  <string name="sysroot_profile_display_label">%1$s (%2$s, API %3$s)</string>
+  <string name="sysroot_profile_ndk_with_llvm_label">NDK %1$s / NDK LLVM %2$s</string>
+  <string name="sysroot_profile_ndk_llvm_label">NDK LLVM %1$s</string>
   <string name="toolchain_version_label">v%1$s</string>
   <string name="toolchain_no_available">No toolchains available</string>
   <string name="settings_import_toolchain">Import Toolchain</string>
   <string name="settings_import_toolchain_desc">Import custom toolchain from external file</string>
   <string name="settings_import_sysroot">Import Sysroot</string>
-  <string name="settings_import_sysroot_desc">Import system root directory from external file</string>
+  <string name="settings_import_sysroot_desc">Import a switchable Android sysroot/NDK runtime</string>
   <string name="toolchain_import_in_progress">Importing toolchain...</string>
   <string name="toolchain_import_success">Toolchain imported successfully</string>
   <string name="toolchain_import_failed">Toolchain import failed: %1$s</string>
@@ -955,6 +997,7 @@
   <string name="toolchain_unknown_name">Unknown</string>
   <string name="sysroot_import_in_progress">Importing sysroot...</string>
   <string name="sysroot_import_success">Sysroot imported successfully</string>
+  <string name="sysroot_import_success_with_profile">Sysroot imported successfully: %1$s</string>
   <string name="sysroot_import_failed">Sysroot import failed: %1$s</string>
   <string name="sysroot_import_error_invalid_archive">Invalid sysroot archive</string>
   <string name="sysroot_import_archive_not_found">Sysroot archive not found: %1$s</string>
@@ -1431,12 +1474,8 @@
   <string name="settings_cat_ai">AI Assistant</string>
   <string name="settings_ai_provider">Provider</string>
   <string name="settings_ai_model">Model</string>
+  <string name="settings_ai_model_custom">Custom model...</string>
   <string name="settings_ai_api_key">API Key</string>
-  <string name="settings_ai_access_mode">Connection mode</string>
-  <string name="settings_ai_access_mode_cloud">Official gateway</string>
-  <string name="settings_ai_access_mode_custom">Custom channel</string>
-  <string name="settings_ai_access_mode_cloud_subtitle">The official AI gateway is not bundled in the open-source build</string>
-  <string name="settings_ai_access_mode_custom_subtitle">Bring your own API key (BYOK)</string>
   <string name="settings_ai_image_detail">Image detail</string>
   <string name="settings_ai_image_detail_auto">Auto</string>
   <string name="settings_ai_image_detail_low">Low (cheaper)</string>
@@ -1451,16 +1490,18 @@
   <string name="settings_ai_channel_name">Channel name</string>
   <string name="settings_ai_channel_name_hint">e.g. My OpenAI</string>
   <string name="settings_ai_channel_active">Active</string>
-  <string name="settings_ai_channel_apikey_keep">Leave empty to keep the existing key</string>
+  <string name="settings_ai_channel_apikey_loading">Loading saved key...</string>
+  <string name="settings_ai_channel_apikey_empty">No saved key. Enter one here.</string>
+  <string name="settings_ai_channel_apikey_copy">Copy API Key</string>
+  <string name="settings_ai_channel_apikey_load_failed">Failed to load saved key: %1$s</string>
+  <string name="settings_ai_channel_apikey_load_required">Wait for the API Key to load, or enter a new key</string>
   <string name="settings_ai_channel_apikey_required">Required</string>
-  <string name="settings_ai_channel_provider_model">%1$s · %2$s</string>
+  <string name="settings_ai_channel_provider_base_url">%1$s · %2$s</string>
   <string name="settings_ai_channel_error_name_blank">Channel name cannot be empty</string>
   <string name="settings_ai_channel_error_url_blank">Base URL cannot be empty</string>
   <string name="settings_ai_channel_error_url_invalid">Base URL must start with http:// or https://</string>
-  <string name="settings_ai_channel_error_model_blank">Model cannot be empty</string>
   <string name="settings_ai_channel_error_apikey_blank">API Key cannot be empty</string>
   <string name="ai_error_no_active_channel">Please pick or add a channel in Settings → Channel management.</string>
-  <string name="ai_error_gateway_unavailable">The official AI gateway is not bundled in the open-source build. Add a custom channel in Settings.</string>
   <string name="settings_ai_advanced">Advanced</string>
   <string name="settings_ai_base_url">API URL</string>
   <string name="settings_ai_max_tokens">Max Output Tokens</string>
@@ -1475,7 +1516,7 @@
   <string name="settings_ai_prompt_refactoring">Refactoring Expert</string>
   <string name="settings_ai_prompt_documentation">Documentation Writer</string>
   <string name="settings_ai_tools">Enable Tool Calling</string>
-  <string name="settings_ai_tools_subtitle">Allow the model to call TinaIDE built-in tools (requires gateway tools/tool_calls support)</string>
+  <string name="settings_ai_tools_subtitle">Allow the model to call TinaIDE built-in tools (requires upstream tools/tool_calls support)</string>
   <string name="settings_ai_allow_dangerous_tools_auto">Allow Dangerous Tools Auto-execution</string>
   <string name="settings_ai_allow_dangerous_tools_auto_subtitle">In auto mode, allow automatic execution of dangerous tools (e.g., file deletion, system commands)</string>
   <string name="settings_ai_deep_thinking">Enable Deep Thinking</string>
@@ -1552,7 +1593,10 @@
   <string name="command_palette_quick_actions">Quick Actions</string>
   <string name="command_palette_pin_command">Pin command</string>
   <string name="command_palette_unpin_command">Unpin command</string>
+  <string name="command_palette_move_pinned_up">Move pinned command up</string>
+  <string name="command_palette_move_pinned_down">Move pinned command down</string>
   <string name="command_palette_plugin_source">Plugin: %1$s</string>
+  <string name="command_palette_plugin_unavailable_source">Plugin: %1$s - %2$s</string>
   <string name="menu_section_file">File</string>
   <string name="menu_section_code">Code</string>
   <string name="menu_section_plugin">Plugin</string>
@@ -2350,6 +2394,7 @@ kept=%3$d bytes
   <string name="compile_timeout_make_build_line">  Make build: %1$s</string>
   <string name="compile_timeout_make_clean_line">  Make clean: %1$s</string>
   <string name="compile_timeout_notice_no_run_timeout">Note: program execution has no timeout limit</string>
+  <string name="cmake_retry_without_tina_exec_notice">The previous attempt likely failed silently due to a shell shim + tina-exec combination; this attempt retries after clearing LD_PRELOAD/TINA_EXEC.</string>
   <string name="compile_timeout_seconds">%1$d seconds</string>
   <string name="compile_timeout_minutes">%1$d minutes</string>
   <string name="compile_timeout_hours">%1$d hours</string>
@@ -2722,13 +2767,16 @@ kept=%3$d bytes
   <string name="git_settings_tab_https">HTTPS</string>
   <string name="git_settings_tab_ssh">SSH</string>
   <string name="git_settings_tab_github">GitHub</string>
-  <string name="settings_cat_github_registry">GitHub Access Proxy</string>
-  <string name="github_registry_proxy_enabled_title">Enable GitHub proxy</string>
-  <string name="github_registry_proxy_enabled_desc">Only used for plugin marketplace and package Registry access through GitHub Raw/jsDelivr</string>
-  <string name="github_registry_proxy_scope_desc">This proxy does not affect Git HTTPS credentials, SSH keys, AI channels, or Tina server requests.</string>
-  <string name="github_registry_proxy_host_label">Proxy host</string>
+  <string name="settings_cat_github_registry">GitHub Access</string>
+  <string name="github_registry_proxy_enabled_title">Enable HTTP proxy</string>
+  <string name="github_registry_proxy_enabled_desc">Access GitHub through a local or self-hosted HTTP proxy</string>
+  <string name="github_registry_proxy_scope_desc">Used for app updates, plugin marketplace, and package Registry. The HTTP proxy controls the network connection; the GitHub mirror URL rewrites GitHub links to a mirror. Neither setting affects Git HTTPS credentials, SSH keys, AI channels, or Tina server requests.</string>
+  <string name="github_registry_mirror_url_label">GitHub mirror URL</string>
+  <string name="github_registry_mirror_url_placeholder">https://ghproxy.net/</string>
+  <string name="github_registry_mirror_url_error_invalid">GitHub mirror URL is invalid</string>
+  <string name="github_registry_proxy_host_label">HTTP proxy host</string>
   <string name="github_registry_proxy_host_placeholder">127.0.0.1 or proxy.example.com</string>
-  <string name="github_registry_proxy_port_label">Proxy port</string>
+  <string name="github_registry_proxy_port_label">HTTP proxy port</string>
   <string name="github_registry_proxy_port_placeholder">7890</string>
   <string name="github_registry_proxy_error_host_required">Proxy host is required when proxy is enabled</string>
   <string name="github_registry_proxy_error_port_invalid">Proxy port must be between 1 and 65535</string>
@@ -2772,7 +2820,7 @@ kept=%3$d bytes
   <string name="help_doc_create_project_title">Create Project</string>
   <string name="help_doc_create_project_summary">Learn how to create a C/C++ project</string>
   <string name="help_doc_plugin_quick_start_title">Plugin Development Quick Start</string>
-  <string name="help_doc_plugin_quick_start_summary">Create a plugin project from a template, run to hot-install, package .tinaplug, and verify with install preflight</string>
+  <string name="help_doc_plugin_quick_start_summary">Build a first config plugin by changing theme and snippets, run to hot-install, then package .tinaplug and verify with install preflight</string>
   <string name="help_quick_actions_title">Quick actions</string>
   <string name="help_action_create_plugin_project">Create Plugin Project</string>
   <string name="help_action_open_plugin_settings">Open Plugin Settings</string>
@@ -2817,7 +2865,7 @@ kept=%3$d bytes
   <string name="help_doc_keyboard_shortcuts_title">Keyboard Shortcuts</string>
   <string name="help_doc_keyboard_shortcuts_summary">Customize and use keyboard shortcuts</string>
   <string name="help_doc_ai_settings_title">AI Settings Guide</string>
-  <string name="help_doc_ai_settings_summary">Understand access modes, channel management, models, and tool-related options</string>
+  <string name="help_doc_ai_settings_summary">Understand channel management, models, and tool-related options</string>
   <string name="help_doc_appearance_settings_title">Appearance Settings Guide</string>
   <string name="help_doc_appearance_settings_summary">Understand app theme and debug toolbar position settings</string>
   <string name="help_doc_keyboard_settings_title">Keyboard Settings Guide</string>
@@ -2828,16 +2876,8 @@ kept=%3$d bytes
   <string name="help_doc_plugin_settings_summary">Understand installed plugin management, file-based installs, plugin logs, theme plugins, and LSP dependencies</string>
   <string name="help_doc_about_and_logs_title">About and Logs</string>
   <string name="help_doc_about_and_logs_summary">Understand version info, community links, log export/upload, crash upload, and open-source licenses</string>
-  <string name="help_doc_developer_options_title">Developer Options Guide</string>
-  <string name="help_doc_developer_options_summary">Understand diagnostics, backend debugging, test tools, and bundled package reinstall</string>
-  <string name="help_doc_feedback_guide_title">Feedback Guide</string>
-  <string name="help_doc_feedback_guide_summary">Understand feedback types, length limits, submit throttling, and automatic device info</string>
-  <string name="help_doc_profile_edit_title">Open-source Profile Page</string>
-  <string name="help_doc_profile_edit_summary">Understand feedback, settings, about, download history, and local data entries</string>
-  <string name="help_doc_faq_title">FAQ</string>
-  <string name="help_doc_faq_summary">Frequently asked questions</string>
   <string name="help_doc_known_issues_title">Known Issues</string>
-  <string name="help_doc_known_issues_summary">Known issues and limitations of the current version</string>
+  <string name="help_doc_known_issues_summary">Known issues, open-source limitations, and common questions</string>
 
   <string name="help_placeholder_tip_label">Tip</string>
   <string name="help_placeholder_tip_body">This document is under construction. Stay tuned.</string>
@@ -2862,12 +2902,16 @@ kept=%3$d bytes
     <item>plugin development</item>
     <item>plugin template</item>
     <item>plugin project</item>
+    <item>config</item>
+    <item>theme</item>
+    <item>snippet</item>
     <item>tinaplug</item>
     <item>manifest</item>
     <item>hot install</item>
     <item>preflight</item>
     <item>validate</item>
     <item>package</item>
+    <item>starter</item>
   </string-array>
   <string-array name="help_keywords_settings_overview">
     <item>settings</item>
@@ -3056,42 +3100,27 @@ kept=%3$d bytes
     <item>license</item>
     <item>proot log</item>
     <item>crash upload</item>
-  </string-array>
-  <string-array name="help_keywords_developer_options">
     <item>developer options</item>
     <item>diagnostics</item>
+    <item>feedback</item>
+    <item>download history</item>
+    <item>local data</item>
     <item>test tools</item>
     <item>server url</item>
     <item>bundled packages</item>
     <item>clangd log</item>
-  </string-array>
-  <string-array name="help_keywords_feedback_guide">
-    <item>feedback</item>
-    <item>suggestion</item>
-    <item>bug</item>
-    <item>feature request</item>
-    <item>logs</item>
-    <item>submit</item>
-  </string-array>
-  <string-array name="help_keywords_profile_edit">
-    <item>profile</item>
-    <item>feedback</item>
-    <item>settings</item>
-    <item>about</item>
-    <item>download history</item>
-    <item>local data</item>
-  </string-array>
-  <string-array name="help_keywords_faq">
-    <item>faq</item>
-    <item>help</item>
-    <item>question</item>
-    <item>error</item>
   </string-array>
   <string-array name="help_keywords_known_issues">
     <item>known issues</item>
     <item>limitation</item>
     <item>bug</item>
     <item>known</item>
+    <item>faq</item>
+    <item>help</item>
+    <item>feedback</item>
+    <item>open-source edition</item>
+    <item>plugin marketplace</item>
+    <item>AI</item>
   </string-array>
   <string name="hint_search">Search...</string>
   <string name="hint_search_log">Search log content...</string>
@@ -3174,6 +3203,13 @@ kept=%3$d bytes
   <string name="sdl_runtime_error_sdl_library_invalid">SDL runtime library does not exist or is unreadable: %1$s</string>
   <string name="sdl_runtime_error_invalid_required_major">Invalid SDL major version parameter: %1$d (only 2 or 3 are supported)</string>
   <string name="sdl_runtime_error_launch_failed">Failed to launch SDL runtime UI: %1$s</string>
+  <string name="native_library_missing_libraries_title">Missing runtime libraries</string>
+  <string name="native_library_missing_libraries_message">Missing runtime libraries: %1$s</string>
+  <string name="native_library_missing_libraries_package_hint">Install Android package(s) from Package Manager: %1$s, then retry.</string>
+  <string name="native_library_missing_libraries_package_or_import_hint">Install Android package(s) from Package Manager: %1$s, or import the matching .so files in Additional runtime libraries.</string>
+  <string name="native_library_missing_libraries_generic_hint">Install the Android package that provides these .so files, then retry.</string>
+  <string name="native_library_missing_libraries_generic_or_import_hint">Install the Android package that provides these .so files, or import the matching .so files in Additional runtime libraries.</string>
+  <string name="native_library_open_package_manager">Open Package Manager</string>
   <string name="run_config_toolchain">Toolchain</string>
   <string name="run_config_toolchain_default">Default (Use globally active toolchain)</string>
   <string name="run_config_toolchain_desc">Select the toolchain version for this configuration</string>
@@ -3532,8 +3568,16 @@ kept=%3$d bytes
   <string name="pkg_manager_check_updates">Check Updates</string>
   <string name="pkg_manager_refresh">Refresh</string>
   <string name="pkg_manager_select">Select</string>
+  <string name="pkg_manager_platform_linux">Linux</string>
+  <string name="pkg_manager_platform_android">Android</string>
+  <string name="pkg_manager_install_linux">Install Linux</string>
+  <string name="pkg_manager_install_android">Install Android</string>
   <string name="pkg_manager_uninstall_linux">Uninstall Linux</string>
   <string name="pkg_manager_uninstall_android">Uninstall Android</string>
+  <string name="pkg_manager_batch_install_confirm_title">Install selected packages?</string>
+  <string name="pkg_manager_batch_install_confirm_message">This will install %1$d package(s) to %2$s.</string>
+  <string name="pkg_manager_batch_update_confirm_title">Update all packages?</string>
+  <string name="pkg_manager_batch_update_confirm_message">This will update %1$d package(s).</string>
   <string name="pkg_manager_batch_complete_title">Batch Install Complete</string>
   <string name="pkg_manager_batch_complete_msg">Successfully installed %1$d packages for %2$s</string>
   <string name="pkg_manager_update_complete_title">Update Complete</string>
@@ -3542,6 +3586,11 @@ kept=%3$d bytes
   <string name="pkg_manager_btn_installed">Installed</string>
   <string name="pkg_manager_btn_update">Update</string>
   <string name="pkg_manager_btn_uninstall">Uninstall</string>
+  <string name="pkg_manager_install_confirm_title">Install %1$s?</string>
+  <string name="pkg_manager_install_confirm_message">This will install %2$s to %1$s.</string>
+  <string name="pkg_manager_install_confirm_dependencies_title">The following dependencies will be installed automatically:</string>
+  <string name="pkg_manager_install_confirm_dependency_item">%1$s v%2$s</string>
+  <string name="pkg_manager_install_confirm_button">Continue install</string>
   <string name="pkg_manager_installing_title">Installing %1$s</string>
   <string name="pkg_manager_uninstall_title">Uninstall %1$s?</string>
   <string name="pkg_manager_uninstall_message">This will remove %2$s from %1$s.</string>

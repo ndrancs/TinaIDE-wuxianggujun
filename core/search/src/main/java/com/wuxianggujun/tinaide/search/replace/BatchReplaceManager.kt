@@ -1,12 +1,12 @@
 package com.wuxianggujun.tinaide.search.replace
 
 import com.wuxianggujun.tinaide.search.ProjectSearchResult
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import java.io.File
 
 /**
  * 批量替换管理器

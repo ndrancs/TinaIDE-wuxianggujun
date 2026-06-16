@@ -13,20 +13,20 @@ import com.wuxianggujun.tinaide.core.proot.LinuxDistroRootfsHealthReport
 import com.wuxianggujun.tinaide.core.proot.PRootBootstrap
 import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
 import com.wuxianggujun.tinaide.core.proot.RootfsPackageManager
-import com.wuxianggujun.tinaide.core.proot.toHealthSummary
 import com.wuxianggujun.tinaide.core.proot.displayName
 import com.wuxianggujun.tinaide.core.proot.resolveGuestPackageManager
+import com.wuxianggujun.tinaide.core.proot.toHealthSummary
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.security.MessageDigest
-import java.util.concurrent.TimeUnit
 
 /**
  * LSP 工具链安装器
@@ -182,14 +182,16 @@ class LspToolchainInstaller(
             )
         }
 
-        progress(LspInstallProgress(
-            phase = Strings.lsp_toolchain_phase_updating_package_index.strOr(
-                context,
-                packageManager.displayName(),
-            ),
-            progress = 0.1f,
-            toolchainId = config.id
-        ))
+        progress(
+            LspInstallProgress(
+                phase = Strings.lsp_toolchain_phase_updating_package_index.strOr(
+                    context,
+                    packageManager.displayName(),
+                ),
+                progress = 0.1f,
+                toolchainId = config.id
+            )
+        )
 
         val updateResult = GuestSystemPackageManager.updateIndex(
             linuxEnvironment = linuxEnvironment,
@@ -202,15 +204,17 @@ class LspToolchainInstaller(
             // 继续尝试安装，可能缓存仍然可用
         }
 
-        progress(LspInstallProgress(
-            phase = Strings.lsp_toolchain_phase_installing_system_packages.strOr(
-                context,
-                packageManager.displayName(),
-            ),
-            progress = 0.3f,
-            toolchainId = config.id,
-            message = packages.joinToString(", ")
-        ))
+        progress(
+            LspInstallProgress(
+                phase = Strings.lsp_toolchain_phase_installing_system_packages.strOr(
+                    context,
+                    packageManager.displayName(),
+                ),
+                progress = 0.3f,
+                toolchainId = config.id,
+                message = packages.joinToString(", ")
+            )
+        )
 
         val installResult = GuestSystemPackageManager.installPackages(
             linuxEnvironment = linuxEnvironment,
@@ -237,13 +241,15 @@ class LspToolchainInstaller(
                     }
                 }
             }
-            return Result.failure(RuntimeException(
-                Strings.lsp_toolchain_error_system_install_failed.strOr(
-                    context,
-                    packageManager.displayName(),
-                    installResult.stderr.ifBlank { installResult.stdout },
+            return Result.failure(
+                RuntimeException(
+                    Strings.lsp_toolchain_error_system_install_failed.strOr(
+                        context,
+                        packageManager.displayName(),
+                        installResult.stderr.ifBlank { installResult.stdout },
+                    )
                 )
-            ))
+            )
         }
 
         return verifyAndReturn(config, progress)
@@ -258,12 +264,14 @@ class LspToolchainInstaller(
         val extractTo = config.extractTo
             ?: return Result.failure(IllegalArgumentException(Strings.lsp_toolchain_error_no_extract_path.strOr(context)))
 
-        progress(LspInstallProgress(
-            phase = Strings.lsp_toolchain_phase_downloading.strOr(context),
-            progress = 0.1f,
-            toolchainId = config.id,
-            message = url
-        ))
+        progress(
+            LspInstallProgress(
+                phase = Strings.lsp_toolchain_phase_downloading.strOr(context),
+                progress = 0.1f,
+                toolchainId = config.id,
+                message = url
+            )
+        )
 
         val rootfsPath = PRootBootstrap.getActiveRootfsPath(context)
         val targetDir = File(rootfsPath, extractTo.trimStart('/'))
@@ -273,34 +281,42 @@ class LspToolchainInstaller(
             // 下载文件
             downloadFile(url, tempFile) { downloaded, total ->
                 val downloadProgress = if (total > 0) downloaded.toFloat() / total else 0f
-                progress(LspInstallProgress(
-                    phase = Strings.lsp_toolchain_phase_downloading.strOr(context),
-                    progress = 0.1f + 0.5f * downloadProgress,
-                    toolchainId = config.id,
-                    message = formatBytes(downloaded) + " / " + formatBytes(total)
-                ))
+                progress(
+                    LspInstallProgress(
+                        phase = Strings.lsp_toolchain_phase_downloading.strOr(context),
+                        progress = 0.1f + 0.5f * downloadProgress,
+                        toolchainId = config.id,
+                        message = formatBytes(downloaded) + " / " + formatBytes(total)
+                    )
+                )
             }
 
             // 验证 SHA256
             if (config.sha256 != null) {
-                progress(LspInstallProgress(
-                    phase = Strings.lsp_toolchain_phase_verifying_checksum.strOr(context),
-                    progress = 0.65f,
-                    toolchainId = config.id
-                ))
+                progress(
+                    LspInstallProgress(
+                        phase = Strings.lsp_toolchain_phase_verifying_checksum.strOr(context),
+                        progress = 0.65f,
+                        toolchainId = config.id
+                    )
+                )
                 val actualSha256 = calculateSha256(tempFile)
                 if (!actualSha256.equals(config.sha256, ignoreCase = true)) {
-                    return Result.failure(RuntimeException(
-                        Strings.lsp_toolchain_error_checksum_mismatch.strOr(context, config.sha256, actualSha256)
-                    ))
+                    return Result.failure(
+                        RuntimeException(
+                            Strings.lsp_toolchain_error_checksum_mismatch.strOr(context, config.sha256, actualSha256)
+                        )
+                    )
                 }
             }
 
-            progress(LspInstallProgress(
-                phase = Strings.lsp_toolchain_phase_extracting.strOr(context),
-                progress = 0.7f,
-                toolchainId = config.id
-            ))
+            progress(
+                LspInstallProgress(
+                    phase = Strings.lsp_toolchain_phase_extracting.strOr(context),
+                    progress = 0.7f,
+                    toolchainId = config.id
+                )
+            )
 
             // 解压（复用 TarExtractor）
             targetDir.parentFile?.mkdirs()
@@ -321,12 +337,14 @@ class LspToolchainInstaller(
             return Result.failure(IllegalArgumentException(Strings.lsp_toolchain_error_no_pip_packages.strOr(context)))
         }
 
-        progress(LspInstallProgress(
-            phase = Strings.lsp_toolchain_phase_installing_python_packages.strOr(context),
-            progress = 0.3f,
-            toolchainId = config.id,
-            message = packages.joinToString(", ")
-        ))
+        progress(
+            LspInstallProgress(
+                phase = Strings.lsp_toolchain_phase_installing_python_packages.strOr(context),
+                progress = 0.3f,
+                toolchainId = config.id,
+                message = packages.joinToString(", ")
+            )
+        )
 
         val linuxEnvironment = linuxEnvironmentProvider.get()
         val command = mutableListOf("pip3", "install", "--user", "--break-system-packages")
@@ -350,12 +368,14 @@ class LspToolchainInstaller(
             )
 
             if (fallbackResult.exitCode != 0) {
-                return Result.failure(RuntimeException(
-                    Strings.lsp_toolchain_error_pip_failed.strOr(
-                        context,
-                        fallbackResult.stderr.ifBlank { fallbackResult.stdout },
+                return Result.failure(
+                    RuntimeException(
+                        Strings.lsp_toolchain_error_pip_failed.strOr(
+                            context,
+                            fallbackResult.stderr.ifBlank { fallbackResult.stdout },
+                        )
                     )
-                ))
+                )
             }
         }
 
@@ -371,12 +391,14 @@ class LspToolchainInstaller(
             return Result.failure(IllegalArgumentException(Strings.lsp_toolchain_error_no_npm_packages.strOr(context)))
         }
 
-        progress(LspInstallProgress(
-            phase = Strings.lsp_toolchain_phase_installing_node_packages.strOr(context),
-            progress = 0.3f,
-            toolchainId = config.id,
-            message = packages.joinToString(", ")
-        ))
+        progress(
+            LspInstallProgress(
+                phase = Strings.lsp_toolchain_phase_installing_node_packages.strOr(context),
+                progress = 0.3f,
+                toolchainId = config.id,
+                message = packages.joinToString(", ")
+            )
+        )
 
         val linuxEnvironment = linuxEnvironmentProvider.get()
         val command = mutableListOf("npm", "install", "-g")
@@ -389,12 +411,14 @@ class LspToolchainInstaller(
         )
 
         if (result.exitCode != 0) {
-            return Result.failure(RuntimeException(
-                Strings.lsp_toolchain_error_npm_failed.strOr(
-                    context,
-                    result.stderr.ifBlank { result.stdout },
+            return Result.failure(
+                RuntimeException(
+                    Strings.lsp_toolchain_error_npm_failed.strOr(
+                        context,
+                        result.stderr.ifBlank { result.stdout },
+                    )
                 )
-            ))
+            )
         }
 
         return verifyAndReturn(config, progress)
@@ -404,21 +428,25 @@ class LspToolchainInstaller(
         config: LspToolchainConfig,
         progress: (LspInstallProgress) -> Unit
     ): Result<Unit> {
-        progress(LspInstallProgress(
-            phase = Strings.lsp_toolchain_phase_verifying_installation.strOr(context),
-            progress = 0.9f,
-            toolchainId = config.id
-        ))
+        progress(
+            LspInstallProgress(
+                phase = Strings.lsp_toolchain_phase_verifying_installation.strOr(context),
+                progress = 0.9f,
+                toolchainId = config.id
+            )
+        )
 
         if (!isInstalled(config)) {
             return Result.failure(RuntimeException(Strings.lsp_toolchain_error_verify_failed.strOr(context, config.id)))
         }
 
-        progress(LspInstallProgress(
-            phase = Strings.lsp_toolchain_phase_completed.strOr(context),
-            progress = 1.0f,
-            toolchainId = config.id
-        ))
+        progress(
+            LspInstallProgress(
+                phase = Strings.lsp_toolchain_phase_completed.strOr(context),
+                progress = 1.0f,
+                toolchainId = config.id
+            )
+        )
 
         return Result.success(Unit)
     }
@@ -467,17 +495,13 @@ class LspToolchainInstaller(
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
-    private fun formatBytes(bytes: Long): String {
-        return when {
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-            else -> "${bytes / (1024 * 1024)} MB"
-        }
+    private fun formatBytes(bytes: Long): String = when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        else -> "${bytes / (1024 * 1024)} MB"
     }
 
-    private fun LspToolchainConfig.normalizedType(): String {
-        return type.trim().lowercase()
-    }
+    private fun LspToolchainConfig.normalizedType(): String = type.trim().lowercase()
 
     private fun LspToolchainConfig.resolvePackages(packageManager: RootfsPackageManager): List<String> {
         val managerPackages = packagesByManager.orEmpty()
@@ -490,33 +514,27 @@ class LspToolchainInstaller(
             ?: packages.normalizedPackageList()
     }
 
-    private fun List<String>?.normalizedPackageList(): List<String> {
-        return orEmpty()
-            .map(String::trim)
-            .filter(String::isNotEmpty)
-            .distinct()
+    private fun List<String>?.normalizedPackageList(): List<String> = orEmpty()
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .distinct()
+
+    private fun LinuxDistroRootfsHealthProbe.toDisplayName(): String = when (this) {
+        LinuxDistroRootfsHealthProbe.ROOTFS_AVAILABLE ->
+            Strings.linux_distro_health_probe_rootfs_available.strOr(context)
+        LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_COMMANDS ->
+            Strings.linux_distro_health_probe_package_manager_commands.strOr(context)
+        LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_VERSION ->
+            Strings.linux_distro_health_probe_package_manager_version.strOr(context)
+        LinuxDistroRootfsHealthProbe.REQUIRED_BOOTSTRAP_COMMANDS ->
+            Strings.linux_distro_health_probe_required_commands.strOr(context)
+        LinuxDistroRootfsHealthProbe.OPTIONAL_BOOTSTRAP_COMMANDS ->
+            Strings.linux_distro_health_probe_optional_commands.strOr(context)
+        LinuxDistroRootfsHealthProbe.ARCHITECTURE ->
+            Strings.linux_distro_health_probe_architecture.strOr(context)
+        LinuxDistroRootfsHealthProbe.OS_RELEASE ->
+            Strings.linux_distro_health_probe_os_release.strOr(context)
     }
 
-    private fun LinuxDistroRootfsHealthProbe.toDisplayName(): String {
-        return when (this) {
-            LinuxDistroRootfsHealthProbe.ROOTFS_AVAILABLE ->
-                Strings.linux_distro_health_probe_rootfs_available.strOr(context)
-            LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_COMMANDS ->
-                Strings.linux_distro_health_probe_package_manager_commands.strOr(context)
-            LinuxDistroRootfsHealthProbe.PACKAGE_MANAGER_VERSION ->
-                Strings.linux_distro_health_probe_package_manager_version.strOr(context)
-            LinuxDistroRootfsHealthProbe.REQUIRED_BOOTSTRAP_COMMANDS ->
-                Strings.linux_distro_health_probe_required_commands.strOr(context)
-            LinuxDistroRootfsHealthProbe.OPTIONAL_BOOTSTRAP_COMMANDS ->
-                Strings.linux_distro_health_probe_optional_commands.strOr(context)
-            LinuxDistroRootfsHealthProbe.ARCHITECTURE ->
-                Strings.linux_distro_health_probe_architecture.strOr(context)
-            LinuxDistroRootfsHealthProbe.OS_RELEASE ->
-                Strings.linux_distro_health_probe_os_release.strOr(context)
-        }
-    }
-
-    private fun RootfsPackageManager.supportsEqualsVersionFallback(): Boolean {
-        return this == RootfsPackageManager.APK || this == RootfsPackageManager.APT
-    }
+    private fun RootfsPackageManager.supportsEqualsVersionFallback(): Boolean = this == RootfsPackageManager.APK || this == RootfsPackageManager.APT
 }

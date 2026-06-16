@@ -1,15 +1,15 @@
 package com.wuxianggujun.tinaide.core.common.io
 
 import android.system.Os
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
-import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
-import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
+import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream
 
 /**
  * 通用 Tar 解压工具
@@ -34,10 +34,10 @@ object TarExtractor {
     private const val GZIP_MAGIC_1 = 0x1F
     private const val GZIP_MAGIC_2 = 0x8B
     private const val XZ_MAGIC_1 = 0xFD
-    private const val XZ_MAGIC_2 = 0x37  // '7'
-    private const val XZ_MAGIC_3 = 0x7A  // 'z'
-    private const val XZ_MAGIC_4 = 0x58  // 'X'
-    private const val XZ_MAGIC_5 = 0x5A  // 'Z'
+    private const val XZ_MAGIC_2 = 0x37 // '7'
+    private const val XZ_MAGIC_3 = 0x7A // 'z'
+    private const val XZ_MAGIC_4 = 0x58 // 'X'
+    private const val XZ_MAGIC_5 = 0x5A // 'Z'
     private const val XZ_MAGIC_6 = 0x00
     private const val ZSTD_MAGIC_1 = 0x28
     private const val ZSTD_MAGIC_2 = 0xB5
@@ -48,10 +48,15 @@ object TarExtractor {
      * 压缩格式
      */
     enum class CompressionType {
-        NONE,   // 纯 tar
-        GZIP,   // tar.gz
-        XZ,     // tar.xz
-        ZSTD    // tar.zst
+        NONE, // 纯 tar
+        GZIP, // tar.gz
+        XZ, // tar.xz
+        ZSTD // tar.zst
+    }
+
+    enum class SymlinkPolicy {
+        RESTRICT_TO_TARGET_DIR,
+        PRESERVE_ARCHIVE_TARGETS
     }
 
     /**
@@ -65,13 +70,14 @@ object TarExtractor {
     fun extract(
         archiveFile: File,
         targetDir: File,
+        symlinkPolicy: SymlinkPolicy = SymlinkPolicy.RESTRICT_TO_TARGET_DIR,
         estimatedTotalEntries: Int = 2500,
         ensureActive: () -> Unit = {},
         progress: (Float) -> Unit = {},
     ) {
         FileInputStream(archiveFile).use { fis ->
             BufferedInputStream(fis, BUFFER_SIZE).use { bis ->
-                extract(bis, targetDir, estimatedTotalEntries, ensureActive, progress)
+                extract(bis, targetDir, symlinkPolicy, estimatedTotalEntries, ensureActive, progress)
             }
         }
     }
@@ -87,6 +93,7 @@ object TarExtractor {
     fun extract(
         bufferedInput: BufferedInputStream,
         targetDir: File,
+        symlinkPolicy: SymlinkPolicy = SymlinkPolicy.RESTRICT_TO_TARGET_DIR,
         estimatedTotalEntries: Int = 2500,
         ensureActive: () -> Unit = {},
         progress: (Float) -> Unit = {},
@@ -94,7 +101,7 @@ object TarExtractor {
         ensureActive()
         val compressionType = detectCompressionType(bufferedInput)
         val tarInput = wrapWithDecompressor(bufferedInput, compressionType)
-        extractTarStream(tarInput, targetDir, estimatedTotalEntries, ensureActive, progress)
+        extractTarStream(tarInput, targetDir, symlinkPolicy, estimatedTotalEntries, ensureActive, progress)
     }
 
     /**
@@ -104,6 +111,7 @@ object TarExtractor {
         input: InputStream,
         targetDir: File,
         compressionType: CompressionType,
+        symlinkPolicy: SymlinkPolicy = SymlinkPolicy.RESTRICT_TO_TARGET_DIR,
         estimatedTotalEntries: Int = 2500,
         ensureActive: () -> Unit = {},
         progress: (Float) -> Unit = {},
@@ -111,7 +119,7 @@ object TarExtractor {
         ensureActive()
         val buffered = if (input is BufferedInputStream) input else BufferedInputStream(input, BUFFER_SIZE)
         val tarInput = wrapWithDecompressor(buffered, compressionType)
-        extractTarStream(tarInput, targetDir, estimatedTotalEntries, ensureActive, progress)
+        extractTarStream(tarInput, targetDir, symlinkPolicy, estimatedTotalEntries, ensureActive, progress)
     }
 
     /**
@@ -127,7 +135,8 @@ object TarExtractor {
 
         // 检查 gzip magic: 1F 8B
         if (header[0].toInt() and 0xFF == GZIP_MAGIC_1 &&
-            header[1].toInt() and 0xFF == GZIP_MAGIC_2) {
+            header[1].toInt() and 0xFF == GZIP_MAGIC_2
+        ) {
             return CompressionType.GZIP
         }
 
@@ -136,7 +145,8 @@ object TarExtractor {
             header[0].toInt() and 0xFF == ZSTD_MAGIC_1 &&
             header[1].toInt() and 0xFF == ZSTD_MAGIC_2 &&
             header[2].toInt() and 0xFF == ZSTD_MAGIC_3 &&
-            header[3].toInt() and 0xFF == ZSTD_MAGIC_4) {
+            header[3].toInt() and 0xFF == ZSTD_MAGIC_4
+        ) {
             return CompressionType.ZSTD
         }
 
@@ -147,7 +157,8 @@ object TarExtractor {
             header[2].toInt() and 0xFF == XZ_MAGIC_3 &&
             header[3].toInt() and 0xFF == XZ_MAGIC_4 &&
             header[4].toInt() and 0xFF == XZ_MAGIC_5 &&
-            header[5].toInt() and 0xFF == XZ_MAGIC_6) {
+            header[5].toInt() and 0xFF == XZ_MAGIC_6
+        ) {
             return CompressionType.XZ
         }
 
@@ -160,13 +171,11 @@ object TarExtractor {
     private fun wrapWithDecompressor(
         input: BufferedInputStream,
         compressionType: CompressionType
-    ): TarArchiveInputStream {
-        return when (compressionType) {
-            CompressionType.GZIP -> TarArchiveInputStream(GzipCompressorInputStream(input))
-            CompressionType.XZ -> TarArchiveInputStream(XZCompressorInputStream(input))
-            CompressionType.ZSTD -> TarArchiveInputStream(ZstdCompressorInputStream(input))
-            CompressionType.NONE -> TarArchiveInputStream(input)
-        }
+    ): TarArchiveInputStream = when (compressionType) {
+        CompressionType.GZIP -> TarArchiveInputStream(GzipCompressorInputStream(input))
+        CompressionType.XZ -> TarArchiveInputStream(XZCompressorInputStream(input))
+        CompressionType.ZSTD -> TarArchiveInputStream(ZstdCompressorInputStream(input))
+        CompressionType.NONE -> TarArchiveInputStream(input)
     }
 
     /**
@@ -175,6 +184,7 @@ object TarExtractor {
     private fun extractTarStream(
         tarInput: TarArchiveInputStream,
         targetDir: File,
+        symlinkPolicy: SymlinkPolicy,
         estimatedTotalEntries: Int,
         ensureActive: () -> Unit,
         progress: (Float) -> Unit,
@@ -188,20 +198,32 @@ object TarExtractor {
             while (entry != null) {
                 ensureActive()
                 entryCount++
-                val safeName = sanitizeTarPath(entry.name)
-                val outputFile = File(targetDir, safeName)
+                val outputFile = ArchivePathSafety.resolveEntryFile(targetDir, entry.name, "tar entry")
 
                 if (entry.isDirectory) {
                     outputFile.mkdirs()
                     applyUnixModeIfPresent(outputFile, entry.mode)
                 } else if (entry.isSymbolicLink) {
                     outputFile.parentFile?.mkdirs()
-                    recreateSymlink(outputFile, entry.linkName)
+                    val linkTarget = when (symlinkPolicy) {
+                        SymlinkPolicy.RESTRICT_TO_TARGET_DIR ->
+                            ArchivePathSafety.requireSymlinkTargetInsideTargetDir(
+                                targetDir = targetDir,
+                                linkFile = outputFile,
+                                linkTarget = entry.linkName,
+                                source = "tar symlink target"
+                            )
+                        SymlinkPolicy.PRESERVE_ARCHIVE_TARGETS -> entry.linkName
+                    }
+                    recreateSymlink(outputFile, linkTarget)
                 } else if (entry.isLink) {
                     pendingHardLinks.add(
                         PendingHardLink(
                             linkPath = outputFile,
-                            targetPathInTar = sanitizeTarPath(entry.linkName),
+                            targetPathInTar = ArchivePathSafety.sanitizeRelativePath(
+                                entry.linkName,
+                                "tar hardlink target"
+                            ),
                             mode = entry.mode
                         )
                     )
@@ -227,7 +249,11 @@ object TarExtractor {
 
             pendingHardLinks.forEach { link ->
                 ensureActive()
-                val targetFile = File(targetDir, link.targetPathInTar)
+                val targetFile = ArchivePathSafety.resolveEntryFile(
+                    targetDir,
+                    link.targetPathInTar,
+                    "tar hardlink target"
+                )
                 if (!targetFile.exists() || targetFile.isDirectory) {
                     throw IllegalStateException("Hardlink target missing: ${link.targetPathInTar}")
                 }
@@ -271,17 +297,6 @@ object TarExtractor {
         }
     }
 
-    private fun sanitizeTarPath(path: String): String {
-        var normalized = path.replace('\\', '/')
-        while (normalized.startsWith("./")) normalized = normalized.removePrefix("./")
-        while (normalized.startsWith("/")) normalized = normalized.removePrefix("/")
-
-        if (normalized == ".." || normalized.startsWith("../") || normalized.contains("/../")) {
-            throw IllegalArgumentException("Invalid tar path: $path")
-        }
-        return normalized
-    }
-
     private fun applyUnixModeIfPresent(file: File, mode: Int) {
         val perms = mode and 0x1FF
         if (perms and 0b001_001_001 != 0) file.setExecutable(true, false)
@@ -289,4 +304,3 @@ object TarExtractor {
         if (perms and 0b010_010_010 != 0) file.setWritable(true, false)
     }
 }
-

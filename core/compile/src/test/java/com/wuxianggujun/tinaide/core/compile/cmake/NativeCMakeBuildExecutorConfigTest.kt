@@ -4,7 +4,6 @@ import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.compile.CompilerType
 import com.wuxianggujun.tinaide.core.ndk.AndroidSysrootManager
 import com.wuxianggujun.tinaide.core.packages.InstalledPackagePathResolver
-import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -12,6 +11,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.createTempDirectory
+import org.junit.Test
 
 class NativeCMakeBuildExecutorConfigTest {
 
@@ -426,6 +426,42 @@ class NativeCMakeBuildExecutorConfigTest {
     }
 
     @Test
+    fun `buildCMakePackageRootArguments mirrors package prefixes into find root path`() {
+        val sdlPrefix = File("/pkg/sdl3")
+        val box2dPrefix = File("/pkg/box2d")
+        val packagePrefixPath = listOf(sdlPrefix, box2dPrefix).joinToString(";") { it.absolutePath }
+
+        val args = NativeCMakeBuildExecutor.buildCMakePackageRootArguments(
+            InstalledPackagePathResolver.PackagePaths(
+                includeDirs = emptyList(),
+                libDirs = emptyList(),
+                prefixDirs = listOf(sdlPrefix, box2dPrefix),
+                pkgConfigDirs = emptyList(),
+                linkLibraries = emptyList(),
+                runtimeLibDirs = emptyList()
+            )
+        )
+
+        assertThat(args).containsExactly(
+            "-DCMAKE_PREFIX_PATH=$packagePrefixPath",
+            "-DCMAKE_FIND_ROOT_PATH=$packagePrefixPath"
+        ).inOrder()
+
+        assertThat(
+            NativeCMakeBuildExecutor.buildCMakePackageRootArguments(
+                InstalledPackagePathResolver.PackagePaths(
+                    includeDirs = emptyList(),
+                    libDirs = emptyList(),
+                    prefixDirs = emptyList(),
+                    pkgConfigDirs = emptyList(),
+                    linkLibraries = emptyList(),
+                    runtimeLibDirs = emptyList()
+                )
+            )
+        ).isEmpty()
+    }
+
+    @Test
     fun `buildCMakeExtraEnvironment adds shim trace flag when enabled`() {
         val env = NativeCMakeBuildExecutor.buildCMakeExtraEnvironment(
             packageEnvironment = mapOf("CPATH" to "/pkg/include"),
@@ -709,9 +745,7 @@ class NativeCMakeBuildExecutorConfigTest {
 
         override fun waitFor(): Int = exitCode
 
-        override fun waitFor(timeout: Long, unit: TimeUnit): Boolean {
-            return waitResults.removeFirstOrNull() ?: true
-        }
+        override fun waitFor(timeout: Long, unit: TimeUnit): Boolean = waitResults.removeFirstOrNull() ?: true
 
         override fun exitValue(): Int = exitCode
 

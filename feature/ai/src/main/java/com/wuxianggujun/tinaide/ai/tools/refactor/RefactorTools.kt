@@ -30,7 +30,7 @@ object FormatCodeTool : AiTool {
             "Format C/C++ code using clang-format. Automatically applies consistent code style including indentation, spacing, braces, and line breaks. Supports formatting entire files or specific code ranges. Essential for maintaining code quality and readability."
         )
     override val category = ToolCategory.REFACTOR
-    override val isDangerous = false
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")

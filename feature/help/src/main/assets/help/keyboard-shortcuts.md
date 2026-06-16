@@ -120,4 +120,4 @@
 - 阅读 [快捷键设置说明](keyboard-settings.md)
 - 阅读 [编辑器基础](editor-basics.md)
 - 阅读 [终端使用](terminal-usage.md)
-- 阅读 [常见问题](faq.md)
+- 阅读 [已知问题](known-issues.md)

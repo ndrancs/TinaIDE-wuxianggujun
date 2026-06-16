@@ -1,7 +1,6 @@
 package com.wuxianggujun.tinaide.core.apkbuilder
 
 import android.content.Context
-import timber.log.Timber
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.IOException
@@ -9,6 +8,7 @@ import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.cert.Certificate
+import timber.log.Timber
 
 /**
  * Manages a debug keystore for signing user-built APKs.
@@ -65,21 +65,17 @@ object DebugKeyStore {
         return generateFallbackKeyStore(ksFile)
     }
 
-    private fun defaultKeyStoreInfo(file: File): KeyStoreInfo {
-        return KeyStoreInfo(file, STORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD)
-    }
+    private fun defaultKeyStoreInfo(file: File): KeyStoreInfo = KeyStoreInfo(file, STORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD)
 
-    private fun installBundled(context: Context, ksFile: File): KeyStoreInfo? {
-        return try {
-            context.assets.open(ASSET_NAME).use { input ->
-                ksFile.outputStream().use { output -> input.copyTo(output) }
-            }
-            Timber.tag(TAG).i("Debug keystore installed to: ${ksFile.absolutePath}")
-            defaultKeyStoreInfo(ksFile)
-        } catch (e: Exception) {
-            Timber.tag(TAG).w(e, "Bundled debug keystore unavailable, will generate fallback")
-            null
+    private fun installBundled(context: Context, ksFile: File): KeyStoreInfo? = try {
+        context.assets.open(ASSET_NAME).use { input ->
+            ksFile.outputStream().use { output -> input.copyTo(output) }
         }
+        Timber.tag(TAG).i("Debug keystore installed to: ${ksFile.absolutePath}")
+        defaultKeyStoreInfo(ksFile)
+    } catch (e: Exception) {
+        Timber.tag(TAG).w(e, "Bundled debug keystore unavailable, will generate fallback")
+        null
     }
 
     private fun generateFallbackKeyStore(ksFile: File): KeyStoreInfo? {

@@ -1,10 +1,23 @@
 package com.wuxianggujun.tinaide.ui.apk
 
+import android.app.Application
 import com.google.common.truth.Truth.assertThat
+import com.wuxianggujun.tinaide.project.ProjectBuildSystem
+import com.wuxianggujun.tinaide.project.ProjectMetadataStore
 import java.io.File
 import java.nio.file.Files
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(
+    sdk = [34],
+    manifest = Config.NONE,
+    application = Application::class,
+)
 class ApkExportRuntimeLibrariesResolverTest {
 
     @Test
@@ -100,6 +113,78 @@ class ApkExportRuntimeLibrariesResolverTest {
 
             assertThat(result.libraries.map { it.name })
                 .containsExactly("libmain.so", "libfoo.so")
+                .inOrder()
+            assertThat(result.missingLibraries).isEmpty()
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `resolvePackagedLibraries includes SDL3 extension libraries and shared SDL runtime`() {
+        val tempDir = Files.createTempDirectory("apk-export-sdl3-extension-libs-test").toFile()
+        val main = File(tempDir, "libmain.so").apply { writeText("main") }
+        val sdlImage = File(tempDir, "libSDL3_image.so").apply { writeText("image") }
+        val sdlTtf = File(tempDir, "libSDL3_ttf.so").apply { writeText("ttf") }
+        val sdl = File(tempDir, "libSDL3.so").apply { writeText("sdl") }
+
+        try {
+            val result = ApkExportRuntimeLibrariesResolver.resolvePackagedLibraries(
+                buildLibraries = listOf(main),
+                runtimeCandidates = listOf(main, sdlImage, sdlTtf, sdl),
+                dependencyReader = { file ->
+                    when (file.name) {
+                        "libmain.so" -> setOf("libSDL3_image.so", "libSDL3_ttf.so")
+                        "libSDL3_image.so" -> setOf("libSDL3.so")
+                        "libSDL3_ttf.so" -> setOf("libSDL3.so")
+                        else -> emptySet()
+                    }
+                }
+            )
+
+            assertThat(result.libraries.map { it.name })
+                .containsExactly(
+                    "libmain.so",
+                    "libSDL3_image.so",
+                    "libSDL3_ttf.so",
+                    "libSDL3.so"
+                )
+                .inOrder()
+            assertThat(result.missingLibraries).isEmpty()
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `resolve uses project runtime dirs for SDL library when artifact is outside project root`() {
+        val tempDir = Files.createTempDirectory("apk-export-sdl-runtime-dir-test").toFile()
+        try {
+            val projectRoot = File(tempDir, "project").apply { mkdirs() }
+            val runtimeDir = File(projectRoot, "runtime-libs").apply { mkdirs() }
+            val buildDir = File(tempDir, "outside-build").apply { mkdirs() }
+            File(buildDir, "libmain.so").writeText("NEEDED libSDL3.so")
+            File(runtimeDir, "libSDL3.so").writeText("sdl")
+            ProjectMetadataStore.ensure(
+                projectRoot = projectRoot,
+                displayNameFallback = "APK SDL Runtime",
+                buildSystem = ProjectBuildSystem.SINGLE_FILE,
+            )
+            ProjectMetadataStore.updateNativeDependencyPaths(
+                projectRoot = projectRoot,
+                includeDirs = emptyList(),
+                libraryDirs = emptyList(),
+                runtimeDirs = listOf("runtime-libs"),
+            )
+
+            val result = ApkExportRuntimeLibrariesResolver.resolve(
+                context = RuntimeEnvironment.getApplication().applicationContext,
+                projectRoot = projectRoot,
+                buildDir = buildDir,
+            )
+
+            assertThat(result.packagedLibraries.map { it.name })
+                .containsExactly("libmain.so", "libSDL3.so")
                 .inOrder()
             assertThat(result.missingLibraries).isEmpty()
         } finally {

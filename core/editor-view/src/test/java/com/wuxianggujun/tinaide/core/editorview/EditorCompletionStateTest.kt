@@ -105,6 +105,162 @@ class EditorCompletionStateTest {
     }
 
     @Test
+    fun applySelectedCompletion_shouldExpandStaleLspTextEditToCurrentMatchingPrefix() {
+        val buffer = RopeTextBuffer().apply { insert(0, "op") }
+        val state = EditorState(buffer)
+        state.moveCursorTo(2)
+        state.seedVisibleCompletion(
+            items = listOf(
+                EditorCompletionItem(
+                    label = "operator",
+                    insertText = "operator",
+                    textEdit = EditorCompletionTextEdit(
+                        startLine = 0,
+                        startColumn = 0,
+                        endLine = 0,
+                        endColumn = 1,
+                        newText = "operator"
+                    ),
+                    isLsp = true
+                )
+            ),
+            query = "o"
+        )
+
+        val applied = state.applySelectedCompletion()
+
+        assertThat(applied).isTrue()
+        assertThat(state.textBuffer.substring(0, state.textBuffer.length)).isEqualTo("operator")
+        assertThat(state.cursorOffset).isEqualTo("operator".length)
+        assertThat(state.showCompletion).isFalse()
+    }
+
+    @Test
+    fun applySelectedCompletion_shouldRejectStaleLspTextEditWhenPrefixDoesNotMatch() {
+        val buffer = RopeTextBuffer().apply { insert(0, "xp") }
+        val state = EditorState(buffer)
+        state.moveCursorTo(2)
+        state.seedVisibleCompletion(
+            items = listOf(
+                EditorCompletionItem(
+                    label = "operator",
+                    insertText = "operator",
+                    textEdit = EditorCompletionTextEdit(
+                        startLine = 0,
+                        startColumn = 0,
+                        endLine = 0,
+                        endColumn = 1,
+                        newText = "operator"
+                    ),
+                    isLsp = true
+                )
+            ),
+            query = "x"
+        )
+
+        val applied = state.applySelectedCompletion()
+
+        assertThat(applied).isTrue()
+        assertThat(state.textBuffer.substring(0, state.textBuffer.length)).isEqualTo("xp")
+        assertThat(state.cursorOffset).isEqualTo(2)
+        assertThat(state.showCompletion).isFalse()
+    }
+
+    @Test
+    fun applySelectedCompletion_shouldRejectStaleLspTextEditWhenCurrentRangePrefixDoesNotMatch() {
+        val buffer = RopeTextBuffer().apply { insert(0, "xp") }
+        val state = EditorState(buffer)
+        state.moveCursorTo(1)
+        state.seedVisibleCompletion(
+            items = listOf(
+                EditorCompletionItem(
+                    label = "operator",
+                    insertText = "operator",
+                    textEdit = EditorCompletionTextEdit(
+                        startLine = 0,
+                        startColumn = 0,
+                        endLine = 0,
+                        endColumn = 1,
+                        newText = "operator"
+                    ),
+                    isLsp = true
+                )
+            ),
+            query = "x"
+        )
+
+        val applied = state.applySelectedCompletion()
+
+        assertThat(applied).isTrue()
+        assertThat(state.textBuffer.substring(0, state.textBuffer.length)).isEqualTo("xp")
+        assertThat(state.cursorOffset).isEqualTo(1)
+        assertThat(state.showCompletion).isFalse()
+    }
+
+    @Test
+    fun applySelectedCompletion_shouldRejectStaleLspTextEditWhenCursorMovedToAnotherLine() {
+        val buffer = RopeTextBuffer().apply { insert(0, "op\n") }
+        val state = EditorState(buffer)
+        state.moveCursorTo(buffer.positionToOffset(1, 0))
+        state.seedVisibleCompletion(
+            items = listOf(
+                EditorCompletionItem(
+                    label = "operator",
+                    insertText = "operator",
+                    textEdit = EditorCompletionTextEdit(
+                        startLine = 0,
+                        startColumn = 0,
+                        endLine = 0,
+                        endColumn = 1,
+                        newText = "operator"
+                    ),
+                    isLsp = true
+                )
+            ),
+            query = "o"
+        )
+
+        val applied = state.applySelectedCompletion()
+
+        assertThat(applied).isTrue()
+        assertThat(state.textBuffer.substring(0, state.textBuffer.length)).isEqualTo("op\n")
+        assertThat(state.cursorOffset).isEqualTo(buffer.positionToOffset(1, 0))
+        assertThat(state.showCompletion).isFalse()
+    }
+
+    @Test
+    fun applySelectedCompletion_shouldExpandStaleLspTextEditForSnippetCompletion() {
+        val buffer = RopeTextBuffer().apply { insert(0, "op") }
+        val state = EditorState(buffer)
+        state.moveCursorTo(2)
+        state.seedVisibleCompletion(
+            items = listOf(
+                EditorCompletionItem(
+                    label = "operator",
+                    insertText = "operator",
+                    snippetText = "operator",
+                    textEdit = EditorCompletionTextEdit(
+                        startLine = 0,
+                        startColumn = 0,
+                        endLine = 0,
+                        endColumn = 1,
+                        newText = "operator"
+                    ),
+                    isLsp = true
+                )
+            ),
+            query = "o"
+        )
+
+        val applied = state.applySelectedCompletion()
+
+        assertThat(applied).isTrue()
+        assertThat(state.textBuffer.substring(0, state.textBuffer.length)).isEqualTo("operator")
+        assertThat(state.cursorOffset).isEqualTo("operator".length)
+        assertThat(state.showCompletion).isFalse()
+    }
+
+    @Test
     fun applySelectedCompletion_shouldApplyAdditionalTextEditsAndKeepCursorOnPrimaryEdit() {
         val buffer = RopeTextBuffer().apply {
             insert(0, "int main() {\n    pri\n}\n")

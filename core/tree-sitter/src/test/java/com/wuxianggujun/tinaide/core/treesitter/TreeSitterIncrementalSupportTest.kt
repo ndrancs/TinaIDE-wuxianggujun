@@ -114,8 +114,8 @@ class TreeSitterIncrementalSupportTest {
         val updated = HighlightLineCacheUpdater.applyTextChange(
             cache = linkedMapOf(
                 1 to listOf(
-                    HighlightLineSegment(0, 3, HighlightType.KEYWORD),   // "abc"
-                    HighlightLineSegment(3, 6, HighlightType.VARIABLE)   // "def"
+                    HighlightLineSegment(0, 3, HighlightType.KEYWORD), // "abc"
+                    HighlightLineSegment(3, 6, HighlightType.VARIABLE) // "def"
                 )
             ),
             change = HighlightLineCacheChange.from(change)

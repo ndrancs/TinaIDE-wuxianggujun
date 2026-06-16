@@ -9,12 +9,12 @@ import android.provider.OpenableColumns
 import com.wuxianggujun.tinaide.core.common.io.TarExtractor
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import timber.log.Timber
 import java.io.File
 import java.util.UUID
 import java.util.zip.ZipFile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 object ProjectImporter {
 
@@ -268,9 +268,7 @@ object ProjectImporter {
             header[3] == 0x04.toByte()
     }
 
-    private fun shouldIgnoreTopLevelEntry(file: File): Boolean {
-        return file.name == "__MACOSX" || file.name == ".DS_Store"
-    }
+    private fun shouldIgnoreTopLevelEntry(file: File): Boolean = file.name == "__MACOSX" || file.name == ".DS_Store"
 
     private fun sanitizeProjectName(rawName: String): String {
         val normalized = rawName
@@ -283,13 +281,11 @@ object ProjectImporter {
         return normalized.ifBlank { "imported_project" }
     }
 
-    private fun sanitizeFileName(rawName: String): String {
-        return rawName
-            .substringAfterLast('/')
-            .substringAfterLast('\\')
-            .replace(Regex("[\\\\/:*?\"<>|]"), "_")
-            .ifBlank { "imported_project.zip" }
-    }
+    private fun sanitizeFileName(rawName: String): String = rawName
+        .substringAfterLast('/')
+        .substringAfterLast('\\')
+        .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        .ifBlank { "imported_project.zip" }
 
     private fun stripArchiveSuffix(fileName: String): String {
         val matchedSuffix = tarSuffixes
@@ -346,16 +342,14 @@ object ProjectImporter {
         }
     }
 
-    private fun resolveSecondaryStorageRoot(context: Context, volumeId: String): File? {
-        return context.getExternalFilesDirs(null)
-            .asSequence()
-            .filterNotNull()
-            .mapNotNull(::deriveStorageRoot)
-            .firstOrNull { root ->
-                root.name.equals(volumeId, ignoreCase = true) ||
-                    root.absolutePath.contains("/$volumeId/")
-            }
-    }
+    private fun resolveSecondaryStorageRoot(context: Context, volumeId: String): File? = context.getExternalFilesDirs(null)
+        .asSequence()
+        .filterNotNull()
+        .mapNotNull(::deriveStorageRoot)
+        .firstOrNull { root ->
+            root.name.equals(volumeId, ignoreCase = true) ||
+                root.absolutePath.contains("/$volumeId/")
+        }
 
     private fun deriveStorageRoot(appSpecificDir: File): File? {
         val marker = "${File.separator}Android${File.separator}data${File.separator}"

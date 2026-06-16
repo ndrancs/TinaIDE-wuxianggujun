@@ -7,12 +7,12 @@ import com.wuxianggujun.tinaide.plugin.PluginHostLogSources
 import com.wuxianggujun.tinaide.plugin.PluginLogManager
 import com.wuxianggujun.tinaide.plugin.PluginManager
 import com.wuxianggujun.tinaide.plugin.PluginStateSnapshot
+import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 
 class PluginMarketplaceRepository(
     private val context: Context,
@@ -48,13 +48,9 @@ class PluginMarketplaceRepository(
         category: String? = null,
         search: String? = null,
         sort: String? = null
-    ): ApiResult<PluginListData> {
-        return api.listPlugins(page, limit, category, search, sort)
-    }
+    ): ApiResult<PluginListData> = api.listPlugins(page, limit, category, search, sort)
 
-    suspend fun getPluginDetail(pluginId: String): ApiResult<PluginDetail> {
-        return api.getPluginDetail(pluginId)
-    }
+    suspend fun getPluginDetail(pluginId: String): ApiResult<PluginDetail> = api.getPluginDetail(pluginId)
 
     suspend fun checkUpdates(): ApiResult<CheckUpdateData> {
         val installed = pluginManager.listInstalledPlugins()
@@ -181,14 +177,10 @@ class PluginMarketplaceRepository(
         }
     }
 
-    fun getInstalledVersion(pluginId: String): String? {
-        return pluginManager.getInstalledVersion(pluginId)
-    }
+    fun getInstalledVersion(pluginId: String): String? = pluginManager.getInstalledVersion(pluginId)
 
-    fun resolveInstallState(plugins: List<PluginSummary>): PluginMarketplaceInstallState {
-        return PluginMarketplaceInstallStateResolver.resolve(
-            plugins = plugins,
-            installedVersions = pluginManager.pluginStateFlow.value.installedVersions,
-        )
-    }
+    fun resolveInstallState(plugins: List<PluginSummary>): PluginMarketplaceInstallState = PluginMarketplaceInstallStateResolver.resolve(
+        plugins = plugins,
+        installedVersions = pluginManager.pluginStateFlow.value.installedVersions,
+    )
 }

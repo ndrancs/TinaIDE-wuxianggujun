@@ -22,8 +22,9 @@ description: TinaIDE 插件系统、.tinaplug、manifest、权限、Lua script/h
 
 - `.tinaplug` 本质是 zip，根目录必须有 `manifest.json`。
 - `apiVersion` 当前固定为 1；非 1 插件会无效。
-- 支持 contributions：themes、menus `filetree/context`、`editor/context`、snippets、projectTemplates、apkExports 等。
-- `editor/toolbar` 和 keybindings 在文档中属于已定义但暂未实现能力，改动前必须核对当前代码。
+- 支持 contributions：themes、menus `filetree/context`、`editor/context`、`editor/toolbar`、keybindings、snippets、projectTemplates、apkExports 等。
+- 插件菜单与命令解析统一输出 `ResolvedPluginCommand` 元数据，包含 `pluginId`、`pluginName`、`commandId`、`group`、`surface` 与 `source`。
+- 旧 `ResolvedHostMenuItem` 仅作为菜单 UI 兼容层保留；命令面板等需要插件来源、搜索关键词或诊断信息的入口应优先消费 `resolveEditorToolbarCommands()` 等统一命令解析入口。
 - 不支持动态 DEX；script/hybrid 走 Lua runtime 和权限确认。
 - 插件权限是两层：manifest 声明 + 运行时授权。
 - 稳定 `tina` API 包括 pluginId、apiVersion、log、events、editor、diagnostics、workspace、commands、fs、clipboard、network、db。

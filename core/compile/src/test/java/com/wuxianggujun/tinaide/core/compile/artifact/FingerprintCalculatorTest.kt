@@ -10,10 +10,10 @@ import com.wuxianggujun.tinaide.core.compile.CompilerType
 import com.wuxianggujun.tinaide.core.compile.strategy.BuildContext
 import com.wuxianggujun.tinaide.core.linux.LinuxRunModePolicy
 import io.mockk.mockk
-import org.junit.Test
-import org.junit.Rule
-import org.junit.rules.TemporaryFolder
 import java.io.File
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 /**
  * 验证 FingerprintCalculator 把 BuildOptions 的全部关键字段都带入 BuildFingerprint。
@@ -68,6 +68,13 @@ class FingerprintCalculatorTest {
     fun `sysrootApiLevel change invalidates fingerprint`() {
         val ctx1 = newContext(defaultOptions().copy(sysrootApiLevel = 28))
         val ctx2 = newContext(defaultOptions().copy(sysrootApiLevel = 33))
+        assertThat(calc.compute(ctx1, sampleSpec())).isNotEqualTo(calc.compute(ctx2, sampleSpec()))
+    }
+
+    @Test
+    fun `sysrootProfileId change invalidates fingerprint`() {
+        val ctx1 = newContext(defaultOptions().copy(sysrootProfileId = "builtin-ndk-r27c-arm64"))
+        val ctx2 = newContext(defaultOptions().copy(sysrootProfileId = "custom-ndk-r27-arm64"))
         assertThat(calc.compute(ctx1, sampleSpec())).isNotEqualTo(calc.compute(ctx2, sampleSpec()))
     }
 

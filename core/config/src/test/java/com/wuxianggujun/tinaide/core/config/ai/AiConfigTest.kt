@@ -14,19 +14,13 @@ class AiConfigTest {
     // ==================== 默认值测试 ====================
 
     @Test
-    fun `default access mode is CUSTOM_BYOK`() {
-        val config = AiConfig()
-        assertThat(config.accessMode).isEqualTo(AiAccessMode.CUSTOM_BYOK)
-    }
-
-    @Test
     fun `default activeChannelId is null`() {
         val config = AiConfig()
         assertThat(config.activeChannelId).isNull()
     }
 
     @Test
-    fun `default generation settings are gateway friendly`() {
+    fun `default generation settings are BYOK friendly`() {
         val gen = AiConfig().generation
         assertThat(gen.model).isEmpty()
         assertThat(gen.maxTokens).isEqualTo(4096)
@@ -66,12 +60,10 @@ class AiConfigTest {
     // ==================== 自定义配置测试 ====================
 
     @Test
-    fun `BYOK access mode coexists with activeChannelId`() {
+    fun `activeChannelId can be customized`() {
         val config = AiConfig(
-            accessMode = AiAccessMode.CUSTOM_BYOK,
             activeChannelId = "ch-1",
         )
-        assertThat(config.accessMode).isEqualTo(AiAccessMode.CUSTOM_BYOK)
         assertThat(config.activeChannelId).isEqualTo("ch-1")
     }
 

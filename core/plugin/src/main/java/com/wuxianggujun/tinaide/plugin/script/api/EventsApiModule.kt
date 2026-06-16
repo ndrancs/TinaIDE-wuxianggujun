@@ -1,10 +1,10 @@
 package com.wuxianggujun.tinaide.plugin.script.api
 
 import com.wuxianggujun.tinaide.plugin.script.ScriptPluginRuntime
-import party.iroiro.luajava.Lua
-import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import party.iroiro.luajava.Lua
+import timber.log.Timber
 
 enum class PluginEvent(val id: String) {
     EDITOR_OPENED("editor.opened"),

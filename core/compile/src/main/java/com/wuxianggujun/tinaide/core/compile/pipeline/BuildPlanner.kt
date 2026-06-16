@@ -9,8 +9,8 @@ import com.wuxianggujun.tinaide.core.compile.artifact.FingerprintCalculator
 import com.wuxianggujun.tinaide.core.compile.strategy.BuildContext
 import com.wuxianggujun.tinaide.core.compile.strategy.BuildStrategy
 import com.wuxianggujun.tinaide.core.compile.strategy.BuildStrategyRegistry
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * 决策中心:把 `CompileRequest` 翻译成具体的 [BuildPlan]。

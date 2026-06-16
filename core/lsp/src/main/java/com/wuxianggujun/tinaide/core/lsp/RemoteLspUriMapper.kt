@@ -1,9 +1,9 @@
 package com.wuxianggujun.tinaide.core.lsp
 
+import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
 import timber.log.Timber
-import java.io.File
 
 /**
  * 远程 LSP URI 映射器
@@ -40,13 +40,9 @@ class RemoteLspUriMapper {
 
     fun hasMapping(): Boolean = !clientRootUri.isNullOrBlank() && !serverRootUri.isNullOrBlank()
 
-    fun rewriteClientToServer(jsonText: String): String {
-        return rewrite(jsonText, Direction.CLIENT_TO_SERVER)
-    }
+    fun rewriteClientToServer(jsonText: String): String = rewrite(jsonText, Direction.CLIENT_TO_SERVER)
 
-    fun rewriteServerToClient(jsonText: String): String {
-        return rewrite(jsonText, Direction.SERVER_TO_CLIENT)
-    }
+    fun rewriteServerToClient(jsonText: String): String = rewrite(jsonText, Direction.SERVER_TO_CLIENT)
 
     private enum class Direction { CLIENT_TO_SERVER, SERVER_TO_CLIENT }
 
@@ -113,16 +109,18 @@ class RemoteLspUriMapper {
             Direction.CLIENT_TO_SERVER -> {
                 when {
                     normalizedUri == clientBase -> serverBase
-                    normalizedUri.startsWith(clientRootNormalized) -> serverBase + "/" +
-                        normalizedUri.removePrefix(clientRootNormalized).trimStart('/')
+                    normalizedUri.startsWith(clientRootNormalized) ->
+                        serverBase + "/" +
+                            normalizedUri.removePrefix(clientRootNormalized).trimStart('/')
                     else -> uri
                 }
             }
             Direction.SERVER_TO_CLIENT -> {
                 when {
                     normalizedUri == serverBase -> clientBase
-                    normalizedUri.startsWith(serverRootNormalized) -> clientBase + "/" +
-                        normalizedUri.removePrefix(serverRootNormalized).trimStart('/')
+                    normalizedUri.startsWith(serverRootNormalized) ->
+                        clientBase + "/" +
+                            normalizedUri.removePrefix(serverRootNormalized).trimStart('/')
                     else -> uri
                 }
             }

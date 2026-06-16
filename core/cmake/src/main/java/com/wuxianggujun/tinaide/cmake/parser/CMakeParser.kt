@@ -297,15 +297,11 @@ class CMakeParser(private val source: String) {
          * @param source CMake 源码字符串
          * @return 解析结果
          */
-        fun parse(source: String): Result<CMakeDocument> {
-            return CMakeParser(source).parse()
-        }
+        fun parse(source: String): Result<CMakeDocument> = CMakeParser(source).parse()
 
         /**
          * 解析并返回命令列表（便捷方法）
          */
-        fun parseCommands(source: String): Result<List<CommandInvocation>> {
-            return parse(source).map { it.commands() }
-        }
+        fun parseCommands(source: String): Result<List<CommandInvocation>> = parse(source).map { it.commands() }
     }
 }

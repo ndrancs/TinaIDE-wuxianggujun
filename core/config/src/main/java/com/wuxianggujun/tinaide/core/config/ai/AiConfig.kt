@@ -10,17 +10,15 @@ package com.wuxianggujun.tinaide.core.config.ai
  * - [thinking] 深度思考模式
  * - [network] 网络超时与重试
  *
- * 其余两项 [accessMode] 与 [activeChannelId] 是跨组决策字段,保留在聚合根。
+ * [activeChannelId] 是跨组决策字段,保留在聚合根。
  *
  * 历史字段 `provider` / `baseUrl` / `apiKey` 已被移除:
  * - BYOK 的真实端点 + 密钥来自 [activeChannelId] 指向的 `AiChannelConfig`
- * - Gateway 的端点由 `TinaServerConfig` 派生,apiKey 无意义
  *
- * 拆分让 `AiChatViewModel.buildApiClient` 可以只关心 [accessMode]/[activeChannelId] 变化,
+ * 拆分让 `AiChatViewModel.buildApiClient` 可以只关心 [activeChannelId] 变化,
  * 不必因为 Prompt 文本改动就重建 HTTP client (由 `distinctUntilChanged` 配合达成)。
  */
 data class AiConfig(
-    val accessMode: AiAccessMode = AiAccessMode.CUSTOM_BYOK,
     val activeChannelId: String? = null,
     val generation: AiGenerationSettings = AiGenerationSettings(),
     val prompt: AiPromptSettings = AiPromptSettings(),

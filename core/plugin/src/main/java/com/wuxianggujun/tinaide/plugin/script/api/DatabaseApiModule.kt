@@ -193,7 +193,6 @@ class DatabaseApiModule(private val context: Context) : PluginApiModule {
             1
         }
         lua.setField(-2, "tableExists")
-
     }
 
     override fun unregister() {
@@ -223,12 +222,10 @@ class DatabaseApiModule(private val context: Context) : PluginApiModule {
         dbHelper = null
     }
 
-    private fun getAffectedRows(db: SQLiteDatabase): Long {
-        return try {
-            db.compileStatement("SELECT changes()").use { it.simpleQueryForLong() }
-        } catch (e: Exception) {
-            0L
-        }
+    private fun getAffectedRows(db: SQLiteDatabase): Long = try {
+        db.compileStatement("SELECT changes()").use { it.simpleQueryForLong() }
+    } catch (e: Exception) {
+        0L
     }
 
     private fun extractParams(L: Lua, index: Int): List<Any> {
@@ -250,9 +247,7 @@ class DatabaseApiModule(private val context: Context) : PluginApiModule {
         return params
     }
 
-    private fun extractStringParams(L: Lua, index: Int): List<String> {
-        return extractParams(L, index).map { it.toString() }
-    }
+    private fun extractStringParams(L: Lua, index: Int): List<String> = extractParams(L, index).map { it.toString() }
 
     private fun pushResultsToLua(L: Lua, results: List<Map<String, Any?>>) {
         L.createTable(results.size, 0)
@@ -298,9 +293,7 @@ class DatabaseApiModule(private val context: Context) : PluginApiModule {
             /**
              * 清理插件 ID，确保可以作为文件名使用
              */
-            private fun sanitizePluginId(pluginId: String): String {
-                return pluginId.replace(Regex("[^a-zA-Z0-9_-]"), "_")
-            }
+            private fun sanitizePluginId(pluginId: String): String = pluginId.replace(Regex("[^a-zA-Z0-9_-]"), "_")
         }
     }
 }

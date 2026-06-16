@@ -65,6 +65,10 @@ class FileSystemToolsTest {
     fun `write and list files forward request options`(): Unit = runBlocking {
         val callbacks = RecordingFileSystemCallbacks()
 
+        assertThat(ReadFileTool.isDangerous).isFalse()
+        assertThat(WriteFileTool.isDangerous).isTrue()
+        assertThat(ListFilesTool.isDangerous).isFalse()
+
         val writeResult = WriteFileTool.execute(
             toolCall(WriteFileTool.name, """{"path":"src/main.cpp","content":"hello","create_dirs":false}"""),
             fileSystemContext(callbacks)
@@ -113,6 +117,10 @@ class FileSystemToolsTest {
         )
 
         assertThat(DeleteFileTool.isDangerous).isTrue()
+        assertThat(CreateDirectoryTool.isDangerous).isTrue()
+        assertThat(MoveFileTool.isDangerous).isTrue()
+        assertThat(CopyFileTool.isDangerous).isTrue()
+        assertThat(GetFileInfoTool.isDangerous).isFalse()
         assertThat(callbacks.lastDeleteFileRequest).isEqualTo(DeleteFileRequest("build/tmp", recursive = true))
         assertThat(callbacks.lastCreateDirectoryRequest).isEqualTo(CreateDirectoryRequest("src/generated", createParents = false))
         assertThat(callbacks.lastMoveFileRequest).isEqualTo(MoveFileRequest("a.cpp", "b.cpp", overwrite = true))
@@ -154,6 +162,9 @@ class FileSystemToolsTest {
         assertThat(callbacks.lastDeleteLinesRequest).isEqualTo(
             DeleteLinesRequest(path = "a.cpp", startLine = 8, endLine = 10)
         )
+        assertThat(ReplaceTextTool.isDangerous).isTrue()
+        assertThat(ReplaceLineTool.isDangerous).isTrue()
+        assertThat(InsertLineTool.isDangerous).isTrue()
         assertThat(DeleteLinesTool.isDangerous).isTrue()
     }
 

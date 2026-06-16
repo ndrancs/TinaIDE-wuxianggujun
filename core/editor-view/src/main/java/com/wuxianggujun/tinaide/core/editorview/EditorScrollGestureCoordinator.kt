@@ -183,7 +183,7 @@ internal class EditorScrollGestureCoordinator(
                 pointerCount = pointerCount,
                 samples = pressedChanges.map { change ->
                     TransformPointerSample(
-                        previousPressed = true,  // 当前按下的手指都视为稳定，避免新手指第一帧导致焦点计算失败
+                        previousPressed = true, // 当前按下的手指都视为稳定，避免新手指第一帧导致焦点计算失败
                         previousPosition = if (change.previousPressed) change.previousPosition else change.position
                     )
                 }

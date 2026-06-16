@@ -81,12 +81,15 @@ class TreeSitterFoldingProvider private constructor(
                     val lines = regions.joinToString { "${it.startLine}→${it.endLine}" }
                     Timber.tag("TreeSitter").d(
                         "Fold regions: raw=%d, foldable=%d, lines=[%s]",
-                        startToEndLine.size, regions.size, lines
+                        startToEndLine.size,
+                        regions.size,
+                        lines
                     )
                 } else {
                     Timber.tag("TreeSitter").d(
                         "Fold regions: raw=%d, foldable=%d (too many to list)",
-                        startToEndLine.size, regions.size
+                        startToEndLine.size,
+                        regions.size
                     )
                 }
 

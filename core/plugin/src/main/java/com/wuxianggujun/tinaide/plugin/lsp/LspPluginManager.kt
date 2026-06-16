@@ -13,8 +13,9 @@ import com.wuxianggujun.tinaide.plugin.InstalledPlugin
 import com.wuxianggujun.tinaide.plugin.PluginLogLevel
 import com.wuxianggujun.tinaide.plugin.PluginLogManager
 import com.wuxianggujun.tinaide.plugin.PluginManager
-import kotlinx.coroutines.CoroutineScope
+import java.io.File
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -23,7 +24,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
 
 /**
  * LSP 插件管理器
@@ -163,17 +163,12 @@ class LspPluginManager(
     /**
      * 获取所有已启用的 LSP 插件
      */
-    fun getEnabledLspPlugins(): List<LspPluginInfo> {
-        return _lspPluginsFlow.value
-    }
+    fun getEnabledLspPlugins(): List<LspPluginInfo> = _lspPluginsFlow.value
 
     /**
      * 获取插件的安装状态
      */
-    fun getInstallState(pluginId: String): LspPluginInstallState? {
-        return _installStatesFlow.value[pluginId]
-    }
-
+    fun getInstallState(pluginId: String): LspPluginInstallState? = _installStatesFlow.value[pluginId]
 
     /**
      * 检查 LSP 工具链安装所需的 Linux 环境。
@@ -254,11 +249,13 @@ class LspPluginManager(
                 eventCode = "lsp.toolchain.installing",
             )
 
-            progress(LspInstallProgress(
-                phase = Strings.lsp_toolchain_phase_installing_toolchain.strOr(context, toolchain.name),
-                progress = index.toFloat() / toolchains.size,
-                toolchainId = toolchain.id
-            ))
+            progress(
+                LspInstallProgress(
+                    phase = Strings.lsp_toolchain_phase_installing_toolchain.strOr(context, toolchain.name),
+                    progress = index.toFloat() / toolchains.size,
+                    toolchainId = toolchain.id
+                )
+            )
 
             val result = toolchainInstaller.install(toolchain) { innerProgress ->
                 // 转发内部进度
@@ -306,10 +303,12 @@ class LspPluginManager(
         }
 
         updateInstallState(pluginId) { it.copy(serverReady = true, lastError = null) }
-        progress(LspInstallProgress(
-            phase = Strings.lsp_toolchain_phase_all_installed.strOr(context),
-            progress = 1.0f
-        ))
+        progress(
+            LspInstallProgress(
+                phase = Strings.lsp_toolchain_phase_all_installed.strOr(context),
+                progress = 1.0f
+            )
+        )
         logToolchainInstallEvent(
             plugin = plugin,
             level = PluginLogLevel.INFO,
@@ -342,9 +341,7 @@ class LspPluginManager(
      * 如果工具链是在应用外部安装的，可能不准确。
      * 对于精确检查，请使用 suspend 版本的 isPluginReady()。
      */
-    fun isPluginReadySync(pluginId: String): Boolean {
-        return inspectPluginReadiness(pluginId).ready
-    }
+    fun isPluginReadySync(pluginId: String): Boolean = inspectPluginReadiness(pluginId).ready
 
     /**
      * 同步返回插件启动前诊断，供编辑器启动链路写日志和设置页展示。
@@ -426,12 +423,10 @@ class LspPluginManager(
         config: LspServerConfig,
         fileName: String,
         extension: String
-    ): Boolean {
-        return config.filePatterns?.any { pattern ->
-            matchGlobPattern(pattern, fileName) ||
-                (extension.isNotBlank() && matchGlobPattern(pattern, ".$extension"))
-        } == true
-    }
+    ): Boolean = config.filePatterns?.any { pattern ->
+        matchGlobPattern(pattern, fileName) ||
+            (extension.isNotBlank() && matchGlobPattern(pattern, ".$extension"))
+    } == true
 
     private fun parseLspPluginInfo(plugin: InstalledPlugin): LspPluginInfo? {
         val contributions = plugin.manifest.contributions ?: return null

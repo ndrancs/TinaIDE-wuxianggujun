@@ -239,4 +239,4 @@
 - [设置总览](settings-overview.md)
 - [Git 基础](git-basics.md)
 - [终端使用](terminal-usage.md)
-- [常见问题](faq.md)
+- [已知问题](known-issues.md)

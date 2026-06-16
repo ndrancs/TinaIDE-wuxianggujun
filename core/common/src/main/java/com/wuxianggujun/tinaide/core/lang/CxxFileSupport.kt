@@ -48,12 +48,9 @@ object CxxFileSupport {
 
     fun isCxxSourceExtension(ext: String): Boolean = ext.lowercase() in cxxSourceExtensions
 
-    fun isSingleFileBuildSourceExtension(ext: String): Boolean =
-        ext.lowercase() in singleFileBuildSourceExtensions
+    fun isSingleFileBuildSourceExtension(ext: String): Boolean = ext.lowercase() in singleFileBuildSourceExtensions
 
-    fun isClangdTranslationUnitExtension(ext: String): Boolean =
-        ext.lowercase() in clangdTranslationUnitExtensions
+    fun isClangdTranslationUnitExtension(ext: String): Boolean = ext.lowercase() in clangdTranslationUnitExtensions
 
     fun isClangdSupportedExtension(ext: String): Boolean = ext.lowercase() in clangdSupportedExtensions
 }
-

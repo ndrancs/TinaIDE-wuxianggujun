@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.str
 import com.wuxianggujun.tinaide.core.network.ApiResult
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -34,6 +36,9 @@ class PluginMarketplaceViewModel(application: Application) : AndroidViewModel(ap
 
     private val _uiState = MutableStateFlow(PluginMarketplaceUiState())
     val uiState: StateFlow<PluginMarketplaceUiState> = _uiState.asStateFlow()
+
+    // 进行中的下载/安装任务：用于支持用户主动取消（取消协程会触发 OkHttp Call.cancel 立即断开连接）。
+    private val downloadJobs = mutableMapOf<String, Job>()
 
     init {
         observeInstalledPlugins()
@@ -81,10 +86,10 @@ class PluginMarketplaceViewModel(application: Application) : AndroidViewModel(ap
                     _uiState.update {
                         PluginMarketplaceSelectionSupport.applyInstallState(
                             state = it.copy(
-                            isLoading = false,
-                            plugins = newPlugins,
-                            currentPage = data.pagination.page,
-                            hasMorePages = data.pagination.page < data.pagination.totalPages,
+                                isLoading = false,
+                                plugins = newPlugins,
+                                currentPage = data.pagination.page,
+                                hasMorePages = data.pagination.page < data.pagination.totalPages,
                             ),
                             installedPlugins = installState.installedPlugins,
                             updatablePlugins = installState.updatablePlugins,
@@ -128,10 +133,10 @@ class PluginMarketplaceViewModel(application: Application) : AndroidViewModel(ap
                     _uiState.update {
                         PluginMarketplaceSelectionSupport.applyInstallState(
                             state = it.copy(
-                            isLoadingMore = false,
-                            plugins = newPlugins,
-                            currentPage = data.pagination.page,
-                            hasMorePages = data.pagination.page < data.pagination.totalPages,
+                                isLoadingMore = false,
+                                plugins = newPlugins,
+                                currentPage = data.pagination.page,
+                                hasMorePages = data.pagination.page < data.pagination.totalPages,
                             ),
                             installedPlugins = installState.installedPlugins,
                             updatablePlugins = installState.updatablePlugins,
@@ -178,34 +183,44 @@ class PluginMarketplaceViewModel(application: Application) : AndroidViewModel(ap
     }
 
     fun installPlugin(plugin: PluginSummary) {
-        if (_uiState.value.downloadingPlugins.containsKey(plugin.pluginId)) return
+        val pluginId = plugin.pluginId
+        if (_uiState.value.downloadingPlugins.containsKey(pluginId)) return
+        if (downloadJobs.containsKey(pluginId)) return
 
-        viewModelScope.launch {
+        val job = viewModelScope.launch {
             _uiState.update {
-                it.copy(downloadingPlugins = it.downloadingPlugins + (plugin.pluginId to 0f))
+                it.copy(downloadingPlugins = it.downloadingPlugins + (pluginId to 0f))
             }
 
-            val result = repository.downloadAndInstallPlugin(
-                pluginId = plugin.pluginId,
-                version = plugin.latestVersion,
-                onProgress = { downloaded, total ->
-                    val progress = if (total > 0) downloaded.toFloat() / total else 0f
-                    _uiState.update {
-                        it.copy(
-                            downloadingPlugins = it.downloadingPlugins + (plugin.pluginId to progress)
-                        )
+            val result = try {
+                repository.downloadAndInstallPlugin(
+                    pluginId = pluginId,
+                    version = plugin.latestVersion,
+                    onProgress = { downloaded, total ->
+                        val progress = if (total > 0) downloaded.toFloat() / total else 0f
+                        _uiState.update {
+                            it.copy(
+                                downloadingPlugins = it.downloadingPlugins + (pluginId to progress)
+                            )
+                        }
                     }
+                )
+            } catch (e: CancellationException) {
+                // 用户主动取消：仅清除进行中状态，不弹失败提示，可重新点击下载。
+                _uiState.update {
+                    it.copy(downloadingPlugins = it.downloadingPlugins - pluginId)
                 }
-            )
+                throw e
+            }
 
             _uiState.update {
-                val newDownloading = it.downloadingPlugins - plugin.pluginId
+                val newDownloading = it.downloadingPlugins - pluginId
                 val newInstalled = if (result.isSuccess) {
-                    it.installedPlugins + plugin.pluginId
+                    it.installedPlugins + pluginId
                 } else {
                     it.installedPlugins
                 }
-                val newUpdatable = it.updatablePlugins - plugin.pluginId
+                val newUpdatable = it.updatablePlugins - pluginId
                 val throwable = result.exceptionOrNull()
                 val errorMessage = if (throwable != null) {
                     val reason = throwable.message?.trim()?.takeIf { msg -> msg.isNotBlank() }
@@ -227,6 +242,19 @@ class PluginMarketplaceViewModel(application: Application) : AndroidViewModel(ap
             if (result.isSuccess) {
                 loadPlugins()
             }
+        }
+        downloadJobs[pluginId] = job
+        job.invokeOnCompletion { downloadJobs.remove(pluginId) }
+    }
+
+    /**
+     * 取消进行中的插件下载/安装。取消协程会触发 OkHttp `Call.cancel()` 立即断开网络连接，
+     * 用户可在网络恢复后重新点击下载。
+     */
+    fun cancelInstall(pluginId: String) {
+        downloadJobs.remove(pluginId)?.cancel(CancellationException("Plugin download cancelled by user"))
+        _uiState.update {
+            it.copy(downloadingPlugins = it.downloadingPlugins - pluginId)
         }
     }
 

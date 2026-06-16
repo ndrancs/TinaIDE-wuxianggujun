@@ -2,7 +2,6 @@ package com.wuxianggujun.tinaide.core.proot
 
 import android.content.Context
 import com.wuxianggujun.tinaide.storage.ProjectPaths
-import timber.log.Timber
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileOutputStream
@@ -10,6 +9,7 @@ import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import timber.log.Timber
 
 internal class PRootSessionLogger private constructor(
     val sessionFile: File,
@@ -29,30 +29,28 @@ internal class PRootSessionLogger private constructor(
         fun create(
             context: Context,
             prefix: String = "session",
-        ): PRootSessionLogger? {
-            return try {
-                val logDir = ProjectPaths.ensureDir(ProjectPaths.getPRootLogsRoot(context))
-                cleanupOldLogs(logDir)
+        ): PRootSessionLogger? = try {
+            val logDir = ProjectPaths.ensureDir(ProjectPaths.getPRootLogsRoot(context))
+            cleanupOldLogs(logDir)
 
-                val now = Date()
-                val sessionName = "${prefix}_${sessionFileTimestampFormat.format(now)}.log"
-                val errorName = "error_${errorFileDateFormat.format(now)}.log"
+            val now = Date()
+            val sessionName = "${prefix}_${sessionFileTimestampFormat.format(now)}.log"
+            val errorName = "error_${errorFileDateFormat.format(now)}.log"
 
-                val sessionFile = File(logDir, sessionName)
-                val errorFile = File(logDir, errorName)
+            val sessionFile = File(logDir, sessionName)
+            val errorFile = File(logDir, errorName)
 
-                val writer = BufferedWriter(
-                    OutputStreamWriter(
-                        FileOutputStream(sessionFile, true),
-                        Charsets.UTF_8
-                    )
+            val writer = BufferedWriter(
+                OutputStreamWriter(
+                    FileOutputStream(sessionFile, true),
+                    Charsets.UTF_8
                 )
+            )
 
-                PRootSessionLogger(sessionFile, errorFile, writer)
-            } catch (e: Exception) {
-                Timber.tag(TAG).w(e, "Failed to create session log")
-                null
-            }
+            PRootSessionLogger(sessionFile, errorFile, writer)
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "Failed to create session log")
+            null
         }
 
         private fun cleanupOldLogs(logDir: File) {

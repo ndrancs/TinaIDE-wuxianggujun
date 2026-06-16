@@ -121,4 +121,4 @@ clangd 想正确理解工程，必须知道真实编译参数。
 - 阅读 [LSP 设置说明](lsp-settings.md)
 - 阅读 [代码补全](code-completion.md)
 - 阅读 [远程 LSP 指南](remote-lsp-guide.md)
-- 阅读 [常见问题](faq.md)
+- 阅读 [已知问题](known-issues.md)

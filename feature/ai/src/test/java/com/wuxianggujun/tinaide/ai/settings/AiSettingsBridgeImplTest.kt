@@ -11,9 +11,9 @@ import com.wuxianggujun.tinaide.ai.tools.ToolCategory
 import com.wuxianggujun.tinaide.ai.tools.ToolExecutionContext
 import com.wuxianggujun.tinaide.ai.tools.ToolExecutionResult
 import com.wuxianggujun.tinaide.ai.tools.ToolRegistry
-import com.wuxianggujun.tinaide.core.config.ai.AiAccessMode
 import com.wuxianggujun.tinaide.core.config.ai.AiChannelConfig
 import com.wuxianggujun.tinaide.core.config.ai.AiConfig
+import com.wuxianggujun.tinaide.core.config.ai.AiGenerationSettings
 import com.wuxianggujun.tinaide.core.config.ai.AiModelLoadResult
 import com.wuxianggujun.tinaide.core.config.ai.AiProvider
 import com.wuxianggujun.tinaide.core.network.ApiResult
@@ -76,18 +76,9 @@ class AiSettingsBridgeImplTest {
     }
 
     @Test
-    fun `gateway mode is unavailable in open source build`() = runTest {
-        val result = bridge.loadModels(
-            config = AiConfig(accessMode = AiAccessMode.TINA_GATEWAY),
-        )
-
-        assertThat(result).isEqualTo(AiModelLoadResult.ConfigurationRequired)
-    }
-
-    @Test
     fun `loadModels returns configuration required when byok channel id is missing`() = runTest {
         val result = bridge.loadModels(
-            config = AiConfig(accessMode = AiAccessMode.CUSTOM_BYOK),
+            config = AiConfig(),
         )
 
         assertThat(result).isEqualTo(AiModelLoadResult.ConfigurationRequired)
@@ -101,7 +92,6 @@ class AiSettingsBridgeImplTest {
 
         val result = bridge.loadModels(
             config = AiConfig(
-                accessMode = AiAccessMode.CUSTOM_BYOK,
                 activeChannelId = "missing",
             ),
         )
@@ -121,7 +111,7 @@ class AiSettingsBridgeImplTest {
         bridge = newBridge(
             apiClientFactory = { config, endpoint, auth ->
                 factoryCalls += 1
-                assertThat(config.generation.model).isEqualTo("deepseek-chat")
+                assertThat(config.generation.model).isEqualTo("assistant-selected-model")
                 assertThat(endpoint).isEqualTo("https://models.test/v1")
                 assertThat(auth).isEqualTo(AuthStrategy.Bearer("secret"))
                 client
@@ -134,8 +124,8 @@ class AiSettingsBridgeImplTest {
         coEvery { channelRepository.getApiKey("channel-1") } returns "secret"
 
         val config = AiConfig(
-            accessMode = AiAccessMode.CUSTOM_BYOK,
             activeChannelId = "channel-1",
+            generation = AiGenerationSettings(model = "assistant-selected-model"),
         )
 
         val first = bridge.loadModels(config = config)
@@ -160,7 +150,6 @@ class AiSettingsBridgeImplTest {
 
         val result = bridge.loadModels(
             config = AiConfig(
-                accessMode = AiAccessMode.CUSTOM_BYOK,
                 activeChannelId = "channel-1",
             ),
         )

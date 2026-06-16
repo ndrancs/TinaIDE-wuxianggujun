@@ -3,6 +3,7 @@ package com.wuxianggujun.tinaide.plugin
 import com.wuxianggujun.tinaide.core.ServiceLifecycle
 import com.wuxianggujun.tinaide.core.common.snippet.expandSnippetToPlainText
 import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -10,7 +11,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.io.File
 import timber.log.Timber
 
 /**
@@ -28,7 +28,7 @@ class PluginSnippetManager(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val _snippetsByLanguage = MutableStateFlow<Map<String, List<SnippetEntry>>>(emptyMap())
+    private val snippetsByLanguage = MutableStateFlow<Map<String, List<SnippetEntry>>>(emptyMap())
 
     override fun onCreate() {
         Timber.tag(TAG).i(
@@ -54,7 +54,7 @@ class PluginSnippetManager(
         if (prefix.isBlank()) return emptyList()
 
         val prefixLower = prefix.lowercase()
-        val snippets = _snippetsByLanguage.value[normalizeLanguageId(languageId)].orEmpty()
+        val snippets = snippetsByLanguage.value[normalizeLanguageId(languageId)].orEmpty()
 
         return buildList(minOf(maxItems, snippets.size)) {
             for (snippet in snippets) {
@@ -115,7 +115,7 @@ class PluginSnippetManager(
             }
         }
 
-        _snippetsByLanguage.value = byLanguage.mapValues { (_, v) ->
+        snippetsByLanguage.value = byLanguage.mapValues { (_, v) ->
             v.distinctBy { "${it.pluginId}#${it.language}#${it.prefix}#${it.name}" }
                 .sortedWith(compareBy<SnippetEntry> { it.prefix }.thenBy { it.name }.thenBy { it.pluginId })
         }

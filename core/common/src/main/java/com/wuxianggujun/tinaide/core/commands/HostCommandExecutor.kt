@@ -18,4 +18,3 @@ data class HostCommandInvocation(
     val isDirectory: Boolean? = null,
     val isDirty: Boolean? = null
 )
-

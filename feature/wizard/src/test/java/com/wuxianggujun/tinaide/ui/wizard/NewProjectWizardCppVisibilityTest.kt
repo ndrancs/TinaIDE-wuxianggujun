@@ -20,17 +20,15 @@ class NewProjectWizardCppVisibilityTest {
         assertThat(NewProjectWizardSupport.shouldShowCppStandard(template(ProjectLanguage.MIXED))).isFalse()
     }
 
-    private fun template(language: ProjectLanguage): ProjectTemplateOption {
-        return ProjectTemplateOption(
-            id = "template-${language.name.lowercase()}",
-            displayName = language.name,
-            description = language.name,
-            spec = ProjectTemplateSpec.Zip(
-                id = "spec-${language.name.lowercase()}",
-                zipFile = File("${language.name.lowercase()}.zip"),
-                buildSystem = ProjectBuildSystem.CMAKE,
-                primaryLanguage = language,
-            ),
-        )
-    }
+    private fun template(language: ProjectLanguage): ProjectTemplateOption = ProjectTemplateOption(
+        id = "template-${language.name.lowercase()}",
+        displayName = language.name,
+        description = language.name,
+        spec = ProjectTemplateSpec.Zip(
+            id = "spec-${language.name.lowercase()}",
+            zipFile = File("${language.name.lowercase()}.zip"),
+            buildSystem = ProjectBuildSystem.CMAKE,
+            primaryLanguage = language,
+        ),
+    )
 }

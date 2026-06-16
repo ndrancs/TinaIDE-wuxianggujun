@@ -45,15 +45,15 @@ import com.wuxianggujun.tinaide.core.help.HelpDocument
 import com.wuxianggujun.tinaide.core.help.HelpQuickAction
 import com.wuxianggujun.tinaide.core.help.HelpQuickActionSupport
 import com.wuxianggujun.tinaide.core.help.HelpSearchResult
-import com.wuxianggujun.tinaide.ui.compose.components.MarkdownViewer
-import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
-import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
-import com.wuxianggujun.tinaide.ui.compose.components.TinaSpacing
-import com.wuxianggujun.tinaide.ui.compose.components.TinaSearchField
-import com.wuxianggujun.tinaide.ui.compose.components.tinaBackAction
-import com.wuxianggujun.tinaide.ui.compose.icons.rememberTinaPainter
 import com.wuxianggujun.tinaide.core.i18n.Drawables
 import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.ui.compose.components.MarkdownViewer
+import com.wuxianggujun.tinaide.ui.compose.components.TinaBackHandlers
+import com.wuxianggujun.tinaide.ui.compose.components.TinaSearchField
+import com.wuxianggujun.tinaide.ui.compose.components.TinaSpacing
+import com.wuxianggujun.tinaide.ui.compose.components.TinaTopBar
+import com.wuxianggujun.tinaide.ui.compose.components.tinaBackAction
+import com.wuxianggujun.tinaide.ui.compose.icons.rememberTinaPainter
 
 /**
  * 帮助中心主屏幕
@@ -542,4 +542,3 @@ private fun HelpDocumentQuickActions(
         }
     }
 }
-

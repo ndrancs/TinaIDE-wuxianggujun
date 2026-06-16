@@ -5,6 +5,7 @@ import java.io.File
 import java.security.MessageDigest
 import kotlin.io.path.createTempDirectory
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class LinuxDistroInstallerTest {
@@ -32,11 +33,11 @@ class LinuxDistroInstallerTest {
         val catalog = ManifestLinuxDistroCatalog(manifest)
 
         val aarch64 = catalog.listInstallableDefaultArtifacts(DistroArchitecture.AARCH64)
-        val x86_64 = catalog.listInstallableDefaultArtifacts(DistroArchitecture.X86_64)
+        val x86Artifacts = catalog.listInstallableDefaultArtifacts(DistroArchitecture.X86_64)
 
         assertThat(aarch64.map { it.distro.id }).containsExactly("alpine")
         assertThat(aarch64.single().artifact.architecture).isEqualTo(DistroArchitecture.AARCH64)
-        assertThat(x86_64).isEmpty()
+        assertThat(x86Artifacts).isEmpty()
     }
 
     @Test
@@ -276,6 +277,111 @@ class LinuxDistroInstallerTest {
         assertThat(registry.list()).isEmpty()
     }
 
+    @Test
+    fun installer_shouldFallBackToMirrorWhenPrimaryUrlFails() = runBlocking {
+        val tempDir = createTempDirectory("linux-distro-mirror-fallback").toFile()
+        val archiveContent = "fake archive"
+        val checksum = sha256(archiveContent)
+        val manifest = LinuxDistroManifestParser.decode(sampleMirrorManifest(checksum))
+        val catalog = ManifestLinuxDistroCatalog(manifest)
+        val attemptedUrls = mutableListOf<String>()
+
+        val installer = LinuxDistroInstaller(
+            catalog = catalog,
+            downloader = object : LinuxDistroDownloader {
+                override suspend fun download(
+                    request: DistroDownloadRequest,
+                    progress: (DistroDownloadProgress) -> Unit,
+                ): File {
+                    attemptedUrls += request.url
+                    // 官方源失败，镜像源成功。
+                    if (request.url.startsWith("https://dl-cdn.alpinelinux.org/")) {
+                        error("HTTP 404")
+                    }
+                    request.targetFile.writeText(archiveContent)
+                    progress(DistroDownloadProgress(archiveContent.length.toLong(), archiveContent.length.toLong()))
+                    return request.targetFile
+                }
+            },
+            archiveExtractor = fakeExtractor(),
+            clock = { 1_800_000_000_000L },
+        )
+
+        val result = installer.install(
+            request = LinuxDistroInstallRequest(
+                distroId = "alpine",
+                releaseId = "3.20",
+                architecture = DistroArchitecture.AARCH64,
+                layout = LinuxDistroInstallLayout(runtimeDir = tempDir),
+            ),
+        )
+
+        assertThat(result.installed).isTrue()
+        // 先试官方，再切镜像。
+        assertThat(attemptedUrls).containsExactly(
+            "https://dl-cdn.alpinelinux.org/alpine/v3.23/alpine-rootfs.tar.gz",
+            "https://mirrors.tuna.tsinghua.edu.cn/alpine/v3.23/alpine-rootfs.tar.gz",
+        ).inOrder()
+    }
+
+    @Test
+    fun installer_shouldNotTryMirrorsWhenCancelled() {
+        val tempDir = createTempDirectory("linux-distro-cancel").toFile()
+        val manifest = LinuxDistroManifestParser.decode(sampleMirrorManifest("0".repeat(64)))
+        val catalog = ManifestLinuxDistroCatalog(manifest)
+        val attemptedUrls = mutableListOf<String>()
+
+        val installer = LinuxDistroInstaller(
+            catalog = catalog,
+            downloader = object : LinuxDistroDownloader {
+                override suspend fun download(
+                    request: DistroDownloadRequest,
+                    progress: (DistroDownloadProgress) -> Unit,
+                ): File {
+                    attemptedUrls += request.url
+                    throw kotlinx.coroutines.CancellationException("user cancelled")
+                }
+            },
+            archiveExtractor = fakeExtractor(),
+            clock = { 1_800_000_000_000L },
+        )
+
+        assertThrows(kotlinx.coroutines.CancellationException::class.java) {
+            runBlocking {
+                installer.install(
+                    request = LinuxDistroInstallRequest(
+                        distroId = "alpine",
+                        releaseId = "3.20",
+                        architecture = DistroArchitecture.AARCH64,
+                        layout = LinuxDistroInstallLayout(runtimeDir = tempDir),
+                    ),
+                )
+            }
+        }
+
+        // 取消时只试了官方源，没有继续切镜像。
+        assertThat(attemptedUrls).containsExactly(
+            "https://dl-cdn.alpinelinux.org/alpine/v3.23/alpine-rootfs.tar.gz",
+        )
+    }
+
+    private fun fakeExtractor(): LinuxDistroArchiveExtractor = object : LinuxDistroArchiveExtractor {
+        override fun extract(
+            archiveFile: File,
+            targetDir: File,
+            format: DistroArchiveFormat,
+            ensureActive: () -> Unit,
+            progress: (Float) -> Unit,
+        ) {
+            ensureActive()
+            File(targetDir, "bin/sh").apply {
+                parentFile?.mkdirs()
+                writeText("#!/bin/sh\n")
+            }
+            progress(1f)
+        }
+    }
+
     private fun fakeInstaller(
         catalog: LinuxDistroCatalog,
         archiveContent: String,
@@ -316,19 +422,17 @@ class LinuxDistroInstallerTest {
         )
     }
 
-    private fun installedLinuxDistro(tempDir: File): InstalledLinuxDistro {
-        return InstalledLinuxDistro(
-            distroId = "alpine",
-            releaseId = "3.20",
-            architecture = DistroArchitecture.AARCH64,
-            displayName = "Alpine Linux",
-            packageManager = DistroPackageManager.APK,
-            rootfsPath = File(tempDir, "rootfs").absolutePath,
-            archivePath = File(tempDir, "alpine.tar.gz").absolutePath,
-            checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "0".repeat(64)),
-            installedAtEpochMillis = 1_800_000_000_000L,
-        )
-    }
+    private fun installedLinuxDistro(tempDir: File): InstalledLinuxDistro = InstalledLinuxDistro(
+        distroId = "alpine",
+        releaseId = "3.20",
+        architecture = DistroArchitecture.AARCH64,
+        displayName = "Alpine Linux",
+        packageManager = DistroPackageManager.APK,
+        rootfsPath = File(tempDir, "rootfs").absolutePath,
+        archivePath = File(tempDir, "alpine.tar.gz").absolutePath,
+        checksum = DistroChecksum(DistroChecksumAlgorithm.SHA256, "0".repeat(64)),
+        installedAtEpochMillis = 1_800_000_000_000L,
+    )
 
     private fun sampleManifest(checksum: String): String = """
         {
@@ -351,6 +455,47 @@ class LinuxDistroInstallerTest {
                     {
                       "architecture": "AARCH64",
                       "url": "https://example.invalid/alpine-rootfs.tar.gz",
+                      "format": "TAR_GZ",
+                      "checksum": {
+                        "algorithm": "SHA256",
+                        "value": "$checksum"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+    """.trimIndent()
+
+    private fun sampleMirrorManifest(checksum: String): String = """
+        {
+          "schemaVersion": 1,
+          "generatedAt": "2026-04-28T00:00:00Z",
+          "mirrors": [
+            {
+              "matchPrefix": "https://dl-cdn.alpinelinux.org/",
+              "replaceWith": "https://mirrors.tuna.tsinghua.edu.cn/"
+            }
+          ],
+          "distros": [
+            {
+              "id": "alpine",
+              "family": "ALPINE",
+              "displayName": "Alpine Linux",
+              "packageManager": "APK",
+              "defaultReleaseId": "3.20",
+              "releases": [
+                {
+                  "id": "3.20",
+                  "version": "3.20",
+                  "displayName": "Alpine 3.20",
+                  "channel": "stable",
+                  "artifacts": [
+                    {
+                      "architecture": "AARCH64",
+                      "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/alpine-rootfs.tar.gz",
                       "format": "TAR_GZ",
                       "checksum": {
                         "algorithm": "SHA256",
@@ -401,9 +546,7 @@ class LinuxDistroInstallerTest {
           ]
         }
     """.trimIndent()
-    private fun sha256(content: String): String {
-        return MessageDigest.getInstance("SHA-256")
-            .digest(content.toByteArray(Charsets.UTF_8))
-            .joinToString(separator = "") { byte -> "%02x".format(byte) }
-    }
+    private fun sha256(content: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(content.toByteArray(Charsets.UTF_8))
+        .joinToString(separator = "") { byte -> "%02x".format(byte) }
 }

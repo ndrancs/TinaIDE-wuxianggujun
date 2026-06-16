@@ -21,5 +21,4 @@ class ProjectListModelsTest {
         assertThat(ProjectTag.fromLanguage(ProjectLanguage.UNKNOWN)).isNull()
         assertThat(ProjectTag.fromLanguage(ProjectLanguage.MIXED)).isNull()
     }
-
 }

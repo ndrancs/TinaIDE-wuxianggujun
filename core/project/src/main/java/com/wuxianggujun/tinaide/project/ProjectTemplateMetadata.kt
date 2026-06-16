@@ -19,15 +19,13 @@ data class ProjectTemplateMetadata(
     val isNdkTemplate: Boolean? = null,
     val variables: Map<String, String> = emptyMap(),
 ) {
-    internal fun hasAnyField(): Boolean {
-        return name != null ||
-            description != null ||
-            author != null ||
-            buildSystem != null ||
-            primaryLanguage != null ||
-            isNdkTemplate != null ||
-            variables.isNotEmpty()
-    }
+    internal fun hasAnyField(): Boolean = name != null ||
+        description != null ||
+        author != null ||
+        buildSystem != null ||
+        primaryLanguage != null ||
+        isNdkTemplate != null ||
+        variables.isNotEmpty()
 }
 
 object ProjectTemplateMetadataReader {
@@ -50,12 +48,10 @@ object ProjectTemplateMetadataReader {
         }.getOrNull()
     }
 
-    fun isMetadataEntry(entryName: String): Boolean {
-        return entryName
-            .replace('\\', '/')
-            .trimStart('/')
-            .equals(METADATA_FILE_NAME, ignoreCase = true)
-    }
+    fun isMetadataEntry(entryName: String): Boolean = entryName
+        .replace('\\', '/')
+        .trimStart('/')
+        .equals(METADATA_FILE_NAME, ignoreCase = true)
 
     private fun parse(content: String): ProjectTemplateMetadata? {
         val root = json.parseToJsonElement(content).jsonObject
@@ -85,17 +81,13 @@ object ProjectTemplateMetadataReader {
         return String(buffer, 0, totalBytesRead, Charsets.UTF_8)
     }
 
-    private fun JsonObject.firstString(vararg keys: String): String? {
-        return keys.asSequence()
-            .mapNotNull { key -> this[key]?.jsonPrimitive?.contentOrNull?.trim() }
-            .firstOrNull { it.isNotBlank() }
-    }
+    private fun JsonObject.firstString(vararg keys: String): String? = keys.asSequence()
+        .mapNotNull { key -> this[key]?.jsonPrimitive?.contentOrNull?.trim() }
+        .firstOrNull { it.isNotBlank() }
 
-    private fun JsonObject.firstBoolean(vararg keys: String): Boolean? {
-        return keys.asSequence()
-            .mapNotNull { key -> this[key]?.jsonPrimitive?.booleanOrNull }
-            .firstOrNull()
-    }
+    private fun JsonObject.firstBoolean(vararg keys: String): Boolean? = keys.asSequence()
+        .mapNotNull { key -> this[key]?.jsonPrimitive?.booleanOrNull }
+        .firstOrNull()
 
     private fun JsonObject.stringMap(key: String): Map<String, String> {
         val content = runCatching { this[key]?.jsonObject }.getOrNull() ?: return emptyMap()

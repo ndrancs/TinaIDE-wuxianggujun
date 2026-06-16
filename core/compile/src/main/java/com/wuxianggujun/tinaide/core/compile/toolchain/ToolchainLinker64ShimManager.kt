@@ -3,9 +3,9 @@ package com.wuxianggujun.tinaide.core.compile.toolchain
 import android.content.Context
 import com.wuxianggujun.tinaide.core.util.AndroidSystemLinker
 import com.wuxianggujun.tinaide.core.util.DiagnosticLogFormatter
-import timber.log.Timber
 import java.io.File
 import java.util.Locale
+import timber.log.Timber
 
 /**
  * 为工具链二进制生成 linker64 shim 脚本。
@@ -39,13 +39,11 @@ class ToolchainLinker64ShimManager(
             )
         }
 
-        private fun formatToolNames(tools: Set<String>): String {
-            return tools
-                .filter { it.isNotBlank() }
-                .sorted()
-                .joinToString(",")
-                .ifBlank { "<none>" }
-        }
+        private fun formatToolNames(tools: Set<String>): String = tools
+            .filter { it.isNotBlank() }
+            .sorted()
+            .joinToString(",")
+            .ifBlank { "<none>" }
 
         internal fun buildShimScript(realBinaryPath: String, linker64Path: String): String {
             val escapedReal = shellSingleQuote(realBinaryPath)
@@ -74,9 +72,7 @@ class ToolchainLinker64ShimManager(
             }
         }
 
-        private fun shellSingleQuote(value: String): String {
-            return value.replace("'", "'\"'\"'")
-        }
+        private fun shellSingleQuote(value: String): String = value.replace("'", "'\"'\"'")
     }
 
     data class ShimSet(
@@ -208,5 +204,4 @@ class ToolchainLinker64ShimManager(
             toolMap = generated
         )
     }
-
 }

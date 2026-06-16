@@ -99,6 +99,37 @@ class PluginMenuResolverTest {
     }
 
     @Test
+    fun `resolveFileTreeContextMenuItems should ignore plugin command registered by another plugin`() {
+        PluginCommandRegistry.register(
+            pluginId = "plugin.other",
+            pluginName = "Other Plugin",
+            commandId = "plugin.menu.sayHello",
+            callbackName = "handleHello",
+            title = "Runtime title"
+        ).getOrThrow()
+        val plugin = createPlugin(
+            commands = listOf(
+                PluginCommand(
+                    id = "plugin.menu.sayHello",
+                    title = "Manifest title"
+                )
+            ),
+            menuItems = listOf(
+                PluginMenuItem(command = "plugin.menu.sayHello")
+            )
+        )
+
+        val items = PluginMenuResolver.resolveFileTreeContextMenuItems(
+            context = context,
+            installedPlugins = listOf(plugin),
+            file = File(pluginDir, "README.md"),
+            isDirectory = false
+        )
+
+        assertThat(items).isEmpty()
+    }
+
+    @Test
     fun `resolveEditorToolbarMenuItems should include host command and respect dirty condition`() {
         val plugin = InstalledPlugin(
             manifest = PluginManifest(
@@ -174,6 +205,37 @@ class PluginMenuResolverTest {
     }
 
     @Test
+    fun `resolveEditorToolbarMenuItems should preserve default group`() {
+        val plugin = InstalledPlugin(
+            manifest = PluginManifest(
+                id = "plugin.menu",
+                name = "Plugin Menu",
+                version = "1.0.0",
+                type = "config",
+                contributions = PluginContributions(
+                    menus = PluginMenus(
+                        editorToolbar = listOf(
+                            PluginMenuItem(command = HostCommands.EDITOR_SAVE)
+                        )
+                    )
+                )
+            ),
+            directory = pluginDir,
+            enabled = true
+        )
+
+        val items = PluginMenuResolver.resolveEditorToolbarMenuItems(
+            context = context,
+            installedPlugins = listOf(plugin),
+            file = File(pluginDir, "main.cpp"),
+            isDirty = false
+        )
+
+        assertThat(items).hasSize(1)
+        assertThat(items.single().group).isEqualTo("9_plugin")
+    }
+
+    @Test
     fun `resolveEditorToolbarMenuItems should include registered plugin command`() {
         PluginCommandRegistry.register(
             pluginId = "plugin.menu",
@@ -216,25 +278,72 @@ class PluginMenuResolverTest {
         assertThat(items.single().pluginId).isEqualTo("plugin.menu")
     }
 
-    private fun createPlugin(
-        commands: List<PluginCommand>,
-        menuItems: List<PluginMenuItem>
-    ): InstalledPlugin {
-        return InstalledPlugin(
+    @Test
+    fun `resolveEditorToolbarCommands should expose plugin command metadata`() {
+        PluginCommandRegistry.register(
+            pluginId = "plugin.menu",
+            pluginName = "Plugin Menu",
+            commandId = "plugin.menu.formatSelection",
+            callbackName = "formatSelection",
+            title = "Format Selection"
+        ).getOrThrow()
+        val plugin = InstalledPlugin(
             manifest = PluginManifest(
                 id = "plugin.menu",
                 name = "Plugin Menu",
                 version = "1.0.0",
                 type = "script",
                 contributions = PluginContributions(
-                    commands = commands,
                     menus = PluginMenus(
-                        fileTreeContext = menuItems
+                        editorToolbar = listOf(
+                            PluginMenuItem(
+                                command = "plugin.menu.formatSelection",
+                                group = "2_plugin"
+                            )
+                        )
                     )
                 )
             ),
             directory = pluginDir,
             enabled = true
         )
+
+        val commands = PluginMenuResolver.resolveEditorToolbarCommands(
+            context = context,
+            installedPlugins = listOf(plugin),
+            file = File(pluginDir, "main.cpp"),
+            isDirty = false
+        )
+
+        assertThat(commands).hasSize(1)
+        with(commands.single()) {
+            assertThat(commandId).isEqualTo("plugin.menu.formatSelection")
+            assertThat(title).isEqualTo("Format Selection")
+            assertThat(group).isEqualTo("2_plugin")
+            assertThat(pluginId).isEqualTo("plugin.menu")
+            assertThat(pluginName).isEqualTo("Plugin Menu")
+            assertThat(surface).isEqualTo(ResolvedPluginCommandSurface.EDITOR_TOOLBAR)
+            assertThat(source).isEqualTo(ResolvedPluginCommandSource.PLUGIN)
+        }
     }
+
+    private fun createPlugin(
+        commands: List<PluginCommand>,
+        menuItems: List<PluginMenuItem>
+    ): InstalledPlugin = InstalledPlugin(
+        manifest = PluginManifest(
+            id = "plugin.menu",
+            name = "Plugin Menu",
+            version = "1.0.0",
+            type = "script",
+            contributions = PluginContributions(
+                commands = commands,
+                menus = PluginMenus(
+                    fileTreeContext = menuItems
+                )
+            )
+        ),
+        directory = pluginDir,
+        enabled = true
+    )
 }

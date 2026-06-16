@@ -13,7 +13,16 @@ plugins {
 }
 
 // 外部依赖模块不参与 ktlint 检查
-val externalModulePrefixes = listOf(":termux-terminal:", ":tina-exec:", ":xcrash", ":tools:")
+val externalModulePrefixes = listOf(
+    ":termux-terminal:",
+    ":tina-exec:",
+    ":xcrash",
+    ":immersionbar-local",
+    ":immersionbar-ktx-local",
+    ":devicecompat-local",
+    ":xxpermissions-local",
+    ":tools:",
+)
 
 subprojects {
     val isExternal = externalModulePrefixes.any { prefix -> path.startsWith(prefix) || path == prefix.trimEnd(':') }

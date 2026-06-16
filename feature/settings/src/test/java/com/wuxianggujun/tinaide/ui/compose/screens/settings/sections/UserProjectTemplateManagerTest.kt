@@ -368,16 +368,14 @@ class UserProjectTemplateManagerTest {
         }
     }
 
-    private fun zipBytes(vararg entries: Pair<String, String>): ByteArray {
-        return java.io.ByteArrayOutputStream().use { output ->
-            ZipOutputStream(output).use { zip ->
-                entries.forEach { (name, content) ->
-                    zip.putNextEntry(ZipEntry(name))
-                    zip.write(content.toByteArray(Charsets.UTF_8))
-                    zip.closeEntry()
-                }
+    private fun zipBytes(vararg entries: Pair<String, String>): ByteArray = java.io.ByteArrayOutputStream().use { output ->
+        ZipOutputStream(output).use { zip ->
+            entries.forEach { (name, content) ->
+                zip.putNextEntry(ZipEntry(name))
+                zip.write(content.toByteArray(Charsets.UTF_8))
+                zip.closeEntry()
             }
-            output.toByteArray()
         }
+        output.toByteArray()
     }
 }

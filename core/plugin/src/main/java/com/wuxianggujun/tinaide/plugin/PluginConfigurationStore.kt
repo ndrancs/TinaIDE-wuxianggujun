@@ -109,10 +109,8 @@ class PluginConfigurationStore private constructor(
         @Volatile
         private var instance: PluginConfigurationStore? = null
 
-        fun getInstance(context: Context): PluginConfigurationStore {
-            return instance ?: synchronized(this) {
-                instance ?: PluginConfigurationStore(context).also { store -> instance = store }
-            }
+        fun getInstance(context: Context): PluginConfigurationStore = instance ?: synchronized(this) {
+            instance ?: PluginConfigurationStore(context).also { store -> instance = store }
         }
 
         internal fun buildPreferenceKey(

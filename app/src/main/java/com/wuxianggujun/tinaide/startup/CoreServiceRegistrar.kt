@@ -33,7 +33,10 @@ class CoreServiceRegistrar(private val context: Context) : KoinComponent {
 
         Prefs.initialize(appContext, configManager)
         com.wuxianggujun.tinaide.core.device.DeviceInfoProvider.initialize(BuildConfig.VERSION_NAME)
-        TinaServerEnvironment.initialize(BuildConfig.SERVER_CONFIG_HMAC_SECRET)
+        TinaServerEnvironment.initialize(
+            serverConfigHmacSecret = BuildConfig.SERVER_CONFIG_HMAC_SECRET,
+            serverConfigSignatureRequired = BuildConfig.SERVER_CONFIG_SIGNATURE_REQUIRED
+        )
         KeyboardShortcutManager.initialize(AppPreferences.get(appContext))
         RemoteLspConfigManager.install(configManager)
 

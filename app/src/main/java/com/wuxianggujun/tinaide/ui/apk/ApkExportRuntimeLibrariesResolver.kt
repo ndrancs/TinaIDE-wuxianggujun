@@ -3,6 +3,7 @@ package com.wuxianggujun.tinaide.ui.apk
 import android.content.Context
 import com.wuxianggujun.tinaide.core.ndk.AndroidSysrootManager
 import com.wuxianggujun.tinaide.core.packages.InstalledPackagePathResolver
+import com.wuxianggujun.tinaide.ui.runtime.AndroidSystemLibraries
 import com.wuxianggujun.tinaide.ui.sdl.SdlRuntimeResolver
 import java.io.File
 import java.io.IOException
@@ -25,26 +26,10 @@ object ApkExportRuntimeLibrariesResolver {
     private val sharedLibraryNamePattern =
         Regex("""lib[0-9A-Za-z_+\-.]+\.so(?:\.[0-9A-Za-z_+\-.]+)?""")
 
-    private val apkSystemLibraryNames = setOf(
-        "libc.so",
-        "libm.so",
-        "libdl.so",
-        "liblog.so",
-        "libandroid.so",
-        "libEGL.so",
-        "libGLES_CM.so",
-        "libGLESv1_CM.so",
-        "libGLESv2.so",
-        "libGLESv3.so",
-        "libOpenSLES.so",
-        "libjnigraphics.so",
-        "libz.so",
-        "libmediandk.so",
-        "libcamera2ndk.so",
-        "libaaudio.so",
-        "libvulkan.so",
-        "libnativewindow.so"
-    )
+    // OS 提供的 NDK 系统库统一走 AndroidSystemLibraries.ndkProvided。
+    // 注意：导出 APK 时 libc++_shared.so 需要打进包里，故不在系统库集合中，
+    // 由 collectSysrootRuntimeLibraries 单独补齐。
+    private val apkSystemLibraryNames = AndroidSystemLibraries.ndkProvided
 
     data class Resolution(
         val packagedLibraries: List<File>,
@@ -79,7 +64,13 @@ object ApkExportRuntimeLibrariesResolver {
 
         val rootLibraries = resolveRootLibraries(buildLibraries)
         val primaryLibrary = rootLibraries.first()
-        when (val sdlResolveResult = SdlRuntimeResolver.resolve(appContext, primaryLibrary.absolutePath)) {
+        when (
+            val sdlResolveResult = SdlRuntimeResolver.resolve(
+                context = appContext,
+                mainLibraryPath = primaryLibrary.absolutePath,
+                extraRuntimeLibDirs = packagePaths.runtimeLibDirs,
+            )
+        ) {
             is SdlRuntimeResolver.ResolveResult.Sdl -> {
                 File(sdlResolveResult.spec.sdlLibraryPath)
                     .takeIf { it.isFile }

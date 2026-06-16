@@ -48,9 +48,42 @@ pwsh tools/linux-distro/generate-linux-distro-manifest.ps1 -RefreshUbuntuMetadat
 
 刷新命令会访问发行版官方地址：
 
-- `https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/<arch>/alpine-minirootfs-<version>-<arch>.tar.gz`
-- `https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/<arch>/alpine-minirootfs-<version>-<arch>.tar.gz.sha256`
+- `https://dl-cdn.alpinelinux.org/alpine/v<major.minor>/releases/<arch>/alpine-minirootfs-<version>-<arch>.tar.gz`
+- `https://dl-cdn.alpinelinux.org/alpine/v<major.minor>/releases/<arch>/alpine-minirootfs-<version>-<arch>.tar.gz.sha256`
 - `https://cdimage.ubuntu.com/cdimage/ubuntu-base/releases/24.04/release/ubuntu-base-<version>-base-<arch>.tar.gz`
 - `https://cdimage.ubuntu.com/cdimage/ubuntu-base/releases/24.04/release/SHA256SUMS`
 
+> 注意：Alpine 源路径必须用固定版本 `v3.23`，**不要用 `latest-stable`**。`latest-stable`
+> 是滚动目录，只保留当前最新补丁版；一旦上游发新版（如 3.24），旧补丁文件会被删除，
+> 导致下载 HTTP 404。固定 `v3.x` 路径长期可达。
+
 刷新后必须人工审查 `linux-distros.lock.json` 与生成的 assets manifest 差异。
+
+## 远程清单（registry 托管，更新数据无需发版）
+
+App 启动安装链路会优先尝试从 `TinaIDE-Registry` 仓库拉取远程清单，失败时回落到内置
+asset（`core/linux-distro/src/main/assets/linux-distro/manifest.json`）。远程清单额外带
+`mirrors` 前缀替换规则，下载官方源失败时自动切国内镜像（清华 / 中科大 / 阿里云）。
+
+- 待发布文件：`tools/linux-distro/registry-manifest.v1.json`
+- 发布路径：`TinaIDE-Registry` 仓库 `main` 分支的 `linux-distro/manifest.v1.json`
+- 拉取端点常量：`GitHubRegistryConfig.LINUX_DISTRO_MANIFEST_PATH`
+
+### 发布步骤
+
+1. 确认 `registry-manifest.v1.json` 内容正确（官方 URL 用 `v3.23` 固定路径，镜像规则已联网验证可达）。
+2. 把该文件作为 `linux-distro/manifest.v1.json` 提交到 `TinaIDE-Registry` 仓库 `main` 分支并 push。
+3. 推送后即时生效：已含远程清单逻辑的 App 会在缓存过期后（默认 6h）自动拉到新数据，
+   无需用户更新 App。
+
+### 镜像规则说明
+
+`mirrors` 是清单级前缀替换规则，一条规则覆盖该发行版全部架构：
+
+```json
+{ "matchPrefix": "https://dl-cdn.alpinelinux.org/", "replaceWith": "https://mirrors.tuna.tsinghua.edu.cn/" }
+```
+
+artifact 的 `url` 保持官方规范地址；installer 先试官方，失败再按规则派生镜像候选逐个回落。
+新增镜像只需在远程清单 `mirrors` 数组加一行。注意 Ubuntu 镜像路径前缀与官方不同
+（官方 `cdimage.ubuntu.com/cdimage/` → 镜像 `<mirror>/ubuntu-cdimage/`），已在规则中正确映射。

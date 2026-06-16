@@ -30,7 +30,9 @@ class ClipboardApiModule(private val context: Context) : PluginApiModule {
                     1
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to read clipboard")
-                    L.pushNil(); L.push("Failed to read clipboard: ${e.message}"); 2
+                    L.pushNil()
+                    L.push("Failed to read clipboard: ${e.message}")
+                    2
                 }
             }
         }
@@ -39,15 +41,22 @@ class ClipboardApiModule(private val context: Context) : PluginApiModule {
         lua.push { L: Lua ->
             withPermission(this.runtime, L, namespace, "setText", PluginPermission.CLIPBOARD_WRITE) {
                 val text = L.getStringArg(1)
-                if (text == null) { L.push(false); L.push("Text is required"); return@withPermission 2 }
+                if (text == null) {
+                    L.push(false)
+                    L.push("Text is required")
+                    return@withPermission 2
+                }
                 try {
                     mainHandler.post {
                         clipboardManager.setPrimaryClip(ClipData.newPlainText("Plugin", text))
                     }
-                    L.push(true); 1
+                    L.push(true)
+                    1
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to write clipboard")
-                    L.push(false); L.push("Failed to write clipboard: ${e.message}"); 2
+                    L.push(false)
+                    L.push("Failed to write clipboard: ${e.message}")
+                    2
                 }
             }
         }

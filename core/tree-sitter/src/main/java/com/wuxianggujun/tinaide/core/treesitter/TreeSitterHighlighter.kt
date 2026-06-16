@@ -224,10 +224,8 @@ class TreeSitterHighlighter private constructor(
             }
         }
 
-        private fun buildCaptureTypeLookup(captureNames: Array<String>): Array<HighlightType> {
-            return Array(captureNames.size) { index ->
-                classifyCaptureName(captureNames[index])
-            }
+        private fun buildCaptureTypeLookup(captureNames: Array<String>): Array<HighlightType> = Array(captureNames.size) { index ->
+            classifyCaptureName(captureNames[index])
         }
 
         internal fun classifyCaptureName(captureName: String): HighlightType {
@@ -241,13 +239,9 @@ class TreeSitterHighlighter private constructor(
                 .split('.', '-', '_')
                 .filter { it.isNotEmpty() }
 
-            fun hasToken(token: String): Boolean {
-                return tokens.any { it == token }
-            }
+            fun hasToken(token: String): Boolean = tokens.any { it == token }
 
-            fun containsToken(token: String): Boolean {
-                return hasToken(token) || normalized.contains(token)
-            }
+            fun containsToken(token: String): Boolean = hasToken(token) || normalized.contains(token)
 
             return when {
                 // @none / @spell = explicitly no highlight (tree-sitter spell/none markers)

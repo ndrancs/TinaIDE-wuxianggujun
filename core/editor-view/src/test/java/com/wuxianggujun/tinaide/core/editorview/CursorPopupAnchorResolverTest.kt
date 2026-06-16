@@ -184,17 +184,15 @@ class CursorPopupAnchorResolverTest {
         val textPaint: Paint,
         val contentStartXPx: Float
     ) {
-        fun resolve(): CursorPopupAnchor {
-            return CursorPopupAnchorResolver.resolve(
-                state = state,
-                contentStartXPx = contentStartXPx,
-                textPaint = textPaint,
-                lineLayoutCache = lineLayoutCache,
-                fontSizePx = with(Density(1f)) { state.fontSizeSp },
-                lineTextProvider = buffer::getLine,
-                textScanCache = EditorTextScanCache()
-            )
-        }
+        fun resolve(): CursorPopupAnchor = CursorPopupAnchorResolver.resolve(
+            state = state,
+            contentStartXPx = contentStartXPx,
+            textPaint = textPaint,
+            lineLayoutCache = lineLayoutCache,
+            fontSizePx = with(Density(1f)) { state.fontSizeSp },
+            lineTextProvider = buffer::getLine,
+            textScanCache = EditorTextScanCache()
+        )
 
         fun configurePaint() {
             textPaint.typeface = state.typeface

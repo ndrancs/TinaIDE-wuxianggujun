@@ -34,17 +34,13 @@ enum class DebugToolbarPosition(val value: String, @param:StringRes @get:StringR
     /**
      * 获取本地化的显示名称
      */
-    fun getDisplayName(context: Context): String {
-        return context.getString(displayNameRes)
-    }
+    fun getDisplayName(context: Context): String = context.getString(displayNameRes)
 
     companion object {
         /**
          * 从字符串值解析枚举
          */
-        fun fromString(value: String): DebugToolbarPosition {
-            return entries.find { it.value == value } ?: BOTTOM
-        }
+        fun fromString(value: String): DebugToolbarPosition = entries.find { it.value == value } ?: BOTTOM
 
         /**
          * 默认值
@@ -52,4 +48,3 @@ enum class DebugToolbarPosition(val value: String, @param:StringRes @get:StringR
         val DEFAULT = BOTTOM
     }
 }
-

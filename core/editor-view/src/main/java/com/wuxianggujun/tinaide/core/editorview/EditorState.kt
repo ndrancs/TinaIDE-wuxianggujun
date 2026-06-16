@@ -12,15 +12,15 @@ import com.wuxianggujun.tinaide.core.textengine.Position
 import com.wuxianggujun.tinaide.core.textengine.TextBuffer
 import com.wuxianggujun.tinaide.core.textengine.TextChange
 import com.wuxianggujun.tinaide.core.textengine.TextScanKernel
-import java.util.LinkedHashMap
-import kotlin.math.abs
+import com.wuxianggujun.tinaide.core.textengine.WordBounds
+import com.wuxianggujun.tinaide.core.treesitter.SyntaxHighlighter
+import com.wuxianggujun.tinaide.core.treesitter.TreeSitterFoldingProvider.FoldRegion
 import java.io.File
+import java.util.LinkedHashMap
+import kotlin.math.floor
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlin.math.floor
-import com.wuxianggujun.tinaide.core.treesitter.SyntaxHighlighter
-import com.wuxianggujun.tinaide.core.treesitter.TreeSitterFoldingProvider.FoldRegion
 import timber.log.Timber
 
 sealed interface EditorCompletionFetchResult {
@@ -70,16 +70,11 @@ class EditorState(
     val file: File? = null,
     val projectRootPath: String? = null,
     config: EditorConfig = EditorConfig()
-) : EditorStateSnapshot, EditorEditOperations {
+) : EditorStateSnapshot,
+    EditorEditOperations {
     private companion object {
         private const val SLOW_OPERATION_THRESHOLD_MS = 16L
         private const val SLOW_OPERATION_LOG_INTERVAL_MS = 800L
-        private const val HORIZONTAL_FULL_SCAN_LINE_THRESHOLD = 4_000
-        private const val HORIZONTAL_WIDTH_GUARD_CHARS = 32
-        private const val HORIZONTAL_WIDTH_BOOTSTRAP_SAMPLES = 96
-        private const val HORIZONTAL_WIDTH_SCAN_MAX_BATCH_LINES = 256
-        private const val HORIZONTAL_WIDTH_SCAN_CHECK_INTERVAL = 32
-        private const val HORIZONTAL_WIDTH_SCAN_TIME_BUDGET_NS = 700_000L
     }
 
     private var lastSlowOperationLogAtMs: Long = 0L
@@ -131,6 +126,7 @@ class EditorState(
     var scrollOffsetXPx by mutableStateOf(0f)
     var viewportHeightPx by mutableStateOf(1f)
     var viewportWidthPx by mutableStateOf(1f)
+
     // 文本区起始位置（canvas 坐标）。用于处理“行号栏是否跟随横向滚动”的坐标收敛。
     var contentStartXPx by mutableStateOf(0f)
     var lineHeightPx by mutableStateOf(1f)
@@ -228,162 +224,140 @@ class EditorState(
         effectiveStylingVersion++
     }
 
-    private var cachedMaxLineChars = 0
-    private var cachedMaxLineCharsVersion = -1L
-    private var widthScanVersion = -1L
-    private var widthScanNextLine = 0
-    private var widthScanMaxChars = 0
-    private var widthScanLineLengths = IntArray(0)
-    private var widthLineSnapshotVersion = -1L
-    private var widthLineMaxChars = 0
-    private var widthLineLengths = IntArray(0)
+    private val maxLineWidthTracker = EditorMaxLineWidthTracker(
+        object : EditorMaxLineWidthTracker.Host {
+            override val textBuffer: TextBuffer get() = this@EditorState.textBuffer
+            override val charWidthPx: Float get() = this@EditorState.charWidthPx
+            override val viewportWidthPx: Float get() = this@EditorState.viewportWidthPx
+            override val cursorLine: Int get() = this@EditorState.cursorLine
+            override val visibleLines: IntRange get() = this@EditorState.visibleLines
+            override val wordWrapEnabled: Boolean get() = config.wordWrap
+            override val isWordWrapLayoutFrozen: Boolean get() = this@EditorState.isWordWrapLayoutFrozen()
 
-    var completionItems by mutableStateOf<List<EditorCompletionItem>>(emptyList())
-        private set
-    var completionSelectedIndex by mutableStateOf(-1)
-        private set
-    var completionQuery by mutableStateOf("")
-        private set
-    var completionUiState by mutableStateOf<CompletionUiState>(CompletionUiState.Hidden)
-        private set
-    val showCompletion: Boolean
-        get() = when (val ui = completionUiState) {
-            is CompletionUiState.Visible -> ui.items.isNotEmpty()
-            is CompletionUiState.Loading -> ui.previousItems.isNotEmpty()
-            CompletionUiState.Hidden -> completionItems.isNotEmpty()
+            override fun lineVisualColumns(lineText: String): Int = lineVisualColumnsForWidth(lineText)
+
+            override fun currentVisualLineMap(): EditorVisualLineMapper.VisualLineMap = visualLineMap()
+
+            override fun resolveVisibleIndexForVisualLine(
+                map: EditorVisualLineMapper.VisualLineMap,
+                visualLine: Int
+            ): Int = this@EditorState.resolveVisibleIndexForVisualLine(map, visualLine)
         }
-    var hoverUiState by mutableStateOf<HoverUiState>(HoverUiState.Hidden)
-        private set
-    var signatureHelpUiState by mutableStateOf<SignatureHelpUiState>(SignatureHelpUiState.Hidden)
-        private set
-    var signatureHelpSelectedSignatureIndex by mutableStateOf<Int?>(null)
-        private set
-    internal var completionRequestSeq: Long = 0L
-    internal var activeCompletionRequestId: Long = 0L
-    internal var hoverRequestSeq: Long = 0L
-    internal var activeHoverRequestId: Long = 0L
-    internal var signatureHelpRequestSeq: Long = 0L
-    internal var activeSignatureHelpRequestId: Long = 0L
-    internal var cachedCompletionResults: List<EditorCompletionItem> = emptyList()
-    internal var cachedCompletionPrefix: String = ""
-    internal var snippetChoiceCompletionActive by mutableStateOf(false)
-    internal var activeSnippetSession by mutableStateOf<SnippetSession?>(null)
-        private set
+    )
 
-    private fun publishCompletionLoading(
-        previousItems: List<EditorCompletionItem>,
-        query: String,
-        selectedIndex: Int,
-        requestId: Long
-    ) {
-        val normalizedSelectedIndex = if (previousItems.isEmpty()) {
-            -1
-        } else {
-            selectedIndex.coerceIn(0, previousItems.lastIndex)
+    // 视觉行映射（folding + wordWrap）委托给 [EditorVisualLineMapper]：该类维护视觉行映射缓存与
+    // 按文档行的 wrap segmentCount 缓存，行为与原内联实现严格一致（见该类文档说明的两处刻意保留现状）。
+    // 折叠层产出的 lineMap() 经 Host 注入，转接到 [EditorFoldingManager]。
+    private val visualLineMapper = EditorVisualLineMapper(
+        object : EditorVisualLineMapper.Host {
+            override val textBuffer: TextBuffer get() = this@EditorState.textBuffer
+            override val charWidthPx: Float get() = this@EditorState.charWidthPx
+            override val viewportWidthPx: Float get() = this@EditorState.viewportWidthPx
+            override val wordWrapEnabled: Boolean get() = config.wordWrap
+            override val tabSize: Int get() = config.tabSize
+            override val codeFoldingEnabled: Boolean get() = config.codeFolding
+            override val frozenWordWrapColumns: Int? get() = this@EditorState.frozenWordWrapColumns
+            override val foldRegionsDocumentVersion: Long get() = foldingManager.foldRegionsDocumentVersion
+            override val foldDataVersion: Int get() = foldingManager.foldDataVersion
+            override val wordWrapLayoutCache: EditorWordWrapLayoutCache get() = this@EditorState.wordWrapLayoutCache
+
+            override fun lineMap(): EditorFoldingManager.LineMap = foldingManager.lineMap()
         }
-        completionItems = previousItems
-        completionQuery = query
-        completionSelectedIndex = normalizedSelectedIndex
-        completionUiState = CompletionUiState.Loading(
-            previousItems = previousItems,
-            query = query,
-            selectedIndex = normalizedSelectedIndex,
-            requestId = requestId
-        )
-    }
+    )
 
-    private fun publishCompletionResults(
-        items: List<EditorCompletionItem>,
-        query: String,
-        selectedIndex: Int,
-        requestId: Long
-    ) {
-        val normalizedSelectedIndex = if (items.isEmpty()) {
-            -1
-        } else {
-            selectedIndex.coerceIn(0, items.lastIndex)
+    // 代码折叠（按行隐藏 + 折叠映射 LineMap）委托给 [EditorFoldingManager]：该类维护折叠区间数据、
+    // 折叠映射缓存与全部折叠查询/切换 API，行为与原内联实现严格一致。foldDataVersion 等仍由
+    // mutableStateOf 承载，Compose 跨对象读取仍能触发重组（见该类文档说明）。EditorState 保留瘦委托，
+    // 使模块内 16+ 文件经 state.x() 的调用点零改动。
+    private val foldingManager = EditorFoldingManager(
+        object : EditorFoldingManager.Host {
+            override val textBuffer: TextBuffer get() = this@EditorState.textBuffer
+            override val codeFoldingEnabled: Boolean get() = config.codeFolding
+            override val tabSize: Int get() = config.tabSize
+            override val gutterDecorations get() = this@EditorState.gutterDecorations
+            override val diagnosticLinesSorted: IntArray get() = this@EditorState.diagnosticLinesSorted
+            override val cursorOffset: Int get() = this@EditorState.cursorOffset
+
+            override fun moveCursorTo(offset: Int) = this@EditorState.moveCursorTo(offset)
+            override fun clampScroll() = this@EditorState.clampScroll()
         }
-        completionQuery = query
-        completionItems = items
-        completionSelectedIndex = normalizedSelectedIndex
-        completionUiState = if (items.isEmpty()) {
-            CompletionUiState.Hidden
-        } else {
-            CompletionUiState.Visible(
-                items = items,
-                query = query,
-                selectedIndex = normalizedSelectedIndex,
-                requestId = requestId
-            )
+    )
+
+    // Hover / SignatureHelp 状态机委托给 [EditorHoverSignatureController]：两块彼此独立、只共享
+    // cursorPosition，与补全/snippet 无耦合。UiState 仍由 mutableStateOf 承载，Compose 跨对象读取
+    // 仍能触发重组（见该类文档说明）。EditorState 保留瘦委托与 get-only 镜像属性，使模块内 9+ 文件
+    // 经 state.x 的读取与 4 个测试 fixture 调用点零改动。
+    private val hoverSignatureController = EditorHoverSignatureController(
+        object : EditorHoverSignatureController.Host {
+            override val cursorPosition: Position get() = this@EditorState.cursorPosition
+            override val onRequestHover: (suspend (Position) -> String?)? get() = this@EditorState.onRequestHover
+            override val onRequestSignatureHelp: (suspend (Position) -> SignatureHelpResult?)?
+                get() = this@EditorState.onRequestSignatureHelp
         }
-    }
+    )
 
-    private fun publishCompletionSelection(index: Int) {
-        completionSelectedIndex = index
-        completionUiState = when (val ui = completionUiState) {
-            is CompletionUiState.Visible -> ui.copy(selectedIndex = index)
-            is CompletionUiState.Loading -> ui.copy(selectedIndex = index)
-            CompletionUiState.Hidden -> CompletionUiState.Hidden
+    // 补全 + snippet 状态机委托给 [EditorCompletionController]：两块双向耦合（snippet 占位符聚焦弹出
+    // choice 补全、取消 snippet 关闭补全、请求补全清除 snippet choice 标记），整体抽出最干净，互调在
+    // 该类内变成普通方法调用。补全状态字段仍由 mutableStateOf 承载，Compose 跨对象读取仍触发重组。
+    // EditorState 保留瘦委托与 get-only 镜像属性，使模块内多个 Compose 文件与测试调用点零改动。
+    // 注意：applyCompletion 仍保留在本类（editorApplyCompletion 接收整个 EditorState，避免透传），
+    // completionQueryFromCursor 也保留在本类（有独立测试且被交互控制器复用），二者经 Host 回调暴露。
+    private val completionController = EditorCompletionController(
+        object : EditorCompletionController.Host {
+            override val textBuffer: TextBuffer get() = this@EditorState.textBuffer
+            override val cursorPosition: Position get() = this@EditorState.cursorPosition
+            override val completionCaseSensitive: Boolean get() = config.completionCaseSensitive
+            override val onRequestCompletion: (suspend (Position, Char?) -> EditorCompletionFetchResult)?
+                get() = this@EditorState.onRequestCompletion
+
+            override fun completionQueryFromCursor(): String = this@EditorState.completionQueryFromCursor()
+
+            override fun moveCursorTo(offset: Int, clearSelection: Boolean) =
+                this@EditorState.moveCursorTo(offset, clearSelection)
+
+            override fun setSelectionRange(range: OffsetRange?) {
+                this@EditorState.selectionRange = range
+            }
+
+            override fun applyCompletion(item: EditorCompletionItem) = this@EditorState.applyCompletion(item)
         }
-    }
+    )
 
-    internal fun publishHoverLoading() {
-        hoverUiState = HoverUiState.Loading
-    }
+    // 补全 + snippet 状态委托给 [completionController]（见上方构造）。以下为 get-only 委托，使模块内
+    // 多个 Compose 文件与测试经 state.x 的直接读取零改动。Compose 跨对象读取这些 mutableState 仍触发重组。
+    val completionItems: List<EditorCompletionItem> get() = completionController.completionItems
+    val completionSelectedIndex: Int get() = completionController.completionSelectedIndex
+    val completionQuery: String get() = completionController.completionQuery
+    val completionUiState: CompletionUiState get() = completionController.completionUiState
+    val showCompletion: Boolean get() = completionController.showCompletion
+    internal val cachedCompletionResults: List<EditorCompletionItem>
+        get() = completionController.cachedCompletionResults
+    internal val cachedCompletionPrefix: String get() = completionController.cachedCompletionPrefix
+    internal val snippetChoiceCompletionActive: Boolean get() = completionController.snippetChoiceCompletionActive
+    internal val activeSnippetSession: SnippetSession? get() = completionController.activeSnippetSession
+    // Hover / SignatureHelp 状态机委托给 [hoverSignatureController]（见上方构造）。以下为 get-only 委托，
+    // 使模块内 9+ 文件经 state.x 的直接读取与 4 个 hover/signature 测试调用点零改动。Compose 跨对象读取
+    // 这些 mutableState 仍触发重组（见该类文档说明）。
+    val hoverUiState: HoverUiState get() = hoverSignatureController.hoverUiState
+    val signatureHelpUiState: SignatureHelpUiState get() = hoverSignatureController.signatureHelpUiState
+    val signatureHelpSelectedSignatureIndex: Int? get() = hoverSignatureController.signatureHelpSelectedSignatureIndex
 
-    internal fun publishHoverVisible(markdown: String) {
-        val normalizedMarkdown = markdown.trim()
-        if (normalizedMarkdown.isEmpty()) {
-            clearHover()
-            return
-        }
-        hoverUiState = HoverUiState.Visible(normalizedMarkdown)
-    }
-
-    private fun clearHover() {
-        hoverUiState = HoverUiState.Hidden
-    }
+    // Hover / SignatureHelp 的 publish* 入口委托给 [hoverSignatureController]：保留以下 internal 瘦委托，
+    // 使模块内测试 fixture（seedVisibleHover / seedVisibleSignatureHelp / seedLoadingSignatureHelp）零改动。
+    internal fun publishHoverVisible(markdown: String) =
+        hoverSignatureController.publishHoverVisible(markdown)
 
     internal fun publishSignatureHelpLoading(
         previousResult: SignatureHelpResult?,
         requestId: Long,
         selectedIndex: Int? = signatureHelpSelectedSignatureIndex
-    ) {
-        signatureHelpSelectedSignatureIndex =
-            normalizeSignatureHelpSelection(previousResult, selectedIndex)
-        signatureHelpUiState = SignatureHelpUiState.Loading(
-            previousResult = previousResult,
-            requestId = requestId
-        )
-    }
+    ) = hoverSignatureController.publishSignatureHelpLoading(previousResult, requestId, selectedIndex)
 
     internal fun publishSignatureHelpVisible(
         result: SignatureHelpResult,
         requestId: Long,
         selectedIndex: Int? = signatureHelpSelectedSignatureIndex
-    ) {
-        val normalized = normalizeSignatureHelpResult(result)
-        if (normalized == null) {
-            clearSignatureHelp()
-            return
-        }
-        signatureHelpSelectedSignatureIndex =
-            normalizeSignatureHelpSelection(normalized, selectedIndex)
-        signatureHelpUiState = SignatureHelpUiState.Visible(
-            result = normalized,
-            requestId = requestId
-        )
-    }
-
-    private fun publishSignatureHelpSelection(index: Int) {
-        signatureHelpSelectedSignatureIndex =
-            normalizeSignatureHelpSelection(currentSignatureHelpResult(), index)
-    }
-
-    private fun clearSignatureHelp() {
-        signatureHelpSelectedSignatureIndex = null
-        signatureHelpUiState = SignatureHelpUiState.Hidden
-    }
+    ) = hoverSignatureController.publishSignatureHelpVisible(result, requestId, selectedIndex)
 
     var highlighter by mutableStateOf<SyntaxHighlighter?>(null)
     var semanticTokens by mutableStateOf<List<SemanticToken>>(emptyList())
@@ -408,7 +382,8 @@ class EditorState(
         if (semanticTokens.isEmpty() && semanticTokensByLine.isEmpty()) return
         semanticTokens = emptyList()
         semanticTokensByLine = emptyMap()
-        semanticTokensVersion++; bumpStylingVersion()
+        semanticTokensVersion++
+        bumpStylingVersion()
     }
 
     fun replaceSemanticTokens(tokens: List<SemanticToken>) {
@@ -416,7 +391,8 @@ class EditorState(
         if (semanticTokens == tokens && semanticTokensByLine == groupedByLine) return
         semanticTokens = tokens
         semanticTokensByLine = groupedByLine
-        semanticTokensVersion++; bumpStylingVersion()
+        semanticTokensVersion++
+        bumpStylingVersion()
     }
 
     fun mergeSemanticTokens(tokens: List<SemanticToken>) {
@@ -437,7 +413,8 @@ class EditorState(
 
         semanticTokensByLine = mergedByLine
         semanticTokens = mergedByLine.values.flatten()
-        semanticTokensVersion++; bumpStylingVersion()
+        semanticTokensVersion++
+        bumpStylingVersion()
     }
 
     internal fun applyTextChangeToSemanticTokens(change: TextChange) {
@@ -482,104 +459,11 @@ class EditorState(
 
         semanticTokensByLine = updatedByLine
         semanticTokens = updatedByLine.values.flatten()
-        semanticTokensVersion++; bumpStylingVersion()
+        semanticTokensVersion++
+        bumpStylingVersion()
     }
 
-    // ========== 代码折叠（按行隐藏） ==========
-    private var foldRegions: List<FoldRegion> by mutableStateOf(emptyList())
-    private var foldRegionsDocumentVersion by mutableStateOf(-1L)
-    private var foldRegionByStartLine: Map<Int, FoldRegion> = emptyMap()
-    private var collapsedFoldStartLines by mutableStateOf<Set<Int>>(emptySet())
-    private var foldDataVersion by mutableStateOf(0)
-
-    private data class BrokenFoldRecord(val startLine: Int, val originalEndLine: Int)
-    private val brokenFoldRecords = mutableSetOf<BrokenFoldRecord>()
-
-    private data class LineMap(
-        val docLineCount: Int,
-        val visualToDocLine: IntArray,
-        val docToVisualLine: IntArray,
-        val hiddenDocLine: BooleanArray,
-        val hiddenOwnerStartLine: IntArray
-    ) {
-        val visualLineCount: Int
-            get() = visualToDocLine.size
-    }
-
-    private data class VisualLineMap(
-        val docLineCount: Int,
-        /**
-         * folding 后的“可见文档行列表”（索引=折叠后的可见行序号，值=docLine）。
-         *
-         * 注意：这不是最终的 visualLine（因为每个 docLine 可能会被 wordWrap 拆成多段）。
-         */
-        val visibleDocLines: IntArray,
-        /** 每个 visibleDocLine 对应的“首个视觉行”索引（按 wordWrap 展开后）。 */
-        val firstVisualLineByVisibleIndex: IntArray,
-        /** 每个 visibleDocLine 对应的“视觉行段数”（>=1）。 */
-        val visualLineCountByVisibleIndex: IntArray,
-        /** 全部视觉行总数（folding + wordWrap 后）。 */
-        val visualLineCount: Int,
-        val wordWrapEnabled: Boolean,
-        val wrapColumns: Int
-    ) {
-        val visibleDocLineCount: Int
-            get() = visibleDocLines.size
-    }
-
-    private var lineMapCache: LineMap? = null
-    private var lineMapCacheFoldDataVersion: Int = Int.MIN_VALUE
-    private var lineMapCacheFoldingEnabled: Boolean = false
-
-    private var visualLineMapCache: VisualLineMap? = null
-    private var visualLineMapCacheEpoch: Long = Long.MIN_VALUE
-
-    // 按文档行缓存 wrap segmentCount（wordWrap 下每行视觉行数）。
-    // 替代原本每次 visualLineMap() 重算时对全部可见文档行做 getLine()+getWrapLayout() 的 O(N) 扫描；
-    // 文本变化时只重算编辑窗内的行，其余行直接从数组读。
-    private var docSegmentCounts: IntArray? = null
-    private var docSegmentCountsWrapColumns: Int = Int.MIN_VALUE
-    private var docSegmentCountsTabSize: Int = Int.MIN_VALUE
-    private var docSegmentCountsVersion: Long = Long.MIN_VALUE
-
-    private var visualLineMapEpochCounter: Long = 0L
-    private var vlmEpochTextVersion: Long = Long.MIN_VALUE
-    private var vlmEpochFoldDataVersion: Int = Int.MIN_VALUE
-    private var vlmEpochFoldingEnabled: Boolean = false
-    private var vlmEpochWordWrap: Boolean = false
-    private var vlmEpochWrapColumns: Int = Int.MIN_VALUE
-    private var vlmEpochTabSize: Int = Int.MIN_VALUE
-    private var vlmEpochDocLineCount: Int = Int.MIN_VALUE
-
-    private fun visualLineMapEpoch(
-        textVersion: Long,
-        foldDataVersion: Int,
-        foldingEnabled: Boolean,
-        wordWrap: Boolean,
-        wrapColumns: Int,
-        tabSize: Int,
-        docLineCount: Int
-    ): Long {
-        val effectiveTextVersion = if (wordWrap) textVersion else 0L
-        if (effectiveTextVersion == vlmEpochTextVersion &&
-            foldDataVersion == vlmEpochFoldDataVersion &&
-            foldingEnabled == vlmEpochFoldingEnabled &&
-            wordWrap == vlmEpochWordWrap &&
-            wrapColumns == vlmEpochWrapColumns &&
-            tabSize == vlmEpochTabSize &&
-            docLineCount == vlmEpochDocLineCount
-        ) {
-            return visualLineMapEpochCounter
-        }
-        vlmEpochTextVersion = effectiveTextVersion
-        vlmEpochFoldDataVersion = foldDataVersion
-        vlmEpochFoldingEnabled = foldingEnabled
-        vlmEpochWordWrap = wordWrap
-        vlmEpochWrapColumns = wrapColumns
-        vlmEpochTabSize = tabSize
-        vlmEpochDocLineCount = docLineCount
-        return ++visualLineMapEpochCounter
-    }
+    // 代码折叠相关数据/映射/查询均已迁入 [foldingManager]（见上方构造），EditorState 仅保留瘦委托。
 
     var useRelativeLineNumbers by mutableStateOf(config.useRelativeLineNumbers)
 
@@ -617,8 +501,9 @@ class EditorState(
         @Suppress("UNUSED_EXPRESSION")
         textVersion
         // 依赖 foldDataVersion 以确保折叠状态变化时重新计算
+        // （读 foldingManager.foldDataVersion：Compose 快照按 StateObject 身份记录读取，跨对象仍触发重组）
         @Suppress("UNUSED_EXPRESSION")
-        foldDataVersion
+        foldingManager.foldDataVersion
         // 依赖 config.codeFolding，避免开关变化后 visibleLines 不刷新
         @Suppress("UNUSED_EXPRESSION")
         config.codeFolding
@@ -737,16 +622,9 @@ class EditorState(
         return layout.endColumnForSegment(segmentIndex).coerceIn(0, lineText.length)
     }
 
-    internal fun isVisualLineContinuation(visualLine: Int): Boolean {
-        return visualLineStartColumn(visualLine) > 0
-    }
+    internal fun isVisualLineContinuation(visualLine: Int): Boolean = visualLineStartColumn(visualLine) > 0
 
-    internal fun isDocLineHidden(docLine: Int): Boolean {
-        val map = lineMap()
-        if (map.docLineCount <= 0) return false
-        val safeLine = docLine.coerceIn(0, map.docLineCount - 1)
-        return map.hiddenDocLine[safeLine]
-    }
+    internal fun isDocLineHidden(docLine: Int): Boolean = foldingManager.isDocLineHidden(docLine)
 
     internal fun visualLineTopInViewport(visualLine: Int): Float {
         val firstLineOffset = scrollOffsetPx - firstVisibleLine * lineHeightPx
@@ -975,7 +853,11 @@ class EditorState(
         if (cursorOffset <= 0) return
         val step = if (cursorOffset >= 2 &&
             textBuffer.charAt(cursorOffset - 1)?.let(Character::isLowSurrogate) == true
-        ) 2 else 1
+        ) {
+            2
+        } else {
+            1
+        }
         moveCursorToWithOptionalSelection(
             offset = skipFoldBackwardIfHidden(cursorOffset - step),
             extendSelection = extendSelection
@@ -993,7 +875,11 @@ class EditorState(
         if (cursorOffset >= textBuffer.length) return
         val step = if (cursorOffset < textBuffer.length - 1 &&
             textBuffer.charAt(cursorOffset)?.let(Character::isHighSurrogate) == true
-        ) 2 else 1
+        ) {
+            2
+        } else {
+            1
+        }
         moveCursorToWithOptionalSelection(
             offset = skipFoldForwardIfHidden(cursorOffset + step),
             extendSelection = extendSelection
@@ -1004,48 +890,14 @@ class EditorState(
      * 向右移动时跳过折叠内部隐藏行。
      * 折叠末行是虚拟可见的（光标可以停留），但折叠内部行（startLine+1..endLine-1）不可停留。
      */
-    private fun skipFoldForwardIfHidden(offset: Int): Int {
-        if (!isFoldingDataValid()) return offset
-        val safeOffset = offset.coerceIn(0, textBuffer.length)
-        val pos = textBuffer.offsetToPosition(safeOffset)
-        val map = lineMap()
-        if (pos.line >= map.docLineCount || !map.hiddenDocLine[pos.line]) return offset
-        val ownerStart = map.hiddenOwnerStartLine[pos.line]
-        if (ownerStart < 0 || ownerStart !in collapsedFoldStartLines) return offset
-        val region = foldRegionByStartLine[ownerStart] ?: return offset
-        if (pos.line == region.endLine) return offset
-        val endLine = region.endLine.coerceIn(0, (textBuffer.lineCount - 1).coerceAtLeast(0))
-        val endLineText = textBuffer.getLine(endLine)
-        val trimStartCol = TextScanKernel
-            .scanLineWhitespace(endLineText, config.tabSize)
-            .leadingWhitespaceEnd
-        return textBuffer.positionToOffset(endLine, trimStartCol)
-    }
+    private fun skipFoldForwardIfHidden(offset: Int): Int = foldingManager.skipFoldForwardIfHidden(offset)
 
     /**
      * 向左移动时跳过折叠内部隐藏行。
      * 从折叠末行可见文本的起始位置再往左 → 跳回折叠起始行末尾。
      * 从折叠内部行 → 跳回折叠起始行末尾。
      */
-    private fun skipFoldBackwardIfHidden(offset: Int): Int {
-        if (!isFoldingDataValid()) return offset
-        val safeOffset = offset.coerceIn(0, textBuffer.length)
-        val pos = textBuffer.offsetToPosition(safeOffset)
-        val map = lineMap()
-        if (pos.line >= map.docLineCount || !map.hiddenDocLine[pos.line]) return offset
-        val ownerStart = map.hiddenOwnerStartLine[pos.line]
-        if (ownerStart < 0 || ownerStart !in collapsedFoldStartLines) return offset
-        val region = foldRegionByStartLine[ownerStart] ?: return offset
-        if (pos.line == region.endLine) {
-            val endLineText = textBuffer.getLine(region.endLine)
-            val trimStartCol = TextScanKernel
-                .scanLineWhitespace(endLineText, config.tabSize)
-                .leadingWhitespaceEnd
-            if (pos.column >= trimStartCol) return offset
-        }
-        val startLineText = textBuffer.getLine(ownerStart)
-        return textBuffer.positionToOffset(ownerStart, startLineText.length)
-    }
+    private fun skipFoldBackwardIfHidden(offset: Int): Int = foldingManager.skipFoldBackwardIfHidden(offset)
 
     fun moveUp(extendSelection: Boolean = false) {
         val pos = textBuffer.offsetToPosition(cursorOffset.coerceIn(0, textBuffer.length))
@@ -1163,22 +1015,18 @@ class EditorState(
         }
     }
 
-    override fun replaceSelection(replacement: String): Boolean {
-        return editorReplaceSelection(this, replacement)
-    }
+    override fun replaceSelection(replacement: String): Boolean = editorReplaceSelection(this, replacement)
 
     override fun replaceRange(
         startOffset: Int,
         endOffset: Int,
         replacement: String
-    ): Boolean {
-        return editorReplaceRange(
-            state = this,
-            startOffset = startOffset,
-            endOffset = endOffset,
-            replacement = replacement
-        )
-    }
+    ): Boolean = editorReplaceRange(
+        state = this,
+        startOffset = startOffset,
+        endOffset = endOffset,
+        replacement = replacement
+    )
 
     fun clearSelection() {
         val oldSelection = selectionRange
@@ -1192,7 +1040,7 @@ class EditorState(
         val clampedLine = line.coerceIn(0, (textBuffer.lineCount - 1).coerceAtLeast(0))
         val lineText = textBuffer.getLine(clampedLine)
         if (lineText.isEmpty()) return false
-        return TextScanKernel.findWordBounds(lineText, column) != null
+        return findSelectableWordBounds(lineText, column) != null
     }
 
     fun selectWord(line: Int, column: Int): Boolean {
@@ -1200,7 +1048,7 @@ class EditorState(
         val lineText = textBuffer.getLine(clampedLine)
         if (lineText.isEmpty()) return false
 
-        val bounds = TextScanKernel.findWordBounds(lineText, column) ?: return false
+        val bounds = findSelectableWordBounds(lineText, column) ?: return false
 
         selectRange(
             startOffset = textBuffer.positionToOffset(clampedLine, bounds.start),
@@ -1208,6 +1056,32 @@ class EditorState(
         )
         return true
     }
+
+    private fun findSelectableWordBounds(lineText: String, column: Int): WordBounds? {
+        val safeColumn = column.coerceIn(0, lineText.length)
+        TextScanKernel.findWordBounds(lineText, safeColumn)?.let { return it }
+        val adjacentWordColumn = findWordColumnBeforeAttachedPunctuation(lineText, safeColumn) ?: return null
+        return TextScanKernel.findWordBounds(lineText, adjacentWordColumn)
+    }
+
+    private fun findWordColumnBeforeAttachedPunctuation(lineText: String, column: Int): Int? {
+        if (column <= 0) return null
+        var probe = (column - 1).coerceIn(0, lineText.lastIndex)
+        var skippedPunctuation = 0
+        while (
+            probe >= 0 &&
+            skippedPunctuation < MAX_SELECTABLE_ATTACHED_PUNCTUATION &&
+            isAttachedWordPunctuation(lineText[probe])
+        ) {
+            skippedPunctuation++
+            probe--
+        }
+        if (skippedPunctuation <= 0) return null
+        return if (probe >= 0 && TextScanKernel.isWordChar(lineText[probe])) probe else null
+    }
+
+    private fun isAttachedWordPunctuation(char: Char): Boolean =
+        !char.isWhitespace() && !TextScanKernel.isWordChar(char)
 
     fun startSelection(anchorOffset: Int) {
         val oldCursor = cursorOffset
@@ -1256,175 +1130,22 @@ class EditorState(
     fun canUndo(): Boolean = textBuffer.canUndo()
     fun canRedo(): Boolean = textBuffer.canRedo()
 
-    override fun undo(): Boolean {
-        return editorUndo(this)
-    }
+    override fun undo(): Boolean = editorUndo(this)
 
-    override fun redo(): Boolean {
-        return editorRedo(this)
-    }
+    override fun redo(): Boolean = editorRedo(this)
 
-    suspend fun requestCompletion(triggerChar: Char? = null) {
-        val provider = onRequestCompletion ?: return
-        val replacingSnippetChoice = snippetChoiceCompletionActive
-        snippetChoiceCompletionActive = false
-        val requestId = ++completionRequestSeq
-        activeCompletionRequestId = requestId
+    // 补全 + snippet 状态机委托给 [completionController]（见上方构造）。以下为瘦委托，使模块内
+    // 多个 Compose 文件、交互控制器、edit-ops 与测试经 state.x() 的调用点零改动。行为与原内联实现
+    // 严格一致（requestId 自增/比对、防竞态返回、缓存置位时机、snippet 偏移与占位符聚焦顺序均逐行对应）。
+    suspend fun requestCompletion(triggerChar: Char? = null) =
+        completionController.requestCompletion(triggerChar)
 
-        val previousItems = if (replacingSnippetChoice) {
-            emptyList()
-        } else {
-            when (val ui = completionUiState) {
-                is CompletionUiState.Visible -> ui.items
-                is CompletionUiState.Loading -> ui.previousItems
-                CompletionUiState.Hidden -> completionItems
-            }
-        }
-        val previousQuery = if (replacingSnippetChoice) "" else completionQuery
-        val previousSelectedLabel = if (replacingSnippetChoice) {
-            null
-        } else {
-            completionItems
-                .getOrNull(completionSelectedIndex.coerceIn(0, completionItems.lastIndex.coerceAtLeast(0)))
-                ?.label
-        }
-        val previousSelectedIndex = if (previousItems.isEmpty()) {
-            -1
-        } else {
-            completionSelectedIndex.coerceIn(0, previousItems.lastIndex)
-        }
+    suspend fun requestHover(position: Position = cursorPosition) =
+        hoverSignatureController.requestHover(position)
 
-        publishCompletionLoading(
-            previousItems = previousItems,
-            query = previousQuery,
-            selectedIndex = previousSelectedIndex,
-            requestId = requestId
-        )
+    suspend fun requestSignatureHelp() = hoverSignatureController.requestSignatureHelp()
 
-        val result = provider(cursorPosition, triggerChar)
-        if (requestId != activeCompletionRequestId) return
-
-        when (result) {
-            is EditorCompletionFetchResult.TransientFailure -> {
-                val fallbackItems = previousItems.ifEmpty { completionItems }
-                if (fallbackItems.isNotEmpty()) {
-                    val query = completionQueryFromCursor()
-                    val filteredFallback = filterCompletionItems(fallbackItems, query)
-                    val selectedIndex = if (filteredFallback.isEmpty()) {
-                        -1
-                    } else {
-                        completionSelectedIndex.coerceIn(
-                            0,
-                            filteredFallback.lastIndex.coerceAtLeast(0)
-                        )
-                    }
-                    publishCompletionResults(
-                        items = filteredFallback,
-                        query = query,
-                        selectedIndex = selectedIndex,
-                        requestId = requestId
-                    )
-                } else {
-                    publishCompletionResults(
-                        items = emptyList(),
-                        query = "",
-                        selectedIndex = -1,
-                        requestId = requestId
-                    )
-                }
-                return
-            }
-
-            is EditorCompletionFetchResult.Success -> {
-                val query = completionQueryFromCursor()
-                cachedCompletionResults = result.items
-                cachedCompletionPrefix = query
-                val filtered = filterCompletionItems(result.items, query)
-                val selectedIndex = if (filtered.isEmpty()) {
-                    -1
-                } else {
-                    val restoredIndex = previousSelectedLabel?.let { label ->
-                        filtered.indexOfFirst { it.label == label }
-                    } ?: -1
-                    if (restoredIndex >= 0) restoredIndex else 0
-                }
-                publishCompletionResults(
-                    items = filtered,
-                    query = query,
-                    selectedIndex = selectedIndex,
-                    requestId = requestId
-                )
-            }
-        }
-    }
-
-    suspend fun requestHover(position: Position = cursorPosition) {
-        val provider = onRequestHover ?: return
-        val requestId = ++hoverRequestSeq
-        activeHoverRequestId = requestId
-        publishHoverLoading()
-        try {
-            val markdown = provider(position)?.trim()
-            if (requestId != activeHoverRequestId) return
-            if (markdown.isNullOrBlank()) {
-                activeHoverRequestId = 0L
-                clearHover()
-            } else {
-                publishHoverVisible(markdown)
-            }
-        } catch (_: Throwable) {
-            if (requestId == activeHoverRequestId) {
-                activeHoverRequestId = 0L
-                clearHover()
-            }
-        }
-    }
-
-    suspend fun requestSignatureHelp() {
-        val provider = onRequestSignatureHelp ?: return
-        val requestId = ++signatureHelpRequestSeq
-        activeSignatureHelpRequestId = requestId
-        val previousResult = when (val ui = signatureHelpUiState) {
-            is SignatureHelpUiState.Visible -> ui.result
-            is SignatureHelpUiState.Loading -> ui.previousResult
-            SignatureHelpUiState.Hidden -> null
-        }
-        publishSignatureHelpLoading(
-            previousResult = previousResult,
-            requestId = requestId
-        )
-        try {
-            val result = provider(cursorPosition)
-            if (requestId != activeSignatureHelpRequestId) return
-            val normalized = normalizeSignatureHelpResult(result)
-            if (normalized == null) {
-                activeSignatureHelpRequestId = 0L
-                clearSignatureHelp()
-            } else {
-                publishSignatureHelpVisible(
-                    result = normalized,
-                    requestId = requestId
-                )
-            }
-        } catch (_: Throwable) {
-            if (requestId == activeSignatureHelpRequestId) {
-                activeSignatureHelpRequestId = 0L
-                clearSignatureHelp()
-            }
-        }
-    }
-
-    fun refilterCompletion() {
-        val query = completionQueryFromCursor()
-        if (cachedCompletionResults.isEmpty()) return
-        val filtered = filterCompletionItems(cachedCompletionResults, query)
-        publishCompletionResults(
-            items = filtered,
-            query = query,
-            selectedIndex = if (filtered.isEmpty()) -1 else 0,
-            requestId = activeCompletionRequestId
-        )
-    }
+    fun refilterCompletion() = completionController.refilterCompletion()
 
     internal fun showInlineCompletionItems(
         items: List<EditorCompletionItem>,
@@ -1432,169 +1153,54 @@ class EditorState(
         query: String = "",
         requestId: Long = 0L,
         snippetChoiceActive: Boolean = items.isNotEmpty()
-    ) {
-        val normalizedSelectedIndex = if (items.isEmpty()) {
-            -1
-        } else {
-            selectedIndex.coerceIn(0, items.lastIndex)
-        }
-        snippetChoiceCompletionActive = snippetChoiceActive && items.isNotEmpty()
-        activeCompletionRequestId = requestId
-        cachedCompletionResults = items
-        cachedCompletionPrefix = query
-        publishCompletionResults(
-            items = items,
-            query = query,
-            selectedIndex = normalizedSelectedIndex,
-            requestId = requestId
-        )
-    }
+    ) = completionController.showInlineCompletionItems(
+        items = items,
+        selectedIndex = selectedIndex,
+        query = query,
+        requestId = requestId,
+        snippetChoiceActive = snippetChoiceActive
+    )
 
     fun applyCompletion(item: EditorCompletionItem) {
         editorApplyCompletion(this, item)
     }
 
-    fun moveCompletionSelection(delta: Int): Boolean {
-        if (completionItems.isEmpty() || delta == 0) return false
-        val size = completionItems.size
-        val current = completionSelectedIndex.coerceIn(0, size - 1)
-        val next = ((current + delta) % size + size) % size
-        publishCompletionSelection(next)
-        return true
-    }
+    fun moveCompletionSelection(delta: Int): Boolean = completionController.moveCompletionSelection(delta)
 
-    fun setCompletionSelectedIndex(index: Int): Boolean {
-        if (completionItems.isEmpty()) return false
-        if (index !in completionItems.indices) return false
-        publishCompletionSelection(index)
-        return true
-    }
+    fun setCompletionSelectedIndex(index: Int): Boolean =
+        completionController.setCompletionSelectedIndex(index)
 
-    fun applySelectedCompletion(): Boolean {
-        if (completionItems.isEmpty()) return false
-        val selectedIndex = completionSelectedIndex.coerceIn(0, completionItems.lastIndex)
-        val selectedItem = completionItems.getOrNull(selectedIndex) ?: return false
-        applyCompletion(selectedItem)
-        return true
-    }
+    fun applySelectedCompletion(): Boolean = completionController.applySelectedCompletion()
 
-    fun dismissCompletion() {
-        snippetChoiceCompletionActive = false
-        publishCompletionResults(
-            items = emptyList(),
-            query = "",
-            selectedIndex = -1,
-            requestId = activeCompletionRequestId
-        )
-        activeCompletionRequestId = 0L
-        cachedCompletionResults = emptyList()
-        cachedCompletionPrefix = ""
-    }
+    fun dismissCompletion() = completionController.dismissCompletion()
 
-    fun dismissHover() {
-        activeHoverRequestId = 0L
-        clearHover()
-    }
+    fun dismissHover() = hoverSignatureController.dismissHover()
 
-    fun dismissSignatureHelp() {
-        activeSignatureHelpRequestId = 0L
-        clearSignatureHelp()
-    }
+    fun dismissSignatureHelp() = hoverSignatureController.dismissSignatureHelp()
 
-    fun resolveDisplayedSignatureHelpIndex(
-        result: SignatureHelpResult?
-    ): Int {
-        val resolvedResult = result ?: return 0
-        val fallback = resolvedResult.activeSignature.coerceIn(0, resolvedResult.signatures.lastIndex)
-        return signatureHelpSelectedSignatureIndex?.coerceIn(0, resolvedResult.signatures.lastIndex)
-            ?: fallback
-    }
+    fun resolveDisplayedSignatureHelpIndex(result: SignatureHelpResult?): Int =
+        hoverSignatureController.resolveDisplayedSignatureHelpIndex(result)
 
-    fun selectSignatureHelp(index: Int): Boolean {
-        val result = currentSignatureHelpResult() ?: return false
-        if (index !in result.signatures.indices) return false
-        publishSignatureHelpSelection(index)
-        return true
-    }
+    fun selectSignatureHelp(index: Int): Boolean = hoverSignatureController.selectSignatureHelp(index)
 
-    fun cycleSignatureHelp(delta: Int): Boolean {
-        val result = currentSignatureHelpResult() ?: return false
-        if (delta == 0 || result.signatures.size <= 1) return false
-        val currentIndex = resolveDisplayedSignatureHelpIndex(result)
-        val size = result.signatures.size
-        val nextIndex = ((currentIndex + delta) % size + size) % size
-        publishSignatureHelpSelection(nextIndex)
-        return true
-    }
+    fun cycleSignatureHelp(delta: Int): Boolean = hoverSignatureController.cycleSignatureHelp(delta)
 
-    private fun normalizeSignatureHelpResult(
-        result: SignatureHelpResult?
-    ): SignatureHelpResult? {
-        val signatures = result?.signatures.orEmpty().filter { it.isNotBlank() }
-        if (signatures.isEmpty()) return null
-        return SignatureHelpResult(
-            signatures = signatures,
-            activeSignature = result?.activeSignature?.coerceIn(0, signatures.lastIndex) ?: 0,
-            activeParameter = result?.activeParameter?.coerceAtLeast(0) ?: 0
-        )
-    }
-
-    private fun normalizeSignatureHelpSelection(
-        result: SignatureHelpResult?,
-        selectedIndex: Int?
-    ): Int? {
-        val normalizedResult = result ?: return null
-        if (normalizedResult.signatures.isEmpty()) return null
-        return selectedIndex?.coerceIn(0, normalizedResult.signatures.lastIndex)
-    }
-
-    private fun currentSignatureHelpResult(): SignatureHelpResult? {
-        return when (val ui = signatureHelpUiState) {
-            is SignatureHelpUiState.Visible -> ui.result
-            is SignatureHelpUiState.Loading -> ui.previousResult
-            SignatureHelpUiState.Hidden -> null
-        }
-    }
-
-    internal fun startSnippetSession(session: SnippetSession) {
-        activeSnippetSession = session
-        applySnippetPlaceholderFocus(session)
-    }
+    internal fun startSnippetSession(session: SnippetSession) =
+        completionController.startSnippetSession(session)
 
     /**
      * Tab 正向跳转：前进到下一个 tabstop。
      * @return 是否消费了 Tab 键事件
      */
-    fun advanceSnippet(): Boolean {
-        val session = activeSnippetSession ?: return false
-        val next = session.advance()
-        if (next == null) {
-            cancelSnippet()
-            return true
-        }
-        activeSnippetSession = next
-        applySnippetPlaceholderFocus(next)
-        return true
-    }
+    fun advanceSnippet(): Boolean = completionController.advanceSnippet()
 
     /**
      * Shift+Tab 反向跳转：退回上一个 tabstop。
      * @return 是否消费了 Shift+Tab 键事件
      */
-    fun retreatSnippet(): Boolean {
-        val session = activeSnippetSession ?: return false
-        val prev = session.retreat() ?: return false
-        activeSnippetSession = prev
-        applySnippetPlaceholderFocus(prev)
-        return true
-    }
+    fun retreatSnippet(): Boolean = completionController.retreatSnippet()
 
-    fun cancelSnippet() {
-        activeSnippetSession = null
-        if (snippetChoiceCompletionActive) {
-            dismissCompletion()
-        }
-    }
+    fun cancelSnippet() = completionController.cancelSnippet()
 
     /**
      * 在 snippet 会话内发生编辑时，同步更新会话中所有占位符的偏移量。
@@ -1602,86 +1208,26 @@ class EditorState(
      * @param editOffset 编辑发生的绝对文本偏移
      * @param delta      变化量（插入为正，删除为负）
      */
-    internal fun adjustSnippetOffsets(editOffset: Int, delta: Int) {
-        val session = activeSnippetSession ?: return
-        activeSnippetSession = session.adjustOffsets(editOffset, delta)
-    }
+    internal fun adjustSnippetOffsets(editOffset: Int, delta: Int) =
+        completionController.adjustSnippetOffsets(editOffset, delta)
 
-    internal fun updateSnippetSession(session: SnippetSession?) {
-        activeSnippetSession = session
-    }
-
-    /**
-     * 将光标/选区定位到 [session] 当前步骤的第一个占位符位置。
-     * 若当前分组无占位符（不应发生），结束会话。
-     */
-    private fun applySnippetPlaceholderFocus(session: SnippetSession) {
-        val placeholder = session.currentPlaceholder() ?: run {
-            activeSnippetSession = null
-            return
-        }
-        val start = session.absoluteOffsetOf(placeholder)
-            .coerceIn(0, textBuffer.length)
-        val end = (start + placeholder.length).coerceIn(start, textBuffer.length)
-        if (placeholder.length > 0) {
-            moveCursorTo(end, clearSelection = false)
-            selectionRange = OffsetRange(start, end)
-        } else {
-            moveCursorTo(start)
-            selectionRange = null
-        }
-
-        val choices = placeholder.choices
-        if (choices.isNullOrEmpty()) {
-            if (snippetChoiceCompletionActive) {
-                dismissCompletion()
-            }
-            return
-        }
-
-        val currentText = textBuffer.substring(start, end)
-        val startPosition = textBuffer.offsetToPosition(start)
-        val endPosition = textBuffer.offsetToPosition(end)
-        val items = choices.map { choice ->
-            EditorCompletionItem(
-                label = choice,
-                insertText = choice,
-                kind = EditorCompletionKind.VALUE,
-                textEdit = EditorCompletionTextEdit(
-                    startLine = startPosition.line,
-                    startColumn = startPosition.column,
-                    endLine = endPosition.line,
-                    endColumn = endPosition.column,
-                    newText = choice
-                )
-            )
-        }
-        val selectedIndex = choices.indexOf(currentText).takeIf { it >= 0 } ?: 0
-        showInlineCompletionItems(
-            items = items,
-            selectedIndex = selectedIndex,
-            query = currentText
-        )
-    }
+    internal fun updateSnippetSession(session: SnippetSession?) =
+        completionController.updateSnippetSession(session)
 
     fun replaceAll(
         findText: String,
         replaceText: String,
         caseSensitive: Boolean = false,
         useRegex: Boolean = false
-    ): Int {
-        return editorReplaceAll(
-            state = this,
-            findText = findText,
-            replaceText = replaceText,
-            caseSensitive = caseSensitive,
-            useRegex = useRegex
-        )
-    }
+    ): Int = editorReplaceAll(
+        state = this,
+        findText = findText,
+        replaceText = replaceText,
+        caseSensitive = caseSensitive,
+        useRegex = useRegex
+    )
 
-    fun toggleLineComment(commentToken: String): Boolean {
-        return editorToggleLineComment(this, commentToken)
-    }
+    fun toggleLineComment(commentToken: String): Boolean = editorToggleLineComment(this, commentToken)
 
     private var cachedMaxScrollPxVersion = -1L
     private var cachedMaxScrollPxLineHeight = 0f
@@ -1705,288 +1251,16 @@ class EditorState(
         return result
     }
 
-    private fun maxScrollXPx(): Float {
-        // 横向右侧预留“可滚动空白”，避免长行滚动到末尾时文本直接贴住屏幕右边缘，
-        // 影响光标/选区/句柄的可操作性。
-        //
-        // 对齐 Sora 的思路：CodeEditor#getScrollMaxX() 里会减去 viewWidth/2，
-        // 等价于给右侧增加 half-viewport 的额外滚动空间。
-        val endPadding = viewportWidthPx * 0.5f
-
-        if (config.wordWrap) {
-            // wordWrap 通常禁用横向滚动，但双指缩放过程中需要允许短暂的 X 锚定，
-            // 否则当行号/ gutter 宽度随字体变化时会出现明显“漂移”。
-            // 缩放结束（解除冻结）后再回到 0，行为对齐 Sora。
-            return if (isWordWrapLayoutFrozen()) {
-                endPadding.coerceAtLeast(0f)
-            } else {
-                0f
-            }
-        }
-
-        val maxLineWidth = ensureMaxLineWidthPx()
-        return (maxLineWidth - viewportWidthPx + endPadding).coerceAtLeast(0f)
-    }
-
-    private fun ensureMaxLineWidthPx(): Float {
-        val version = textBuffer.version
-        if (cachedMaxLineCharsVersion != version) {
-            var resolvedForCurrentVersion = false
-            cachedMaxLineChars = if (
-                widthLineSnapshotVersion == version &&
-                widthLineLengths.size == textBuffer.lineCount
-            ) {
-                resolvedForCurrentVersion = true
-                maxOf(widthLineMaxChars, visibleAndCursorMaxLineChars())
-            } else if (textBuffer.lineCount <= HORIZONTAL_FULL_SCAN_LINE_THRESHOLD) {
-                resolvedForCurrentVersion = true
-                buildFullWidthSnapshot(version)
-            } else {
-                if (widthScanVersion != version) {
-                    widthScanVersion = version
-                    widthScanNextLine = 0
-                    widthScanLineLengths = IntArray(textBuffer.lineCount)
-                    widthScanMaxChars = maxOf(
-                        visibleAndCursorMaxLineChars(),
-                        sampleMaxLineChars(HORIZONTAL_WIDTH_BOOTSTRAP_SAMPLES)
-                    )
-                } else {
-                    widthScanMaxChars = maxOf(widthScanMaxChars, visibleAndCursorMaxLineChars())
-                }
-
-                val scanStartNs = System.nanoTime()
-                var scannedCount = 0
-                val lineCount = textBuffer.lineCount
-                while (
-                    widthScanNextLine < lineCount &&
-                    scannedCount < HORIZONTAL_WIDTH_SCAN_MAX_BATCH_LINES
-                ) {
-                    val lineLength = textBuffer.getLine(widthScanNextLine).length
-                    widthScanLineLengths[widthScanNextLine] = lineLength
-                    if (lineLength > widthScanMaxChars) {
-                        widthScanMaxChars = lineLength
-                    }
-                    widthScanNextLine++
-                    scannedCount++
-                    if (
-                        scannedCount % HORIZONTAL_WIDTH_SCAN_CHECK_INTERVAL == 0 &&
-                        (System.nanoTime() - scanStartNs) >= HORIZONTAL_WIDTH_SCAN_TIME_BUDGET_NS
-                    ) {
-                        break
-                    }
-                }
-
-                if (widthScanNextLine >= lineCount) {
-                    widthLineLengths = widthScanLineLengths
-                    widthLineMaxChars = widthScanMaxChars
-                    widthLineSnapshotVersion = version
-                    resolvedForCurrentVersion = true
-                } else {
-                    widthLineSnapshotVersion = -1L
-                }
-                widthScanMaxChars
-            }
-            cachedMaxLineCharsVersion = if (
-                resolvedForCurrentVersion ||
-                textBuffer.lineCount <= HORIZONTAL_FULL_SCAN_LINE_THRESHOLD ||
-                widthScanNextLine >= textBuffer.lineCount
-            ) {
-                version
-            } else {
-                -1L
-            }
-        }
-        return cachedMaxLineChars * charWidthPx
-    }
-
-    private fun visibleAndCursorMaxLineChars(): Int {
-        val lineCount = textBuffer.lineCount
-        if (lineCount <= 0) return 0
-        val maxLineIndex = lineCount - 1
-        val snapshot = widthLineLengths
-        val snapshotValid = widthLineSnapshotVersion == textBuffer.version && snapshot.size == lineCount
-        val map = visualLineMap()
-        val visibleMax = if (visibleLines.isEmpty()) {
-            0
-        } else {
-            var maxChars = 0
-            for (visualLine in visibleLines) {
-                val safeVisual = visualLine.coerceIn(0, (map.visualLineCount - 1).coerceAtLeast(0))
-                val visibleIndex = resolveVisibleIndexForVisualLine(map, safeVisual)
-                val docLine = map.visibleDocLines.getOrElse(visibleIndex) { 0 }
-                if (docLine !in 0..maxLineIndex) continue
-                val length = if (snapshotValid) {
-                    snapshot[docLine]
-                } else {
-                    lineVisualColumnsForWidth(textBuffer.getLine(docLine))
-                }
-                if (length > maxChars) {
-                    maxChars = length
-                }
-            }
-            maxChars
-        }
-        val curLine = cursorLine.coerceIn(0, maxLineIndex)
-        val cursorLineLength = if (snapshotValid) {
-            snapshot[curLine]
-        } else {
-            lineVisualColumnsForWidth(textBuffer.getLine(curLine))
-        }
-        return maxOf(visibleMax, cursorLineLength + HORIZONTAL_WIDTH_GUARD_CHARS)
-    }
-
-    private fun sampleMaxLineChars(sampleCount: Int): Int {
-        val lineCount = textBuffer.lineCount
-        if (lineCount <= 0) return 0
-        if (lineCount <= sampleCount) {
-            return (0 until lineCount).maxOfOrNull { lineVisualColumnsForWidth(textBuffer.getLine(it)) } ?: 0
-        }
-        val maxLineIndex = lineCount - 1
-        var maxChars = 0
-        val divisor = (sampleCount - 1).coerceAtLeast(1)
-        for (index in 0 until sampleCount) {
-            val line = (index.toLong() * maxLineIndex / divisor).toInt()
-            val length = lineVisualColumnsForWidth(textBuffer.getLine(line))
-            if (length > maxChars) {
-                maxChars = length
-            }
-        }
-        return maxChars
-    }
-
-    private fun buildFullWidthSnapshot(version: Long): Int {
-        val lineCount = textBuffer.lineCount
-        if (lineCount <= 0) {
-            widthLineLengths = IntArray(0)
-            widthLineMaxChars = 0
-            widthLineSnapshotVersion = version
-            widthScanVersion = -1L
-            widthScanNextLine = 0
-            widthScanMaxChars = 0
-            widthScanLineLengths = IntArray(0)
-            return 0
-        }
-        val lengths = IntArray(lineCount)
-        var maxChars = 0
-        for (line in 0 until lineCount) {
-            val length = lineVisualColumnsForWidth(textBuffer.getLine(line))
-            lengths[line] = length
-            if (length > maxChars) {
-                maxChars = length
-            }
-        }
-        widthLineLengths = lengths
-        widthLineMaxChars = maxChars
-        widthLineSnapshotVersion = version
-        widthScanVersion = -1L
-        widthScanNextLine = 0
-        widthScanMaxChars = 0
-        widthScanLineLengths = IntArray(0)
-        return maxChars
-    }
+    // 横向最大滚动上界委托给 [EditorMaxLineWidthTracker]：该跟踪器维护“每行视觉列数快照 +
+    // 当前最大列数”，行为与原内联实现严格一致（见该类文档说明的两处刻意保留现状）。
+    private fun maxScrollXPx(): Float = maxLineWidthTracker.maxScrollXPx()
 
     private fun invalidateWidthSnapshot() {
-        widthLineSnapshotVersion = -1L
-        widthLineMaxChars = 0
-        widthLineLengths = IntArray(0)
-        widthScanVersion = -1L
-        widthScanNextLine = 0
-        widthScanMaxChars = 0
-        widthScanLineLengths = IntArray(0)
-        cachedMaxLineCharsVersion = -1L
+        maxLineWidthTracker.invalidateWidthSnapshot()
     }
 
     private fun applyWidthSnapshotChange(change: TextChange, currentVersion: Long) {
-        if (widthLineSnapshotVersion < 0L) {
-            cachedMaxLineCharsVersion = -1L
-            return
-        }
-        if (widthLineSnapshotVersion + 1L != currentVersion) {
-            invalidateWidthSnapshot()
-            return
-        }
-
-        val oldLengths = widthLineLengths
-        val oldLineCount = oldLengths.size
-        val newLineCount = textBuffer.lineCount
-        if (oldLineCount <= 0 || newLineCount <= 0) {
-            buildFullWidthSnapshot(currentVersion)
-            cachedMaxLineChars = maxOf(widthLineMaxChars, visibleAndCursorMaxLineChars())
-            cachedMaxLineCharsVersion = currentVersion
-            return
-        }
-
-        val startLine = change.startLine.coerceIn(0, oldLineCount - 1)
-        val oldChangedEnd = change.endLine.coerceIn(startLine, oldLineCount - 1)
-        val lineDelta = change.lineDelta
-        val expectedNewLineCount = oldLineCount + lineDelta
-        if (expectedNewLineCount != newLineCount) {
-            invalidateWidthSnapshot()
-            return
-        }
-
-        val newChangedEnd = maxOf(startLine, oldChangedEnd + lineDelta)
-            .coerceIn(startLine, (newLineCount - 1).coerceAtLeast(startLine))
-        val insertedCount = newChangedEnd - startLine + 1
-        val insertedLengths = IntArray(insertedCount)
-        var insertedMax = 0
-        for (index in 0 until insertedCount) {
-            val length = lineVisualColumnsForWidth(textBuffer.getLine(startLine + index))
-            insertedLengths[index] = length
-            if (length > insertedMax) {
-                insertedMax = length
-            }
-        }
-
-        val updatedLengths = IntArray(newLineCount)
-        if (startLine > 0) {
-            System.arraycopy(oldLengths, 0, updatedLengths, 0, startLine)
-        }
-        if (insertedCount > 0) {
-            System.arraycopy(insertedLengths, 0, updatedLengths, startLine, insertedCount)
-        }
-        val oldSuffixStart = oldChangedEnd + 1
-        val oldSuffixCount = oldLineCount - oldSuffixStart
-        if (oldSuffixCount > 0) {
-            System.arraycopy(
-                oldLengths,
-                oldSuffixStart,
-                updatedLengths,
-                startLine + insertedCount,
-                oldSuffixCount
-            )
-        }
-
-        var removedHadOldMax = false
-        val oldMax = widthLineMaxChars
-        var line = startLine
-        while (line <= oldChangedEnd) {
-            if (oldLengths[line] == oldMax) {
-                removedHadOldMax = true
-                break
-            }
-            line++
-        }
-
-        var updatedMax = maxOf(oldMax, insertedMax)
-        if (removedHadOldMax && insertedMax < oldMax) {
-            updatedMax = 0
-            for (length in updatedLengths) {
-                if (length > updatedMax) {
-                    updatedMax = length
-                }
-            }
-        }
-
-        widthLineLengths = updatedLengths
-        widthLineMaxChars = updatedMax
-        widthLineSnapshotVersion = currentVersion
-        widthScanVersion = -1L
-        widthScanNextLine = 0
-        widthScanMaxChars = 0
-        widthScanLineLengths = IntArray(0)
-        cachedMaxLineChars = maxOf(widthLineMaxChars, visibleAndCursorMaxLineChars())
-        cachedMaxLineCharsVersion = currentVersion
+        maxLineWidthTracker.applyWidthSnapshotChange(change, currentVersion)
     }
 
     private fun clampScroll() {
@@ -2002,12 +1276,12 @@ class EditorState(
         if (old.tabSize != new.tabSize) {
             // TabSize 影响：横向最大宽度/软换行分段/命中测试，直接失效相关快照。
             invalidateWidthSnapshot()
-            visualLineMapCache = null
+            visualLineMapper.invalidateVisualLineMapCache()
             wordWrapLayoutCache.invalidateAll()
         }
 
         if (old.wordWrap != new.wordWrap) {
-            visualLineMapCache = null
+            visualLineMapper.invalidateVisualLineMapCache()
             if (new.wordWrap) {
                 // wordWrap 开启后横向滚动被禁用，强制回到 0 避免“坐标系漂移”。
                 scrollOffsetXPx = 0f
@@ -2019,7 +1293,7 @@ class EditorState(
         }
 
         if (old.codeFolding != new.codeFolding) {
-            visualLineMapCache = null
+            visualLineMapper.invalidateVisualLineMapCache()
         }
 
         clampScroll()
@@ -2043,7 +1317,7 @@ class EditorState(
                 bottom - (viewportHeightPx - paddingY)
             }
 
-        else -> scrollOffsetPx
+            else -> scrollOffsetPx
         }.coerceIn(0f, maxScrollPx())
 
         // 开启 wordWrap 时不再进行横向滚动对齐（横向滚动被禁用）。
@@ -2080,549 +1354,62 @@ class EditorState(
         }.coerceIn(0f, maxScrollXPx())
     }
 
-    /**
-     * 更新折叠区间（通常由 Tree-sitter/LSP 等外部数据源计算后传入）。
-     *
-     * @param documentVersion 该折叠结果对应的文档版本（必须与当前 [textBuffer.version] 一致，否则忽略）。
-     */
-    fun setFoldRegions(
-        regions: List<FoldRegion>,
-        documentVersion: Long
-    ) {
-        if (documentVersion != textBuffer.version) return
+    // 代码折叠（按行隐藏）委托给 [EditorFoldingManager]：保留以下瘦委托，使本类高层方法
+    // （moveCursorTo / moveLeft·moveRight 的折叠跳过等）与模块内 16+ 文件经 state.x() 的调用点
+    // 零改动。行为与原内联实现严格一致。
+    fun setFoldRegions(regions: List<FoldRegion>, documentVersion: Long) =
+        foldingManager.setFoldRegions(regions, documentVersion)
 
-        val lineCount = textBuffer.lineCount
-        if (!config.codeFolding || lineCount <= 0) {
-            clearFoldRegionsInternal()
-            return
-        }
+    fun clearFoldRegions() = foldingManager.clearFoldRegions()
 
-        val normalized = regions.asSequence()
-            .map { region ->
-                val start = region.startLine.coerceIn(0, (lineCount - 1).coerceAtLeast(0))
-                val end = region.endLine.coerceIn(start, (lineCount - 1).coerceAtLeast(0))
-                FoldRegion(startLine = start, endLine = end)
-            }
-            .filter { it.isFoldable }
-            .filter { region ->
-                val broken = brokenFoldRecords.find { it.startLine == region.startLine }
-                broken == null || region.endLine == broken.originalEndLine
-            }
-            .distinct()
-            .sortedWith(compareBy<FoldRegion> { it.startLine }.thenByDescending { it.endLine })
-            .toList()
+    fun toggleFoldAtLine(line: Int) = foldingManager.toggleFoldAtLine(line)
 
-        brokenFoldRecords.removeAll { broken ->
-            normalized.none { it.startLine == broken.startLine }
-        }
+    internal fun isFoldCollapsedAtLine(line: Int): Boolean = foldingManager.isFoldCollapsedAtLine(line)
 
-        foldRegions = normalized
-        foldRegionsDocumentVersion = documentVersion
-        foldRegionByStartLine = normalized.associateBy { it.startLine }
-        collapsedFoldStartLines = collapsedFoldStartLines
-            .filter { it in foldRegionByStartLine }
-            .toSet()
+    internal fun isFoldingDataValid(): Boolean = foldingManager.isFoldingDataValid()
 
-        applyFoldableDecorations(startLines = foldRegionByStartLine.keys)
-        onFoldDataChanged()
-        clampScroll()
+    internal fun isCollapsedFoldStart(line: Int): Boolean = foldingManager.isCollapsedFoldStart(line)
 
-        Timber.tag("EditorState").d(
-            "setFoldRegions: input=%d, normalized=%d, decorations=%d, docVersion=%d, bufVersion=%d",
-            regions.size, normalized.size, foldRegionByStartLine.size,
-            documentVersion, textBuffer.version
-        )
-    }
+    internal fun collapsedFoldEndLine(startLine: Int): Int = foldingManager.collapsedFoldEndLine(startLine)
 
-    fun clearFoldRegions() {
-        clearFoldRegionsInternal()
-    }
+    internal fun isFoldEndLineVirtuallyVisible(docLine: Int): Boolean =
+        foldingManager.isFoldEndLineVirtuallyVisible(docLine)
 
-    fun toggleFoldAtLine(line: Int) {
-        if (!config.codeFolding) return
-        if (foldRegionsDocumentVersion != textBuffer.version) return
-        val lineCount = textBuffer.lineCount
-        if (lineCount <= 0) return
-        val startLine = line.coerceIn(0, lineCount - 1)
-        val region = foldRegionByStartLine[startLine] ?: return
-        if (!region.isFoldable) return
+    internal fun foldOwnerForEndLine(docLine: Int): Int = foldingManager.foldOwnerForEndLine(docLine)
 
-        val wasCollapsed = startLine in collapsedFoldStartLines
-        collapsedFoldStartLines = if (wasCollapsed) {
-            collapsedFoldStartLines - startLine
-        } else {
-            collapsedFoldStartLines + startLine
-        }
-        onFoldDataChanged()
+    internal fun markFoldAsBroken(startLine: Int) = foldingManager.markFoldAsBroken(startLine)
 
-        // 折叠后：若光标落在隐藏区间内，将其回退到折叠起始行，避免”光标消失”。
-        if (!wasCollapsed) {
-            val curPos = textBuffer.offsetToPosition(cursorOffset.coerceIn(0, textBuffer.length))
-            val curLine = curPos.line
-            if (curLine in (region.startLine + 1)..region.endLine) {
-                val lineText = textBuffer.getLine(region.startLine)
-                val safeColumn = curPos.column.coerceIn(0, lineText.length)
-                moveCursorTo(textBuffer.positionToOffset(region.startLine, safeColumn))
-            }
-        }
-        clampScroll()
-    }
+    internal fun foldOwnerForHiddenLine(docLine: Int): Int = foldingManager.foldOwnerForHiddenLine(docLine)
 
-    internal fun isFoldCollapsedAtLine(line: Int): Boolean {
-        return line in collapsedFoldStartLines
-    }
+    internal fun hasHiddenDiagnosticsInFold(startLine: Int): Boolean =
+        foldingManager.hasHiddenDiagnosticsInFold(startLine)
 
-    internal fun isFoldingDataValid(): Boolean {
-        return config.codeFolding && foldRegionsDocumentVersion == textBuffer.version
-    }
+    private fun revealLineIfFolded(docLine: Int) = foldingManager.revealLineIfFolded(docLine)
 
-    internal fun isCollapsedFoldStart(line: Int): Boolean {
-        return isFoldingDataValid() && line in collapsedFoldStartLines
-    }
+    private fun resolveVisualLineForDocLine(docLine: Int): Int = visualLineForDocLine(docLine)
 
-    internal fun collapsedFoldEndLine(startLine: Int): Int {
-        if (!isCollapsedFoldStart(startLine)) return -1
-        return foldRegionByStartLine[startLine]?.endLine ?: -1
-    }
+    internal fun visualLineCount(): Int = visualLineMap().visualLineCount.coerceAtLeast(0)
 
-    /**
-     * 折叠末行是否"虚拟可见"。
-     *
-     * IntelliJ 风格：折叠末行（如包含 `}` 的行）虽然在 lineMap 中被标记为 hidden，
-     * 但其 trim 后的文本作为折叠装饰的一部分显示在起始行末尾，光标可以定位到该文本上。
-     */
-    internal fun isFoldEndLineVirtuallyVisible(docLine: Int): Boolean {
-        if (!isFoldingDataValid()) return false
-        val map = lineMap()
-        if (docLine < 0 || docLine >= map.docLineCount) return false
-        if (!map.hiddenDocLine[docLine]) return false
-        val ownerStart = map.hiddenOwnerStartLine[docLine]
-        if (ownerStart < 0 || ownerStart !in collapsedFoldStartLines) return false
-        val region = foldRegionByStartLine[ownerStart] ?: return false
-        return docLine == region.endLine
-    }
+    // 视觉行映射（folding + wordWrap）委托给 [EditorVisualLineMapper]：保留以下瘦委托，
+    // 使 EditorState 内的高层方法（docLineForVisualLine / visualLineForPosition / 渲染口径等）
+    // 调用点零改动。行为与原内联实现严格一致。
+    private fun visualLineMap(): EditorVisualLineMapper.VisualLineMap = visualLineMapper.visualLineMap()
 
-    internal fun foldOwnerForEndLine(docLine: Int): Int {
-        if (!isFoldEndLineVirtuallyVisible(docLine)) return -1
-        return lineMap().hiddenOwnerStartLine[docLine]
-    }
+    private fun resolveVisibleIndexForVisualLine(
+        map: EditorVisualLineMapper.VisualLineMap,
+        visualLine: Int
+    ): Int = visualLineMapper.resolveVisibleIndexForVisualLine(map, visualLine)
 
-    internal fun markFoldAsBroken(startLine: Int) {
-        val region = foldRegionByStartLine[startLine] ?: return
-        brokenFoldRecords.add(BrokenFoldRecord(startLine, region.endLine))
-    }
+    private fun resolveVisibleIndexForDocLine(docLine: Int): Int =
+        visualLineMapper.resolveVisibleIndexForDocLine(docLine)
 
-    internal fun foldOwnerForHiddenLine(docLine: Int): Int {
-        if (!isFoldingDataValid()) return -1
-        val map = lineMap()
-        if (docLine < 0 || docLine >= map.docLineCount) return -1
-        if (!map.hiddenDocLine[docLine]) return -1
-        return map.hiddenOwnerStartLine[docLine]
-    }
-
-    internal fun hasHiddenDiagnosticsInFold(startLine: Int): Boolean {
-        if (!isFoldingDataValid()) return false
-        if (startLine !in collapsedFoldStartLines) return false
-        val region = foldRegionByStartLine[startLine] ?: return false
-        val hiddenStart = (region.startLine + 1).coerceAtLeast(0)
-        val hiddenEnd = region.endLine
-        if (hiddenEnd <= hiddenStart) return false
-        val sortedDiagLines = diagnosticLinesSorted
-        if (sortedDiagLines.isEmpty()) return false
-        var lo = 0
-        var hi = sortedDiagLines.size - 1
-        while (lo <= hi) {
-            val mid = (lo + hi) ushr 1
-            when {
-                sortedDiagLines[mid] < hiddenStart -> lo = mid + 1
-                sortedDiagLines[mid] > hiddenEnd -> hi = mid - 1
-                else -> return true
-            }
-        }
-        return false
-    }
-
-    private fun clearFoldRegionsInternal() {
-        foldRegions = emptyList()
-        foldRegionsDocumentVersion = -1L
-        foldRegionByStartLine = emptyMap()
-        collapsedFoldStartLines = emptySet()
-        applyFoldableDecorations(startLines = emptySet())
-        onFoldDataChanged()
-        clampScroll()
-    }
-
-    private fun onFoldDataChanged() {
-        foldDataVersion += 1
-        lineMapCache = null
-    }
-
-    private fun applyFoldableDecorations(startLines: Set<Int>) {
-        // 先清理旧 foldable
-        val oldFoldableLines = gutterDecorations
-            .filterValues { it.foldable }
-            .keys
-            .toList()
-        oldFoldableLines.forEach { line ->
-            if (line in startLines) return@forEach
-            val existing = gutterDecorations[line] ?: return@forEach
-            val updated = existing.copy(foldable = false)
-            if (updated.breakpoint || updated.bookmark || updated.hasDiagnostic) {
-                gutterDecorations[line] = updated
-            } else {
-                gutterDecorations.remove(line)
-            }
-        }
-
-        // 再设置新 foldable
-        startLines.forEach { line ->
-            val existing = gutterDecorations[line] ?: GutterDecoration()
-            gutterDecorations[line] = existing.copy(foldable = true)
-        }
-    }
-
-    private fun revealLineIfFolded(docLine: Int) {
-        if (!config.codeFolding) return
-        if (foldRegionsDocumentVersion != textBuffer.version) return
-        val lineCount = textBuffer.lineCount
-        if (lineCount <= 0) return
-        val safeLine = docLine.coerceIn(0, lineCount - 1)
-
-        var guard = 0
-        while (guard < 64) {
-            val map = lineMap()
-            if (safeLine >= map.docLineCount) return
-            if (!map.hiddenDocLine[safeLine]) return
-            val ownerStart = map.hiddenOwnerStartLine[safeLine]
-            if (ownerStart < 0) return
-            if (ownerStart !in collapsedFoldStartLines) return
-            val region = foldRegionByStartLine[ownerStart]
-            if (region != null && safeLine == region.endLine) return
-            collapsedFoldStartLines = collapsedFoldStartLines - ownerStart
-            onFoldDataChanged()
-            guard++
-        }
-    }
-
-    private fun resolveVisualLineForDocLine(docLine: Int): Int {
-        return visualLineForDocLine(docLine)
-    }
-
-    internal fun visualLineCount(): Int {
-        return visualLineMap().visualLineCount.coerceAtLeast(0)
-    }
-
-    private fun resolveVisibleIndexForDocLine(docLine: Int): Int {
-        val map = lineMap()
-        if (map.docLineCount <= 0) return -1
-        val safeLine = docLine.coerceIn(0, map.docLineCount - 1)
-        val direct = map.docToVisualLine[safeLine]
-        if (direct >= 0) return direct
-        val ownerStart = map.hiddenOwnerStartLine.getOrNull(safeLine) ?: -1
-        if (ownerStart >= 0 && ownerStart < map.docLineCount) {
-            val ownerVisual = map.docToVisualLine[ownerStart]
-            if (ownerVisual >= 0) return ownerVisual
-        }
-        return -1
-    }
-
-    private fun resolveVisibleIndexForVisualLine(map: VisualLineMap, visualLine: Int): Int {
-        val starts = map.firstVisualLineByVisibleIndex
-        if (starts.isEmpty()) return 0
-        val target = visualLine.coerceAtLeast(0)
-        // 查找最后一个 start <= target 的索引
-        var low = 0
-        var high = starts.size - 1
-        var result = 0
-        while (low <= high) {
-            val mid = (low + high) ushr 1
-            val value = starts[mid]
-            if (value <= target) {
-                result = mid
-                low = mid + 1
-            } else {
-                high = mid - 1
-            }
-        }
-        return result.coerceIn(0, starts.lastIndex)
-    }
-
-    private fun visualLineMap(): VisualLineMap {
-        val currentVersion = textBuffer.version
-        val foldingEnabled = config.codeFolding && foldRegionsDocumentVersion == currentVersion
-        val wordWrapEnabled = config.wordWrap
-        val wrapColumns = if (wordWrapEnabled) {
-            frozenWordWrapColumns ?: run {
-                val safeCharWidth = charWidthPx.coerceAtLeast(1f)
-                val safeViewportWidth = viewportWidthPx.coerceAtLeast(1f)
-                (safeViewportWidth / safeCharWidth).toInt().coerceAtLeast(1)
-            }
-        } else {
-            0
-        }
-        val tabSize = config.tabSize
-        val docLineCount = textBuffer.lineCount.coerceAtLeast(0)
-
-        val epoch = visualLineMapEpoch(
-            currentVersion, foldDataVersion, foldingEnabled,
-            wordWrapEnabled, wrapColumns, tabSize, docLineCount
-        )
-        val cached = visualLineMapCache
-        if (cached != null && epoch == visualLineMapCacheEpoch) {
-            return cached
-        }
-
-        val base = lineMap()
-        val visibleDocLines = base.visualToDocLine
-        val visibleCount = visibleDocLines.size
-        if (visibleCount <= 0 || docLineCount <= 0) {
-            val built = VisualLineMap(
-                docLineCount = docLineCount,
-                visibleDocLines = visibleDocLines,
-                firstVisualLineByVisibleIndex = IntArray(0),
-                visualLineCountByVisibleIndex = IntArray(0),
-                visualLineCount = 0,
-                wordWrapEnabled = false,
-                wrapColumns = wrapColumns
-            )
-            visualLineMapCache = built
-            visualLineMapCacheEpoch = epoch
-            return built
-        }
-
-        val firstVisual = IntArray(visibleCount)
-        val visualCounts = IntArray(visibleCount)
-        var totalVisualLines = 0
-
-        if (!wordWrapEnabled || wrapColumns <= 0) {
-            for (i in 0 until visibleCount) {
-                firstVisual[i] = i
-                visualCounts[i] = 1
-            }
-            totalVisualLines = visibleCount
-        } else {
-            val safeWrapColumns = wrapColumns.coerceAtLeast(1)
-            val counts = ensureDocSegmentCounts(
-                wrapColumns = safeWrapColumns,
-                tabSize = tabSize,
-                docLineCount = docLineCount,
-                textVersion = currentVersion
-            )
-            for (i in 0 until visibleCount) {
-                firstVisual[i] = totalVisualLines
-                val docLine = visibleDocLines[i].coerceIn(0, docLineCount - 1)
-                val segments = if (docLine < counts.size) counts[docLine] else 1
-                visualCounts[i] = segments
-                totalVisualLines += segments
-            }
-        }
-
-        val built = VisualLineMap(
-            docLineCount = docLineCount,
-            visibleDocLines = visibleDocLines,
-            firstVisualLineByVisibleIndex = firstVisual,
-            visualLineCountByVisibleIndex = visualCounts,
-            visualLineCount = totalVisualLines.coerceAtLeast(0),
-            wordWrapEnabled = wordWrapEnabled && wrapColumns > 0,
-            wrapColumns = wrapColumns
-        )
-        visualLineMapCache = built
-        visualLineMapCacheEpoch = epoch
-        return built
-    }
-
-    /**
-     * 返回按文档行索引的 wrap segmentCount。
-     * 命中缓存直接返回；否则按 wrap/tabSize/docLineCount/textVersion 任一变化做全量重建。
-     * 文本增量变化走 [applyTextChangeToDocSegmentCounts]（在 [onTextBufferChanged] 内调用）。
-     */
-    private fun ensureDocSegmentCounts(
-        wrapColumns: Int,
-        tabSize: Int,
-        docLineCount: Int,
-        textVersion: Long
-    ): IntArray {
-        val cached = docSegmentCounts
-        if (cached != null &&
-            docSegmentCountsWrapColumns == wrapColumns &&
-            docSegmentCountsTabSize == tabSize &&
-            docSegmentCountsVersion == textVersion &&
-            cached.size == docLineCount
-        ) {
-            return cached
-        }
-        val arr = IntArray(docLineCount)
-        for (i in 0 until docLineCount) {
-            arr[i] = computeSegmentCountForLine(i, wrapColumns, tabSize, textVersion)
-        }
-        docSegmentCounts = arr
-        docSegmentCountsWrapColumns = wrapColumns
-        docSegmentCountsTabSize = tabSize
-        docSegmentCountsVersion = textVersion
-        return arr
-    }
-
-    private fun computeSegmentCountForLine(
-        docLine: Int,
-        wrapColumns: Int,
-        tabSize: Int,
-        textVersion: Long
-    ): Int {
-        val lineText = textBuffer.getLine(docLine)
-        return wordWrapLayoutCache.getWrapLayout(
-            line = docLine,
-            lineText = lineText,
-            textVersion = textVersion,
-            wrapColumns = wrapColumns,
-            tabSize = tabSize
-        ).segmentCount
-    }
-
-    /**
-     * 将 [TextChange] 增量应用到 [docSegmentCounts]：
-     * - head [0, startLine) 原样拷贝；
-     * - 编辑窗 [startLine, newChangedEndLine] 重算（调用 wordWrapLayoutCache，此时它已 applyTextChange 过）；
-     * - tail (oldEnd, oldDocCount) 按 lineDelta 平移到 (newEnd, newDocCount)。
-     *
-     * 调用方必须在 [wordWrapLayoutCache] 的 applyTextChange 之后调，保证编辑窗内各行的 wrap layout
-     * 可以正确重建（旧 cache entry 已被移除）。
-     */
     private fun applyTextChangeToDocSegmentCounts(change: TextChange, newVersion: Long) {
-        val cached = docSegmentCounts ?: return
-        val wrapColumns = docSegmentCountsWrapColumns
-        val tabSize = docSegmentCountsTabSize
-        if (wrapColumns <= 0) {
-            // 签名已经不再有效（wrapColumns 还没被初始化成合法值）。
-            docSegmentCounts = null
-            return
-        }
-        val oldDocCount = cached.size
-        val startLine = change.startLine.coerceIn(0, oldDocCount)
-        val oldEnd = change.endLine.coerceIn(startLine, oldDocCount - 1)
-        val delta = change.lineDelta
-        val newDocCount = oldDocCount + delta
-        if (newDocCount <= 0) {
-            docSegmentCounts = null
-            return
-        }
-        val newEnd = (oldEnd + delta).coerceIn(startLine, newDocCount - 1)
-        val arr = IntArray(newDocCount)
-        // head: [0, startLine)
-        val headLen = startLine.coerceAtMost(oldDocCount)
-        if (headLen > 0) System.arraycopy(cached, 0, arr, 0, headLen)
-        // tail: old [oldEnd+1, oldDocCount) → new [newEnd+1, newDocCount)
-        val tailSrc = (oldEnd + 1).coerceAtMost(oldDocCount)
-        val tailDst = (newEnd + 1).coerceIn(0, newDocCount)
-        val tailLen = minOf(oldDocCount - tailSrc, newDocCount - tailDst).coerceAtLeast(0)
-        if (tailLen > 0) System.arraycopy(cached, tailSrc, arr, tailDst, tailLen)
-        // edited window: [startLine, newEnd] 重算
-        var i = startLine
-        val limit = newEnd.coerceAtMost(newDocCount - 1)
-        while (i <= limit) {
-            arr[i] = computeSegmentCountForLine(i, wrapColumns, tabSize, newVersion)
-            i++
-        }
-        docSegmentCounts = arr
-        docSegmentCountsVersion = newVersion
+        visualLineMapper.applyTextChangeToDocSegmentCounts(change, newVersion)
     }
 
-    private fun lineMap(): LineMap {
-        val foldingEnabled = config.codeFolding && foldRegionsDocumentVersion == textBuffer.version
-        val docLineCount = textBuffer.lineCount
-        val cached = lineMapCache
-        if (
-            cached != null &&
-            lineMapCacheFoldDataVersion == foldDataVersion &&
-            lineMapCacheFoldingEnabled == foldingEnabled &&
-            cached.docLineCount == docLineCount
-        ) {
-            return cached
-        }
+    private fun lineVisualColumnsForWidth(lineText: String): Int = TextScanKernel.measureVisualColumns(lineText, config.tabSize)
 
-        val safeDocLineCount = docLineCount.coerceAtLeast(0)
-        val built = buildLineMap(
-            docLineCount = safeDocLineCount,
-            foldingEnabled = foldingEnabled
-        )
-        lineMapCache = built
-        lineMapCacheFoldDataVersion = foldDataVersion
-        lineMapCacheFoldingEnabled = foldingEnabled
-        return built
-    }
-
-    private fun buildLineMap(docLineCount: Int, foldingEnabled: Boolean): LineMap {
-        if (docLineCount <= 0) {
-            return LineMap(
-                docLineCount = 0,
-                visualToDocLine = IntArray(0),
-                docToVisualLine = IntArray(0),
-                hiddenDocLine = BooleanArray(0),
-                hiddenOwnerStartLine = IntArray(0)
-            )
-        }
-
-        if (!foldingEnabled || collapsedFoldStartLines.isEmpty() || foldRegionByStartLine.isEmpty()) {
-            return LineMap(
-                docLineCount = docLineCount,
-                visualToDocLine = IntArray(docLineCount) { it },
-                docToVisualLine = IntArray(docLineCount) { it },
-                hiddenDocLine = BooleanArray(docLineCount),
-                hiddenOwnerStartLine = IntArray(docLineCount) { -1 }
-            )
-        }
-
-        val hidden = BooleanArray(docLineCount)
-        val hiddenOwner = IntArray(docLineCount) { -1 }
-
-        // 只应用“可见的折叠起始行”对应的折叠，避免内层折叠被外层折叠覆盖时重复计算。
-        val sortedStarts = collapsedFoldStartLines.toIntArray().apply { sort() }
-        for (start in sortedStarts) {
-            val region = foldRegionByStartLine[start] ?: continue
-            val safeStart = start.coerceIn(0, docLineCount - 1)
-            if (hidden[safeStart]) continue
-            val safeEnd = region.endLine.coerceIn(safeStart, docLineCount - 1)
-            if (safeEnd <= safeStart) continue
-
-            for (line in (safeStart + 1)..safeEnd) {
-                hidden[line] = true
-                hiddenOwner[line] = safeStart
-            }
-        }
-
-        var hiddenCount = 0
-        for (i in 0 until docLineCount) {
-            if (hidden[i]) hiddenCount++
-        }
-        val visualCount = (docLineCount - hiddenCount).coerceAtLeast(0)
-        val visualToDoc = IntArray(visualCount)
-        val docToVisual = IntArray(docLineCount) { -1 }
-
-        var visualIndex = 0
-        for (docLine in 0 until docLineCount) {
-            if (hidden[docLine]) continue
-            if (visualIndex >= visualCount) break
-            visualToDoc[visualIndex] = docLine
-            docToVisual[docLine] = visualIndex
-            visualIndex++
-        }
-
-        return LineMap(
-            docLineCount = docLineCount,
-            visualToDocLine = visualToDoc,
-            docToVisualLine = docToVisual,
-            hiddenDocLine = hidden,
-            hiddenOwnerStartLine = hiddenOwner
-        )
-    }
-
-    private fun lineVisualColumnsForWidth(lineText: String): Int {
-        return TextScanKernel.measureVisualColumns(lineText, config.tabSize)
-    }
-
-    internal fun isWordChar(c: Char): Boolean {
-        return TextScanKernel.isWordChar(c)
-    }
-
+    internal fun isWordChar(c: Char): Boolean = TextScanKernel.isWordChar(c)
 
     internal fun completionQueryFromCursor(): String {
         val offset = cursorOffset.coerceIn(0, textBuffer.length)
@@ -2631,190 +1418,6 @@ class EditorState(
         val start = TextScanKernel.findWordPrefixStart(lineText, position.column)
         if (start >= position.column) return ""
         return lineText.substring(start, position.column)
-    }
-
-    private fun filterCompletionItems(
-        items: List<EditorCompletionItem>,
-        query: String
-    ): List<EditorCompletionItem> {
-        if (items.isEmpty()) return emptyList()
-        if (query.isBlank()) {
-            return items
-                .distinctBy { it.completionDedupKey() }
-                .sortedBy { kindSortPriority(it.kind) }
-                .take(160)
-        }
-
-        val caseSensitive = config.completionCaseSensitive
-        val exactMatch = ArrayList<EditorCompletionItem>(items.size)
-        val exactPrefix = ArrayList<EditorCompletionItem>(items.size)
-        val fuzzyPrefix = ArrayList<EditorCompletionItem>(items.size / 2)
-        val contains = ArrayList<EditorCompletionItem>(items.size / 2)
-        items.forEach { item ->
-            val primaryCandidates = item.primaryCompletionCandidates()
-            val aliasCandidates = item.aliasCompletionCandidates(caseSensitive)
-            when {
-                primaryCandidates.any { candidate ->
-                    candidate.matchesCompletionQuery(query, caseSensitive)
-                } || aliasCandidates.any { candidate ->
-                    candidate.matchesCompletionQuery(query, caseSensitive)
-                } -> {
-                    exactMatch.add(item)
-                }
-
-                primaryCandidates.any { candidate ->
-                    candidate.startsWithCompletionPrefix(query, caseSensitive)
-                } -> {
-                    exactPrefix.add(item)
-                }
-
-                aliasCandidates.any { candidate ->
-                    candidate.startsWithCompletionPrefix(query, caseSensitive)
-                } -> {
-                    fuzzyPrefix.add(item)
-                }
-
-                primaryCandidates.any { candidate ->
-                    candidate.containsCompletionQuery(query, caseSensitive)
-                } || aliasCandidates.any { candidate ->
-                    candidate.containsCompletionQuery(query, caseSensitive)
-                } -> {
-                    contains.add(item)
-                }
-            }
-        }
-        val relevanceComparator = completionComparator(query = query, caseSensitive = caseSensitive)
-        return (exactMatch.sortedWith(relevanceComparator) +
-            exactPrefix.sortedWith(relevanceComparator) +
-            fuzzyPrefix.sortedWith(kindComparator) +
-            contains.sortedWith(relevanceComparator))
-            .distinctBy { it.completionDedupKey() }
-            .take(160)
-    }
-
-    private fun completionComparator(
-        query: String,
-        caseSensitive: Boolean
-    ): Comparator<EditorCompletionItem> {
-        return compareByDescending<EditorCompletionItem> { it.label.matchesCompletionQuery(query, caseSensitive) }
-            .thenByDescending { it.insertText.matchesCompletionQuery(query, caseSensitive) }
-            .thenBy { completionPrefixPenalty(it, query, caseSensitive) }
-            .thenBy { kindSortPriority(it.kind) }
-            .thenBy { shortestCompletionLength(it, caseSensitive) }
-            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.label }
-            .thenBy { it.label }
-    }
-
-    private val kindComparator = compareBy<EditorCompletionItem> { kindSortPriority(it.kind) }
-
-    private fun completionPrefixPenalty(
-        item: EditorCompletionItem,
-        query: String,
-        caseSensitive: Boolean
-    ): Int {
-        val candidates = item.primaryCompletionCandidates() + item.aliasCompletionCandidates(caseSensitive)
-        val matching = candidates.filter { candidate ->
-            candidate.startsWithCompletionPrefix(query, caseSensitive)
-        }
-        if (matching.isEmpty()) return Int.MAX_VALUE
-        return matching.minOf { candidate ->
-            (candidate.length - query.length).coerceAtLeast(0)
-        }
-    }
-
-    private fun shortestCompletionLength(
-        item: EditorCompletionItem,
-        caseSensitive: Boolean
-    ): Int {
-        return (item.primaryCompletionCandidates() + item.aliasCompletionCandidates(caseSensitive)).asSequence()
-            .minOfOrNull { it.length } ?: Int.MAX_VALUE
-    }
-
-    private fun String?.matchesCompletionQuery(query: String, caseSensitive: Boolean): Boolean {
-        val value = this ?: return false
-        return if (caseSensitive) {
-            value == query
-        } else {
-            value.equals(query, ignoreCase = true)
-        }
-    }
-
-    private fun String?.startsWithCompletionPrefix(query: String, caseSensitive: Boolean): Boolean {
-        val value = this ?: return false
-        return if (caseSensitive) {
-            value.startsWith(query)
-        } else {
-            value.startsWith(query, ignoreCase = true)
-        }
-    }
-
-    private fun String?.containsCompletionQuery(query: String, caseSensitive: Boolean): Boolean {
-        val value = this ?: return false
-        return if (caseSensitive) {
-            value.contains(query)
-        } else {
-            value.contains(query, ignoreCase = true)
-        }
-    }
-
-    private fun kindSortPriority(kind: EditorCompletionKind): Int {
-        return when (kind) {
-            EditorCompletionKind.VARIABLE, EditorCompletionKind.FIELD,
-            EditorCompletionKind.PROPERTY, EditorCompletionKind.CONSTANT -> 0
-            EditorCompletionKind.FUNCTION, EditorCompletionKind.METHOD,
-            EditorCompletionKind.CONSTRUCTOR -> 1
-            EditorCompletionKind.CLASS, EditorCompletionKind.INTERFACE,
-            EditorCompletionKind.STRUCT, EditorCompletionKind.ENUM -> 2
-            EditorCompletionKind.MODULE -> 3
-            EditorCompletionKind.SNIPPET -> 4
-            EditorCompletionKind.KEYWORD -> 5
-            else -> 6
-        }
-    }
-
-    private fun EditorCompletionItem.primaryCompletionCandidates(): List<String> {
-        return buildList(2) {
-            add(label)
-            if (insertText != label) {
-                add(insertText)
-            }
-        }
-    }
-
-    private fun EditorCompletionItem.aliasCompletionCandidates(caseSensitive: Boolean): List<String> {
-        if (caseSensitive) return emptyList()
-        val alias = filterText?.takeIf { it.isNotBlank() } ?: return emptyList()
-        if (alias == label || alias == insertText) return emptyList()
-        return listOf(alias)
-    }
-
-    private fun EditorCompletionItem.completionDedupKey(): String {
-        val normalizedLabel = label.lowercase()
-        return when (kind) {
-            EditorCompletionKind.METHOD,
-            EditorCompletionKind.FUNCTION,
-            EditorCompletionKind.CONSTRUCTOR -> buildString {
-                append(normalizedLabel)
-                append('\u0001')
-                append(detail.orEmpty())
-                append('\u0001')
-                append(insertText)
-                append('\u0001')
-                append(
-                    textEdit?.let { edit ->
-                        "${edit.startLine}:${edit.startColumn}-${edit.endLine}:${edit.endColumn}:${edit.newText}"
-                    }.orEmpty()
-                )
-                append('\u0001')
-                append(
-                    additionalTextEdits.joinToString(separator = "\u0002") { edit ->
-                        "${edit.startLine}:${edit.startColumn}-${edit.endLine}:${edit.endColumn}:${edit.newText}"
-                    }
-                )
-            }
-
-            else -> normalizedLabel
-        }
     }
 
     private inline fun <T> traceIfSlow(operation: String, block: () -> T): T {
@@ -2838,9 +1441,7 @@ class EditorState(
         return result
     }
 
-    internal fun <T> traceSlowOperation(operation: String, block: () -> T): T {
-        return traceIfSlow(operation, block)
-    }
+    internal fun <T> traceSlowOperation(operation: String, block: () -> T): T = traceIfSlow(operation, block)
 
     internal fun emitTextChanged(reason: String) {
         textVersion = textBuffer.version
@@ -2857,88 +1458,12 @@ class EditorState(
         val currentVersion = textBuffer.version
         textVersion = currentVersion
         applyTextChangeToSemanticTokens(change)
-        adjustFoldRegionsAfterTextChange(change, currentVersion)
+        foldingManager.adjustFoldRegionsAfterTextChange(change, currentVersion)
         applyWidthSnapshotChange(change, currentVersion)
         wordWrapLayoutCache.applyTextChange(change, currentVersion)
         // 必须在 wordWrapLayoutCache.applyTextChange 之后调：该方法会移除编辑窗内的旧 wrap 条目，
         // applyTextChangeToDocSegmentCounts 的重算才会命中新 layout。
         applyTextChangeToDocSegmentCounts(change, currentVersion)
-    }
-
-    /**
-     * 文本变化后调整折叠区间，避免折叠状态因版本不匹配而瞬间丢失。
-     *
-     * 核心策略：
-     * - 单行编辑（无行数变化）：折叠区间的行号仍然有效，只需同步版本号。
-     * - 多行编辑（有行增删）：编辑点之前的区间保持不变；编辑点之后的区间做行号平移；
-     *   与编辑范围重叠的区间丢弃（等待 TreeSitter 重新计算）。
-     *
-     * 这样做的好处：
-     * - 避免每次击键都触发"折叠全部展开 → 重新折叠"的布局抖动（558ms+卡顿）
-     * - 用户在折叠区间附近编辑时体验平滑
-     */
-    private fun adjustFoldRegionsAfterTextChange(change: TextChange, currentVersion: Long) {
-        if (!config.codeFolding) return
-        if (foldRegionsDocumentVersion < 0L) return
-        if (foldRegions.isEmpty()) {
-            foldRegionsDocumentVersion = currentVersion
-            return
-        }
-
-        val lineDelta = change.lineDelta
-
-        if (lineDelta == 0) {
-            foldRegionsDocumentVersion = currentVersion
-            return
-        }
-
-        val editStartLine = change.startLine
-        val editEndLine = change.endLine
-
-        val adjustedRegions = ArrayList<FoldRegion>(foldRegions.size)
-        val newCollapsed = HashSet<Int>()
-
-        for (region in foldRegions) {
-            val isCollapsed = region.startLine in collapsedFoldStartLines
-            when {
-                region.endLine < editStartLine -> {
-                    adjustedRegions.add(region)
-                    if (isCollapsed) {
-                        newCollapsed.add(region.startLine)
-                    }
-                }
-                region.startLine > editEndLine -> {
-                    val newStart = region.startLine + lineDelta
-                    val newEnd = region.endLine + lineDelta
-                    if (newEnd > newStart && newStart >= 0) {
-                        val shifted = FoldRegion(startLine = newStart, endLine = newEnd)
-                        adjustedRegions.add(shifted)
-                        if (isCollapsed) {
-                            newCollapsed.add(newStart)
-                        }
-                    }
-                }
-                isCollapsed && editStartLine == region.endLine && editEndLine == region.endLine -> {
-                    adjustedRegions.add(region)
-                    newCollapsed.add(region.startLine)
-                }
-                isCollapsed && editStartLine == region.startLine && editEndLine == region.startLine -> {
-                    val newEnd = region.endLine + lineDelta
-                    if (newEnd > region.startLine) {
-                        adjustedRegions.add(FoldRegion(startLine = region.startLine, endLine = newEnd))
-                        newCollapsed.add(region.startLine)
-                    }
-                }
-                // Overlapping regions: dropped, will be recomputed by TreeSitter
-            }
-        }
-
-        foldRegions = adjustedRegions
-        foldRegionByStartLine = adjustedRegions.associateBy { it.startLine }
-        collapsedFoldStartLines = newCollapsed
-        foldRegionsDocumentVersion = currentVersion
-        applyFoldableDecorations(foldRegionByStartLine.keys)
-        onFoldDataChanged()
     }
 
     internal fun emitEvent(event: EditorEvent) {
@@ -2955,3 +1480,5 @@ class EditorState(
         )
     }
 }
+
+private const val MAX_SELECTABLE_ATTACHED_PUNCTUATION = 4

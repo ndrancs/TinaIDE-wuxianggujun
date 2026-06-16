@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.wuxianggujun.tinaide.core.config.ai.AiAccessMode
 import com.wuxianggujun.tinaide.core.config.ai.AiChannelProvider
 import com.wuxianggujun.tinaide.core.config.ai.AiConfig
 import com.wuxianggujun.tinaide.core.config.ai.AiConfigProvider
@@ -71,63 +70,48 @@ internal fun AiSettingsSection() {
     val channels by channelRepository.channelsFlow.collectAsState(initial = emptyList())
     val coroutineScope = rememberCoroutineScope()
 
-    var gatewayModels by remember { mutableStateOf<List<String>?>(null) }
-    var gatewayModelsLoading by remember { mutableStateOf(false) }
     var customModels by remember { mutableStateOf<List<String>?>(null) }
     var customModelsLoading by remember { mutableStateOf(false) }
+    var manualModelInput by remember { mutableStateOf(false) }
 
     // 对话框状态:sealed interface 聚合,避免同时打开两个对话框的非法状态。
     var activeDialog by remember { mutableStateOf<AiSettingsDialog>(AiSettingsDialog.None) }
 
     val activeChannel = channels.firstOrNull { it.id == config.activeChannelId }
     val showModelDialog = activeDialog is AiSettingsDialog.Model
-    LaunchedEffect(showModelDialog, config.accessMode) {
-        if (!showModelDialog) return@LaunchedEffect
+    fun saveSelectedModel(selectedModel: String) {
+        aiConfigProvider.saveConfig(config.copy(generation = config.generation.copy(model = selectedModel)))
+        activeDialog = AiSettingsDialog.None
+    }
 
-        when (config.accessMode) {
-            AiAccessMode.TINA_GATEWAY -> {
-                gatewayModelsLoading = true
-                when (val result = aiSettingsBridge.loadModels(config)) {
-                    is AiModelLoadResult.Success -> {
-                        gatewayModels = result.models
-                    }
-                    AiModelLoadResult.ConfigurationRequired -> {
-                        gatewayModels = null
-                    }
-                    is AiModelLoadResult.Failure -> {
-                        Timber.tag(logTag).e("Failed to load gateway models: %s", result.message)
-                        gatewayModels = emptyList()
-                    }
-                }
-                gatewayModelsLoading = false
-            }
-            AiAccessMode.CUSTOM_BYOK -> {
-                customModelsLoading = true
-                when (val result = aiSettingsBridge.loadModels(config)) {
-                    is AiModelLoadResult.Success -> {
-                        customModels = AiSettingsSectionSupport.normalizeCustomModels(result.models)
-                    }
-                    AiModelLoadResult.ConfigurationRequired -> {
-                        Timber.tag(logTag).w("Skipping custom model load because API key is blank")
-                        customModels = null
-                    }
-                    is AiModelLoadResult.Failure -> {
-                        Timber.tag(logTag).e("Failed to load custom models: %s", result.message)
-                        customModels = AiSettingsSectionSupport.resolveCustomModelFallback(
-                            fallbackModels = result.fallbackModels,
-                            provider = activeChannel?.provider ?: AiProvider.DEEPSEEK,
-                        )
-                    }
-                }
-                customModelsLoading = false
-            }
+    LaunchedEffect(showModelDialog) {
+        if (!showModelDialog) {
+            manualModelInput = false
         }
     }
 
-    // 服务商显示名称(BYOK 下取自激活渠道;Gateway 下无意义,用空串兜底)
-    val providerDisplayName = activeChannel?.let {
-        stringResource(AiSettingsSectionSupport.resolveProviderDisplayNameRes(it.provider))
-    } ?: ""
+    LaunchedEffect(showModelDialog, config.activeChannelId, activeChannel?.updatedAt) {
+        if (!showModelDialog) return@LaunchedEffect
+
+        customModelsLoading = true
+        when (val result = aiSettingsBridge.loadModels(config)) {
+            is AiModelLoadResult.Success -> {
+                customModels = AiSettingsSectionSupport.normalizeCustomModels(result.models)
+            }
+            AiModelLoadResult.ConfigurationRequired -> {
+                Timber.tag(logTag).w("Skipping custom model load because API key is blank")
+                customModels = null
+            }
+            is AiModelLoadResult.Failure -> {
+                Timber.tag(logTag).e("Failed to load custom models: %s", result.message)
+                customModels = AiSettingsSectionSupport.resolveCustomModelFallback(
+                    fallbackModels = result.fallbackModels,
+                    provider = activeChannel?.provider ?: AiProvider.DEEPSEEK,
+                )
+            }
+        }
+        customModelsLoading = false
+    }
 
     Spacer(modifier = Modifier.height(8.dp))
 
@@ -136,41 +120,25 @@ internal fun AiSettingsSection() {
 
     SettingsCard {
         SettingsClickableItem(
-            title = stringResource(Strings.settings_ai_access_mode),
-            subtitle = stringResource(
-                AiSettingsSectionSupport.resolveAccessModeSubtitleRes(
-                    mode = config.accessMode,
+            title = stringResource(Strings.settings_ai_channel_management),
+            subtitle = activeChannel?.let { channel ->
+                val providerName = stringResource(
+                    AiSettingsSectionSupport.resolveProviderDisplayNameRes(channel.provider)
                 )
-            ),
-            value = stringResource(
-                AiSettingsSectionSupport.resolveAccessModeValueRes(config.accessMode)
-            ),
-            onClick = { activeDialog = AiSettingsDialog.AccessMode },
+                stringResource(
+                    Strings.settings_ai_channel_provider_base_url,
+                    providerName,
+                    AiSettingsSectionSupport.resolveBaseUrlPreview(channel.baseUrl),
+                )
+            }
+            ?: stringResource(Strings.settings_ai_channel_list_empty),
+            value = activeChannel?.name ?: stringResource(Strings.settings_ai_not_configured),
+            onClick = { activeDialog = AiSettingsDialog.ChannelManagement },
             showDivider = true
         )
-
-        if (config.accessMode == AiAccessMode.CUSTOM_BYOK) {
-            SettingsClickableItem(
-                title = stringResource(Strings.settings_ai_channel_management),
-                subtitle = activeChannel?.let { channel ->
-                    val providerName = stringResource(
-                        AiSettingsSectionSupport.resolveProviderDisplayNameRes(channel.provider)
-                    )
-                    stringResource(
-                        Strings.settings_ai_channel_provider_model,
-                        providerName,
-                        channel.model,
-                    )
-                }
-                    ?: stringResource(Strings.settings_ai_channel_list_empty),
-                value = activeChannel?.name ?: stringResource(Strings.settings_ai_not_configured),
-                onClick = { activeDialog = AiSettingsDialog.ChannelManagement },
-                showDivider = true
-            )
-        }
         SettingsClickableItem(
             title = stringResource(Strings.settings_ai_model),
-            value = (activeChannel?.model ?: config.generation.model).ifEmpty { "-" },
+            value = config.generation.model.ifEmpty { "-" },
             onClick = { activeDialog = AiSettingsDialog.Model },
             showDivider = false
         )
@@ -394,35 +362,19 @@ internal fun AiSettingsSection() {
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    if (activeDialog is AiSettingsDialog.AccessMode) {
-        val options = AiSettingsSectionSupport.buildAccessModeOptions().map { option ->
-            option.value to stringResource(option.labelRes)
-        }
-        TinaSingleChoiceDialog(
-            title = stringResource(Strings.settings_ai_access_mode),
-            options = options,
-            selectedValue = config.accessMode.name,
-            onSelected = { selected ->
-                val decision = AiSettingsSectionSupport.resolveAccessModeDecision(selectedValue = selected)
-                aiConfigProvider.saveConfig(config.copy(accessMode = decision.mode))
-                activeDialog = AiSettingsDialog.None
-            },
-            onDismiss = { activeDialog = AiSettingsDialog.None }
-        )
-    }
-
     // 模型选择对话框
     if (showModelDialog) {
         when (
-            val dialogSpec = AiSettingsSectionSupport.resolveModelDialogSpec(
-                accessMode = config.accessMode,
-                provider = activeChannel?.provider ?: AiProvider.DEEPSEEK,
-                currentModel = activeChannel?.model ?: config.generation.model,
-                gatewayModelsLoading = gatewayModelsLoading,
-                customModelsLoading = customModelsLoading,
-                gatewayModels = gatewayModels,
-                customModels = customModels,
-            )
+            val dialogSpec = if (manualModelInput) {
+                AiSettingsModelDialogSpec.ManualInput(config.generation.model)
+            } else {
+                AiSettingsSectionSupport.resolveModelDialogSpec(
+                    provider = activeChannel?.provider ?: AiProvider.DEEPSEEK,
+                    currentModel = config.generation.model,
+                    customModelsLoading = customModelsLoading,
+                    customModels = customModels,
+                )
+            }
         ) {
             AiSettingsModelDialogSpec.Loading -> {
                 TinaAlertDialog(
@@ -444,14 +396,21 @@ internal fun AiSettingsSection() {
                 )
             }
             is AiSettingsModelDialogSpec.Selectable -> {
-                val modelOptions = dialogSpec.models.map { model -> model to model }
+                val currentModelOption = listOf(config.generation.model).filter { it.isNotBlank() }
+                val selectableModels = (currentModelOption + dialogSpec.models).distinct()
+                val customModelOption = AiSettingsSectionSupport.CUSTOM_MODEL_OPTION_VALUE to
+                    stringResource(Strings.settings_ai_model_custom)
+                val modelOptions = selectableModels.map { model -> model to model } + customModelOption
                 TinaSingleChoiceDialog(
                     title = stringResource(Strings.settings_ai_select_model),
                     options = modelOptions,
-                    selectedValue = activeChannel?.model ?: config.generation.model,
+                    selectedValue = config.generation.model,
                     onSelected = { selectedModel ->
-                        aiConfigProvider.saveConfig(config.copy(generation = config.generation.copy(model = selectedModel)))
-                        activeDialog = AiSettingsDialog.None
+                        if (selectedModel == AiSettingsSectionSupport.CUSTOM_MODEL_OPTION_VALUE) {
+                            manualModelInput = true
+                        } else {
+                            saveSelectedModel(selectedModel)
+                        }
                     },
                     onDismiss = { activeDialog = AiSettingsDialog.None }
                 )
@@ -477,8 +436,7 @@ internal fun AiSettingsSection() {
                         TinaPrimaryButton(
                             text = stringResource(Strings.settings_ai_save),
                             onClick = {
-                                aiConfigProvider.saveConfig(config.copy(generation = config.generation.copy(model = customModel)))
-                                activeDialog = AiSettingsDialog.None
+                                saveSelectedModel(customModel)
                             }
                         )
                     },
@@ -512,7 +470,7 @@ internal fun AiSettingsSection() {
     }
 
     // 渠道管理（列表）对话框
-    if (activeDialog is AiSettingsDialog.ChannelManagement && config.accessMode == AiAccessMode.CUSTOM_BYOK) {
+    if (activeDialog is AiSettingsDialog.ChannelManagement) {
         AiChannelManagementDialog(
             channels = channels,
             activeChannelId = config.activeChannelId,
@@ -524,7 +482,12 @@ internal fun AiSettingsSection() {
                 activeDialog = AiSettingsDialog.ChannelEdit(initial = channel)
             },
             onSetActive = { channel ->
-                aiConfigProvider.saveConfig(config.copy(activeChannelId = channel.id))
+                val generation = config.generation.copy(
+                    model = config.generation.model.ifBlank {
+                        channel.provider.defaultModels.firstOrNull().orEmpty()
+                    },
+                )
+                aiConfigProvider.saveConfig(config.copy(activeChannelId = channel.id, generation = generation))
             },
             onDelete = { channel ->
                 coroutineScope.launch {
@@ -537,26 +500,35 @@ internal fun AiSettingsSection() {
         )
     }
 
-    (activeDialog as? AiSettingsDialog.ChannelEdit)?.takeIf { config.accessMode == AiAccessMode.CUSTOM_BYOK }?.let { dlg ->
+    (activeDialog as? AiSettingsDialog.ChannelEdit)?.let { dlg ->
         AiChannelEditDialog(
             initial = dlg.initial,
+            onLoadApiKey = { channelId -> channelRepository.getApiKey(channelId) },
             onDismiss = {
                 activeDialog = AiSettingsDialog.None
             },
-            onSave = { name, provider, baseUrl, model, apiKey ->
+            onSave = { name, provider, baseUrl, apiKey ->
                 coroutineScope.launch {
                     val existing = dlg.initial
+                    val storageModel = existing?.model
+                        ?.takeIf { it.isNotBlank() }
+                        ?: config.generation.model.ifBlank { provider.defaultModels.firstOrNull().orEmpty() }
                     if (existing == null) {
                         val created = channelRepository.add(
                             name = name,
                             provider = provider,
                             baseUrl = baseUrl,
-                            model = model,
+                            model = storageModel,
                             apiKey = apiKey,
                         )
                         // 首个新增默认激活
                         if (config.activeChannelId.isNullOrBlank()) {
-                            aiConfigProvider.saveConfig(config.copy(activeChannelId = created.id))
+                            val generation = config.generation.copy(
+                                model = config.generation.model.ifBlank { storageModel },
+                            )
+                            aiConfigProvider.saveConfig(
+                                config.copy(activeChannelId = created.id, generation = generation)
+                            )
                         }
                     } else {
                         channelRepository.update(
@@ -564,8 +536,8 @@ internal fun AiSettingsSection() {
                             name = name,
                             provider = provider,
                             baseUrl = baseUrl,
-                            model = model,
-                            apiKey = apiKey.takeIf { it.isNotEmpty() },
+                            model = storageModel,
+                            apiKey = apiKey,
                         )
                     }
                     activeDialog = AiSettingsDialog.None

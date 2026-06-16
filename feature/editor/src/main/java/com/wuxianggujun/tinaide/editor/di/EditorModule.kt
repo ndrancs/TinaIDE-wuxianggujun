@@ -10,8 +10,8 @@ import com.wuxianggujun.tinaide.editor.bookmark.BookmarkService
 import com.wuxianggujun.tinaide.editor.symbol.CxxSymbolProvider
 import com.wuxianggujun.tinaide.editor.symbol.JavaSymbolProvider
 import com.wuxianggujun.tinaide.editor.symbol.KotlinSymbolProvider
-import com.wuxianggujun.tinaide.editor.symbol.PythonSymbolProvider
 import com.wuxianggujun.tinaide.editor.symbol.ProjectSymbolIndexService
+import com.wuxianggujun.tinaide.editor.symbol.PythonSymbolProvider
 import com.wuxianggujun.tinaide.editor.symbol.RustSymbolProvider
 import com.wuxianggujun.tinaide.editor.theme.PluginEditorThemeRegistry
 import com.wuxianggujun.tinaide.file.IProjectContext

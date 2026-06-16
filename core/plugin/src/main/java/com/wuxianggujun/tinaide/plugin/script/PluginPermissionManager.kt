@@ -3,11 +3,11 @@ package com.wuxianggujun.tinaide.plugin.script
 import android.content.Context
 import android.content.SharedPreferences
 import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import timber.log.Timber
 
 class PluginPermissionManager private constructor(context: Context) {
@@ -19,11 +19,9 @@ class PluginPermissionManager private constructor(context: Context) {
         @Volatile
         private var instance: PluginPermissionManager? = null
 
-        fun getInstance(context: Context): PluginPermissionManager {
-            return instance ?: synchronized(this) {
-                instance ?: PluginPermissionManager(context.applicationContext).also {
-                    instance = it
-                }
+        fun getInstance(context: Context): PluginPermissionManager = instance ?: synchronized(this) {
+            instance ?: PluginPermissionManager(context.applicationContext).also {
+                instance = it
             }
         }
     }
@@ -62,9 +60,7 @@ class PluginPermissionManager private constructor(context: Context) {
         }
     }
 
-    fun getGrantedPermissions(pluginId: String): Set<PluginPermission> {
-        return _grantsFlow.value[pluginId] ?: emptySet()
-    }
+    fun getGrantedPermissions(pluginId: String): Set<PluginPermission> = _grantsFlow.value[pluginId] ?: emptySet()
 
     fun hasPermission(pluginId: String, permission: PluginPermission): Boolean {
         if (permission.level == PermissionLevel.L0_NO_RISK) return true

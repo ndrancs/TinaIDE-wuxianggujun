@@ -7,6 +7,7 @@ import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.str
 import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.network.ApiResult
+import com.wuxianggujun.tinaide.core.packages.PackageInstallPlan
 import com.wuxianggujun.tinaide.core.packages.PackageManager
 import com.wuxianggujun.tinaide.core.packages.PackageManagerImpl
 import com.wuxianggujun.tinaide.core.packages.api.PackageApiClient
@@ -23,6 +24,8 @@ import com.wuxianggujun.tinaide.plugin.marketplace.PluginDetail
 import com.wuxianggujun.tinaide.plugin.marketplace.PluginMarketplaceRepository
 import com.wuxianggujun.tinaide.plugin.marketplace.PluginSummary
 import com.wuxianggujun.tinaide.ui.compose.screens.packages.PackageInstallUiStateSupport
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,6 +59,10 @@ class MarketScreenViewModel(
 
     private val _packageState = MutableStateFlow(PackageState())
     val packageState: StateFlow<PackageState> = _packageState.asStateFlow()
+
+    // 进行中的下载/安装任务：用于支持用户主动取消（取消协程会触发 OkHttp Call.cancel 立即断开连接）。
+    private val pluginDownloadJobs = mutableMapOf<String, Job>()
+    private val packageInstallJobs = mutableMapOf<String, Job>()
 
     init {
         observeInstalledPlugins()
@@ -154,21 +161,29 @@ class MarketScreenViewModel(
         if (_pluginState.value.downloadingPlugins.containsKey(pluginId)) return
         if (installedVersion != null && installedVersion == plugin.latestVersion) return
 
-        viewModelScope.launch {
+        val job = viewModelScope.launch {
             _pluginState.update {
                 it.copy(downloadingPlugins = it.downloadingPlugins + (pluginId to 0f))
             }
 
-            val result = pluginRepository.downloadAndInstallPlugin(
-                pluginId = pluginId,
-                version = plugin.latestVersion,
-                onProgress = { downloaded, total ->
-                    val progress = if (total > 0) downloaded.toFloat() / total else 0f
-                    _pluginState.update {
-                        it.copy(downloadingPlugins = it.downloadingPlugins + (pluginId to progress))
+            val result = try {
+                pluginRepository.downloadAndInstallPlugin(
+                    pluginId = pluginId,
+                    version = plugin.latestVersion,
+                    onProgress = { downloaded, total ->
+                        val progress = if (total > 0) downloaded.toFloat() / total else 0f
+                        _pluginState.update {
+                            it.copy(downloadingPlugins = it.downloadingPlugins + (pluginId to progress))
+                        }
                     }
+                )
+            } catch (e: CancellationException) {
+                // 用户主动取消：仅清除进行中状态，不弹失败提示，可重新点击下载。
+                _pluginState.update {
+                    it.copy(downloadingPlugins = it.downloadingPlugins - pluginId)
                 }
-            )
+                throw e
+            }
 
             _pluginState.update {
                 val newDownloading = it.downloadingPlugins - pluginId
@@ -211,6 +226,19 @@ class MarketScreenViewModel(
                 recordPluginDownload(plugin)
                 loadPlugins()
             }
+        }
+        pluginDownloadJobs[pluginId] = job
+        job.invokeOnCompletion { pluginDownloadJobs.remove(pluginId) }
+    }
+
+    /**
+     * 取消进行中的插件下载/安装。取消协程会触发 OkHttp `Call.cancel()` 立即断开网络连接，
+     * 用户可在网络恢复后重新点击下载。
+     */
+    fun cancelPluginInstall(pluginId: String) {
+        pluginDownloadJobs.remove(pluginId)?.cancel(CancellationException("Plugin download cancelled by user"))
+        _pluginState.update {
+            it.copy(downloadingPlugins = it.downloadingPlugins - pluginId)
         }
     }
 
@@ -332,7 +360,9 @@ class MarketScreenViewModel(
     }
 
     fun installPackage(packageId: String) {
-        viewModelScope.launch {
+        if (packageId in _packageState.value.installingPackages) return
+        if (packageInstallJobs.containsKey(packageId)) return
+        val job = viewModelScope.launch {
             val pkg = _packageState.value.packages.find { p -> p.id == packageId } ?: run {
                 _packageState.update {
                     it.copy(
@@ -357,54 +387,133 @@ class MarketScreenViewModel(
                 return@launch
             }
 
-            _packageState.update {
-                it.copy(
-                    installingPackages = it.installingPackages + (packageId to 0f),
-                    message = null
-                )
+            val plan = packageManager.previewInstallPlan(packageId, platform).getOrElse { error ->
+                _packageState.update {
+                    it.copy(
+                        message = Strings.market_package_install_failed.strOr(
+                            appContext,
+                            error.message ?: Strings.pkg_manager_error_unknown.strOr(appContext)
+                        )
+                    )
+                }
+                return@launch
             }
 
-            val result = runCatching {
-                packageManager.install(packageId, platform) { event ->
-                    _packageState.update { state ->
-                        state.copy(
-                            installingPackages = updatePackageInstallProgress(
-                                current = state.installingPackages,
-                                packageId = packageId,
-                                event = event
-                            )
-                        )
-                    }
-                }
-            }.getOrElse { throwable ->
-                InstallResult.Failure(
-                    packageId = packageId,
-                    error = com.wuxianggujun.tinaide.core.packages.model.InstallError.UnknownError(
-                        throwable.message ?: Strings.pkg_manager_error_unknown.strOr(appContext)
+            val dependenciesToInstall = plan.packages
+                .filterNot { it.isRoot }
+                .filterNot { it.isAlreadyInstalled }
+            if (dependenciesToInstall.isNotEmpty()) {
+                _packageState.update {
+                    it.copy(
+                        pendingInstallPlan = MarketPackageInstallPlan(
+                            packageId = packageId,
+                            packageInfo = pkg,
+                            platform = platform,
+                            plan = plan
+                        ),
+                        message = null
                     )
-                )
-            }
-            when (result) {
-                is InstallResult.Success -> {
-                    refreshPackageState(packageId)
-                    recordPackageDownload(pkg, result.version)
-                    _packageState.update {
-                        it.copy(
-                            installingPackages = it.installingPackages - packageId,
-                            message = Strings.market_package_install_success.strOr(appContext, pkg.name)
-                        )
-                    }
                 }
-                is InstallResult.Failure -> {
-                    _packageState.update {
-                        it.copy(
-                            installingPackages = it.installingPackages - packageId,
-                            message = Strings.market_package_install_failed.strOr(
-                                appContext,
-                                result.error.toDisplayMessage()
-                            )
+                return@launch
+            }
+
+            installPackageWithoutPreview(pkg, platform)
+        }
+        packageInstallJobs[packageId] = job
+        job.invokeOnCompletion { packageInstallJobs.remove(packageId) }
+    }
+
+    fun confirmPackageInstall() {
+        val pendingPlan = _packageState.value.pendingInstallPlan ?: return
+        val packageId = pendingPlan.packageId
+        val pkg = _packageState.value.packages.find { it.id == packageId }
+            ?: pendingPlan.packageInfo
+        _packageState.update { it.copy(pendingInstallPlan = null) }
+        if (packageInstallJobs.containsKey(packageId)) return
+        val job = viewModelScope.launch {
+            installPackageWithoutPreview(pkg, pendingPlan.platform)
+        }
+        packageInstallJobs[packageId] = job
+        job.invokeOnCompletion { packageInstallJobs.remove(packageId) }
+    }
+
+    fun dismissPackageInstallConfirm() {
+        _packageState.update { it.copy(pendingInstallPlan = null) }
+    }
+
+    /**
+     * 取消进行中的包下载/安装。取消协程会触发 OkHttp `Call.cancel()` 立即断开网络连接，
+     * 用户可在网络恢复后重新点击下载。
+     */
+    fun cancelPackageInstall(packageId: String) {
+        packageInstallJobs.remove(packageId)?.cancel(CancellationException("Package install cancelled by user"))
+        _packageState.update {
+            it.copy(installingPackages = it.installingPackages - packageId)
+        }
+    }
+
+    private suspend fun installPackageWithoutPreview(
+        pkg: GUIPackage,
+        platform: com.wuxianggujun.tinaide.core.packages.model.Platform
+    ) {
+        val packageId = pkg.id
+        if (packageId in _packageState.value.installingPackages) return
+
+        _packageState.update {
+            it.copy(
+                installingPackages = it.installingPackages + (packageId to 0f),
+                pendingInstallPlan = null,
+                message = null
+            )
+        }
+
+        val result = try {
+            packageManager.install(packageId, platform) { event ->
+                _packageState.update { state ->
+                    state.copy(
+                        installingPackages = updatePackageInstallProgress(
+                            current = state.installingPackages,
+                            packageId = packageId,
+                            event = event
                         )
-                    }
+                    )
+                }
+            }
+        } catch (e: CancellationException) {
+            // 用户主动取消：清除进行中状态，不弹失败提示，由协程框架向上抛出。
+            _packageState.update {
+                it.copy(installingPackages = it.installingPackages - packageId)
+            }
+            throw e
+        } catch (throwable: Throwable) {
+            InstallResult.Failure(
+                packageId = packageId,
+                error = com.wuxianggujun.tinaide.core.packages.model.InstallError.UnknownError(
+                    throwable.message ?: Strings.pkg_manager_error_unknown.strOr(appContext)
+                )
+            )
+        }
+        when (result) {
+            is InstallResult.Success -> {
+                refreshPackageState(packageId)
+                recordPackageDownload(pkg, result.version)
+                loadPackages()
+                _packageState.update {
+                    it.copy(
+                        installingPackages = it.installingPackages - packageId,
+                        message = Strings.market_package_install_success.strOr(appContext, pkg.name)
+                    )
+                }
+            }
+            is InstallResult.Failure -> {
+                _packageState.update {
+                    it.copy(
+                        installingPackages = it.installingPackages - packageId,
+                        message = Strings.market_package_install_failed.strOr(
+                            appContext,
+                            result.error.toDisplayMessage()
+                        )
+                    )
                 }
             }
         }
@@ -506,6 +615,14 @@ data class PackageState(
     val filteredPackages: List<GUIPackage> = emptyList(),
     val installStates: Map<String, PackageInstallState> = emptyMap(),
     val installingPackages: Map<String, Float> = emptyMap(),
+    val pendingInstallPlan: MarketPackageInstallPlan? = null,
     val error: String? = null,
     val message: String? = null
+)
+
+data class MarketPackageInstallPlan(
+    val packageId: String,
+    val packageInfo: GUIPackage,
+    val platform: com.wuxianggujun.tinaide.core.packages.model.Platform,
+    val plan: PackageInstallPlan
 )

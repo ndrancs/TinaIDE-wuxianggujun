@@ -5,11 +5,11 @@ import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.linux.LinuxInteractiveProcess
 import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.lsp.LspConnectionProvider
-import kotlinx.coroutines.runBlocking
-import timber.log.Timber
 import java.io.InputStream
 import java.io.OutputStream
 import kotlin.concurrent.thread
+import kotlinx.coroutines.runBlocking
+import timber.log.Timber
 
 /**
  * 通用的插件 LSP 连接提供者
@@ -199,7 +199,5 @@ class PluginLspConnectionProvider(
     /**
      * 检查进程是否存活
      */
-    fun isAlive(): Boolean {
-        return process?.isRunning() == true
-    }
+    fun isAlive(): Boolean = process?.isRunning() == true
 }

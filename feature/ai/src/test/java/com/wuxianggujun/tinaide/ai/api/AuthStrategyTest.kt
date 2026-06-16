@@ -7,16 +7,6 @@ import org.junit.Test
 class AuthStrategyTest {
 
     @Test
-    fun `gateway strategy leaves authorization header untouched`() {
-        val request = Request.Builder()
-            .url("https://example.com/v1/chat/completions")
-            .apply { AuthStrategy.Gateway.apply(this) }
-            .build()
-
-        assertThat(request.header("Authorization")).isNull()
-    }
-
-    @Test
     fun `bearer strategy adds authorization header for non empty key`() {
         val request = Request.Builder()
             .url("https://example.com/v1/chat/completions")

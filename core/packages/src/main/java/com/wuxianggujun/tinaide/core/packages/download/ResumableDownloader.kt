@@ -1,17 +1,19 @@
 package com.wuxianggujun.tinaide.core.packages.download
 
 import com.wuxianggujun.tinaide.core.network.OkHttpClientProvider
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import timber.log.Timber
+import com.wuxianggujun.tinaide.core.network.executeCancellable
 import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.security.MessageDigest
 import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import timber.log.Timber
 
 class ResumableDownloader(
     private val downloadDir: File,
@@ -53,7 +55,7 @@ class ResumableDownloader(
                 requestBuilder.header("Range", "bytes=$startPosition-")
             }
 
-            val response = client.newCall(requestBuilder.build()).execute()
+            val response = client.newCall(requestBuilder.build()).executeCancellable()
 
             if (!response.isSuccessful) {
                 return@withContext DownloadResult.Failed(
@@ -96,7 +98,8 @@ class ResumableDownloader(
                     var lastProgressTime = System.currentTimeMillis()
                     var lastProgressBytes = downloaded
 
-                    while (coroutineContext.isActive) {
+                    while (true) {
+                        coroutineContext.ensureActive()
                         val bytes = input.read(buffer)
                         if (bytes == -1) break
 
@@ -108,18 +111,15 @@ class ResumableDownloader(
                             val elapsed = now - lastProgressTime
                             val speed = if (elapsed > 0) {
                                 (downloaded - lastProgressBytes) * 1000 / elapsed
-                            } else 0L
+                            } else {
+                                0L
+                            }
 
                             progress(downloaded, totalSize, speed)
 
                             lastProgressTime = now
                             lastProgressBytes = downloaded
                         }
-                    }
-
-                    if (!coroutineContext.isActive) {
-                        Timber.tag(TAG).d("Download cancelled")
-                        return@withContext DownloadResult.Cancelled
                     }
 
                     progress(downloaded, totalSize, 0)
@@ -150,7 +150,10 @@ class ResumableDownloader(
 
             Timber.tag(TAG).d("Download completed: ${targetFile.absolutePath}")
             DownloadResult.Success(targetFile)
-
+        } catch (e: CancellationException) {
+            // 用户取消：保留临时文件以便下次断点续传，向上抛出由协程框架处理。
+            Timber.tag(TAG).d("Download cancelled by user")
+            throw e
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Download failed")
             DownloadResult.Failed(DownloadError.IOError(e.message ?: "Unknown error"))

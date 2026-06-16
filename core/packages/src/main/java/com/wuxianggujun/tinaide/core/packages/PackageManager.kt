@@ -17,6 +17,8 @@ interface PackageManager {
 
     suspend fun getInstallState(packageId: String): PackageInstallState
 
+    suspend fun previewInstallPlan(packageId: String, platform: Platform): Result<PackageInstallPlan>
+
     suspend fun install(
         packageId: String,
         platform: Platform,
@@ -55,4 +57,19 @@ data class UpdateInfo(
     val platform: Platform,
     val currentVersion: String,
     val newVersion: String
+)
+
+data class PackageInstallPlan(
+    val packageId: String,
+    val packageName: String,
+    val platform: Platform,
+    val packages: List<PackageInstallPlanItem>
+)
+
+data class PackageInstallPlanItem(
+    val packageId: String,
+    val packageName: String,
+    val version: String,
+    val isRoot: Boolean,
+    val isAlreadyInstalled: Boolean
 )

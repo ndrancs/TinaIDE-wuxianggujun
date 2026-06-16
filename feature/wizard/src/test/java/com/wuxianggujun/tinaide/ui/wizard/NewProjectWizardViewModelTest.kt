@@ -158,24 +158,20 @@ class NewProjectWizardViewModelTest {
         language: ProjectLanguage,
         isNdkTemplate: Boolean = false,
         zipFile: File = File("$id.zip"),
-    ): ProjectTemplateOption {
-        return ProjectTemplateOption(
+    ): ProjectTemplateOption = ProjectTemplateOption(
+        id = id,
+        displayName = id,
+        description = id,
+        spec = ProjectTemplateSpec.Zip(
             id = id,
-            displayName = id,
-            description = id,
-            spec = ProjectTemplateSpec.Zip(
-                id = id,
-                zipFile = zipFile,
-                buildSystem = buildSystem,
-                primaryLanguage = language,
-                isNdkTemplate = isNdkTemplate,
-            ),
-        )
-    }
+            zipFile = zipFile,
+            buildSystem = buildSystem,
+            primaryLanguage = language,
+            isNdkTemplate = isNdkTemplate,
+        ),
+    )
 
-    private fun tempDir(prefix: String): File {
-        return Files.createTempDirectory(prefix).toFile().also { tempDirs += it }
-    }
+    private fun tempDir(prefix: String): File = Files.createTempDirectory(prefix).toFile().also { tempDirs += it }
 
     private fun ZipOutputStream.writeEntry(name: String, content: String) {
         putNextEntry(ZipEntry(name))

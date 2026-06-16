@@ -98,7 +98,13 @@ class ContextCompileSdlLauncher(
         }
 
         val runConfig = runConfigurationProvider()
-        when (val runtime = SdlRuntimeResolver.resolve(context, normalizedLibraryPath)) {
+        when (
+            val runtime = SdlRuntimeResolver.resolve(
+                context = context,
+                mainLibraryPath = normalizedLibraryPath,
+                extraRuntimeLibDirs = launchRuntimeDirs(environment),
+            )
+        ) {
             is SdlRuntimeResolver.ResolveResult.Sdl -> launchSdlRuntime(
                 libraryPath = normalizedLibraryPath,
                 runtime = runtime,
@@ -113,6 +119,15 @@ class ContextCompileSdlLauncher(
             is SdlRuntimeResolver.ResolveResult.Error -> onError(runtime.message)
         }
     }
+
+    private fun launchRuntimeDirs(environment: Map<String, String>): List<File> = environment["LD_LIBRARY_PATH"]
+        .orEmpty()
+        .split(':')
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .map(::File)
+        .toList()
 
     private fun validateSharedLibraryPath(libraryPath: String): String? {
         if (libraryPath.isBlank()) {

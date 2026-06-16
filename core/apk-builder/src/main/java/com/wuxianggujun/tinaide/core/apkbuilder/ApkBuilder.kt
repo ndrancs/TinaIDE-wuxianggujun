@@ -3,15 +3,15 @@ package com.wuxianggujun.tinaide.core.apkbuilder
 import android.content.Context
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 /**
  * Builds an APK by injecting user-compiled .so files into a template APK,
@@ -232,8 +232,7 @@ class ApkBuilder(private val context: Context) {
         zipOut.closeEntry()
     }
 
-    private fun isStoredEntry(entry: ZipEntry): Boolean =
-        entry.method == ZipEntry.STORED
+    private fun isStoredEntry(entry: ZipEntry): Boolean = entry.method == ZipEntry.STORED
 
     private fun resolveIconOverride(
         templateApk: File,
@@ -264,6 +263,5 @@ class ApkBuilder(private val context: Context) {
     }
 
     /** Check if a template is available for the given type. */
-    fun isTemplateAvailable(type: ApkTemplateType): Boolean =
-        template.isTemplateAvailable(type)
+    fun isTemplateAvailable(type: ApkTemplateType): Boolean = template.isTemplateAvailable(type)
 }

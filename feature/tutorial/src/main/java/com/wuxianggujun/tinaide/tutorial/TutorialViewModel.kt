@@ -166,9 +166,7 @@ class TutorialViewModel(application: Application) : AndroidViewModel(application
         return true
     }
 
-    fun resolveTutorialByLinkTarget(linkTarget: String): Tutorial? {
-        return repository.resolveTutorialByLinkTarget(linkTarget)
-    }
+    fun resolveTutorialByLinkTarget(linkTarget: String): Tutorial? = repository.resolveTutorialByLinkTarget(linkTarget)
 
     /**
      * Spotlight: 下一步

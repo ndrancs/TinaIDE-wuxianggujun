@@ -273,12 +273,10 @@ class BuildSystemDetectorTest {
 
     // ==================== 辅助方法 ====================
 
-    private fun createMetadata(buildSystem: ProjectBuildSystem): ProjectMetadata {
-        return ProjectMetadata(
-            id = "test-id",
-            displayName = "Test Project",
-            createdAt = System.currentTimeMillis(),
-            buildSystem = buildSystem
-        )
-    }
+    private fun createMetadata(buildSystem: ProjectBuildSystem): ProjectMetadata = ProjectMetadata(
+        id = "test-id",
+        displayName = "Test Project",
+        createdAt = System.currentTimeMillis(),
+        buildSystem = buildSystem
+    )
 }

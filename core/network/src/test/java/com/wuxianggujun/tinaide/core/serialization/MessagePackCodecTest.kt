@@ -41,29 +41,27 @@ class MessagePackCodecTest {
         timestamp: Long,
         data: ByteArray,
         signature: ByteArray
-    ): ByteArray {
-        return MessagePack.newDefaultBufferPacker().use { packer ->
-            packer.packMapHeader(2)
-            packer.packString("code")
-            packer.packString(MessagePackCodec.CODE_OK)
-            packer.packString("data")
-            packer.packMapHeader(4)
+    ): ByteArray = MessagePack.newDefaultBufferPacker().use { packer ->
+        packer.packMapHeader(2)
+        packer.packString("code")
+        packer.packString(MessagePackCodec.CODE_OK)
+        packer.packString("data")
+        packer.packMapHeader(4)
 
-            packer.packString("protocol_version")
-            packer.packInt(protocolVersion)
-            packer.packString("timestamp")
-            packer.packLong(timestamp)
+        packer.packString("protocol_version")
+        packer.packInt(protocolVersion)
+        packer.packString("timestamp")
+        packer.packLong(timestamp)
 
-            packer.packString("data")
-            packer.packBinaryHeader(data.size)
-            packer.writePayload(data)
+        packer.packString("data")
+        packer.packBinaryHeader(data.size)
+        packer.writePayload(data)
 
-            packer.packString("signature")
-            packer.packBinaryHeader(signature.size)
-            packer.writePayload(signature)
+        packer.packString("signature")
+        packer.packBinaryHeader(signature.size)
+        packer.writePayload(signature)
 
-            packer.flush()
-            packer.toByteArray()
-        }
+        packer.flush()
+        packer.toByteArray()
     }
 }

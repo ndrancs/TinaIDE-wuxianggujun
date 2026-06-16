@@ -162,4 +162,4 @@
 - [设置总览](settings-overview.md)
 - [编辑器设置说明](editor-settings.md)
 - [代码补全](code-completion.md)
-- [常见问题](faq.md)
+- [已知问题](known-issues.md)

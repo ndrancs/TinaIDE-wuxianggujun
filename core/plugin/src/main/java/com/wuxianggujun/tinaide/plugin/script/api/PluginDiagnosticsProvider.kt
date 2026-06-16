@@ -34,14 +34,12 @@ data class PluginDiagnosticsSnapshot(
         const val SEVERITY_INFO = "info"
         const val SEVERITY_HINT = "hint"
 
-        fun unavailable(requestedFilePath: String? = null): PluginDiagnosticsSnapshot {
-            return PluginDiagnosticsSnapshot(
-                diagnostics = emptyList(),
-                requestedFilePath = requestedFilePath,
-                available = false,
-                error = "Diagnostics provider unavailable"
-            )
-        }
+        fun unavailable(requestedFilePath: String? = null): PluginDiagnosticsSnapshot = PluginDiagnosticsSnapshot(
+            diagnostics = emptyList(),
+            requestedFilePath = requestedFilePath,
+            available = false,
+            error = "Diagnostics provider unavailable"
+        )
     }
 }
 

@@ -1,6 +1,13 @@
 package com.wuxianggujun.tinaide.core.lsp
 
 import android.util.Base64
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.str
+import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
+import com.wuxianggujun.tinaide.core.lang.ProjectPathFilters
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.util.zip.GZIPOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -8,25 +15,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.util.zip.GZIPOutputStream
 import timber.log.Timber
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.str
-import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
-import com.wuxianggujun.tinaide.core.lang.ProjectPathFilters
 
 /**
  * 项目同步状态
  */
 enum class ProjectSyncState {
-    IDLE,           // 空闲
-    SCANNING,       // 扫描项目
-    COMPRESSING,    // 压缩文件
-    UPLOADING,      // 上传中
-    SYNCED,         // 已同步
-    ERROR           // 错误
+    IDLE, // 空闲
+    SCANNING, // 扫描项目
+    COMPRESSING, // 压缩文件
+    UPLOADING, // 上传中
+    SYNCED, // 已同步
+    ERROR // 错误
 }
 
 /**
@@ -66,9 +66,9 @@ data class ProjectFileInfo(
  * 分块同步配置
  */
 data class ChunkConfig(
-    val maxChunkSize: Long = 512 * 1024,  // 每个块最大 512KB
-    val maxFilesPerChunk: Int = 50,        // 每个块最多 50 个文件
-    val enabled: Boolean = true            // 是否启用分块传输
+    val maxChunkSize: Long = 512 * 1024,
+    val maxFilesPerChunk: Int = 50,
+    val enabled: Boolean = true
 )
 
 /**
@@ -329,18 +329,21 @@ object ProjectSyncManager {
 
         for (file in files) {
             // 检查是否需要开始新的块
-            val shouldStartNewChunk = currentChunkFiles.isNotEmpty() && (
-                currentChunkSize + file.size > config.maxChunkSize ||
-                currentChunkFiles.size >= config.maxFilesPerChunk
-            )
+            val shouldStartNewChunk = currentChunkFiles.isNotEmpty() &&
+                (
+                    currentChunkSize + file.size > config.maxChunkSize ||
+                        currentChunkFiles.size >= config.maxFilesPerChunk
+                    )
 
             if (shouldStartNewChunk) {
-                chunks.add(SyncChunk(
-                    chunkIndex = chunks.size,
-                    totalChunks = 0, // 稍后更新
-                    files = currentChunkFiles.toList(),
-                    isLast = false
-                ))
+                chunks.add(
+                    SyncChunk(
+                        chunkIndex = chunks.size,
+                        totalChunks = 0, // 稍后更新
+                        files = currentChunkFiles.toList(),
+                        isLast = false
+                    )
+                )
                 currentChunkFiles = mutableListOf()
                 currentChunkSize = 0L
             }
@@ -351,12 +354,14 @@ object ProjectSyncManager {
 
         // 添加最后一个块
         if (currentChunkFiles.isNotEmpty()) {
-            chunks.add(SyncChunk(
-                chunkIndex = chunks.size,
-                totalChunks = 0,
-                files = currentChunkFiles.toList(),
-                isLast = true
-            ))
+            chunks.add(
+                SyncChunk(
+                    chunkIndex = chunks.size,
+                    totalChunks = 0,
+                    files = currentChunkFiles.toList(),
+                    isLast = true
+                )
+            )
         }
 
         // 更新 totalChunks
@@ -450,9 +455,7 @@ object ProjectSyncManager {
     /**
      * 生成唯一的同步会话 ID
      */
-    fun generateSessionId(): String {
-        return "sync-${System.currentTimeMillis()}-${(Math.random() * 10000).toInt()}"
-    }
+    fun generateSessionId(): String = "sync-${System.currentTimeMillis()}-${(Math.random() * 10000).toInt()}"
 
     /**
      * 判断是否应该使用分块传输
@@ -517,8 +520,11 @@ object ProjectSyncManager {
         if (hasCMake || hasCompileCommands) {
             return@withContext Pair(
                 RemoteLspSyncMode.PROJECT,
-                if (hasCMake) Strings.lsp_sync_reason_has_cmake.str()
-                else Strings.lsp_sync_reason_has_compile_commands.str()
+                if (hasCMake) {
+                    Strings.lsp_sync_reason_has_cmake.str()
+                } else {
+                    Strings.lsp_sync_reason_has_compile_commands.str()
+                }
             )
         }
 
@@ -576,12 +582,10 @@ object ProjectSyncManager {
     /**
      * 格式化文件大小
      */
-    private fun formatSize(bytes: Long): String {
-        return when {
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-            else -> "${bytes / (1024 * 1024)} MB"
-        }
+    private fun formatSize(bytes: Long): String = when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        else -> "${bytes / (1024 * 1024)} MB"
     }
 
     /**
@@ -646,9 +650,7 @@ object ProjectSyncManager {
     /**
      * 检查文件是否已同步
      */
-    fun isFileSynced(relativePath: String): Boolean {
-        return syncedFiles.containsKey(relativePath)
-    }
+    fun isFileSynced(relativePath: String): Boolean = syncedFiles.containsKey(relativePath)
 
     /**
      * 获取已同步的项目根目录

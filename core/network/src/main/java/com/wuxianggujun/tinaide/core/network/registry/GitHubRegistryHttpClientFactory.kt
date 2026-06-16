@@ -7,19 +7,15 @@ import java.net.Proxy
 import okhttp3.OkHttpClient
 
 object GitHubRegistryHttpClientFactory {
-    fun probe(context: Context): OkHttpClient {
-        return withProxy(
-            context = context,
-            baseClient = OkHttpClientProvider.probe,
-        )
-    }
+    fun probe(context: Context): OkHttpClient = withProxy(
+        context = context,
+        baseClient = OkHttpClientProvider.probe,
+    )
 
-    fun download(context: Context): OkHttpClient {
-        return withProxy(
-            context = context,
-            baseClient = OkHttpClientProvider.download,
-        )
-    }
+    fun download(context: Context): OkHttpClient = withProxy(
+        context = context,
+        baseClient = OkHttpClientProvider.download,
+    )
 
     private fun withProxy(
         context: Context,

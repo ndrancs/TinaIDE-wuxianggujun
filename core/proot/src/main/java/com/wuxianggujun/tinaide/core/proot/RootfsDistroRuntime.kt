@@ -41,47 +41,42 @@ class RootfsDistroRuntime(
         val completed: Boolean,
     )
 
-    fun listDistros(): List<DistroOption> {
-        return runCatching {
-            val architecture = SelfHostedLinuxDistroRuntime.defaultArchitecture()
-            AndroidAssetLinuxDistroManifestSource(appContext)
-                .loadCatalog()
-                .listInstallableDefaultArtifacts(architecture)
-                .map { resolved ->
-                    val packageManager = resolved.distro.packageManager.toRootfsPackageManager()
-                    DistroOption(
-                        id = resolved.distro.id,
-                        displayName = resolved.distro.displayName,
-                        description = Strings.linux_distro_self_hosted_option_desc.strOr(
-                            appContext,
-                            resolved.release.version.ifBlank { resolved.release.id },
-                            packageManager.name.lowercase(),
-                        ),
-                        packageManager = packageManager,
-                        releaseId = resolved.release.id,
-                        version = resolved.release.version,
-                        architecture = resolved.artifact.architecture,
-                        sizeBytes = resolved.artifact.sizeBytes,
-                    )
-                }
-        }.getOrElse { emptyList() }
-    }
+    fun listDistros(): List<DistroOption> = runCatching {
+        val architecture = SelfHostedLinuxDistroRuntime.defaultArchitecture()
+        SelfHostedLinuxDistroRuntime.loadRemoteOrAssetCatalog(appContext)
+            .listInstallableDefaultArtifacts(architecture)
+            .map { resolved ->
+                val packageManager = resolved.distro.packageManager.toRootfsPackageManager()
+                DistroOption(
+                    id = resolved.distro.id,
+                    displayName = resolved.distro.displayName,
+                    description = Strings.linux_distro_self_hosted_option_desc.strOr(
+                        appContext,
+                        resolved.release.version.ifBlank { resolved.release.id },
+                        packageManager.name.lowercase(),
+                    ),
+                    packageManager = packageManager,
+                    releaseId = resolved.release.id,
+                    version = resolved.release.version,
+                    architecture = resolved.artifact.architecture,
+                    sizeBytes = resolved.artifact.sizeBytes,
+                )
+            }
+    }.getOrElse { emptyList() }
 
     suspend fun installDistro(
         distroId: String,
         progress: (InstallProgress) -> Unit = {},
-    ): Result<RootfsProfile> {
-        return SelfHostedLinuxDistroRuntime.createFromAssets(appContext, configManager)
-            .installDistro(distroId = distroId) { installProgress ->
-                progress(
-                    InstallProgress(
-                        progress = installProgress.progress.coerceIn(0f, 1f),
-                        message = installProgress.message,
-                        completed = installProgress.phase == SelfHostedLinuxDistroRuntime.Phase.COMPLETED,
-                    )
+    ): Result<RootfsProfile> = SelfHostedLinuxDistroRuntime.createFromAssets(appContext, configManager)
+        .installDistro(distroId = distroId) { installProgress ->
+            progress(
+                InstallProgress(
+                    progress = installProgress.progress.coerceIn(0f, 1f),
+                    message = installProgress.message,
+                    completed = installProgress.phase == SelfHostedLinuxDistroRuntime.Phase.COMPLETED,
                 )
-            }
-    }
+            )
+        }
 
     suspend fun checkActiveDistroHealth(): Result<LinuxDistroRootfsHealthReport> = withContext(Dispatchers.IO) {
         runCatching {
@@ -102,15 +97,13 @@ class RootfsDistroRuntime(
         }
     }
 
-    private fun DistroPackageManager.toRootfsPackageManager(): RootfsPackageManager {
-        return when (this) {
-            DistroPackageManager.APK -> RootfsPackageManager.APK
-            DistroPackageManager.APT -> RootfsPackageManager.APT
-            DistroPackageManager.PACMAN -> RootfsPackageManager.PACMAN
-            DistroPackageManager.DNF -> RootfsPackageManager.DNF
-            DistroPackageManager.ZYPPER,
-            DistroPackageManager.XBPS,
-            DistroPackageManager.UNKNOWN -> RootfsPackageManager.UNKNOWN
-        }
+    private fun DistroPackageManager.toRootfsPackageManager(): RootfsPackageManager = when (this) {
+        DistroPackageManager.APK -> RootfsPackageManager.APK
+        DistroPackageManager.APT -> RootfsPackageManager.APT
+        DistroPackageManager.PACMAN -> RootfsPackageManager.PACMAN
+        DistroPackageManager.DNF -> RootfsPackageManager.DNF
+        DistroPackageManager.ZYPPER,
+        DistroPackageManager.XBPS,
+        DistroPackageManager.UNKNOWN -> RootfsPackageManager.UNKNOWN
     }
 }

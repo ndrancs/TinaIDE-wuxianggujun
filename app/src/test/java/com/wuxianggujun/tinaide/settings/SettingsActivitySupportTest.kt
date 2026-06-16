@@ -48,6 +48,8 @@ class SettingsActivitySupportTest {
         assertThat(SettingsActivitySupport.extractInitialPluginDetailId(rootIntent)).isNull()
         assertThat(SettingsActivitySupport.extractInitialPluginDetailId(feedbackIntent))
             .isEqualTo("tinaide.plugin.cpp-snippets")
+        assertThat(SettingsActivitySupport.extractInitialPackageSearchQuery(rootIntent)).isNull()
+        assertThat(SettingsActivitySupport.extractInitialPackageSearchQuery(feedbackIntent)).isNull()
     }
 
     @Test
@@ -96,6 +98,24 @@ class SettingsActivitySupportTest {
             .isEqualTo("tinaide.plugin.cpp-snippets")
         assertThat(SettingsActivitySupport.resolveInitialRoute(startedIntent))
             .isEqualTo(SettingsRoute.Plugins)
+    }
+
+    @Test
+    fun startPackages_shouldLaunchPackagesSettingsWithInitialSearchQuery() {
+        val application = RuntimeEnvironment.getApplication()
+
+        SettingsActivity.startPackages(application, "sdl3-image")
+
+        val startedIntent = shadowOf(application).nextStartedActivity
+        assertThat(startedIntent.component?.className).isEqualTo(SettingsActivity::class.java.name)
+        assertThat(startedIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
+            .isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
+        assertThat(SettingsActivitySupport.extractInitialRouteId(startedIntent))
+            .isEqualTo(SettingsRoute.Packages.route)
+        assertThat(SettingsActivitySupport.extractInitialPackageSearchQuery(startedIntent))
+            .isEqualTo("sdl3-image")
+        assertThat(SettingsActivitySupport.resolveInitialRoute(startedIntent))
+            .isEqualTo(SettingsRoute.Packages)
     }
 
     @Test

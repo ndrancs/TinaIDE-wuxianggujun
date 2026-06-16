@@ -38,7 +38,7 @@ object ProjectPathFilters {
 
     val SYNC_IGNORE_PATTERNS: List<String> = buildList {
         NOISY_DIRECTORY_NAMES.forEach { add("$it/") }
-        NOISY_DIRECTORY_PREFIXES.forEach { add("${it}*/") }
+        NOISY_DIRECTORY_PREFIXES.forEach { add("$it*/") }
         add("bin/")
         add("*.iml")
         add("*.pyc")

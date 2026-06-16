@@ -49,14 +49,12 @@ class TerminalSessionManagerAdapter(
         rows: Int,
         cols: Int,
         backend: TerminalBackend
-    ): String {
-        return delegate.createSession(
-            workDir = workDir,
-            rows = rows,
-            cols = cols,
-            backend = backend.toFeatureTerminalBackend()
-        )
-    }
+    ): String = delegate.createSession(
+        workDir = workDir,
+        rows = rows,
+        cols = cols,
+        backend = backend.toFeatureTerminalBackend()
+    )
 
     override fun closeSession(sessionId: String, defaultWorkDir: String) {
         delegate.closeSession(sessionId, defaultWorkDir)
@@ -86,13 +84,9 @@ class TerminalSessionManagerAdapter(
         delegate.resize(rows, cols)
     }
 
-    override fun getSessionById(sessionId: String): TerminalSessionInfo? {
-        return delegate.getSessionById(sessionId)?.toTerminalSessionInfo()
-    }
+    override fun getSessionById(sessionId: String): TerminalSessionInfo? = delegate.getSessionById(sessionId)?.toTerminalSessionInfo()
 
-    override fun getActiveSession(): TerminalSessionInfo? {
-        return delegate.getActiveSession()?.toTerminalSessionInfo()
-    }
+    override fun getActiveSession(): TerminalSessionInfo? = delegate.getActiveSession()?.toTerminalSessionInfo()
 
     override fun setProjectPath(projectPath: String) {
         delegate.setProjectPath(projectPath)
@@ -118,9 +112,7 @@ class TerminalSessionManagerAdapter(
         delegate.markSuppressExitNotice(sessionId)
     }
 
-    override fun getInternalSession(sessionId: String): Any? {
-        return delegate.getSessionById(sessionId)?.session
-    }
+    override fun getInternalSession(sessionId: String): Any? = delegate.getSessionById(sessionId)?.session
 }
 
 // ========== 类型转换扩展函数 ==========
@@ -128,50 +120,42 @@ class TerminalSessionManagerAdapter(
 /**
  * 将内部 TerminalSessionState 转换为接口 TerminalSessionInfo
  */
-private fun TerminalSessionState.toTerminalSessionInfo(): TerminalSessionInfo {
-    return TerminalSessionInfo(
-        id = id,
-        title = title,
-        backend = backend.toCoreTerminalBackend(),
-        status = status.toCoreSessionStatus(),
-        createdAt = createdAt,
-        exitCode = exitCode,
-        errorMessage = errorMessage,
-        shellPid = shellPid,
-        canReceiveInput = canReceiveInput,
-        isTerminated = isTerminated,
-        runExitCode = runExitCode
-    )
-}
+private fun TerminalSessionState.toTerminalSessionInfo(): TerminalSessionInfo = TerminalSessionInfo(
+    id = id,
+    title = title,
+    backend = backend.toCoreTerminalBackend(),
+    status = status.toCoreSessionStatus(),
+    createdAt = createdAt,
+    exitCode = exitCode,
+    errorMessage = errorMessage,
+    shellPid = shellPid,
+    canReceiveInput = canReceiveInput,
+    isTerminated = isTerminated,
+    runExitCode = runExitCode
+)
 
 /**
  * 将 feature:terminal 层的 TerminalBackend 转换为 core:common 层的 TerminalBackend
  */
-private fun com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.toCoreTerminalBackend(): TerminalBackend {
-    return when (this) {
-        com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.HOST -> TerminalBackend.HOST
-        com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.PROOT -> TerminalBackend.PROOT
-    }
+private fun com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.toCoreTerminalBackend(): TerminalBackend = when (this) {
+    com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.HOST -> TerminalBackend.HOST
+    com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.PROOT -> TerminalBackend.PROOT
 }
 
 /**
  * 将 core:common 层的 TerminalBackend 转换为 feature:terminal 层的 TerminalBackend
  */
-private fun TerminalBackend.toFeatureTerminalBackend(): com.wuxianggujun.tinaide.terminal.shell.TerminalBackend {
-    return when (this) {
-        TerminalBackend.HOST -> com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.HOST
-        TerminalBackend.PROOT -> com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.PROOT
-    }
+private fun TerminalBackend.toFeatureTerminalBackend(): com.wuxianggujun.tinaide.terminal.shell.TerminalBackend = when (this) {
+    TerminalBackend.HOST -> com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.HOST
+    TerminalBackend.PROOT -> com.wuxianggujun.tinaide.terminal.shell.TerminalBackend.PROOT
 }
 
 /**
  * 将 feature:terminal 层的 SessionStatus 转换为 core:common 层的 SessionStatus
  */
-private fun com.wuxianggujun.tinaide.terminal.session.SessionStatus.toCoreSessionStatus(): SessionStatus {
-    return when (this) {
-        com.wuxianggujun.tinaide.terminal.session.SessionStatus.STARTING -> SessionStatus.STARTING
-        com.wuxianggujun.tinaide.terminal.session.SessionStatus.RUNNING -> SessionStatus.RUNNING
-        com.wuxianggujun.tinaide.terminal.session.SessionStatus.EXITED -> SessionStatus.EXITED
-        com.wuxianggujun.tinaide.terminal.session.SessionStatus.ERROR -> SessionStatus.ERROR
-    }
+private fun com.wuxianggujun.tinaide.terminal.session.SessionStatus.toCoreSessionStatus(): SessionStatus = when (this) {
+    com.wuxianggujun.tinaide.terminal.session.SessionStatus.STARTING -> SessionStatus.STARTING
+    com.wuxianggujun.tinaide.terminal.session.SessionStatus.RUNNING -> SessionStatus.RUNNING
+    com.wuxianggujun.tinaide.terminal.session.SessionStatus.EXITED -> SessionStatus.EXITED
+    com.wuxianggujun.tinaide.terminal.session.SessionStatus.ERROR -> SessionStatus.ERROR
 }

@@ -32,4 +32,3 @@ object GestureTrace {
         Timber.tag(TAG).d("[%s] %s", component, message)
     }
 }
-

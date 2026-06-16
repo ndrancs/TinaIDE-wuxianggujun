@@ -23,53 +23,87 @@ object PluginMenuResolver {
         installedPlugins: List<InstalledPlugin>,
         file: File,
         isDirty: Boolean
-    ): List<ResolvedHostMenuItem> {
-        return resolveMenuItems(
-            context = context,
-            installedPlugins = installedPlugins,
-            menuSurface = "editor/context",
-            menuItemsFor = { contributions -> contributions.menus?.editorContext.orEmpty() },
-            matchesWhen = { whenExpr -> matchesEditorWhen(whenExpr, isDirty) },
-        )
-    }
+    ): List<ResolvedHostMenuItem> = resolveEditorContextCommands(
+        context = context,
+        installedPlugins = installedPlugins,
+        file = file,
+        isDirty = isDirty
+    ).map { command -> command.toHostMenuItem() }
+
+    fun resolveEditorContextCommands(
+        context: Context,
+        installedPlugins: List<InstalledPlugin>,
+        file: File,
+        isDirty: Boolean
+    ): List<ResolvedPluginCommand> = resolveCommands(
+        context = context,
+        installedPlugins = installedPlugins,
+        surface = ResolvedPluginCommandSurface.EDITOR_CONTEXT,
+        surfaceId = "editor/context",
+        menuItemsFor = { contributions -> contributions.menus?.editorContext.orEmpty() },
+        matchesWhen = { whenExpr -> matchesEditorWhen(whenExpr, isDirty) },
+    )
 
     fun resolveEditorToolbarMenuItems(
         context: Context,
         installedPlugins: List<InstalledPlugin>,
         file: File,
         isDirty: Boolean
-    ): List<ResolvedHostMenuItem> {
-        return resolveMenuItems(
-            context = context,
-            installedPlugins = installedPlugins,
-            menuSurface = "editor/toolbar",
-            menuItemsFor = { contributions -> contributions.menus?.editorToolbar.orEmpty() },
-            matchesWhen = { whenExpr -> matchesEditorWhen(whenExpr, isDirty) },
-        )
-    }
+    ): List<ResolvedHostMenuItem> = resolveEditorToolbarCommands(
+        context = context,
+        installedPlugins = installedPlugins,
+        file = file,
+        isDirty = isDirty
+    ).map { command -> command.toHostMenuItem() }
+
+    fun resolveEditorToolbarCommands(
+        context: Context,
+        installedPlugins: List<InstalledPlugin>,
+        file: File,
+        isDirty: Boolean
+    ): List<ResolvedPluginCommand> = resolveCommands(
+        context = context,
+        installedPlugins = installedPlugins,
+        surface = ResolvedPluginCommandSurface.EDITOR_TOOLBAR,
+        surfaceId = "editor/toolbar",
+        menuItemsFor = { contributions -> contributions.menus?.editorToolbar.orEmpty() },
+        matchesWhen = { whenExpr -> matchesEditorWhen(whenExpr, isDirty) },
+    )
 
     fun resolveFileTreeContextMenuItems(
         context: Context,
         installedPlugins: List<InstalledPlugin>,
         file: File,
         isDirectory: Boolean
-    ): List<ResolvedHostMenuItem> {
-        return resolveMenuItems(
-            context = context,
-            installedPlugins = installedPlugins,
-            menuSurface = "filetree/context",
-            menuItemsFor = { contributions -> contributions.menus?.fileTreeContext.orEmpty() },
-            matchesWhen = { whenExpr -> matchesWhen(whenExpr, isDirectory) },
-        )
-    }
+    ): List<ResolvedHostMenuItem> = resolveFileTreeContextCommands(
+        context = context,
+        installedPlugins = installedPlugins,
+        file = file,
+        isDirectory = isDirectory
+    ).map { command -> command.toHostMenuItem() }
 
-    private fun resolveMenuItems(
+    fun resolveFileTreeContextCommands(
         context: Context,
         installedPlugins: List<InstalledPlugin>,
-        menuSurface: String,
+        file: File,
+        isDirectory: Boolean
+    ): List<ResolvedPluginCommand> = resolveCommands(
+        context = context,
+        installedPlugins = installedPlugins,
+        surface = ResolvedPluginCommandSurface.FILE_TREE_CONTEXT,
+        surfaceId = "filetree/context",
+        menuItemsFor = { contributions -> contributions.menus?.fileTreeContext.orEmpty() },
+        matchesWhen = { whenExpr -> matchesWhen(whenExpr, isDirectory) },
+    )
+
+    private fun resolveCommands(
+        context: Context,
+        installedPlugins: List<InstalledPlugin>,
+        surface: ResolvedPluginCommandSurface,
+        surfaceId: String,
         menuItemsFor: (PluginContributions) -> List<PluginMenuItem>,
         matchesWhen: (String?) -> Boolean
-    ): List<ResolvedHostMenuItem> {
+    ): List<ResolvedPluginCommand> {
         val items = buildList {
             installedPlugins.asSequence()
                 .filter { it.enabled }
@@ -90,7 +124,7 @@ object PluginMenuResolver {
                         val supportsPluginCommand = PluginCommandRegistry.isRegistered(commandId, plugin.manifest.id)
                         if (!supportsHostCommand && !supportsPluginCommand) {
                             Timber.tag(TAG).i(
-                                "Ignore unsupported command: $commandId (plugin=${plugin.manifest.id}, surface=$menuSurface)"
+                                "Ignore unsupported command: $commandId (plugin=${plugin.manifest.id}, surface=$surfaceId)"
                             )
                             return@forEach
                         }
@@ -101,11 +135,18 @@ object PluginMenuResolver {
                             ?: HostCommands.titleResOrNull(commandId)?.let(context::getString)
                             ?: commandId
                         add(
-                            ResolvedHostMenuItem(
+                            ResolvedPluginCommand(
                                 title = title,
                                 commandId = commandId,
                                 group = menuItem.group ?: DEFAULT_GROUP,
-                                pluginId = plugin.manifest.id
+                                pluginId = plugin.manifest.id,
+                                pluginName = plugin.manifest.name,
+                                surface = surface,
+                                source = if (supportsHostCommand) {
+                                    ResolvedPluginCommandSource.HOST
+                                } else {
+                                    ResolvedPluginCommandSource.PLUGIN
+                                }
                             )
                         )
                     }
@@ -113,9 +154,9 @@ object PluginMenuResolver {
         }
 
         return items
-            .distinctBy { "${it.pluginId}#${it.group}#${it.commandId}#${it.title}" }
+            .distinctBy { "${it.pluginId}#${it.surface}#${it.group}#${it.commandId}#${it.title}" }
             .sortedWith(
-                compareBy<ResolvedHostMenuItem> { it.group }
+                compareBy<ResolvedPluginCommand> { it.group }
                     .thenBy { it.title }
                     .thenBy { it.pluginId }
                     .thenBy { it.commandId }
@@ -157,4 +198,11 @@ object PluginMenuResolver {
             }
         }
     }
+
+    private fun ResolvedPluginCommand.toHostMenuItem(): ResolvedHostMenuItem = ResolvedHostMenuItem(
+        title = title,
+        commandId = commandId,
+        group = group,
+        pluginId = pluginId
+    )
 }

@@ -1,9 +1,11 @@
 package com.wuxianggujun.tinaide.ui.compose.screens.packages
 
 import com.google.common.truth.Truth.assertThat
+import com.wuxianggujun.tinaide.core.packages.PackageInstallPlan
+import com.wuxianggujun.tinaide.core.packages.PackageInstallPlanItem
 import com.wuxianggujun.tinaide.core.packages.model.GUIPackage
-import com.wuxianggujun.tinaide.core.packages.model.InstallType
 import com.wuxianggujun.tinaide.core.packages.model.InstallProgressEvent
+import com.wuxianggujun.tinaide.core.packages.model.InstallType
 import com.wuxianggujun.tinaide.core.packages.model.Platform
 import com.wuxianggujun.tinaide.core.packages.model.PlatformPackage
 import org.junit.Test
@@ -37,9 +39,37 @@ class PackageManagerStateTest {
             platform = Platform.ANDROID,
             dependentPackages = listOf("demo")
         )
+        val installConfirm = PackageDialogState.InstallConfirm(
+            packageId = "demo",
+            packageInfo = GUIPackage(id = "demo", name = "Demo"),
+            platform = Platform.ANDROID,
+            plan = PackageInstallPlan(
+                packageId = "demo",
+                packageName = "Demo",
+                platform = Platform.ANDROID,
+                packages = listOf(
+                    PackageInstallPlanItem(
+                        packageId = "sdl3",
+                        packageName = "SDL3",
+                        version = "3.2.0",
+                        isRoot = false,
+                        isAlreadyInstalled = false
+                    ),
+                    PackageInstallPlanItem(
+                        packageId = "demo",
+                        packageName = "Demo",
+                        version = "1.0.0",
+                        isRoot = true,
+                        isAlreadyInstalled = false
+                    )
+                )
+            )
+        )
 
         assertThat(installing.packageName).isEqualTo("SDL3")
         assertThat(confirm.dependentPackages).containsExactly("demo")
+        assertThat(installConfirm.plan.packages.filterNot { it.isRoot }.map { it.packageId })
+            .containsExactly("sdl3")
     }
 
     @Test

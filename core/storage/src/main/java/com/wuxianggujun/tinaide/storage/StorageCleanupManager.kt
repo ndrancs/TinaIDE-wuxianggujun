@@ -1,10 +1,10 @@
 package com.wuxianggujun.tinaide.storage
 
 import android.content.Context
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 
 /**
  * 存储空间清理管理器。
@@ -184,11 +184,19 @@ class StorageCleanupManager(private val context: Context) {
         }
         val success = failed.isEmpty()
         if (success) {
-            Timber.tag(TAG).i("CleanPaths[%s] freed %d bytes (%d items)",
-                category.name, deleted, paths.size)
+            Timber.tag(TAG).i(
+                "CleanPaths[%s] freed %d bytes (%d items)",
+                category.name,
+                deleted,
+                paths.size
+            )
         } else {
-            Timber.tag(TAG).w("CleanPaths[%s] freed %d bytes, %d failed",
-                category.name, deleted, failed.size)
+            Timber.tag(TAG).w(
+                "CleanPaths[%s] freed %d bytes, %d failed",
+                category.name,
+                deleted,
+                failed.size
+            )
         }
         CleanupResult(category, success, deleted, failed)
     }

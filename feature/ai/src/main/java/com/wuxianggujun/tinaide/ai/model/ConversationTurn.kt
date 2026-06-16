@@ -56,6 +56,7 @@ data class AssistantResponse(
     val actions: List<ToolAction> = emptyList(),
     val timestamp: Long = System.currentTimeMillis()
 )
+
 /**
  * 工具动作 - 封装工具调用的执行层
  */
@@ -96,6 +97,7 @@ data class ToolResult(
     val success: Boolean = true,
     val timestamp: Long = System.currentTimeMillis()
 )
+
 /**
  * 动作状态
  */

@@ -72,22 +72,57 @@ class DocumentSessionTest {
         }
     }
 
+    @Test
+    fun detachedSnapshot_shouldSaveDirtyTextWithoutActiveEditor() = runTest {
+        val file = Files.createTempFile("document-session-detached", ".txt").toFile()
+        file.writeText("old")
+        val session = createSession(file, this)
+        val binding = FakeEditorBinding(
+            text = "old",
+            canUndo = false,
+            canRedo = false,
+            viewState = EditorViewState(cursorLine = 3, cursorColumn = 4, scrollX = 16, scrollY = 32)
+        )
+
+        try {
+            session.attachEditor(binding)
+            session.markEditorSnapshotClean()
+            binding.setText("changed while tab is alive")
+            session.notifyEditorContentChanged(canUndo = true, canRedo = false)
+
+            session.detachEditor(binding)
+            val snapshot = session.detachedEditorSnapshot()
+
+            assertThat(snapshot?.text).isEqualTo("changed while tab is alive")
+            assertThat(snapshot?.viewState?.cursorLine).isEqualTo(3)
+            assertThat(session.state.value.isDirty).isTrue()
+
+            val result = session.save(SaveReason.MANUAL)
+
+            assertThat(result).isInstanceOf(SaveResult.Success::class.java)
+            assertThat(file.readText()).isEqualTo("changed while tab is alive")
+            assertThat(session.state.value.isDirty).isFalse()
+        } finally {
+            session.stopFileWatcher()
+            file.delete()
+        }
+    }
+
     private fun createSession(
         file: File,
         scope: CoroutineScope = TestScope(StandardTestDispatcher())
-    ): DocumentSession {
-        return DocumentSession(
-            context = RuntimeEnvironment.getApplication(),
-            tabId = "tab-id",
-            file = file,
-            coroutineScope = scope
-        )
-    }
+    ): DocumentSession = DocumentSession(
+        context = RuntimeEnvironment.getApplication(),
+        tabId = "tab-id",
+        file = file,
+        coroutineScope = scope
+    )
 
     private class FakeEditorBinding(
         text: String,
         private var canUndo: Boolean,
-        private var canRedo: Boolean
+        private var canRedo: Boolean,
+        private val viewState: EditorViewState? = null
     ) : DocumentSession.EditorBinding {
         private var currentText = text
         private var version = 0L
@@ -112,5 +147,7 @@ class DocumentSessionTest {
         override fun redo() = Unit
 
         override fun currentDocumentVersion(): Long = version
+
+        override fun currentViewState(): EditorViewState? = viewState
     }
 }

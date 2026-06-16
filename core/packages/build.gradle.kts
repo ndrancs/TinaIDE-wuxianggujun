@@ -8,7 +8,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:common"))  // 复用 TarExtractor
+    implementation(project(":core:common")) // 复用 TarExtractor
     implementation(project(":core:i18n"))
     implementation(project(":core:network"))
     implementation(project(":core:project"))

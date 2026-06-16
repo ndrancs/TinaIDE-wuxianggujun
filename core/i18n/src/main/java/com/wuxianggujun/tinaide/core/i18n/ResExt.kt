@@ -8,13 +8,9 @@ import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 
-fun @receiver:StringRes Int.str(vararg formatArgs: Any?): String {
-    return AppStrings.get(this, *formatArgs)
-}
+fun @receiver:StringRes Int.str(vararg formatArgs: Any?): String = AppStrings.get(this, *formatArgs)
 
-fun @receiver:StringRes Int.strOr(context: Context?, vararg formatArgs: Any?): String {
-    return AppStrings.getOr(context, this, *formatArgs)
-}
+fun @receiver:StringRes Int.strOr(context: Context?, vararg formatArgs: Any?): String = AppStrings.getOr(context, this, *formatArgs)
 
 fun @receiver:PluralsRes Int.plural(quantity: Int, vararg formatArgs: Any): String {
     val ctx = checkNotNull(AppStrings.applicationContextOrNull()) {
@@ -41,8 +37,4 @@ fun @receiver:ArrayRes Int.stringArrayOr(context: Context?): Array<String> {
     return ctx.resources.getStringArray(this)
 }
 
-fun @receiver:DrawableRes Int.drawable(context: Context): Drawable? {
-    return ContextCompat.getDrawable(context, this)
-}
-
-
+fun @receiver:DrawableRes Int.drawable(context: Context): Drawable? = ContextCompat.getDrawable(context, this)

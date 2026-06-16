@@ -1,15 +1,16 @@
 package com.wuxianggujun.tinaide.plugin.script
 
 import android.content.Context
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.plugin.InstalledPlugin
 import com.wuxianggujun.tinaide.plugin.PluginLogManager
 import com.wuxianggujun.tinaide.plugin.PluginManager
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.plugin.script.api.LogApiModule
 import com.wuxianggujun.tinaide.plugin.script.api.PluginApiRegistry
 import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistry
 import com.wuxianggujun.tinaide.plugin.script.api.PluginEventBus
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +25,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import timber.log.Timber
-import java.io.File
 
 enum class ScriptPluginState {
     UNLOADED,
@@ -51,13 +51,11 @@ class ScriptPluginManager private constructor(
         @Volatile
         private var instance: ScriptPluginManager? = null
 
-        fun getInstance(context: Context): ScriptPluginManager {
-            return instance ?: synchronized(this) {
-                instance ?: ScriptPluginManager(
-                    context.applicationContext,
-                    PluginManager.getInstance(context)
-                ).also { instance = it }
-            }
+        fun getInstance(context: Context): ScriptPluginManager = instance ?: synchronized(this) {
+            instance ?: ScriptPluginManager(
+                context.applicationContext,
+                PluginManager.getInstance(context)
+            ).also { instance = it }
         }
     }
 
@@ -70,7 +68,7 @@ class ScriptPluginManager private constructor(
             registerModule("log") { LogApiModule(logManager) }
         }
     }
-    
+
     fun setProjectRootProvider(provider: () -> String?) {
         this.projectRootProvider = provider
     }
@@ -83,7 +81,7 @@ class ScriptPluginManager private constructor(
     init {
         PluginEventBus.setRuntimeProvider { pluginId -> runtimes[pluginId] }
         PluginCommandRegistry.setRuntimeProvider { pluginId -> runtimes[pluginId] }
-        
+
         scope.launch {
             pluginManager.pluginStateFlow.collect { snapshot ->
                 syncWithInstalledPlugins(snapshot.installedPlugins)
@@ -313,33 +311,29 @@ class ScriptPluginManager private constructor(
         }
     }
 
-    private suspend fun awaitReloadTerminalState(pluginId: String): ScriptPluginInfo {
-        return try {
-            pluginStates
-                .map { states -> states[pluginId] }
-                .filterNotNull()
-                .firstWithinTimeout(RELOAD_WAIT_TIMEOUT_MS) { info ->
-                    info.state != ScriptPluginState.LOADING &&
-                        info.state != ScriptPluginState.UNLOADED
-                }
-        } catch (timeout: TimeoutCancellationException) {
-            val timeoutMessage = Strings.plugin_error_reload_timeout.strOr(context)
-            unloadPlugin(
-                pluginId = pluginId,
-                nextState = ScriptPluginState.ERROR,
-                error = timeoutMessage,
-            )
-            throw IllegalStateException(timeoutMessage, timeout)
-        }
+    private suspend fun awaitReloadTerminalState(pluginId: String): ScriptPluginInfo = try {
+        pluginStates
+            .map { states -> states[pluginId] }
+            .filterNotNull()
+            .firstWithinTimeout(RELOAD_WAIT_TIMEOUT_MS) { info ->
+                info.state != ScriptPluginState.LOADING &&
+                    info.state != ScriptPluginState.UNLOADED
+            }
+    } catch (timeout: TimeoutCancellationException) {
+        val timeoutMessage = Strings.plugin_error_reload_timeout.strOr(context)
+        unloadPlugin(
+            pluginId = pluginId,
+            nextState = ScriptPluginState.ERROR,
+            error = timeoutMessage,
+        )
+        throw IllegalStateException(timeoutMessage, timeout)
     }
 
     private suspend fun <T> kotlinx.coroutines.flow.Flow<T>.firstWithinTimeout(
         timeoutMillis: Long,
         predicate: suspend (T) -> Boolean,
-    ): T {
-        return withTimeout(timeoutMillis) {
-            first(predicate)
-        }
+    ): T = withTimeout(timeoutMillis) {
+        first(predicate)
     }
 
     suspend fun executeInPlugin(
@@ -377,6 +371,7 @@ class ScriptPluginManager private constructor(
     fun shutdown() {
         runtimes.values.forEach { it.destroy() }
         runtimes.clear()
+        PluginEventBus.clear()
         PluginCommandRegistry.clear()
         apiRegistry.cleanup()
         _pluginStates.value = emptyMap()

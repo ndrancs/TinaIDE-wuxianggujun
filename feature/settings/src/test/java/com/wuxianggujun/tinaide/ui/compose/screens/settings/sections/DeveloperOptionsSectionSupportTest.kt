@@ -1,10 +1,10 @@
 package com.wuxianggujun.tinaide.ui.compose.screens.settings.sections
 
 import com.google.common.truth.Truth.assertThat
+import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.network.server.ClientConfig
 import com.wuxianggujun.tinaide.core.network.server.FeatureFlags
 import com.wuxianggujun.tinaide.core.network.server.ServerConfigResponse
-import com.wuxianggujun.tinaide.core.i18n.Strings
 import org.junit.Test
 
 class DeveloperOptionsSectionSupportTest {

@@ -1,8 +1,8 @@
 package com.wuxianggujun.tinaide.plugin.lsp
 
+import java.io.File
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
-import java.io.File
 
 /**
  * LSP 服务器配置
@@ -122,7 +122,6 @@ data class LspToolchainConfig(
     val fallbackVersions: List<String>? = null
 )
 
-
 /**
  * LSP 工具链安装环境状态。
  */
@@ -192,10 +191,13 @@ data class LspPluginReadinessDiagnostic(
 enum class ToolchainInstallState {
     /** 未安装 */
     NOT_INSTALLED,
+
     /** 安装中 */
     INSTALLING,
+
     /** 已安装 */
     INSTALLED,
+
     /** 安装失败 */
     FAILED
 }

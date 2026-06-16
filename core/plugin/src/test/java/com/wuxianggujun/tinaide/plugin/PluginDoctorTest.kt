@@ -4,6 +4,8 @@ import android.app.Application
 import com.google.common.truth.Truth.assertThat
 import com.wuxianggujun.tinaide.core.commands.HostCommands
 import com.wuxianggujun.tinaide.core.serialization.JsonSerializer
+import java.io.File
+import java.nio.file.Files
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -11,8 +13,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
-import java.io.File
-import java.nio.file.Files
 
 @RunWith(RobolectricTestRunner::class)
 @Config(
@@ -106,12 +106,16 @@ class PluginDoctorTest {
         val report = PluginDoctor.inspectDirectory(context, pluginDir)
 
         assertThat(report.entries).isNotEmpty()
-        assertThat(report.entries.count { entry ->
-            entry.issue.category == PluginDiagnosticCategory.COMPATIBILITY
-        }).isAtLeast(2)
-        assertThat(report.entries.any { entry ->
-            entry.issue.message.contains("demo.config.command.sayHello")
-        }).isTrue()
+        assertThat(
+            report.entries.count { entry ->
+                entry.issue.category == PluginDiagnosticCategory.COMPATIBILITY
+            }
+        ).isAtLeast(2)
+        assertThat(
+            report.entries.any { entry ->
+                entry.issue.message.contains("demo.config.command.sayHello")
+            }
+        ).isTrue()
     }
 
     @Test
@@ -220,15 +224,21 @@ class PluginDoctorTest {
 
         val report = PluginDoctor.inspectDirectory(context, pluginDir)
 
-        assertThat(report.entries.count { entry ->
-            entry.issue.category == PluginDiagnosticCategory.CONTRIBUTIONS
-        }).isAtLeast(1)
-        assertThat(report.entries.count { entry ->
-            entry.issue.category == PluginDiagnosticCategory.PERMISSIONS
-        }).isAtLeast(1)
-        assertThat(report.entries.any { entry ->
-            entry.issue.message.contains("demo.script.missing.insertHeader")
-        }).isTrue()
+        assertThat(
+            report.entries.count { entry ->
+                entry.issue.category == PluginDiagnosticCategory.CONTRIBUTIONS
+            }
+        ).isAtLeast(1)
+        assertThat(
+            report.entries.count { entry ->
+                entry.issue.category == PluginDiagnosticCategory.PERMISSIONS
+            }
+        ).isAtLeast(1)
+        assertThat(
+            report.entries.any { entry ->
+                entry.issue.message.contains("demo.script.missing.insertHeader")
+            }
+        ).isTrue()
     }
 
     private fun writeManifest(manifest: PluginManifest) {

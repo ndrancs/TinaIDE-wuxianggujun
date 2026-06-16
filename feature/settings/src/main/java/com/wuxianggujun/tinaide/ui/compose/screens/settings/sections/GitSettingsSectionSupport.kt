@@ -5,6 +5,7 @@ import com.wuxianggujun.tinaide.core.git.GitCredential
 import com.wuxianggujun.tinaide.core.git.ssh.GitSshHostBinding
 import com.wuxianggujun.tinaide.core.git.ssh.GitSshKeyMeta
 import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.network.registry.GitHubRegistryConfig
 import com.wuxianggujun.tinaide.core.network.registry.GitHubRegistryProxySettings
 import java.net.URI
 
@@ -31,11 +32,12 @@ internal data class GitHubRegistryProxyEditorState(
     val enabled: Boolean,
     val host: String,
     val port: String,
+    val customMirrorUrl: String,
 )
 
 internal data class GitHubRegistryProxyResolveResult(
     val settings: GitHubRegistryProxySettings?,
-    @StringRes val errorRes: Int?,
+    @param:StringRes val errorRes: Int?,
 )
 
 internal object GitSettingsSectionSupport {
@@ -130,12 +132,14 @@ internal object GitSettingsSectionSupport {
         enabled = settings.enabled,
         host = settings.host,
         port = settings.port.takeIf { it > 0 }?.toString().orEmpty(),
+        customMirrorUrl = settings.customMirrorUrl,
     )
 
     fun resolveGitHubRegistryProxySettings(
         enabled: Boolean,
         rawHost: String,
         rawPort: String,
+        rawCustomMirrorUrl: String = "",
     ): GitHubRegistryProxyResolveResult {
         val hostWithOptionalPort = normalizeGitHubRegistryProxyHost(rawHost)
         val hasSinglePortDelimiter = hostWithOptionalPort.count { it == ':' } == 1
@@ -151,6 +155,7 @@ internal object GitSettingsSectionSupport {
         }
         val portText = rawPort.trim().ifBlank { hostPort.orEmpty() }
         val port = portText.toIntOrNull() ?: 0
+        val customMirrorUrl = GitHubRegistryConfig.normalizeGitHubProxyPrefix(rawCustomMirrorUrl)
 
         if (enabled && host.isBlank()) {
             return GitHubRegistryProxyResolveResult(
@@ -164,12 +169,19 @@ internal object GitSettingsSectionSupport {
                 errorRes = Strings.github_registry_proxy_error_port_invalid,
             )
         }
+        if (rawCustomMirrorUrl.isNotBlank() && customMirrorUrl == null) {
+            return GitHubRegistryProxyResolveResult(
+                settings = null,
+                errorRes = Strings.github_registry_mirror_url_error_invalid,
+            )
+        }
 
         return GitHubRegistryProxyResolveResult(
             settings = GitHubRegistryProxySettings(
                 enabled = enabled,
                 host = host,
                 port = port,
+                customMirrorUrl = customMirrorUrl.orEmpty(),
             ),
             errorRes = null,
         )

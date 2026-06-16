@@ -35,4 +35,3 @@ class RopeTest {
         assertThat(rope.length).isEqualTo(before - (3000 - 100))
     }
 }
-

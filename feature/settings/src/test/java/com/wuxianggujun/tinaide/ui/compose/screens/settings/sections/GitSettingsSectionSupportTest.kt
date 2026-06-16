@@ -175,6 +175,7 @@ class GitSettingsSectionSupportTest {
                 enabled = true,
                 rawHost = " http://127.0.0.1:7890/proxy ",
                 rawPort = "",
+                rawCustomMirrorUrl = " ghproxy.example.com ",
             )
         ).isEqualTo(
             GitHubRegistryProxyResolveResult(
@@ -182,6 +183,7 @@ class GitSettingsSectionSupportTest {
                     enabled = true,
                     host = "127.0.0.1",
                     port = 7890,
+                    customMirrorUrl = "https://ghproxy.example.com/",
                 ),
                 errorRes = null,
             )
@@ -200,6 +202,20 @@ class GitSettingsSectionSupportTest {
             GitHubRegistryProxyResolveResult(
                 settings = null,
                 errorRes = Strings.github_registry_proxy_error_host_required,
+            )
+        )
+
+        assertThat(
+            GitSettingsSectionSupport.resolveGitHubRegistryProxySettings(
+                enabled = false,
+                rawHost = "",
+                rawPort = "",
+                rawCustomMirrorUrl = "ftp://proxy.example.com",
+            )
+        ).isEqualTo(
+            GitHubRegistryProxyResolveResult(
+                settings = null,
+                errorRes = Strings.github_registry_mirror_url_error_invalid,
             )
         )
 

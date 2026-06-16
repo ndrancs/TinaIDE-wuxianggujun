@@ -104,9 +104,12 @@ class NewProjectWizardActivity : ComponentActivity() {
                                     ).strOr(this),
                                     Toast.LENGTH_LONG
                                 ).show()
-                                setResult(RESULT_OK, Intent().apply {
-                                    putExtra(EXTRA_PROJECT_PATH, projectDir.absolutePath)
-                                })
+                                setResult(
+                                    RESULT_OK,
+                                    Intent().apply {
+                                        putExtra(EXTRA_PROJECT_PATH, projectDir.absolutePath)
+                                    }
+                                )
                                 finish()
                             },
                             onError = { errorMessage ->
@@ -140,11 +143,9 @@ class NewProjectWizardActivity : ComponentActivity() {
         }
     }
 
-    private fun resolveProjectRoot(location: NewProjectSourceLocation): String {
-        return when (location) {
-            NewProjectSourceLocation.PUBLIC -> ProjectPaths.getPublicProjectsRoot(this).absolutePath
-            NewProjectSourceLocation.PRIVATE -> ProjectPaths.getPrivateProjectsRoot(this).absolutePath
-        }
+    private fun resolveProjectRoot(location: NewProjectSourceLocation): String = when (location) {
+        NewProjectSourceLocation.PUBLIC -> ProjectPaths.getPublicProjectsRoot(this).absolutePath
+        NewProjectSourceLocation.PRIVATE -> ProjectPaths.getPrivateProjectsRoot(this).absolutePath
     }
 
     companion object {
@@ -160,30 +161,26 @@ class NewProjectWizardActivity : ComponentActivity() {
             initialSourceLocation: NewProjectSourceLocation? = null,
             initialTemplateId: String? = null,
             preferPluginTemplate: Boolean = false,
-        ): Intent {
-            return Intent(context, NewProjectWizardActivity::class.java).apply {
-                initialSourceLocation?.let {
-                    putExtra(EXTRA_INITIAL_SOURCE_LOCATION, it.value)
-                }
-                initialTemplateId?.takeIf { it.isNotBlank() }?.let {
-                    putExtra(EXTRA_INITIAL_TEMPLATE_ID, it)
-                }
-                if (preferPluginTemplate) {
-                    putExtra(EXTRA_PREFER_PLUGIN_TEMPLATE, true)
-                }
+        ): Intent = Intent(context, NewProjectWizardActivity::class.java).apply {
+            initialSourceLocation?.let {
+                putExtra(EXTRA_INITIAL_SOURCE_LOCATION, it.value)
+            }
+            initialTemplateId?.takeIf { it.isNotBlank() }?.let {
+                putExtra(EXTRA_INITIAL_TEMPLATE_ID, it)
+            }
+            if (preferPluginTemplate) {
+                putExtra(EXTRA_PREFER_PLUGIN_TEMPLATE, true)
             }
         }
 
         fun createPluginProjectIntent(
             context: Context,
             initialSourceLocation: NewProjectSourceLocation? = null,
-        ): Intent {
-            return createIntent(
-                context = context,
-                initialSourceLocation = initialSourceLocation,
-                initialTemplateId = DEFAULT_PLUGIN_STARTER_TEMPLATE_ID,
-                preferPluginTemplate = true,
-            )
-        }
+        ): Intent = createIntent(
+            context = context,
+            initialSourceLocation = initialSourceLocation,
+            initialTemplateId = DEFAULT_PLUGIN_STARTER_TEMPLATE_ID,
+            preferPluginTemplate = true,
+        )
     }
 }

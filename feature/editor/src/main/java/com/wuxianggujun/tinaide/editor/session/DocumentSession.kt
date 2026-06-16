@@ -62,6 +62,16 @@ data class EditorViewState(
     val scrollY: Int = 0
 )
 
+data class DetachedEditorSnapshot(
+    val text: String,
+    val viewState: EditorViewState,
+    val isDirty: Boolean,
+    val canUndo: Boolean,
+    val canRedo: Boolean,
+    val documentVersion: Long,
+    val charsetName: String
+)
+
 class DocumentSession(
     private val context: Context,
     val tabId: String,
@@ -83,6 +93,7 @@ class DocumentSession(
         fun undo()
         fun redo()
         fun currentDocumentVersion(): Long
+        fun currentViewState(): EditorViewState? = null
     }
 
     private data class SaveSnapshot(
@@ -128,16 +139,24 @@ class DocumentSession(
     @Volatile
     private var baselineState: BaselineState = BaselineState.INITIAL_LOADING
 
+    @Volatile
+    private var detachedEditorSnapshot: DetachedEditorSnapshot? = null
+
     // FileObserver 相关字段
     private var fileObserver: FileObserver? = null
+
     @Volatile
     private var isSavingInternally: Boolean = false
+
     @Volatile
     private var fileLastModifiedOnOpen: Long = if (file.exists()) file.lastModified() else 0L
+
     @Volatile
     private var fileSizeOnOpen: Long = if (file.exists()) file.length() else 0L
+
     @Volatile
     private var lastInternalWriteMarker: FileWriteMarker? = readCurrentWriteMarker()
+
     @Volatile
     private var lastObservedWriteMarker: FileWriteMarker? = readCurrentWriteMarker()
 
@@ -171,10 +190,62 @@ class DocumentSession(
     }
 
     fun detachEditor(binding: EditorBinding) {
-        editorBinding.compareAndSet(binding, null)
+        if (!editorBinding.compareAndSet(binding, null)) return
+        if (baselineState == BaselineState.INITIAL_LOADING && !_state.value.isDirty) return
+
+        val viewState = binding.currentViewState() ?: currentViewState()
+        val dirty = computeDirty(binding, changeCausedByUndoManager = false, forceCompare = true)
+        val snapshot = DetachedEditorSnapshot(
+            text = binding.readText(),
+            viewState = viewState,
+            isDirty = dirty,
+            canUndo = binding.canUndo(),
+            canRedo = binding.canRedo(),
+            documentVersion = binding.currentDocumentVersion(),
+            charsetName = fileCharset.name()
+        )
+        detachedEditorSnapshot = snapshot
+        _state.update {
+            it.copy(
+                isDirty = snapshot.isDirty,
+                canUndo = snapshot.canUndo,
+                canRedo = snapshot.canRedo,
+                cursorLine = snapshot.viewState.cursorLine,
+                cursorColumn = snapshot.viewState.cursorColumn,
+                scrollX = snapshot.viewState.scrollX,
+                scrollY = snapshot.viewState.scrollY,
+                charsetName = snapshot.charsetName,
+                lastError = null
+            )
+        }
     }
 
     fun hasActiveEditor(): Boolean = editorBinding.get() != null
+
+    fun detachedEditorSnapshot(): DetachedEditorSnapshot? = detachedEditorSnapshot
+
+    fun markDetachedEditorSnapshotRestored(snapshot: DetachedEditorSnapshot) {
+        if (detachedEditorSnapshot === snapshot) {
+            detachedEditorSnapshot = null
+        }
+        fileCharset = runCatching { Charset.forName(snapshot.charsetName) }.getOrDefault(fileCharset)
+        baselineState = BaselineState.READY
+        val dirty = cleanFingerprint?.let { buildTextFingerprint(snapshot.text) != it } ?: snapshot.isDirty
+        _state.update {
+            it.copy(
+                isDirty = dirty,
+                canUndo = false,
+                canRedo = false,
+                cursorLine = snapshot.viewState.cursorLine,
+                cursorColumn = snapshot.viewState.cursorColumn,
+                scrollX = snapshot.viewState.scrollX,
+                scrollY = snapshot.viewState.scrollY,
+                charsetName = fileCharset.name(),
+                lastError = null
+            )
+        }
+    }
+
     fun markEditorSnapshotClean(charset: Charset? = null) {
         val binding = editorBinding.get() ?: return
         val effectiveCharset = charset ?: fileCharset
@@ -199,6 +270,7 @@ class DocumentSession(
                 charsetName = effectiveCharset.name()
             )
         }
+        detachedEditorSnapshot = null
     }
 
     fun notifyEditorContentChanged(
@@ -219,6 +291,7 @@ class DocumentSession(
             }
             return
         }
+        detachedEditorSnapshot = null
 
         val dirty = computeDirty(binding, changeCausedByUndoManager = changeCausedByUndoManager, forceCompare = false)
         _state.update {
@@ -276,6 +349,16 @@ class DocumentSession(
         }
     }
 
+    private fun currentViewState(): EditorViewState {
+        val state = _state.value
+        return EditorViewState(
+            cursorLine = state.cursorLine,
+            cursorColumn = state.cursorColumn,
+            scrollX = state.scrollX,
+            scrollY = state.scrollY
+        )
+    }
+
     private fun refreshState(canUndo: Boolean, canRedo: Boolean) {
         val binding = editorBinding.get()
         val dirty = binding?.let { computeDirty(it, changeCausedByUndoManager = false, forceCompare = true) }
@@ -303,20 +386,24 @@ class DocumentSession(
         }
     }
     suspend fun save(reason: SaveReason): SaveResult {
-        val binding = editorBinding.get()
-            ?: return SaveResult.Failure(Strings.editor_error_not_initialized.strOr(context))
-
         _state.update { it.copy(isSaving = true, lastError = null) }
         return try {
             saveMutex.withLock {
                 isSavingInternally = true
                 try {
+                    val binding = editorBinding.get()
+                    val detachedSnapshot = if (binding == null) detachedEditorSnapshot else null
+                    if (binding == null && detachedSnapshot == null) {
+                        _state.update { it.copy(isSaving = false) }
+                        return@withLock SaveResult.Failure(Strings.editor_error_not_initialized.strOr(context))
+                    }
+
                     val snapshot = withContext(Dispatchers.IO) {
-                        val text = binding.readText()
-                        val snapshotVersion = binding.currentDocumentVersion()
+                        val text = binding?.readText() ?: detachedSnapshot!!.text
+                        val snapshotVersion = binding?.currentDocumentVersion() ?: detachedSnapshot!!.documentVersion
                         val fingerprint = buildTextFingerprint(text)
                         writeFileSafely(text)
-                        val versionAfterWrite = binding.currentDocumentVersion()
+                        val versionAfterWrite = binding?.currentDocumentVersion() ?: snapshotVersion
                         SaveSnapshot(
                             text = text,
                             timestamp = System.currentTimeMillis(),
@@ -351,6 +438,17 @@ class DocumentSession(
                     }
 
                     // 保存后更新项目级符号索引（只影响当前文件，后台异步处理）
+                    if (binding != null) {
+                        detachedEditorSnapshot = null
+                    } else if (detachedEditorSnapshot != null) {
+                        detachedEditorSnapshot = detachedEditorSnapshot?.copy(
+                            isDirty = !snapshot.isUpToDate,
+                            canUndo = detachedEditorSnapshot?.canUndo ?: false,
+                            canRedo = detachedEditorSnapshot?.canRedo ?: false,
+                            documentVersion = snapshot.documentVersion,
+                            charsetName = fileCharset.name()
+                        )
+                    }
                     projectSymbolIndexServiceProvider()?.onFileSaved(file, snapshot.text)
                     SaveResult.Success(snapshot.timestamp, reason)
                 } finally {
@@ -437,8 +535,11 @@ class DocumentSession(
                 marker.fileSize != fileSizeOnOpen
             if (changed) {
                 _state.update { current ->
-                    if (current.hasExternalModification) current
-                    else current.copy(hasExternalModification = true)
+                    if (current.hasExternalModification) {
+                        current
+                    } else {
+                        current.copy(hasExternalModification = true)
+                    }
                 }
             }
         }
@@ -568,4 +669,3 @@ class DocumentSession(
         return delta in 0..INTERNAL_WRITE_SUPPRESS_WINDOW_MS
     }
 }
-

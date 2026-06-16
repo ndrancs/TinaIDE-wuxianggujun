@@ -8,9 +8,9 @@ import android.widget.Toast
  * 统一管理 Toast 显示
  */
 object ToastUtil {
-    
+
     private var currentToast: Toast? = null
-    
+
     /**
      * 显示 Toast（自动取消之前的）
      */
@@ -18,14 +18,14 @@ object ToastUtil {
         currentToast?.cancel()
         currentToast = Toast.makeText(context, message, duration).apply { show() }
     }
-    
+
     /**
      * 显示长时间 Toast
      */
     fun showLong(context: Context, message: String) {
         show(context, message, Toast.LENGTH_LONG)
     }
-    
+
     /**
      * 显示成功消息
      */
@@ -53,7 +53,7 @@ object ToastUtil {
     fun showInfo(context: Context, message: String) {
         show(context, message, Toast.LENGTH_SHORT)
     }
-    
+
     /**
      * 取消当前显示的 Toast
      */

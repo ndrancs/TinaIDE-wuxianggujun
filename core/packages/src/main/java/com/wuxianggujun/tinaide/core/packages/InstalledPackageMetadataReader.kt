@@ -19,19 +19,13 @@ object InstalledPackageMetadataReader {
         return JsonSerializer.decodeFromFileOrNull(metadataFile)
     }
 
-    fun readVersion(context: Context, packageId: String): String? {
-        return read(context, packageId)?.version
-    }
+    fun readVersion(context: Context, packageId: String): String? = read(context, packageId)?.version
 
-    fun readUpstreamVersion(context: Context, packageId: String): String? {
-        return read(context, packageId)?.upstreamVersion
-    }
+    fun readUpstreamVersion(context: Context, packageId: String): String? = read(context, packageId)?.upstreamVersion
 
-    private fun resolveMetadataFile(context: Context, packageId: String): File {
-        return File(context.filesDir, INSTALL_DIR_NAME)
-            .resolve(packageId)
-            .resolve(PACKAGE_METADATA_FILE_NAME)
-    }
+    private fun resolveMetadataFile(context: Context, packageId: String): File = File(context.filesDir, INSTALL_DIR_NAME)
+        .resolve(packageId)
+        .resolve(PACKAGE_METADATA_FILE_NAME)
 }
 
 @Serializable

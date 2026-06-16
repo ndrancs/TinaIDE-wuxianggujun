@@ -60,12 +60,18 @@ class TerminalCommandBuilder(context: Context) {
             if (hasRuntimeLibs) add(sysrootLibDir.absolutePath)
             addAll(packagePaths.runtimeLibDirs.map { it.absolutePath })
         }.distinct()
-        val ldLibraryPrefix = if (runtimeLibPaths.isNotEmpty()) {
-            "LD_LIBRARY_PATH=${shellQuotePosix(runtimeLibPaths.joinToString(":"))}:\$LD_LIBRARY_PATH "
+        val launchEnvironment = LaunchEnvironment.withPrependedPath(
+            environment = extraEnvironment,
+            variableName = "LD_LIBRARY_PATH",
+            paths = runtimeLibPaths,
+        )
+        val ldLibraryPath = launchEnvironment["LD_LIBRARY_PATH"].orEmpty()
+        val ldLibraryPrefix = if (ldLibraryPath.isNotBlank()) {
+            "LD_LIBRARY_PATH=${shellQuotePosix(ldLibraryPath)}:\$LD_LIBRARY_PATH "
         } else {
             ""
         }
-        val envPrefix = LaunchEnvironment.buildShellPrefix(extraEnvironment)
+        val envPrefix = LaunchEnvironment.buildShellPrefix(launchEnvironment - "LD_LIBRARY_PATH")
 
         val waitForEnterSuffix = buildWaitForEnterSuffix()
 
@@ -101,5 +107,4 @@ class TerminalCommandBuilder(context: Context) {
             "; printf '\\033]777;tina-run-end;%d\\a' \"\$__tina_rc\"" +
             "; cat > /dev/null"
     }
-
 }

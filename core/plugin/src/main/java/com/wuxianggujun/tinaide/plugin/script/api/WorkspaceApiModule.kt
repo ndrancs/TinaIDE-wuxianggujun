@@ -18,20 +18,34 @@ class WorkspaceApiModule internal constructor(
             withPermission(this.runtime, L, namespace, "readFile", PluginPermission.FILE_READ) {
                 val rt = this.runtime ?: return@withPermission 0
                 if (!rt.checkFileOpLimit()) {
-                    L.pushNil(); L.push("File operation rate limit exceeded"); return@withPermission 2
+                    L.pushNil()
+                    L.push("File operation rate limit exceeded")
+                    return@withPermission 2
                 }
                 val path = L.getStringArg(1)
-                if (path == null) { L.pushNil(); L.push("Path is required"); return@withPermission 2 }
+                if (path == null) {
+                    L.pushNil()
+                    L.push("Path is required")
+                    return@withPermission 2
+                }
                 val file = fileAccess.resolveSafePath(path)
-                if (file == null) { L.pushNil(); L.push("Invalid path or access denied"); return@withPermission 2 }
+                if (file == null) {
+                    L.pushNil()
+                    L.push("Invalid path or access denied")
+                    return@withPermission 2
+                }
                 try {
                     if (!file.exists() || !file.isFile) {
-                        L.pushNil(); L.push("File not found: $path"); return@withPermission 2
+                        L.pushNil()
+                        L.push("File not found: $path")
+                        return@withPermission 2
                     }
                     L.push(file.readText(Charsets.UTF_8))
                     1
                 } catch (e: Exception) {
-                    L.pushNil(); L.push("Failed to read file: ${e.message}"); 2
+                    L.pushNil()
+                    L.push("Failed to read file: ${e.message}")
+                    2
                 }
             }
         }
@@ -41,21 +55,32 @@ class WorkspaceApiModule internal constructor(
             withPermission(this.runtime, L, namespace, "writeFile", PluginPermission.FILE_WRITE) {
                 val rt = this.runtime ?: return@withPermission 0
                 if (!rt.checkFileOpLimit()) {
-                    L.push(false); L.push("File operation rate limit exceeded"); return@withPermission 2
+                    L.push(false)
+                    L.push("File operation rate limit exceeded")
+                    return@withPermission 2
                 }
                 val path = L.getStringArg(1)
                 val content = L.getStringArg(2)
                 if (path == null || content == null) {
-                    L.push(false); L.push("Path and content are required"); return@withPermission 2
+                    L.push(false)
+                    L.push("Path and content are required")
+                    return@withPermission 2
                 }
                 val file = fileAccess.resolveSafePath(path)
-                if (file == null) { L.push(false); L.push("Invalid path or access denied"); return@withPermission 2 }
+                if (file == null) {
+                    L.push(false)
+                    L.push("Invalid path or access denied")
+                    return@withPermission 2
+                }
                 try {
                     file.parentFile?.mkdirs()
                     file.writeText(content, Charsets.UTF_8)
-                    L.push(true); 1
+                    L.push(true)
+                    1
                 } catch (e: Exception) {
-                    L.push(false); L.push("Failed to write file: ${e.message}"); 2
+                    L.push(false)
+                    L.push("Failed to write file: ${e.message}")
+                    2
                 }
             }
         }
@@ -65,7 +90,9 @@ class WorkspaceApiModule internal constructor(
             withPermission(this.runtime, L, namespace, "findFiles", PluginPermission.FILE_READ) {
                 val rt = this.runtime ?: return@withPermission 0
                 if (!rt.checkFileOpLimit()) {
-                    L.pushNil(); L.push("File operation rate limit exceeded"); return@withPermission 2
+                    L.pushNil()
+                    L.push("File operation rate limit exceeded")
+                    return@withPermission 2
                 }
                 val pattern = L.getStringArg(1)
                 val maxResults = L.getIntArg(2) ?: PluginWorkspaceFileAccess.DEFAULT_FIND_FILES_LIMIT

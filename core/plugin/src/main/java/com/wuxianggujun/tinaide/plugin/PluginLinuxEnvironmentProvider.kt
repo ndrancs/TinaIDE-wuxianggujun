@@ -18,11 +18,9 @@ class PluginLinuxEnvironmentProvider(
         PRootEnvironment(context.applicationContext)
     }
 
-    override fun get(): LinuxEnvironment {
-        return if (pluginManager.hasEnabledCapability(PluginCapabilities.LINUX_ENVIRONMENT)) {
-            prootEnvironment
-        } else {
-            UnavailableLinuxEnvironment
-        }
+    override fun get(): LinuxEnvironment = if (pluginManager.hasEnabledCapability(PluginCapabilities.LINUX_ENVIRONMENT)) {
+        prootEnvironment
+    } else {
+        UnavailableLinuxEnvironment
     }
 }

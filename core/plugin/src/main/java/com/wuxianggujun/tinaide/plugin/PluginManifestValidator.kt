@@ -150,14 +150,12 @@ internal object PluginManifestValidator {
         }
     }
 
-    fun parseProjectBuildSystem(value: String): ProjectBuildSystem? {
-        return when (value.trim().lowercase()) {
-            "single_file", "single-file", "singlefile" -> ProjectBuildSystem.SINGLE_FILE
-            "cmake" -> ProjectBuildSystem.CMAKE
-            "make" -> ProjectBuildSystem.MAKE
-            "plugin", "tina_plugin", "tina-plugin", "tinaplugin" -> ProjectBuildSystem.PLUGIN
-            else -> null
-        }
+    fun parseProjectBuildSystem(value: String): ProjectBuildSystem? = when (value.trim().lowercase()) {
+        "single_file", "single-file", "singlefile" -> ProjectBuildSystem.SINGLE_FILE
+        "cmake" -> ProjectBuildSystem.CMAKE
+        "make" -> ProjectBuildSystem.MAKE
+        "plugin", "tina_plugin", "tina-plugin", "tinaplugin" -> ProjectBuildSystem.PLUGIN
+        else -> null
     }
 
     private fun validatePermissionIds(

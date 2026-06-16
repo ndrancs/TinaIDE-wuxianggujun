@@ -36,7 +36,7 @@ val buildProotFromSource = providers.gradleProperty("tina.buildProotFromSource")
             value.equals("on", ignoreCase = true)
     }
     .getOrElse(true)
-// `tina.releaseMapping.enabled` / `tina.releaseMapping.serverUrl` 由
+// `tina.releaseMapping.enabled` / `tina.releaseMapping.backupEnabled` 由
 // `tina.android.app.mapping` 插件消费（见 build-logic/convention）。
 
 android {
@@ -92,8 +92,11 @@ android {
     }
 
     buildTypes {
-        debug {}
+        debug {
+            buildConfigField("boolean", "SERVER_CONFIG_SIGNATURE_REQUIRED", "false")
+        }
         release {
+            buildConfigField("boolean", "SERVER_CONFIG_SIGNATURE_REQUIRED", "true")
             // 启用代码压缩和混淆
             isMinifyEnabled = true
             // 启用资源压缩（移除未使用的资源）
@@ -428,12 +431,10 @@ kotlin {
     }
 }
 
-// `backupMappingFiles` / `uploadMappingFiles` 两个任务及其 release
-// `finalizedBy` 挂接逻辑已由 `tina.android.app.mapping` 插件统一注册
-// （见 build-logic/convention）。可通过以下 gradle 属性控制：
+// `backupMappingFiles` 任务及其 release `finalizedBy` 挂接逻辑已由
+// `tina.android.app.mapping` 插件统一注册（见 build-logic/convention）。
+// 可通过以下 gradle 属性控制：
 // - `tina.releaseMapping.enabled`（默认 true）
 // - `tina.releaseMapping.backupEnabled`（默认 true）
-// - `tina.releaseMapping.uploadEnabled`（默认 false）
-// - `tina.releaseMapping.serverUrl`（显式启用上传时使用）
 // `checkNoAndroidUtilLog` 守卫任务与 `preBuild` 挂接已由
 // `tina.android.app.guardrails` 插件统一注册（见 build-logic/convention）。

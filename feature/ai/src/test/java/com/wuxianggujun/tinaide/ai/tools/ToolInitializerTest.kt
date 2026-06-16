@@ -19,7 +19,9 @@ class ToolInitializerTest {
             assertThat(tools).hasSize(41)
             assertThat(ToolRegistry.getEnabledTools()).hasSize(41)
 
-            assertThat(ToolInitializer.getToolStatistics().dangerousCount).isEqualTo(5)
+            assertThat(tools.filter { it.isDangerous }.map { it.name })
+                .containsExactlyElementsIn(expectedDangerousToolNames())
+            assertThat(ToolInitializer.getToolStatistics().dangerousCount).isEqualTo(15)
             assertThat(ToolInitializer.getToolStatistics().byCategory[ToolCategory.FILE_SYSTEM]).isEqualTo(13)
             assertThat(ToolInitializer.getToolStatistics().byCategory[ToolCategory.EXECUTION]).isEqualTo(6)
             assertThat(ToolInitializer.getToolStatistics().byCategory[ToolCategory.BUILD]).isEqualTo(3)
@@ -70,7 +72,8 @@ class ToolInitializerTest {
             assertThat(statistics.totalCount).isEqualTo(3)
             assertThat(statistics.enabledCount).isEqualTo(3)
             assertThat(statistics.disabledCount).isEqualTo(0)
-            assertThat(statistics.dangerousCount).isEqualTo(0)
+            assertThat(statistics.dangerousCount).isEqualTo(1)
+            assertThat(tools.filter { it.isDangerous }.map { it.name }).containsExactly("insert_code")
             assertThat(statistics.byCategory).containsExactly(ToolCategory.EDITOR, 3)
         } finally {
             ToolRegistry.clear()
@@ -119,5 +122,23 @@ class ToolInitializerTest {
         "github_search",
         "read_github_file",
         "web_search"
+    )
+
+    private fun expectedDangerousToolNames(): List<String> = listOf(
+        "insert_code",
+        "replace_selected_code",
+        "write_file",
+        "delete_file",
+        "create_directory",
+        "move_file",
+        "copy_file",
+        "replace_text",
+        "replace_line",
+        "insert_line",
+        "delete_lines",
+        "run_project",
+        "run_tests",
+        "stop_execution",
+        "format_code"
     )
 }

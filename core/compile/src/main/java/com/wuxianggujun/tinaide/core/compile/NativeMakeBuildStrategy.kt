@@ -8,9 +8,9 @@ import com.wuxianggujun.tinaide.core.ndk.AndroidNativeToolchainManager
 import com.wuxianggujun.tinaide.core.ndk.AndroidSysrootManager
 import com.wuxianggujun.tinaide.core.packages.InstalledPackagePathResolver
 import com.wuxianggujun.tinaide.core.util.NativeExecutableRunner
-import timber.log.Timber
 import java.io.File
 import java.util.concurrent.TimeUnit
+import timber.log.Timber
 
 /**
  * 原生 Makefile 构建策略（不使用 PRoot）
@@ -56,9 +56,7 @@ class NativeMakeBuildStrategy(
             "llvm-objcopy"
         )
 
-        internal fun buildRecipeShellAssignment(): String {
-            return "SHELL=$ANDROID_MAKE_RECIPE_SHELL"
-        }
+        internal fun buildRecipeShellAssignment(): String = "SHELL=$ANDROID_MAKE_RECIPE_SHELL"
     }
 
     // 超时配置（支持共享）
@@ -70,9 +68,7 @@ class NativeMakeBuildStrategy(
 
     val buildSystem = BuildSystem.MAKE
 
-    suspend fun canHandle(projectRoot: File): Boolean {
-        return hasMakefile(projectRoot)
-    }
+    suspend fun canHandle(projectRoot: File): Boolean = hasMakefile(projectRoot)
 
     suspend fun build(
         projectRoot: File,
@@ -228,9 +224,7 @@ class NativeMakeBuildStrategy(
     /**
      * 检查是否存在 Makefile
      */
-    private fun hasMakefile(projectRoot: File): Boolean {
-        return findMakefile(projectRoot) != null
-    }
+    private fun hasMakefile(projectRoot: File): Boolean = findMakefile(projectRoot) != null
 
     /**
      * 查找 Makefile
@@ -273,9 +267,7 @@ class NativeMakeBuildStrategy(
     /**
      * 解析编译错误诊断信息
      */
-    private fun parseDiagnostics(output: String): List<BuildDiagnostic> {
-        return BuildDiagnosticParser.parse(output)
-    }
+    private fun parseDiagnostics(output: String): List<BuildDiagnostic> = BuildDiagnosticParser.parse(output)
 
     private fun appendMakeToolchainOverrides(
         makeCommand: MutableList<String>,
@@ -382,92 +374,90 @@ class NativeMakeBuildStrategy(
         timeout: Long,
         extraEnvironment: Map<String, String> = emptyMap(),
         onOutput: ((String) -> Unit)? = null
-    ): CommandResult {
-        return try {
-            // 使用 NativeExecutableRunner 构建命令，自动处理 linker64 启动逻辑
-            val executable = command[0]
-            val args = command.drop(1)
-            val fullCommand = com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.buildCommand(
-                executable = executable,
-                args = args
+    ): CommandResult = try {
+        // 使用 NativeExecutableRunner 构建命令，自动处理 linker64 启动逻辑
+        val executable = command[0]
+        val args = command.drop(1)
+        val fullCommand = com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.buildCommand(
+            executable = executable,
+            args = args
+        )
+
+        val processBuilder = ProcessBuilder(fullCommand).apply {
+            directory(workingDir)
+            com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.configureEnvironment(
+                this,
+                nativeLibDir,
+                toolchainManager.getBinDir().absolutePath,
+                tmpDir = context.cacheDir.absolutePath,
+                homeDir = context.filesDir.absolutePath
             )
-
-            val processBuilder = ProcessBuilder(fullCommand).apply {
-                directory(workingDir)
-                com.wuxianggujun.tinaide.core.util.NativeExecutableRunner.configureEnvironment(
-                    this,
-                    nativeLibDir,
-                    toolchainManager.getBinDir().absolutePath,
-                    tmpDir = context.cacheDir.absolutePath,
-                    homeDir = context.filesDir.absolutePath
-                )
-                NativeExecutableRunner.applyRecommendedTinaExec(
-                    environment = environment(),
-                    context = context.applicationContext,
-                    fullCommand = fullCommand
-                )
-                applyExtraEnvironment(environment(), extraEnvironment)
-                redirectErrorStream(true)
-            }
-            NativeExecutableRunner.logExecutionDiagnostics(
-                tag = TAG,
-                executable = executable,
-                args = args,
-                fullCommand = fullCommand,
-                workingDir = workingDir,
-                environment = processBuilder.environment().toMap(),
-                toolchainBinDir = toolchainManager.getBinDir().absolutePath
+            NativeExecutableRunner.applyRecommendedTinaExec(
+                environment = environment(),
+                context = context.applicationContext,
+                fullCommand = fullCommand
             )
+            applyExtraEnvironment(environment(), extraEnvironment)
+            redirectErrorStream(true)
+        }
+        NativeExecutableRunner.logExecutionDiagnostics(
+            tag = TAG,
+            executable = executable,
+            args = args,
+            fullCommand = fullCommand,
+            workingDir = workingDir,
+            environment = processBuilder.environment().toMap(),
+            toolchainBinDir = toolchainManager.getBinDir().absolutePath
+        )
 
-            val process = processBuilder.start()
-            val output = StringBuilder()
+        val process = processBuilder.start()
+        val output = StringBuilder()
 
-            // 读取输出
-            process.inputStream.bufferedReader().use { reader ->
-                reader.lineSequence().forEach { line ->
-                    output.appendLine(line)
-                    onOutput?.invoke(line)
-                    Timber.tag(TAG).v(line)
-                }
+        // 读取输出
+        process.inputStream.bufferedReader().use { reader ->
+            reader.lineSequence().forEach { line ->
+                output.appendLine(line)
+                onOutput?.invoke(line)
+                Timber.tag(TAG).v(line)
             }
+        }
 
-            // 等待进程结束
-            val finished = process.waitFor(timeout, TimeUnit.MILLISECONDS)
-            val exitCode = if (finished) {
-                process.exitValue()
-            } else {
-                process.destroy()
-                -1
-            }
-            if (!finished) {
-                Timber.tag(TAG).w("Native make command timed out after %d ms", timeout)
-            }
-            if (exitCode != 0) {
-                NativeExecutableRunner.logFailureDiagnostics(
-                    tag = TAG,
-                    executable = executable,
-                    output = output.toString(),
-                    toolchainBinDir = toolchainManager.getBinDir().absolutePath
-                )
-            }
-
-            CommandResult(
-                exitCode = exitCode,
-                output = output.toString()
-            )
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to execute native command")
+        // 等待进程结束
+        val finished = process.waitFor(timeout, TimeUnit.MILLISECONDS)
+        val exitCode = if (finished) {
+            process.exitValue()
+        } else {
+            process.destroy()
+            -1
+        }
+        if (!finished) {
+            Timber.tag(TAG).w("Native make command timed out after %d ms", timeout)
+        }
+        if (exitCode != 0) {
             NativeExecutableRunner.logFailureDiagnostics(
                 tag = TAG,
-                executable = command.firstOrNull().orEmpty(),
-                output = e.message ?: "unknown error",
+                executable = executable,
+                output = output.toString(),
                 toolchainBinDir = toolchainManager.getBinDir().absolutePath
             )
-            CommandResult(
-                exitCode = -1,
-                output = "Exception: ${e.message}"
-            )
         }
+
+        CommandResult(
+            exitCode = exitCode,
+            output = output.toString()
+        )
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Failed to execute native command")
+        NativeExecutableRunner.logFailureDiagnostics(
+            tag = TAG,
+            executable = command.firstOrNull().orEmpty(),
+            output = e.message ?: "unknown error",
+            toolchainBinDir = toolchainManager.getBinDir().absolutePath
+        )
+        CommandResult(
+            exitCode = -1,
+            output = "Exception: ${e.message}"
+        )
     }
 
     private fun applyExtraEnvironment(

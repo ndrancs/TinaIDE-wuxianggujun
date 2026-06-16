@@ -5,7 +5,9 @@ import android.os.Build
 import androidx.core.content.edit
 import com.wuxianggujun.tinaide.core.common.AppVersionInfoReader
 import com.wuxianggujun.tinaide.core.config.AppPreferences
-import com.wuxianggujun.tinaide.core.network.OkHttpClientProvider
+import com.wuxianggujun.tinaide.core.network.registry.GitHubRegistryConfig
+import com.wuxianggujun.tinaide.core.network.registry.GitHubRegistryHttpClientFactory
+import com.wuxianggujun.tinaide.core.network.registry.GitHubRegistryProxyConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
@@ -25,9 +27,13 @@ data class AppUpdateInfo(
     val assetName: String?,
 )
 
-class AppUpdateChecker(
+class AppUpdateChecker internal constructor(
     context: Context,
-    private val client: OkHttpClient = OkHttpClientProvider.probe,
+    private val client: OkHttpClient = GitHubRegistryHttpClientFactory.probe(context),
+    private val currentVersionNameProvider: (Context) -> String = {
+        AppVersionInfoReader.read(it).versionName
+    },
+    private val endpoints: List<AppUpdateEndpoint> = AppUpdateEndpoints.defaultsFor(context),
 ) {
     private val appContext = context.applicationContext
     private val prefs = AppPreferences.get(appContext)
@@ -35,10 +41,9 @@ class AppUpdateChecker(
 
     suspend fun checkForUpdate(): Result<AppUpdateInfo?> = withContext(Dispatchers.IO) {
         runCatching {
-            val currentVersionName = AppVersionInfoReader.read(appContext).versionName
-            val release = fetchLatestRelease().getOrElse {
-                fetchLatestReleaseFromRedirect().getOrThrow()
-            }
+            val currentVersionName = currentVersionNameProvider(appContext)
+            val latest = fetchLatestRelease()
+            val release = latest.release
 
             if (release.draft || release.prerelease) return@runCatching null
             if (!AppUpdateVersioning.isRemoteNewer(currentVersionName, release.tagName)) {
@@ -50,13 +55,17 @@ class AppUpdateChecker(
                 assets = release.assets,
                 supportedAbis = Build.SUPPORTED_ABIS.toList(),
             )
+            val releasePageUrl = latest.endpoint.rewriteGitHubUrl(release.htmlUrl)
             AppUpdateInfo(
                 tagName = release.tagName,
                 releaseName = release.name?.takeIf(String::isNotBlank) ?: release.tagName,
                 currentVersionName = currentVersionName,
                 releaseNotes = release.body?.takeIf(String::isNotBlank),
-                releasePageUrl = release.htmlUrl,
-                downloadUrl = preferredAsset?.browserDownloadUrl ?: release.htmlUrl,
+                releasePageUrl = releasePageUrl,
+                downloadUrl = preferredAsset
+                    ?.browserDownloadUrl
+                    ?.let(latest.endpoint::rewriteGitHubUrl)
+                    ?: releasePageUrl,
                 assetName = preferredAsset?.name,
             )
         }
@@ -68,54 +77,149 @@ class AppUpdateChecker(
 
     private fun dismissedTagName(): String? = prefs.getString(PREF_KEY_DISMISSED_TAG, null)
 
-    private fun fetchLatestRelease(): Result<GitHubRelease> = runCatching {
+    private fun fetchLatestRelease(): AppUpdateRelease {
+        var lastFailure: Throwable? = null
+        for (endpoint in endpoints) {
+            val result = when (endpoint.kind) {
+                AppUpdateEndpointKind.API -> fetchLatestReleaseFromApi(endpoint)
+                AppUpdateEndpointKind.LATEST_REDIRECT -> fetchLatestReleaseFromRedirect(endpoint)
+            }
+            result
+                .onSuccess { return it }
+                .onFailure { lastFailure = it }
+        }
+        throw IllegalStateException(
+            "All app update endpoints failed",
+            lastFailure,
+        )
+    }
+
+    private fun fetchLatestReleaseFromApi(endpoint: AppUpdateEndpoint): Result<AppUpdateRelease> = runCatching {
         val request = Request.Builder()
-            .url(GITHUB_RELEASES_API_URL)
+            .url(endpoint.url)
             .header("Accept", "application/vnd.github+json")
             .header("X-GitHub-Api-Version", "2022-11-28")
             .get()
             .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                error("GitHub releases API failed: HTTP ${response.code}")
+                error("${endpoint.name} failed: HTTP ${response.code}")
             }
             val body = response.body?.string()?.takeIf(String::isNotBlank)
-                ?: error("GitHub releases API returned empty body")
-            json.decodeFromString<GitHubRelease>(body)
+                ?: error("${endpoint.name} returned empty body")
+            AppUpdateRelease(
+                release = json.decodeFromString<GitHubRelease>(body),
+                endpoint = endpoint,
+            )
         }
     }
 
-    private fun fetchLatestReleaseFromRedirect(): Result<GitHubRelease> = runCatching {
+    private fun fetchLatestReleaseFromRedirect(endpoint: AppUpdateEndpoint): Result<AppUpdateRelease> = runCatching {
         val request = Request.Builder()
-            .url(GITHUB_RELEASES_LATEST_URL)
+            .url(endpoint.url)
             .get()
             .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                error("GitHub latest release redirect failed: HTTP ${response.code}")
+                error("${endpoint.name} failed: HTTP ${response.code}")
             }
             val finalUrl = response.request.url.toString()
-            val tagName = finalUrl.substringAfterLast("/releases/tag/", missingDelimiterValue = "")
-                .takeIf(String::isNotBlank)
-                ?: error("GitHub latest release redirect did not expose a tag")
-            GitHubRelease(
-                tagName = tagName,
-                name = tagName,
-                body = null,
-                htmlUrl = finalUrl,
-                draft = false,
-                prerelease = false,
-                assets = emptyList(),
+            val tagName = AppUpdateEndpoints.extractReleaseTag(finalUrl)
+                ?: error("${endpoint.name} did not expose a release tag")
+            AppUpdateRelease(
+                release = GitHubRelease(
+                    tagName = tagName,
+                    name = tagName,
+                    body = null,
+                    htmlUrl = finalUrl,
+                    draft = false,
+                    prerelease = false,
+                    assets = emptyList(),
+                ),
+                endpoint = endpoint,
             )
         }
     }
 
     private companion object {
         private const val PREF_KEY_DISMISSED_TAG = "app_update_dismissed_tag"
-        private const val GITHUB_RELEASES_API_URL =
-            "https://api.github.com/repos/wuxianggujun/TinaIDE/releases/latest"
-        private const val GITHUB_RELEASES_LATEST_URL =
-            "https://github.com/wuxianggujun/TinaIDE/releases/latest"
+    }
+}
+
+internal enum class AppUpdateEndpointKind {
+    API,
+    LATEST_REDIRECT,
+}
+
+internal data class AppUpdateEndpoint(
+    val name: String,
+    val kind: AppUpdateEndpointKind,
+    val url: String,
+    val urlPrefix: String? = null,
+) {
+    fun rewriteGitHubUrl(url: String): String = GitHubRegistryConfig.rewriteGitHubUrl(url, urlPrefix)
+}
+
+internal data class AppUpdateRelease(
+    val release: GitHubRelease,
+    val endpoint: AppUpdateEndpoint,
+)
+
+internal object AppUpdateEndpoints {
+    private const val GITHUB_RELEASES_API_URL =
+        "https://api.github.com/repos/wuxianggujun/TinaIDE/releases/latest"
+    private const val GITHUB_RELEASES_LATEST_URL =
+        "https://github.com/wuxianggujun/TinaIDE/releases/latest"
+
+    val defaults: List<AppUpdateEndpoint> = buildDefaults()
+
+    fun defaultsFor(context: Context): List<AppUpdateEndpoint> = buildDefaults(
+        customProxyPrefix = GitHubRegistryProxyConfig.load(context.applicationContext).customMirrorPrefix,
+    )
+
+    fun buildDefaults(customProxyPrefix: String? = null): List<AppUpdateEndpoint> = buildList {
+        add(
+            AppUpdateEndpoint(
+                name = "GitHub Releases API",
+                kind = AppUpdateEndpointKind.API,
+                url = GITHUB_RELEASES_API_URL,
+            )
+        )
+        add(
+            AppUpdateEndpoint(
+                name = "GitHub latest release page",
+                kind = AppUpdateEndpointKind.LATEST_REDIRECT,
+                url = GITHUB_RELEASES_LATEST_URL,
+            )
+        )
+        GitHubRegistryConfig.gitHubProxyPrefixes(customProxyPrefix).forEach { prefix ->
+            add(
+                AppUpdateEndpoint(
+                    name = "GitHub proxy API ${prefix.removePrefix("https://").trimEnd('/')}",
+                    kind = AppUpdateEndpointKind.API,
+                    url = prefix + GITHUB_RELEASES_API_URL,
+                    urlPrefix = prefix,
+                )
+            )
+            add(
+                AppUpdateEndpoint(
+                    name = "GitHub proxy latest ${prefix.removePrefix("https://").trimEnd('/')}",
+                    kind = AppUpdateEndpointKind.LATEST_REDIRECT,
+                    url = prefix + GITHUB_RELEASES_LATEST_URL,
+                    urlPrefix = prefix,
+                )
+            )
+        }
+    }
+
+    fun extractReleaseTag(url: String): String? {
+        val marker = "/releases/tag/"
+        return url
+            .substringAfter(marker, missingDelimiterValue = "")
+            .substringBefore('?')
+            .substringBefore('#')
+            .substringBefore('/')
+            .takeIf(String::isNotBlank)
     }
 }
 

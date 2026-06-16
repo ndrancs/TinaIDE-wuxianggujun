@@ -116,15 +116,17 @@ class ConfigApiModule(context: Context) : PluginApiModule {
             PluginConfigurationPropertyType.BOOLEAN -> lua.push(
                 PluginConfigurationSchema.booleanValue(value)
             )
-            PluginConfigurationPropertyType.NUMBER -> value
-                .jsonPrimitive
-                .doubleOrNull
-                ?.let(lua::push)
-                ?: lua.pushNil()
-            PluginConfigurationPropertyType.STRING -> PluginConfigurationSchema
-                .stringValue(value)
-                ?.let(lua::push)
-                ?: lua.pushNil()
+            PluginConfigurationPropertyType.NUMBER ->
+                value
+                    .jsonPrimitive
+                    .doubleOrNull
+                    ?.let(lua::push)
+                    ?: lua.pushNil()
+            PluginConfigurationPropertyType.STRING ->
+                PluginConfigurationSchema
+                    .stringValue(value)
+                    ?.let(lua::push)
+                    ?: lua.pushNil()
         }
     }
 

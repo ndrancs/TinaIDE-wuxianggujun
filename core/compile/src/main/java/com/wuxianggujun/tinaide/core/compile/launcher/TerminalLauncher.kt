@@ -4,8 +4,8 @@ import com.wuxianggujun.tinaide.core.compile.artifact.Artifact
 import com.wuxianggujun.tinaide.core.compile.event.BuildEvent
 import com.wuxianggujun.tinaide.core.compile.event.BuildEventEmitter
 import com.wuxianggujun.tinaide.core.compile.strategy.BuildContext
-import timber.log.Timber
 import java.io.File
+import timber.log.Timber
 
 /**
  * 终端启动器:准备在终端中运行产物的描述符。

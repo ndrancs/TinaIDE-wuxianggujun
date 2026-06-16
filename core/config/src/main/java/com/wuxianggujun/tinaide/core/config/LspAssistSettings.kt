@@ -15,4 +15,3 @@ data class LspAssistSettings(
     /** 是否启用 LSP Semantic Tokens（语义高亮）。 */
     val semanticTokensEnabled: Boolean,
 )
-

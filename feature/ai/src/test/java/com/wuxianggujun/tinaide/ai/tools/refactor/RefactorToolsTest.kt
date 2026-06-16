@@ -34,6 +34,7 @@ class RefactorToolsTest {
     fun `format code forwards whole file request`(): Unit = runBlocking {
         val callbacks = RecordingEditorToolCallbacks()
 
+        assertThat(FormatCodeTool.isDangerous).isTrue()
         val result = FormatCodeTool.execute(
             toolCall(FormatCodeTool.name, """{"file_path":"src/main.cpp"}"""),
             editorContext(callbacks)
@@ -70,6 +71,8 @@ class RefactorToolsTest {
 
     @Test
     fun `extract method generates method body and metadata`(): Unit = runBlocking {
+        assertThat(ExtractMethodTool.isDangerous).isFalse()
+
         val result = ExtractMethodTool.execute(
             toolCall(
                 ExtractMethodTool.name,
@@ -93,6 +96,8 @@ class RefactorToolsTest {
 
     @Test
     fun `add documentation handles function docs and unsupported type`(): Unit = runBlocking {
+        assertThat(AddDocumentationTool.isDangerous).isFalse()
+
         val success = AddDocumentationTool.execute(
             toolCall(
                 AddDocumentationTool.name,

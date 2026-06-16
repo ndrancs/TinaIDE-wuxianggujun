@@ -20,7 +20,7 @@ data class VariableInfo(
     val name: String,
     val values: List<String>,
     val scope: VariableScope,
-    val definedAt: Int,           // 定义位置（命令索引）
+    val definedAt: Int, // 定义位置（命令索引）
     val isCache: Boolean = false,
     val cacheType: String? = null,
     val docstring: String? = null
@@ -30,10 +30,10 @@ data class VariableInfo(
  * 变量作用域
  */
 enum class VariableScope {
-    GLOBAL,      // 全局作用域
-    DIRECTORY,   // 目录作用域
-    FUNCTION,    // 函数作用域
-    CACHE        // 缓存变量
+    GLOBAL, // 全局作用域
+    DIRECTORY, // 目录作用域
+    FUNCTION, // 函数作用域
+    CACHE // 缓存变量
 }
 
 /**
@@ -109,7 +109,12 @@ class CMakeAnalyzer(private val doc: CMakeDoc) {
     )
 
     enum class ScopeType {
-        GLOBAL, FUNCTION, MACRO, BLOCK, FOREACH, WHILE
+        GLOBAL,
+        FUNCTION,
+        MACRO,
+        BLOCK,
+        FOREACH,
+        WHILE
     }
 
     init {
@@ -175,14 +180,16 @@ class CMakeAnalyzer(private val doc: CMakeDoc) {
     private fun analyzeSet(cmd: CommandInvocation, index: Int) {
         val args = cmd.arguments
         if (args.isEmpty()) {
-            diagnostics.add(Diagnostic(
-                Diagnostic.Level.ERROR,
-                CMakeI18n.strOrFallback(
-                    Strings.cmake_analyzer_error_set_missing_var_name,
-                    "set() command is missing a variable name"
-                ),
-                index
-            ))
+            diagnostics.add(
+                Diagnostic(
+                    Diagnostic.Level.ERROR,
+                    CMakeI18n.strOrFallback(
+                        Strings.cmake_analyzer_error_set_missing_var_name,
+                        "set() command is missing a variable name"
+                    ),
+                    index
+                )
+            )
             return
         }
 
@@ -208,11 +215,15 @@ class CMakeAnalyzer(private val doc: CMakeDoc) {
 
         val cacheType = if (isCache) {
             remaining.getOrNull(cacheIndex + 1)?.text
-        } else null
+        } else {
+            null
+        }
 
         val docstring = if (isCache && cacheIndex + 2 < remaining.size) {
             remaining.getOrNull(cacheIndex + 2)?.text
-        } else null
+        } else {
+            null
+        }
 
         val scope = when {
             isCache -> VariableScope.CACHE
@@ -351,19 +362,21 @@ class CMakeAnalyzer(private val doc: CMakeDoc) {
         val target = targets[targetName]
 
         if (target == null) {
-            diagnostics.add(Diagnostic(
-                Diagnostic.Level.WARNING,
-                CMakeI18n.strOrFallback(
-                    Strings.cmake_analyzer_error_target_not_defined,
-                    "target_link_libraries: target '$targetName' is not defined",
-                    targetName
-                ),
-                index,
-                CMakeI18n.strOrFallback(
-                    Strings.cmake_analyzer_error_define_target_before_calling,
-                    "Make sure the target is defined before calling this command"
+            diagnostics.add(
+                Diagnostic(
+                    Diagnostic.Level.WARNING,
+                    CMakeI18n.strOrFallback(
+                        Strings.cmake_analyzer_error_target_not_defined,
+                        "target_link_libraries: target '$targetName' is not defined",
+                        targetName
+                    ),
+                    index,
+                    CMakeI18n.strOrFallback(
+                        Strings.cmake_analyzer_error_define_target_before_calling,
+                        "Make sure the target is defined before calling this command"
+                    )
                 )
-            ))
+            )
             return
         }
 
@@ -590,9 +603,7 @@ class CMakeAnalyzer(private val doc: CMakeDoc) {
      * @param maxDepth 最大递归深度（防止无限循环，默认 10）
      * @return 展开后的字符串
      */
-    fun expandVariables(input: String, recursive: Boolean = true, maxDepth: Int = 10): String {
-        return expandVariablesInternal(input, recursive, maxDepth, 0)
-    }
+    fun expandVariables(input: String, recursive: Boolean = true, maxDepth: Int = 10): String = expandVariablesInternal(input, recursive, maxDepth, 0)
 
     private fun expandVariablesInternal(input: String, recursive: Boolean, maxDepth: Int, currentDepth: Int): String {
         if (currentDepth >= maxDepth) {
@@ -688,35 +699,29 @@ class CMakeAnalyzer(private val doc: CMakeDoc) {
     /**
      * 检查变量是否已定义
      */
-    fun isVariableDefined(name: String): Boolean {
-        return variables[name]?.values?.isNotEmpty() == true
-    }
+    fun isVariableDefined(name: String): Boolean = variables[name]?.values?.isNotEmpty() == true
 
     /**
      * 获取变量的字符串值（展开后）
      */
-    fun getVariableValue(name: String): String? {
-        return variables[name]?.values?.let { values ->
-            if (values.isNotEmpty()) {
-                expandVariables(values.joinToString(";"))
-            } else {
-                null
-            }
+    fun getVariableValue(name: String): String? = variables[name]?.values?.let { values ->
+        if (values.isNotEmpty()) {
+            expandVariables(values.joinToString(";"))
+        } else {
+            null
         }
     }
 
     /**
      * 获取变量的列表值（展开后）
      */
-    fun getVariableListValue(name: String): List<String>? {
-        return variables[name]?.values?.let { values ->
-            if (values.isNotEmpty()) {
-                values.flatMap { value ->
-                    expandVariables(value).split(";").filter { it.isNotEmpty() }
-                }
-            } else {
-                null
+    fun getVariableListValue(name: String): List<String>? = variables[name]?.values?.let { values ->
+        if (values.isNotEmpty()) {
+            values.flatMap { value ->
+                expandVariables(value).split(";").filter { it.isNotEmpty() }
             }
+        } else {
+            null
         }
     }
 
@@ -872,12 +877,10 @@ class CMakeAnalyzer(private val doc: CMakeDoc) {
         return result
     }
 
-    private fun isTrueValue(value: String): Boolean {
-        return when (value.uppercase()) {
-            "1", "ON", "YES", "TRUE", "Y" -> true
-            "0", "OFF", "NO", "FALSE", "N", "", "NOTFOUND" -> false
-            else -> value.isNotEmpty() && !value.endsWith("-NOTFOUND")
-        }
+    private fun isTrueValue(value: String): Boolean = when (value.uppercase()) {
+        "1", "ON", "YES", "TRUE", "Y" -> true
+        "0", "OFF", "NO", "FALSE", "N", "", "NOTFOUND" -> false
+        else -> value.isNotEmpty() && !value.endsWith("-NOTFOUND")
     }
 
     // ========== 条件求值 ==========
@@ -1000,16 +1003,14 @@ data class AnalysisResult(
     val hasWarnings: Boolean
         get() = diagnostics.any { it.level == Diagnostic.Level.WARNING }
 
-    override fun toString(): String {
-        return buildString {
-            appendLine("AnalysisResult {")
-            appendLine("  variables: ${variables.size}")
-            appendLine("  targets: ${targets.size}")
-            appendLine("  functions: ${functions.size}")
-            appendLine("  macros: ${macros.size}")
-            appendLine("  diagnostics: ${diagnostics.size} (errors: ${diagnostics.count { it.level == Diagnostic.Level.ERROR }})")
-            appendLine("}")
-        }
+    override fun toString(): String = buildString {
+        appendLine("AnalysisResult {")
+        appendLine("  variables: ${variables.size}")
+        appendLine("  targets: ${targets.size}")
+        appendLine("  functions: ${functions.size}")
+        appendLine("  macros: ${macros.size}")
+        appendLine("  diagnostics: ${diagnostics.size} (errors: ${diagnostics.count { it.level == Diagnostic.Level.ERROR }})")
+        appendLine("}")
     }
 }
 

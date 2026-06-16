@@ -1,11 +1,8 @@
 package com.wuxianggujun.tinaide.core.editorview
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,27 +28,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.wuxianggujun.tinaide.core.editorlsp.SignatureHelpResult
 
 private const val SIGNATURE_HELP_MAX_VISIBLE_OVERLOADS = 3
-internal const val signatureHelpPopupTag = "editor_signature_help_popup"
-internal const val signatureHelpPopupRowTagPrefix = "editor_signature_help_popup_row_"
-internal const val signatureHelpPopupOverflowTagPrefix = "editor_signature_help_popup_overflow_"
+internal const val SIGNATURE_HELP_POPUP_TAG = "editor_signature_help_popup"
+internal const val SIGNATURE_HELP_POPUP_ROW_TAG_PREFIX = "editor_signature_help_popup_row_"
+internal const val SIGNATURE_HELP_POPUP_OVERFLOW_TAG_PREFIX = "editor_signature_help_popup_overflow_"
 
-internal fun signatureHelpPopupRowTag(index: Int): String =
-    "$signatureHelpPopupRowTagPrefix$index"
+internal fun signatureHelpPopupRowTag(index: Int): String = "$SIGNATURE_HELP_POPUP_ROW_TAG_PREFIX$index"
 
-internal fun signatureHelpPopupOverflowTag(direction: String): String =
-    "$signatureHelpPopupOverflowTagPrefix$direction"
+internal fun signatureHelpPopupOverflowTag(direction: String): String = "$SIGNATURE_HELP_POPUP_OVERFLOW_TAG_PREFIX$direction"
 
 @Composable
 internal fun EditorSignatureHelpPopup(
@@ -94,7 +92,7 @@ internal fun EditorSignatureHelpPopup(
         EditorPopupScaffold(
             colors = popupColors,
             modifier = Modifier
-                .testTag(signatureHelpPopupTag)
+                .testTag(SIGNATURE_HELP_POPUP_TAG)
                 .width(with(density) { widthPx.toDp() })
                 .heightIn(
                     min = with(density) { minHeightPx.toDp() },

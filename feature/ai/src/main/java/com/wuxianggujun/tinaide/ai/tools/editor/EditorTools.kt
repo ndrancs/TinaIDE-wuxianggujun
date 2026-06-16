@@ -130,6 +130,7 @@ object InsertCodeTool : AiTool {
             "Insert code at the current cursor position in the editor without replacing existing content. Use this to add new code snippets, imports, or functions at the cursor location."
         )
     override val category = ToolCategory.EDITOR
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")
@@ -192,6 +193,7 @@ object ReplaceSelectedCodeTool : AiTool {
             "Replace the currently selected code in the editor with new code. Use this for refactoring, fixing bugs, or updating specific code sections that the user has highlighted."
         )
     override val category = ToolCategory.EDITOR
+    override val isDangerous = true
 
     override fun getParameters(): JsonElement = buildJsonObject {
         put("type", "object")

@@ -40,10 +40,8 @@ fun Modifier.spotlightTarget(id: String): Modifier = composed {
  * @param id 目标的语义化 ID
  * @param enabled 是否启用目标注册
  */
-fun Modifier.spotlightTargetIf(id: String, enabled: Boolean): Modifier {
-    return if (enabled) {
-        this.spotlightTarget(id)
-    } else {
-        this
-    }
+fun Modifier.spotlightTargetIf(id: String, enabled: Boolean): Modifier = if (enabled) {
+    this.spotlightTarget(id)
+} else {
+    this
 }

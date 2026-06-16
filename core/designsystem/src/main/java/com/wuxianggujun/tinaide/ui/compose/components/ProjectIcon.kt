@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -30,7 +29,7 @@ fun ProjectIcon(
 ) {
     val initials = remember(projectName) { extractInitials(projectName) }
     val backgroundColor = remember(projectName) { generateColorFromName(projectName) }
-    
+
     Box(
         modifier = modifier
             .size(size)
@@ -56,21 +55,21 @@ fun ProjectIcon(
  */
 private fun extractInitials(name: String): String {
     if (name.isBlank()) return "?"
-    
+
     val cleaned = name.trim()
-    
+
     // 1. 尝试从驼峰命名中提取大写字母
     val camelCaseInitials = cleaned.filter { it.isUpperCase() }
     if (camelCaseInitials.length >= 2) {
         return camelCaseInitials.take(2).uppercase()
     }
-    
+
     // 2. 尝试从分隔符（下划线、连字符、空格）分割的单词中提取首字母
     val words = cleaned.split(Regex("[_\\-\\s]+")).filter { it.isNotEmpty() }
     if (words.size >= 2) {
         return words.take(2).map { it.first().uppercaseChar() }.joinToString("")
     }
-    
+
     // 3. 如果有一个驼峰大写字母，加上第一个字母
     if (camelCaseInitials.length == 1) {
         val firstChar = cleaned.first().uppercaseChar()
@@ -81,7 +80,7 @@ private fun extractInitials(name: String): String {
             "$firstChar${camelCaseInitials.first()}"
         }
     }
-    
+
     // 4. 默认取前两个字符
     return cleaned.take(2).uppercase()
 }
@@ -110,7 +109,7 @@ private fun generateColorFromName(name: String): Color {
         Color(0xFFE15D44), // 橙红
         Color(0xFF7FCDCD), // 浅青
     )
-    
+
     val hash = name.hashCode().absoluteValue
     return colors[hash % colors.size]
 }

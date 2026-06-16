@@ -5,7 +5,13 @@ import android.os.Build
 import com.wuxianggujun.tinaide.exec.TinaExecPreloadMode
 import com.wuxianggujun.tinaide.exec.TinaExecRuntime
 import com.wuxianggujun.tinaide.exec.TinaExecSystemLinkerMode
-import timber.log.Timber
+import java.io.File
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -13,13 +19,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.coroutines.coroutineContext
-import java.io.File
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
+import timber.log.Timber
 
 /**
  * PRoot 进程管理器
@@ -94,11 +94,11 @@ class PRootManager(
         val libDir = nativeLibDir
         val deviceAbis = Build.SUPPORTED_ABIS.toList()
 
-        val deviceHasX86_64 = deviceAbis.any { it.equals("x86_64", ignoreCase = true) }
+        val deviceSupportsX8664Abi = deviceAbis.any { it.equals("x86_64", ignoreCase = true) }
         val appUsesArm64Libs = libDir.contains("/arm64", ignoreCase = true) || libDir.contains("\\arm64", ignoreCase = true)
 
         // x86_64 设备上运行 arm64 变体：大概率是翻译层环境，PRoot 执行不可靠
-        if (deviceHasX86_64 && appUsesArm64Libs) {
+        if (deviceSupportsX8664Abi && appUsesArm64Libs) {
             throw AbiMismatchException(
                 """
                 |架构不匹配错误：
@@ -122,8 +122,8 @@ class PRootManager(
     fun isInstalled(): Boolean {
         val rootDir = File(rootfsPath)
         return prootBinary.exists() &&
-                rootDir.isDirectory &&
-                RootfsFileChecks.exists(rootDir, "/bin/sh")
+            rootDir.isDirectory &&
+            RootfsFileChecks.exists(rootDir, "/bin/sh")
     }
 
     /**
@@ -153,9 +153,7 @@ class PRootManager(
     private data class LaunchConfig(
         val mode: String, // direct|linker
     ) {
-        fun isValid(): Boolean {
-            return (mode == "direct" || mode == "linker")
-        }
+        fun isValid(): Boolean = (mode == "direct" || mode == "linker")
     }
 
     private fun readLaunchConfigFromDisk(): LaunchConfig? {
@@ -835,18 +833,18 @@ class PRootManager(
         // seccomp / syscall 兼容性：fork()/execve()/clone() 可能返回 ENOSYS。
         if (lower.contains("function not implemented") &&
             (lower.contains("fork") || lower.contains("execve") || lower.contains("clone") || lower.contains("posix_spawn"))
-        ) return true
+        ) {
+            return true
+        }
         if (lower.contains("en osys") || lower.contains("enosys")) return true
 
         return false
     }
 
-    private fun buildCompatOverrideEnv(): Map<String, String> {
-        return mapOf(
-            "PROOT_NO_SECCOMP" to "1",
-            "KERNEL_RELEASE" to getEffectiveKernelRelease(compatModeEnabled = true),
-        )
-    }
+    private fun buildCompatOverrideEnv(): Map<String, String> = mapOf(
+        "PROOT_NO_SECCOMP" to "1",
+        "KERNEL_RELEASE" to getEffectiveKernelRelease(compatModeEnabled = true),
+    )
 
     fun startInteractive(
         command: List<String>,
@@ -864,7 +862,7 @@ class PRootManager(
         val envArray = envMap.map { "${it.key}=${it.value}" }.toTypedArray()
 
         Timber.tag("PRootManager").d("Starting interactive proot: %s", prootCommand.joinToString(" "))
-        
+
         val process = Runtime.getRuntime().exec(prootCommand.toTypedArray(), envArray)
         return InteractiveProcessImpl(process)
     }
@@ -927,7 +925,7 @@ class PRootManager(
         Timber.tag("PRootManager").d("proot canExecute: %s", prootBinary.canExecute())
         Timber.tag("PRootManager").d("proot canRead: %s", prootBinary.canRead())
         Timber.tag("PRootManager").d("proot size: %d bytes", prootBinary.length())
-        
+
         // 验证 ELF 魔数
         try {
             val elfMagic = prootBinary.inputStream().use { stream ->
@@ -942,20 +940,20 @@ class PRootManager(
         } catch (e: Exception) {
             Timber.tag("PRootManager").e(e, "Failed to read proot ELF header")
         }
-        
+
         // 检查 proot-loader
         Timber.tag("PRootManager").d("proot-loader path: %s", prootLoaderPath.absolutePath)
         Timber.tag("PRootManager").d("proot-loader exists: %s", prootLoaderPath.exists())
-        
+
         // 确保 init 脚本存在
         ensureInitScript()
-        
+
         // 使用 /system/bin/sh 执行 init-proot.sh 脚本（参考 ReTerminal 的实现）
         // 在 Android 上，直接执行 ELF 文件或通过 Java 调用 linker64 都可能失败
         // 但通过 shell 脚本调用 linker64 可以正常工作
         Timber.tag("PRootManager").d("Using init script: %s", initProotScript.absolutePath)
         Timber.tag("PRootManager").d("Work dir: %s", mappedWorkDir)
-        
+
         // 注意：prootArgs 已经不需要了，因为 init-proot.sh 会自己构建参数
         // 我们只需要传递要执行的命令
         return listOf("/system/bin/sh", initProotScript.absolutePath) + command
@@ -1008,9 +1006,7 @@ class PRootManager(
         }
     }
 
-    private fun String.normalizeHostPathForGuestMapping(): String {
-        return replace('\\', '/')
-    }
+    private fun String.normalizeHostPathForGuestMapping(): String = replace('\\', '/')
 
     private fun applyEnvironment(
         targetEnv: MutableMap<String, String>,
@@ -1042,13 +1038,13 @@ class PRootManager(
         if (!targetEnv.containsKey("PROOT_BIN")) {
             targetEnv["PROOT_BIN"] = prootBinary.absolutePath
         }
-        
+
         // 工作空间目录映射（host 路径 -> guest 路径）
         // WORKSPACE_HOST_DIR: Android 上的真实路径
         // 在 init-proot.sh 中会绑定为 /workspace
         targetEnv["WORKSPACE_HOST_DIR"] = workspaceHostDir.absolutePath
         targetEnv["PROJECTS_HOST_DIR"] = projectsHostDir.absolutePath
-        
+
         // 动态链接器路径
         val linker = if (File("/system/bin/linker64").exists()) {
             "/system/bin/linker64"
@@ -1145,9 +1141,7 @@ class PRootManager(
             }
     }
 
-    private fun shouldEnableTinaExecBridge(extraEnv: Map<String, String>): Boolean {
-        return extraEnv[ENV_TINA_PROOT_ENABLE_TINA_EXEC] == "1"
-    }
+    private fun shouldEnableTinaExecBridge(extraEnv: Map<String, String>): Boolean = extraEnv[ENV_TINA_PROOT_ENABLE_TINA_EXEC] == "1"
 
     fun buildExecEnvironment(extraEnv: Map<String, String> = emptyMap()): Map<String, String> {
         val env = mutableMapOf<String, String>()
@@ -1169,9 +1163,7 @@ class PRootManager(
         return env
     }
 
-    private fun getEffectiveKernelRelease(): String {
-        return getEffectiveKernelRelease(isCompatModeEnabled())
-    }
+    private fun getEffectiveKernelRelease(): String = getEffectiveKernelRelease(isCompatModeEnabled())
 
     private fun getEffectiveKernelRelease(compatModeEnabled: Boolean): String {
         // KISS：只做两档收敛：
@@ -1197,9 +1189,7 @@ class PRootManager(
         )
     }
 
-    private fun isCompatModeEnabled(): Boolean {
-        return forceCompatMode ?: shouldDisableSeccompByDefault()
-    }
+    private fun isCompatModeEnabled(): Boolean = forceCompatMode ?: shouldDisableSeccompByDefault()
 
     fun isCompatModeActive(): Boolean = isCompatModeEnabled()
 
@@ -1211,11 +1201,9 @@ class PRootManager(
         return host.major < 4 || (host.major == 4 && host.minor < 14)
     }
 
-    private fun readHostKernelRelease(): String? {
-        return runCatching {
-            File("/proc/sys/kernel/osrelease").readText(Charsets.UTF_8).trim()
-        }.getOrNull()?.takeIf { it.isNotBlank() }
-    }
+    private fun readHostKernelRelease(): String? = runCatching {
+        File("/proc/sys/kernel/osrelease").readText(Charsets.UTF_8).trim()
+    }.getOrNull()?.takeIf { it.isNotBlank() }
 
     private fun readHostKernelVersion(): KernelVersion? {
         val release = readHostKernelRelease() ?: return null
@@ -1225,9 +1213,7 @@ class PRootManager(
         return KernelVersion(major, minor)
     }
 
-    fun existsInRootfs(pathInRootfs: String): Boolean {
-        return RootfsFileChecks.exists(File(rootfsPath), pathInRootfs)
-    }
+    fun existsInRootfs(pathInRootfs: String): Boolean = RootfsFileChecks.exists(File(rootfsPath), pathInRootfs)
 
     suspend fun writeFile(path: String, content: String): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -1262,9 +1248,7 @@ class PRootManager(
         private const val LAUNCH_CONFIG_VERSION = "guest-probe-v1"
         private const val OUTPUT_TAIL_MAX_LINES = 200
 
-        fun getCurrentAbi(): String {
-            return Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
-        }
+        fun getCurrentAbi(): String = Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
     }
 }
 
@@ -1272,9 +1256,7 @@ private data class KernelVersion(
     val major: Int,
     val minor: Int,
 ) {
-    fun isLessThan(other: KernelVersion): Boolean {
-        return major < other.major || (major == other.major && minor < other.minor)
-    }
+    fun isLessThan(other: KernelVersion): Boolean = major < other.major || (major == other.major && minor < other.minor)
 }
 
 interface InteractiveProcess {
@@ -1300,20 +1282,16 @@ internal class InteractiveProcessImpl(
     override val stderr: InputStream
         get() = process.errorStream
 
-    override fun isRunning(): Boolean {
-        return process.isAlive
-    }
+    override fun isRunning(): Boolean = process.isAlive
 
-    override fun waitFor(timeout: Long): Int {
-        return if (timeout > 0) {
-            if (process.waitFor(timeout, TimeUnit.MILLISECONDS)) {
-                process.exitValue()
-            } else {
-                -1
-            }
+    override fun waitFor(timeout: Long): Int = if (timeout > 0) {
+        if (process.waitFor(timeout, TimeUnit.MILLISECONDS)) {
+            process.exitValue()
         } else {
-            process.waitFor()
+            -1
         }
+    } else {
+        process.waitFor()
     }
 
     override fun destroy() {

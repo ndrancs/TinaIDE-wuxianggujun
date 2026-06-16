@@ -9,7 +9,7 @@ object ClangResourceDirLocator {
      *
      * 注意：这里只用于快速定位常见版本；如果这些版本都未命中，仍会走 fallback scan。
      */
-    val DEFAULT_LLVM_VERSIONS: List<Int> = listOf(19, 18, 17, 16, 15, 14)
+    val DEFAULT_LLVM_VERSIONS: List<Int> = listOf(22, 21, 20, 19, 18, 17, 16, 15, 14)
 
     /**
      * 查找 clang resource directory（用于 clang 内置头文件，如 stdarg.h、stddef.h 等）

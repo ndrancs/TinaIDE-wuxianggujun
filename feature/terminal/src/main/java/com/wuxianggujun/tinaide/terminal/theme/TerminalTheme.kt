@@ -12,7 +12,7 @@ sealed class TerminalTheme(
     val defaultForeground: Int,
     val defaultBackground: Int,
     val cursorColor: Int,
-    val ansiColors: IntArray // 16 colors: 0-7 normal, 8-15 bright
+    val ansiColors: IntArray
 ) {
     /**
      * 默认主题（深色）
@@ -40,7 +40,7 @@ sealed class TerminalTheme(
             Color.parseColor("#3B8EEA"), // Bright Blue
             Color.parseColor("#D670D6"), // Bright Magenta
             Color.parseColor("#29B8DB"), // Bright Cyan
-            Color.parseColor("#FFFFFF")  // Bright White
+            Color.parseColor("#FFFFFF") // Bright White
         )
     )
 
@@ -70,7 +70,7 @@ sealed class TerminalTheme(
             Color.parseColor("#66D9EF"), // Bright Blue
             Color.parseColor("#AE81FF"), // Bright Magenta
             Color.parseColor("#A1EFE4"), // Bright Cyan
-            Color.parseColor("#F9F8F5")  // Bright White
+            Color.parseColor("#F9F8F5") // Bright White
         )
     )
 
@@ -100,7 +100,7 @@ sealed class TerminalTheme(
             Color.parseColor("#839496"), // Bright Blue
             Color.parseColor("#6C71C4"), // Bright Magenta
             Color.parseColor("#93A1A1"), // Bright Cyan
-            Color.parseColor("#FDF6E3")  // Bright White
+            Color.parseColor("#FDF6E3") // Bright White
         )
     )
 
@@ -130,7 +130,7 @@ sealed class TerminalTheme(
             Color.parseColor("#D6ACFF"), // Bright Blue
             Color.parseColor("#FF92DF"), // Bright Magenta
             Color.parseColor("#A4FFFF"), // Bright Cyan
-            Color.parseColor("#FFFFFF")  // Bright White
+            Color.parseColor("#FFFFFF") // Bright White
         )
     )
 
@@ -160,7 +160,7 @@ sealed class TerminalTheme(
             Color.parseColor("#81A1C1"), // Bright Blue
             Color.parseColor("#B48EAD"), // Bright Magenta
             Color.parseColor("#8FBCBB"), // Bright Cyan
-            Color.parseColor("#ECEFF4")  // Bright White
+            Color.parseColor("#ECEFF4") // Bright White
         )
     )
 

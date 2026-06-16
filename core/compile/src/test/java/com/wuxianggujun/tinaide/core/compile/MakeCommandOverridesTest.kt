@@ -53,5 +53,4 @@ class MakeCommandOverridesTest {
         assertThat(split.compileFlags).doesNotContain("-L/data/user/0/pkg/files/android-sysroot/usr/lib/aarch64-linux-android/28")
         assertThat(split.linkFlags).containsExactly("-L/data/user/0/pkg/files/android-sysroot/usr/lib/aarch64-linux-android/28")
     }
-
 }

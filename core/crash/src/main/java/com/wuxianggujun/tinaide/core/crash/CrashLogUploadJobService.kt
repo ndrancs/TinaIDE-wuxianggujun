@@ -44,4 +44,3 @@ class CrashLogUploadJobService : JobService() {
         super.onDestroy()
     }
 }
-

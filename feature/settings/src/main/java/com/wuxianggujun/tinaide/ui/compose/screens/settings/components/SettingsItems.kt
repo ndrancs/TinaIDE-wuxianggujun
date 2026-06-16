@@ -64,6 +64,7 @@ private object SettingsSizes {
     /** 展示项值文本最大宽度 */
     val displayValueMaxWidth = 160.dp
 }
+
 /**
  * 设置分组卡片容器
  *
@@ -83,6 +84,7 @@ fun SettingsCard(
         content()
     }
 }
+
 /**
  * 带图标的设置菜单项（用于主设置页面）
  */
@@ -172,6 +174,7 @@ fun SettingsMenuItemWithIcon(
         }
     }
 }
+
 /**
  * 可点击的设置项
  */
@@ -238,6 +241,7 @@ fun SettingsClickableItem(
         }
     }
 }
+
 /**
  * 纯展示设置项（不可点击，无箭头）
  */
@@ -260,7 +264,7 @@ fun SettingsDisplayItem(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
-)
+            )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
@@ -279,6 +283,7 @@ fun SettingsDisplayItem(
         }
     }
 }
+
 /**
  * 开关设置项
  */

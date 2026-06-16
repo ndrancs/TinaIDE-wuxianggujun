@@ -124,4 +124,42 @@ class SelectionHandleLayoutTest {
         assertThat(layout).isNotNull()
         assertThat(lineTextCalls[0]).isEqualTo(1)
     }
+
+    @Test
+    fun viewportDragAnchor_shouldPointToTextEdgeAboveHandleKnob() {
+        val buffer = RopeTextBuffer().apply { insert(0, "operator+") }
+        val state = EditorState(buffer).apply {
+            typeface = Typeface.MONOSPACE
+            updateMetrics(
+                lineHeightPx = 20f,
+                charWidthPx = 10f,
+                viewportHeightPx = 240f,
+                viewportWidthPx = 400f,
+                contentStartXPx = 24f
+            )
+            selectionRange = OffsetRange(anchor = 0, caret = "operator".length)
+        }
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = state.typeface
+            textSize = with(Density(1f)) { state.fontSizeSp }
+        }
+        val layout = resolveSelectionHandleLayout(
+            state = state,
+            textStartX = 24f,
+            textPaint = textPaint,
+            lineLayoutCache = EditorLineLayoutCache(),
+            lineTextProvider = buffer::getLine
+        )
+
+        assertThat(layout).isNotNull()
+        layout ?: return
+        val endAnchor = layout.viewportDragAnchor(
+            kind = SelectionHandleKind.END,
+            scrollOffsetXPx = state.scrollOffsetXPx
+        )
+
+        assertThat(endAnchor.x).isWithin(0.01f).of(layout.endCenter.x)
+        assertThat(endAnchor.y).isLessThan(layout.endCenter.y)
+        assertThat(endAnchor.y).isWithin(0.01f).of(state.lineHeightPx)
+    }
 }

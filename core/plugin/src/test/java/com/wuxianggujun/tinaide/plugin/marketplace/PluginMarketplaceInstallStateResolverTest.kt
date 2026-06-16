@@ -33,22 +33,20 @@ class PluginMarketplaceInstallStateResolverTest {
         assertThat(state.updatablePlugins).containsExactly("installed.update")
     }
 
-    private fun pluginSummary(pluginId: String, latestVersion: String?): PluginSummary {
-        return PluginSummary(
-            id = "id.$pluginId",
-            pluginId = pluginId,
-            name = pluginId,
-            description = null,
-            category = "tool",
-            latestVersion = latestVersion,
-            iconUrl = null,
-            publisher = PluginPublisher(
-                id = "publisher.$pluginId",
-                displayName = "Publisher",
-                avatarUrl = null,
-            ),
-            tags = emptyList(),
-            updatedAt = "",
-        )
-    }
+    private fun pluginSummary(pluginId: String, latestVersion: String?): PluginSummary = PluginSummary(
+        id = "id.$pluginId",
+        pluginId = pluginId,
+        name = pluginId,
+        description = null,
+        category = "tool",
+        latestVersion = latestVersion,
+        iconUrl = null,
+        publisher = PluginPublisher(
+            id = "publisher.$pluginId",
+            displayName = "Publisher",
+            avatarUrl = null,
+        ),
+        tags = emptyList(),
+        updatedAt = "",
+    )
 }

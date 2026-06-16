@@ -2,15 +2,12 @@ package com.wuxianggujun.tinaide.core.format
 
 import android.content.Context
 import com.wuxianggujun.tinaide.core.config.Prefs
-import com.wuxianggujun.tinaide.core.i18n.Strings
-import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.lang.CxxFileSupport
 import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.linux.LinuxRunModePolicy
 import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.core.proot.PRootEnvironment
 import com.wuxianggujun.tinaide.core.proot.PRootManager
-import timber.log.Timber
 import java.io.File
 
 /**
@@ -66,10 +63,11 @@ class CodeFormatter(
      */
     private val supportedExtensions: Set<String> =
         CxxFileSupport.editorRelatedExtensions + setOf(
-            "java",   // Java
-            "js", "ts", // JavaScript/TypeScript
-            "json",   // JSON
-            "proto"   // Protocol Buffers
+            "java", // Java
+            "js",
+            "ts", // JavaScript/TypeScript
+            "json", // JSON
+            "proto" // Protocol Buffers
         )
 
     // ========== 公开 API ==========
@@ -77,23 +75,19 @@ class CodeFormatter(
     /**
      * 检查文件是否支持格式化
      */
-    fun isSupported(file: File): Boolean {
-        return if (useNativeMode) {
-            nativeFormatter.isSupported(file)
-        } else {
-            prootFormatter.isSupported(file)
-        }
+    fun isSupported(file: File): Boolean = if (useNativeMode) {
+        nativeFormatter.isSupported(file)
+    } else {
+        prootFormatter.isSupported(file)
     }
 
     /**
      * 检查文件是否支持格式化（通过扩展名）
      */
-    fun isSupported(extension: String): Boolean {
-        return if (useNativeMode) {
-            nativeFormatter.isSupported(extension)
-        } else {
-            prootFormatter.isSupported(extension)
-        }
+    fun isSupported(extension: String): Boolean = if (useNativeMode) {
+        nativeFormatter.isSupported(extension)
+    } else {
+        prootFormatter.isSupported(extension)
     }
 
     /**
@@ -101,34 +95,28 @@ class CodeFormatter(
      *
      * @return 可用性检查结果，包含详细状态信息
      */
-    suspend fun checkAvailability(): AvailabilityResult {
-        return if (useNativeMode) {
-            nativeFormatter.checkAvailability()
-        } else {
-            prootFormatter.checkAvailability()
-        }
+    suspend fun checkAvailability(): AvailabilityResult = if (useNativeMode) {
+        nativeFormatter.checkAvailability()
+    } else {
+        prootFormatter.checkAvailability()
     }
 
     /**
      * 检查 clang-format 是否可用（简化版本）
      */
-    suspend fun isAvailable(): Boolean {
-        return if (useNativeMode) {
-            nativeFormatter.isAvailable()
-        } else {
-            prootFormatter.isAvailable()
-        }
+    suspend fun isAvailable(): Boolean = if (useNativeMode) {
+        nativeFormatter.isAvailable()
+    } else {
+        prootFormatter.isAvailable()
     }
 
     /**
      * 获取 clang-format 版本
      */
-    suspend fun getVersion(): String? {
-        return if (useNativeMode) {
-            nativeFormatter.getVersion()
-        } else {
-            prootFormatter.getVersion()
-        }
+    suspend fun getVersion(): String? = if (useNativeMode) {
+        nativeFormatter.getVersion()
+    } else {
+        prootFormatter.getVersion()
     }
 
     /**
@@ -145,12 +133,10 @@ class CodeFormatter(
         fileName: String,
         style: FormatStyle? = null,
         options: FormatOptions = FormatOptions()
-    ): FormatResult {
-        return if (useNativeMode) {
-            nativeFormatter.format(content, fileName, style, options)
-        } else {
-            prootFormatter.format(content, fileName, style, options)
-        }
+    ): FormatResult = if (useNativeMode) {
+        nativeFormatter.format(content, fileName, style, options)
+    } else {
+        prootFormatter.format(content, fileName, style, options)
     }
 
     /**
@@ -171,12 +157,10 @@ class CodeFormatter(
         style: FormatStyle? = null,
         options: FormatOptions = FormatOptions(),
         inPlace: Boolean = false
-    ): FormatResult {
-        return if (useNativeMode) {
-            nativeFormatter.formatFile(filePath, style, options, inPlace)
-        } else {
-            prootFormatter.formatGuestFile(filePath, style, options, inPlace)
-        }
+    ): FormatResult = if (useNativeMode) {
+        nativeFormatter.formatFile(filePath, style, options, inPlace)
+    } else {
+        prootFormatter.formatGuestFile(filePath, style, options, inPlace)
     }
 
     /**
@@ -195,12 +179,10 @@ class CodeFormatter(
         startLine: Int,
         endLine: Int,
         style: FormatStyle? = null
-    ): FormatResult {
-        return if (useNativeMode) {
-            nativeFormatter.formatRange(content, fileName, startLine, endLine, style)
-        } else {
-            prootFormatter.formatRange(content, fileName, startLine, endLine, style)
-        }
+    ): FormatResult = if (useNativeMode) {
+        nativeFormatter.formatRange(content, fileName, startLine, endLine, style)
+    } else {
+        prootFormatter.formatRange(content, fileName, startLine, endLine, style)
     }
 
     // ========== 风格解析 ==========
@@ -212,34 +194,28 @@ class CodeFormatter(
      * 1. 如果项目目录中存在 .clang-format 文件，使用 FormatStyle.FILE
      * 2. 否则使用用户在设置中选择的默认风格
      */
-    fun resolveFormatStyle(filePath: String): FormatStyle {
-        return if (useNativeMode) {
-            nativeFormatter.resolveFormatStyle(filePath)
-        } else {
-            prootFormatter.resolveFormatStyle(filePath)
-        }
+    fun resolveFormatStyle(filePath: String): FormatStyle = if (useNativeMode) {
+        nativeFormatter.resolveFormatStyle(filePath)
+    } else {
+        prootFormatter.resolveFormatStyle(filePath)
     }
 
     /**
      * 获取用户设置的默认格式化风格
      */
-    fun getUserDefaultStyle(): FormatStyle {
-        return if (useNativeMode) {
-            nativeFormatter.getUserDefaultStyle()
-        } else {
-            prootFormatter.getUserDefaultStyle()
-        }
+    fun getUserDefaultStyle(): FormatStyle = if (useNativeMode) {
+        nativeFormatter.getUserDefaultStyle()
+    } else {
+        prootFormatter.getUserDefaultStyle()
     }
 
     /**
      * 检查指定目录或其父目录中是否存在 .clang-format 文件
      */
-    fun hasClangFormatFile(directory: File?, maxDepth: Int = 10): Boolean {
-        return if (useNativeMode) {
-            nativeFormatter.hasClangFormatFile(directory, maxDepth)
-        } else {
-            prootFormatter.hasClangFormatFile(directory, maxDepth)
-        }
+    fun hasClangFormatFile(directory: File?, maxDepth: Int = 10): Boolean = if (useNativeMode) {
+        nativeFormatter.hasClangFormatFile(directory, maxDepth)
+    } else {
+        prootFormatter.hasClangFormatFile(directory, maxDepth)
     }
 
     // ========== 配置管理委托 ==========
@@ -247,34 +223,28 @@ class CodeFormatter(
     /**
      * 将内置配置文件部署到项目目录
      */
-    fun deployConfigToProject(style: FormatStyle, projectDir: File, overwrite: Boolean = false): Boolean {
-        return if (useNativeMode) {
-            nativeFormatter.deployConfigToProject(style, projectDir, overwrite)
-        } else {
-            prootFormatter.deployConfigToProject(style, projectDir, overwrite)
-        }
+    fun deployConfigToProject(style: FormatStyle, projectDir: File, overwrite: Boolean = false): Boolean = if (useNativeMode) {
+        nativeFormatter.deployConfigToProject(style, projectDir, overwrite)
+    } else {
+        prootFormatter.deployConfigToProject(style, projectDir, overwrite)
     }
 
     /**
      * 获取内置配置文件的内容
      */
-    fun getBuiltinConfigContent(style: FormatStyle): String? {
-        return if (useNativeMode) {
-            nativeFormatter.getBuiltinConfigContent(style)
-        } else {
-            prootFormatter.getBuiltinConfigContent(style)
-        }
+    fun getBuiltinConfigContent(style: FormatStyle): String? = if (useNativeMode) {
+        nativeFormatter.getBuiltinConfigContent(style)
+    } else {
+        prootFormatter.getBuiltinConfigContent(style)
     }
 
     /**
      * 获取所有可用的内置配置
      */
-    fun getAvailableConfigs(): List<ClangFormatConfigManager.ConfigInfo> {
-        return if (useNativeMode) {
-            nativeFormatter.getAvailableConfigs()
-        } else {
-            prootFormatter.getAvailableConfigs()
-        }
+    fun getAvailableConfigs(): List<ClangFormatConfigManager.ConfigInfo> = if (useNativeMode) {
+        nativeFormatter.getAvailableConfigs()
+    } else {
+        prootFormatter.getAvailableConfigs()
     }
 }
 
@@ -326,7 +296,3 @@ sealed class FormatResult {
         val exitCode: Int = -1
     ) : FormatResult()
 }
-
-
-
-

@@ -38,6 +38,7 @@ class EditorToolsTest {
             )
         )
 
+        assertThat(GetCurrentFileTool.isDangerous).isFalse()
         val result = GetCurrentFileTool.execute(toolCall(GetCurrentFileTool.name), editorContext(callbacks))
 
         val success = result.success()
@@ -65,6 +66,7 @@ class EditorToolsTest {
             )
         )
 
+        assertThat(GetSelectedCodeTool.isDangerous).isFalse()
         val result = GetSelectedCodeTool.execute(toolCall(GetSelectedCodeTool.name), editorContext(callbacks))
 
         val success = result.success()
@@ -81,6 +83,9 @@ class EditorToolsTest {
     @Test
     fun `insert and replace tools forward code to callbacks`(): Unit = runBlocking {
         val callbacks = RecordingEditorToolCallbacks()
+
+        assertThat(InsertCodeTool.isDangerous).isTrue()
+        assertThat(ReplaceSelectedCodeTool.isDangerous).isTrue()
 
         val insertResult = InsertCodeTool.execute(
             toolCall(InsertCodeTool.name, """{"code":"val inserted = true"}"""),

@@ -1,5 +1,7 @@
 # TinaIDE
 
+[![爱发电](https://img.shields.io/badge/%E7%88%B1%E5%8F%91%E7%94%B5-%E6%94%AF%E6%8C%81%E5%BC%80%E6%BA%90-946ce6?style=flat-square)](https://ifdian.net/a/wuxianggujun)
+
 > 运行在 Android 设备上的 C/C++ IDE，默认使用 `native tina-toolchain + Android sysroot`；可选提供自研 Linux distro / PRoot 环境。
 
 [English](README_EN.md)
@@ -38,8 +40,9 @@ https://github.com/wuxianggujun/TinaIDE-Registry
 ```
 
 该仓库承载 `plugins/index.v2.json`、`packages/index.v2.json`、单项详情文件、
-v1 兼容索引、官方插件包、依赖包文件和对应构建脚本。Android 主仓库只保留客户端、
-内置兜底资产和文档口径。
+官方插件包、依赖包文件和对应构建脚本。当前 Android 主干只读取 v2 索引，不再回退
+旧的 `plugins/index.json` / `packages/index.json`；如需服务旧客户端，应在 Registry
+仓库显式生成 v1 兼容产物。Android 主仓库只保留客户端、内置兜底资产和文档口径。
 
 ## 界面预览
 
@@ -159,7 +162,7 @@ Release 任务不只是“生成 APK”，还可能触发以下副作用：
 
 - 自动递增 `version.properties`
 - 备份 R8 mapping 文件
-- 尝试上传 mapping 文件到服务端
+- mapping 文件仅由公开构建逻辑做本地归档
 
 另外，脚本方式的 Release 构建会同时检查本地签名配置：
 
@@ -243,6 +246,7 @@ TinaIDE/
 
 TinaIDE 已决定彻底开源，后续精力会优先放在稳定维护和社区协作上。
 如果这个项目对你有帮助，欢迎通过赞赏支持持续维护。
+如果更习惯在线赞助，也可以通过 [爱发电支持无相孤君继续开源](https://ifdian.net/a/wuxianggujun)。
 也欢迎直接提交 PR，一起补功能、修 bug、改文档。
 
 | 微信赞赏码 | 支付宝收款码 |

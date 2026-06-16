@@ -58,28 +58,24 @@ sealed class TinaIDEException(
         userMessage: String,
         recoverySuggestion: String? = null
     ) : TinaIDEException(message, userMessage, recoverySuggestion) {
-        
+
         companion object {
             /**
              * 创建带国际化消息的编译异常
              */
-            fun create(context: Context, message: String, diagnostics: List<BuildDiagnostic> = emptyList()): CompileException {
-                return CompileException(
-                    message = message,
-                    diagnostics = diagnostics,
-                    userMessage = ExceptionMessages.buildCompileUserMessage(context, message, diagnostics),
-                    recoverySuggestion = ExceptionMessages.buildCompileRecoverySuggestion(context, diagnostics)
-                )
-            }
+            fun create(context: Context, message: String, diagnostics: List<BuildDiagnostic> = emptyList()): CompileException = CompileException(
+                message = message,
+                diagnostics = diagnostics,
+                userMessage = ExceptionMessages.buildCompileUserMessage(context, message, diagnostics),
+                recoverySuggestion = ExceptionMessages.buildCompileRecoverySuggestion(context, diagnostics)
+            )
 
-            fun create(message: String, diagnostics: List<BuildDiagnostic> = emptyList()): CompileException {
-                return CompileException(
-                    message = message,
-                    diagnostics = diagnostics,
-                    userMessage = ExceptionMessages.buildCompileUserMessage(message, diagnostics),
-                    recoverySuggestion = ExceptionMessages.buildCompileRecoverySuggestion(diagnostics)
-                )
-            }
+            fun create(message: String, diagnostics: List<BuildDiagnostic> = emptyList()): CompileException = CompileException(
+                message = message,
+                diagnostics = diagnostics,
+                userMessage = ExceptionMessages.buildCompileUserMessage(message, diagnostics),
+                recoverySuggestion = ExceptionMessages.buildCompileRecoverySuggestion(diagnostics)
+            )
         }
     }
 
@@ -96,23 +92,19 @@ sealed class TinaIDEException(
         userMessage: String,
         recoverySuggestion: String? = null
     ) : TinaIDEException(message, userMessage, recoverySuggestion) {
-        
-        companion object {
-            fun create(context: Context, message: String): LinkException {
-                return LinkException(
-                    message = message,
-                    userMessage = ExceptionMessages.linkFailed(context, message),
-                    recoverySuggestion = ExceptionMessages.linkSuggestion(context)
-                )
-            }
 
-            fun create(message: String): LinkException {
-                return LinkException(
-                    message = message,
-                    userMessage = ExceptionMessages.linkFailed(message),
-                    recoverySuggestion = ExceptionMessages.linkSuggestion()
-                )
-            }
+        companion object {
+            fun create(context: Context, message: String): LinkException = LinkException(
+                message = message,
+                userMessage = ExceptionMessages.linkFailed(context, message),
+                recoverySuggestion = ExceptionMessages.linkSuggestion(context)
+            )
+
+            fun create(message: String): LinkException = LinkException(
+                message = message,
+                userMessage = ExceptionMessages.linkFailed(message),
+                recoverySuggestion = ExceptionMessages.linkSuggestion()
+            )
         }
     }
 
@@ -130,64 +122,52 @@ sealed class TinaIDEException(
         recoverySuggestion: String? = null,
         cause: Throwable? = null
     ) : TinaIDEException(message, userMessage, recoverySuggestion, cause) {
-        
+
         companion object {
             /**
              * 创建"环境未安装"异常
              */
-            fun notInstalled(context: Context): PRootEnvironmentException {
-                return PRootEnvironmentException(
-                    message = "PRoot environment not installed",
-                    userMessage = ExceptionMessages.prootNotInstalled(context),
-                    recoverySuggestion = ExceptionMessages.prootNotInstalledSuggestion(context)
-                )
-            }
+            fun notInstalled(context: Context): PRootEnvironmentException = PRootEnvironmentException(
+                message = "PRoot environment not installed",
+                userMessage = ExceptionMessages.prootNotInstalled(context),
+                recoverySuggestion = ExceptionMessages.prootNotInstalledSuggestion(context)
+            )
 
-            fun notInstalled(): PRootEnvironmentException {
-                return PRootEnvironmentException(
-                    message = "PRoot environment not installed",
-                    userMessage = ExceptionMessages.prootNotInstalled(),
-                    recoverySuggestion = ExceptionMessages.prootNotInstalledSuggestion()
-                )
-            }
-            
+            fun notInstalled(): PRootEnvironmentException = PRootEnvironmentException(
+                message = "PRoot environment not installed",
+                userMessage = ExceptionMessages.prootNotInstalled(),
+                recoverySuggestion = ExceptionMessages.prootNotInstalledSuggestion()
+            )
+
             /**
              * 创建"环境正在安装"异常
              */
-            fun installing(context: Context): PRootEnvironmentException {
-                return PRootEnvironmentException(
-                    message = "PRoot environment is being installed",
-                    userMessage = ExceptionMessages.prootInstalling(context),
-                    recoverySuggestion = ExceptionMessages.prootInstallingSuggestion(context)
-                )
-            }
+            fun installing(context: Context): PRootEnvironmentException = PRootEnvironmentException(
+                message = "PRoot environment is being installed",
+                userMessage = ExceptionMessages.prootInstalling(context),
+                recoverySuggestion = ExceptionMessages.prootInstallingSuggestion(context)
+            )
 
-            fun installing(): PRootEnvironmentException {
-                return PRootEnvironmentException(
-                    message = "PRoot environment is being installed",
-                    userMessage = ExceptionMessages.prootInstalling(),
-                    recoverySuggestion = ExceptionMessages.prootInstallingSuggestion()
-                )
-            }
-            
+            fun installing(): PRootEnvironmentException = PRootEnvironmentException(
+                message = "PRoot environment is being installed",
+                userMessage = ExceptionMessages.prootInstalling(),
+                recoverySuggestion = ExceptionMessages.prootInstallingSuggestion()
+            )
+
             /**
              * 创建"环境需要更新"异常
              */
-            fun needsUpdate(context: Context): PRootEnvironmentException {
-                return PRootEnvironmentException(
-                    message = "PRoot environment needs update",
-                    userMessage = ExceptionMessages.prootNeedsUpdate(context),
-                    recoverySuggestion = ExceptionMessages.prootNeedsUpdateSuggestion(context)
-                )
-            }
+            fun needsUpdate(context: Context): PRootEnvironmentException = PRootEnvironmentException(
+                message = "PRoot environment needs update",
+                userMessage = ExceptionMessages.prootNeedsUpdate(context),
+                recoverySuggestion = ExceptionMessages.prootNeedsUpdateSuggestion(context)
+            )
 
-            fun needsUpdate(): PRootEnvironmentException {
-                return PRootEnvironmentException(
-                    message = "PRoot environment needs update",
-                    userMessage = ExceptionMessages.prootNeedsUpdate(),
-                    recoverySuggestion = ExceptionMessages.prootNeedsUpdateSuggestion()
-                )
-            }
+            fun needsUpdate(): PRootEnvironmentException = PRootEnvironmentException(
+                message = "PRoot environment needs update",
+                userMessage = ExceptionMessages.prootNeedsUpdate(),
+                recoverySuggestion = ExceptionMessages.prootNeedsUpdateSuggestion()
+            )
         }
     }
 
@@ -209,16 +189,14 @@ sealed class TinaIDEException(
         userMessage = userMessage,
         recoverySuggestion = recoverySuggestion
     ) {
-        
+
         companion object {
-            fun create(context: Context, compilerType: CompilerType): ToolchainNotInstalledException {
-                return ToolchainNotInstalledException(
-                    compilerType = compilerType,
-                    toolName = compilerType.getDisplayName(context),
-                    userMessage = ExceptionMessages.toolchainNotInstalled(context, compilerType),
-                    recoverySuggestion = ExceptionMessages.toolchainSuggestion(context, compilerType)
-                )
-            }
+            fun create(context: Context, compilerType: CompilerType): ToolchainNotInstalledException = ToolchainNotInstalledException(
+                compilerType = compilerType,
+                toolName = compilerType.getDisplayName(context),
+                userMessage = ExceptionMessages.toolchainNotInstalled(context, compilerType),
+                recoverySuggestion = ExceptionMessages.toolchainSuggestion(context, compilerType)
+            )
         }
     }
 
@@ -236,45 +214,37 @@ sealed class TinaIDEException(
         recoverySuggestion: String? = null,
         cause: Throwable? = null
     ) : TinaIDEException(message, userMessage, recoverySuggestion, cause) {
-        
+
         companion object {
             /**
              * 创建"LLDB 未安装"异常
              */
-            fun notInstalled(context: Context): DebuggerException {
-                return DebuggerException(
-                    message = "LLDB not installed",
-                    userMessage = ExceptionMessages.lldbNotInstalled(context),
-                    recoverySuggestion = ExceptionMessages.lldbSuggestion(context)
-                )
-            }
+            fun notInstalled(context: Context): DebuggerException = DebuggerException(
+                message = "LLDB not installed",
+                userMessage = ExceptionMessages.lldbNotInstalled(context),
+                recoverySuggestion = ExceptionMessages.lldbSuggestion(context)
+            )
 
-            fun notInstalled(): DebuggerException {
-                return DebuggerException(
-                    message = "LLDB not installed",
-                    userMessage = ExceptionMessages.lldbNotInstalled(),
-                    recoverySuggestion = ExceptionMessages.lldbSuggestion()
-                )
-            }
-            
+            fun notInstalled(): DebuggerException = DebuggerException(
+                message = "LLDB not installed",
+                userMessage = ExceptionMessages.lldbNotInstalled(),
+                recoverySuggestion = ExceptionMessages.lldbSuggestion()
+            )
+
             /**
              * 创建"Python 绑定缺失"异常
              */
-            fun pythonBindingMissing(context: Context): DebuggerException {
-                return DebuggerException(
-                    message = "LLDB Python binding missing",
-                    userMessage = ExceptionMessages.lldbPythonMissing(context),
-                    recoverySuggestion = ExceptionMessages.lldbPythonSuggestion(context)
-                )
-            }
+            fun pythonBindingMissing(context: Context): DebuggerException = DebuggerException(
+                message = "LLDB Python binding missing",
+                userMessage = ExceptionMessages.lldbPythonMissing(context),
+                recoverySuggestion = ExceptionMessages.lldbPythonSuggestion(context)
+            )
 
-            fun pythonBindingMissing(): DebuggerException {
-                return DebuggerException(
-                    message = "LLDB Python binding missing",
-                    userMessage = ExceptionMessages.lldbPythonMissing(),
-                    recoverySuggestion = ExceptionMessages.lldbPythonSuggestion()
-                )
-            }
+            fun pythonBindingMissing(): DebuggerException = DebuggerException(
+                message = "LLDB Python binding missing",
+                userMessage = ExceptionMessages.lldbPythonMissing(),
+                recoverySuggestion = ExceptionMessages.lldbPythonSuggestion()
+            )
         }
     }
 
@@ -293,25 +263,21 @@ sealed class TinaIDEException(
         recoverySuggestion: String? = null,
         cause: Throwable? = null
     ) : TinaIDEException(message, userMessage, recoverySuggestion, cause) {
-        
-        companion object {
-            fun create(context: Context, message: String, filePath: String, cause: Throwable? = null): FileOperationException {
-                return FileOperationException(
-                    message = message,
-                    filePath = filePath,
-                    userMessage = ExceptionMessages.fileOperationFailed(context, message),
-                    cause = cause
-                )
-            }
 
-            fun create(message: String, filePath: String, cause: Throwable? = null): FileOperationException {
-                return FileOperationException(
-                    message = message,
-                    filePath = filePath,
-                    userMessage = ExceptionMessages.fileOperationFailed(message),
-                    cause = cause
-                )
-            }
+        companion object {
+            fun create(context: Context, message: String, filePath: String, cause: Throwable? = null): FileOperationException = FileOperationException(
+                message = message,
+                filePath = filePath,
+                userMessage = ExceptionMessages.fileOperationFailed(context, message),
+                cause = cause
+            )
+
+            fun create(message: String, filePath: String, cause: Throwable? = null): FileOperationException = FileOperationException(
+                message = message,
+                filePath = filePath,
+                userMessage = ExceptionMessages.fileOperationFailed(message),
+                cause = cause
+            )
         }
     }
 
@@ -329,25 +295,21 @@ sealed class TinaIDEException(
         userMessage: String,
         recoverySuggestion: String? = null
     ) : TinaIDEException(message, userMessage, recoverySuggestion) {
-        
-        companion object {
-            fun create(context: Context, path: String): PathValidationException {
-                return PathValidationException(
-                    path = path,
-                    message = "Path $path is not in allowed range",
-                    userMessage = ExceptionMessages.pathNotAllowed(context, path),
-                    recoverySuggestion = ExceptionMessages.pathSuggestion(context)
-                )
-            }
 
-            fun create(path: String): PathValidationException {
-                return PathValidationException(
-                    path = path,
-                    message = "Path $path is not in allowed range",
-                    userMessage = ExceptionMessages.pathNotAllowed(path),
-                    recoverySuggestion = ExceptionMessages.pathSuggestion()
-                )
-            }
+        companion object {
+            fun create(context: Context, path: String): PathValidationException = PathValidationException(
+                path = path,
+                message = "Path $path is not in allowed range",
+                userMessage = ExceptionMessages.pathNotAllowed(context, path),
+                recoverySuggestion = ExceptionMessages.pathSuggestion(context)
+            )
+
+            fun create(path: String): PathValidationException = PathValidationException(
+                path = path,
+                message = "Path $path is not in allowed range",
+                userMessage = ExceptionMessages.pathNotAllowed(path),
+                recoverySuggestion = ExceptionMessages.pathSuggestion()
+            )
         }
     }
 
@@ -364,21 +326,17 @@ sealed class TinaIDEException(
         userMessage: String,
         recoverySuggestion: String? = null
     ) : TinaIDEException(message, userMessage, recoverySuggestion) {
-        
-        companion object {
-            fun create(context: Context, message: String): ProjectConfigException {
-                return ProjectConfigException(
-                    message = message,
-                    userMessage = ExceptionMessages.projectConfigError(context, message)
-                )
-            }
 
-            fun create(message: String): ProjectConfigException {
-                return ProjectConfigException(
-                    message = message,
-                    userMessage = ExceptionMessages.projectConfigError(message)
-                )
-            }
+        companion object {
+            fun create(context: Context, message: String): ProjectConfigException = ProjectConfigException(
+                message = message,
+                userMessage = ExceptionMessages.projectConfigError(context, message)
+            )
+
+            fun create(message: String): ProjectConfigException = ProjectConfigException(
+                message = message,
+                userMessage = ExceptionMessages.projectConfigError(message)
+            )
         }
     }
 
@@ -396,45 +354,37 @@ sealed class TinaIDEException(
         recoverySuggestion: String? = null,
         cause: Throwable? = null
     ) : TinaIDEException(message, userMessage, recoverySuggestion, cause) {
-        
+
         companion object {
             /**
              * 创建"DNS 劫持"异常
              */
-            fun dnsHijacked(context: Context, details: String): NetworkException {
-                return NetworkException(
-                    message = "DNS hijacked: $details",
-                    userMessage = ExceptionMessages.dnsHijacked(context),
-                    recoverySuggestion = ExceptionMessages.dnsSuggestion(context)
-                )
-            }
+            fun dnsHijacked(context: Context, details: String): NetworkException = NetworkException(
+                message = "DNS hijacked: $details",
+                userMessage = ExceptionMessages.dnsHijacked(context),
+                recoverySuggestion = ExceptionMessages.dnsSuggestion(context)
+            )
 
-            fun dnsHijacked(details: String): NetworkException {
-                return NetworkException(
-                    message = "DNS hijacked: $details",
-                    userMessage = ExceptionMessages.dnsHijacked(),
-                    recoverySuggestion = ExceptionMessages.dnsSuggestion()
-                )
-            }
-            
+            fun dnsHijacked(details: String): NetworkException = NetworkException(
+                message = "DNS hijacked: $details",
+                userMessage = ExceptionMessages.dnsHijacked(),
+                recoverySuggestion = ExceptionMessages.dnsSuggestion()
+            )
+
             /**
              * 创建"连接超时"异常
              */
-            fun timeout(context: Context, operation: String): NetworkException {
-                return NetworkException(
-                    message = "Network timeout: $operation",
-                    userMessage = ExceptionMessages.networkTimeout(context),
-                    recoverySuggestion = ExceptionMessages.timeoutSuggestion(context)
-                )
-            }
+            fun timeout(context: Context, operation: String): NetworkException = NetworkException(
+                message = "Network timeout: $operation",
+                userMessage = ExceptionMessages.networkTimeout(context),
+                recoverySuggestion = ExceptionMessages.timeoutSuggestion(context)
+            )
 
-            fun timeout(operation: String): NetworkException {
-                return NetworkException(
-                    message = "Network timeout: $operation",
-                    userMessage = ExceptionMessages.networkTimeout(),
-                    recoverySuggestion = ExceptionMessages.timeoutSuggestion()
-                )
-            }
+            fun timeout(operation: String): NetworkException = NetworkException(
+                message = "Network timeout: $operation",
+                userMessage = ExceptionMessages.networkTimeout(),
+                recoverySuggestion = ExceptionMessages.timeoutSuggestion()
+            )
         }
     }
 
@@ -453,25 +403,21 @@ sealed class TinaIDEException(
         recoverySuggestion: String? = null,
         cause: Throwable? = null
     ) : TinaIDEException(message, userMessage, recoverySuggestion, cause) {
-        
-        companion object {
-            fun create(context: Context, message: String, exitCode: Int? = null, cause: Throwable? = null): ProcessExecutionException {
-                return ProcessExecutionException(
-                    message = message,
-                    exitCode = exitCode,
-                    userMessage = ExceptionMessages.processFailed(context, message),
-                    cause = cause
-                )
-            }
 
-            fun create(message: String, exitCode: Int? = null, cause: Throwable? = null): ProcessExecutionException {
-                return ProcessExecutionException(
-                    message = message,
-                    exitCode = exitCode,
-                    userMessage = ExceptionMessages.processFailed(message),
-                    cause = cause
-                )
-            }
+        companion object {
+            fun create(context: Context, message: String, exitCode: Int? = null, cause: Throwable? = null): ProcessExecutionException = ProcessExecutionException(
+                message = message,
+                exitCode = exitCode,
+                userMessage = ExceptionMessages.processFailed(context, message),
+                cause = cause
+            )
+
+            fun create(message: String, exitCode: Int? = null, cause: Throwable? = null): ProcessExecutionException = ProcessExecutionException(
+                message = message,
+                exitCode = exitCode,
+                userMessage = ExceptionMessages.processFailed(message),
+                cause = cause
+            )
         }
     }
 }

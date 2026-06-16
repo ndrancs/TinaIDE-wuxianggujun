@@ -18,6 +18,7 @@ data class BuildFingerprint(
     val compilerType: String,
     val compilerPath: String,
     val toolchainId: String?,
+    val sysrootProfileId: String? = null,
     val sysrootApiLevel: Int,
     val buildType: String,
     val cmakeBuildType: String?,
@@ -41,6 +42,6 @@ data class BuildFingerprint(
 ) {
     companion object {
         /** 每次破坏性字段调整时 +1,使所有旧持久化指纹立即失效 */
-        const val SCHEMA_VERSION: Int = 2
+        const val SCHEMA_VERSION: Int = 3
     }
 }

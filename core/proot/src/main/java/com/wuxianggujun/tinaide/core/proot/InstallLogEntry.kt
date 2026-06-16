@@ -54,20 +54,16 @@ data class InstallLogEntry(
          * 线程安全的日期格式化器（短格式）
          */
         private val SHORT_TIME_FORMAT = object : ThreadLocal<SimpleDateFormat>() {
-            override fun initialValue(): SimpleDateFormat {
-                return SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-            }
+            override fun initialValue(): SimpleDateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         }
-        
+
         /**
          * 线程安全的日期格式化器（完整格式）
          */
         private val FULL_TIME_FORMAT = object : ThreadLocal<SimpleDateFormat>() {
-            override fun initialValue(): SimpleDateFormat {
-                return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            }
+            override fun initialValue(): SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         }
-        
+
         /**
          * 线程安全的 ID 计数器
          */
@@ -86,14 +82,12 @@ data class InstallLogEntry(
             message: String,
             tag: String = "",
             timestamp: Long = System.currentTimeMillis()
-        ): InstallLogEntry {
-            return InstallLogEntry(
-                id = nextId(),
-                level = level,
-                timestamp = timestamp,
-                tag = tag,
-                message = message
-            )
-        }
+        ): InstallLogEntry = InstallLogEntry(
+            id = nextId(),
+            level = level,
+            timestamp = timestamp,
+            tag = tag,
+            message = message
+        )
     }
 }

@@ -2,13 +2,13 @@ package com.wuxianggujun.tinaide.core.lsp
 
 import com.wuxianggujun.tinaide.core.config.Prefs
 import com.wuxianggujun.tinaide.project.NativeBuildFlagTokenizer
+import java.io.File
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
-import java.io.File
 
 /**
  * 只做诊断，不修改 compile_commands。
@@ -17,21 +17,17 @@ object CompileCommandsDebugLogger {
 
     private val json = Json
 
-    fun isCompileCommandsSelectionEnabled(): Boolean {
-        return runCatching {
-            Prefs.developerOptionsEnabled &&
-                Prefs.devDiagnosticsEnabled &&
-                Prefs.devLspCompileCommandsSelectionLogEnabled
-        }.getOrDefault(false)
-    }
+    fun isCompileCommandsSelectionEnabled(): Boolean = runCatching {
+        Prefs.developerOptionsEnabled &&
+            Prefs.devDiagnosticsEnabled &&
+            Prefs.devLspCompileCommandsSelectionLogEnabled
+    }.getOrDefault(false)
 
-    fun isClangdStartupEnabled(): Boolean {
-        return runCatching {
-            Prefs.developerOptionsEnabled &&
-                Prefs.devDiagnosticsEnabled &&
-                Prefs.devLspClangdStartupLogEnabled
-        }.getOrDefault(false)
-    }
+    fun isClangdStartupEnabled(): Boolean = runCatching {
+        Prefs.developerOptionsEnabled &&
+            Prefs.devDiagnosticsEnabled &&
+            Prefs.devLspClangdStartupLogEnabled
+    }.getOrDefault(false)
 
     fun logCompileCommandsSelectionSummary(tag: String, label: String, file: File) {
         if (!isCompileCommandsSelectionEnabled()) return
@@ -44,7 +40,6 @@ object CompileCommandsDebugLogger {
     }
 
     private fun logSummary(tag: String, label: String, file: File) {
-        
         if (!file.isFile) {
             Timber.tag(tag).w("%s: compile_commands missing: %s", label, file.absolutePath)
             return

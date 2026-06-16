@@ -63,6 +63,9 @@ import com.wuxianggujun.tinaide.core.config.Prefs
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.plugin.EditorThemeIndex
 import com.wuxianggujun.tinaide.plugin.InstalledPlugin
+import com.wuxianggujun.tinaide.plugin.PluginConfigurationPropertyType
+import com.wuxianggujun.tinaide.plugin.PluginConfigurationSchema
+import com.wuxianggujun.tinaide.plugin.PluginConfigurationStore
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticCategory
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticEntry
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticIssue
@@ -70,9 +73,6 @@ import com.wuxianggujun.tinaide.plugin.PluginDiagnosticSeverity
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticsReport
 import com.wuxianggujun.tinaide.plugin.PluginDiagnosticsSnapshotFactory
 import com.wuxianggujun.tinaide.plugin.PluginDoctor
-import com.wuxianggujun.tinaide.plugin.PluginConfigurationPropertyType
-import com.wuxianggujun.tinaide.plugin.PluginConfigurationSchema
-import com.wuxianggujun.tinaide.plugin.PluginConfigurationStore
 import com.wuxianggujun.tinaide.plugin.PluginHostLogSources
 import com.wuxianggujun.tinaide.plugin.PluginLogLevel
 import com.wuxianggujun.tinaide.plugin.PluginLogManager
@@ -89,6 +89,7 @@ import com.wuxianggujun.tinaide.plugin.script.PluginPermission
 import com.wuxianggujun.tinaide.plugin.script.PluginPermissionManager
 import com.wuxianggujun.tinaide.plugin.script.ScriptPluginInfo
 import com.wuxianggujun.tinaide.plugin.script.ScriptPluginManager
+import com.wuxianggujun.tinaide.plugin.script.api.PluginCommandRegistry
 import com.wuxianggujun.tinaide.plugin.toDiagnosticsReport
 import com.wuxianggujun.tinaide.ui.compose.components.DetailHeaderCard
 import com.wuxianggujun.tinaide.ui.compose.components.DetailIconPlaceholder
@@ -162,10 +163,12 @@ internal fun PluginsSettingsSection(
     val permissionRuntimeFixHint = stringResource(Strings.plugins_diagnostics_permission_runtime_fix_hint)
 
     val permissionManager = remember { PluginPermissionManager.getInstance(appContext) }
+    val permissionGrants by permissionManager.grantsFlow.collectAsState()
     val pluginLogManager = remember { PluginLogManager.getInstance(appContext) }
     val pluginLogs by pluginLogManager.logsFlow.collectAsState()
     val scriptPluginManager = remember { ScriptPluginManager.getInstance(appContext) }
     val scriptPluginStates by scriptPluginManager.pluginStates.collectAsState()
+    val commandRegistryRevision by PluginCommandRegistry.stateRevision.collectAsState()
     val lspPlugins by lspPluginManager?.lspPluginsFlow?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
     val lspInstallStates by lspPluginManager?.installStatesFlow?.collectAsState() ?: remember { mutableStateOf(emptyMap()) }
     val lspRuntimeDiagnosticText = LspRuntimeDiagnosticText(
@@ -179,6 +182,24 @@ internal fun PluginsSettingsSection(
         installFixHint = stringResource(Strings.plugins_diagnostics_lsp_install_fix_hint),
         repairFixHint = stringResource(Strings.plugins_diagnostics_lsp_repair_fix_hint),
     )
+    val commandRuntimeDiagnosticText = PluginCommandRuntimeDiagnosticText(
+        missingRegistrationTemplate = stringResource(
+            Strings.plugins_commands_diagnostic_missing_registration
+        ),
+        missingRegistrationWithReasonTemplate = stringResource(
+            Strings.plugins_commands_diagnostic_missing_registration_reason
+        ),
+        unavailableTemplate = stringResource(Strings.plugins_commands_diagnostic_unavailable),
+        unavailableWithoutReasonTemplate = stringResource(
+            Strings.plugins_commands_diagnostic_unavailable_unknown
+        ),
+        executionFailedTemplate = stringResource(
+            Strings.plugins_commands_diagnostic_execution_failed
+        ),
+        runtimeFixHint = stringResource(Strings.plugins_commands_diagnostic_runtime_fix_hint),
+        permissionFixHint = stringResource(Strings.plugins_commands_diagnostic_permission_fix_hint),
+        missingCommandIdLabel = stringResource(Strings.plugins_commands_missing_command_id_value),
+    )
     val lspRuntimeEntriesByPluginId = remember(
         lspPlugins,
         lspInstallStates,
@@ -188,6 +209,18 @@ internal fun PluginsSettingsSection(
             lspPlugins = lspPlugins,
             installStates = lspInstallStates,
             diagnosticText = lspRuntimeDiagnosticText,
+        )
+    }
+    val commandRuntimeEntriesByPluginId = remember(
+        installedPlugins,
+        scriptPluginStates,
+        permissionGrants,
+        commandRegistryRevision,
+        commandRuntimeDiagnosticText,
+    ) {
+        PluginsSettingsSectionSupport.buildCommandRuntimeEntriesByPluginId(
+            installedPlugins = installedPlugins,
+            diagnosticText = commandRuntimeDiagnosticText,
         )
     }
     val diagnosticsSnapshot = remember(
@@ -200,6 +233,7 @@ internal fun PluginsSettingsSection(
         runtimeFixHint,
         permissionRuntimeFixHint,
         lspRuntimeEntriesByPluginId,
+        commandRuntimeEntriesByPluginId,
     ) {
         PluginDiagnosticsSnapshotFactory.create(
             installedPlugins = installedPlugins,
@@ -210,6 +244,7 @@ internal fun PluginsSettingsSection(
             pluginLogs = pluginLogs,
             permissionRuntimeFixHint = permissionRuntimeFixHint,
             lspRuntimeEntriesByPluginId = lspRuntimeEntriesByPluginId,
+            commandRuntimeEntriesByPluginId = commandRuntimeEntriesByPluginId,
         )
     }
     var diagnosticsFilter by remember { mutableStateOf(PluginDiagnosticsFilter.ALL) }
@@ -469,7 +504,7 @@ internal fun PluginsSettingsSection(
             scriptPluginInfo = scriptPluginStates[detailPlugin.manifest.id],
             diagnosticsReport = diagnosticsSnapshot.getInstalledReport(detailPlugin.manifest.id),
             initialDiagnosticsSourceFilter = diagnosticsSourceFilter,
-            grantedPermissions = permissionManager.getGrantedPermissions(detailPlugin.manifest.id),
+            grantedPermissions = permissionGrants[detailPlugin.manifest.id].orEmpty(),
             onNavigateBack = { onPluginDetailChanged(null) },
             onToggleEnabled = { enabled ->
                 scope.launch {
@@ -1453,6 +1488,171 @@ private fun PluginInfoRow(text: String) {
     )
 }
 
+@Composable
+private fun PluginCommandContributionsCard(
+    commands: List<PluginsCommandContribution>,
+    summary: PluginsCommandContributionSummary,
+    filterOptions: List<PluginCommandContributionFilterOption>,
+    selectedFilter: PluginCommandContributionFilter,
+    onFilterSelected: (PluginCommandContributionFilter) -> Unit,
+    isScriptPlugin: Boolean,
+    onActionClick: (PluginDiagnosticAction, PluginsCommandContribution) -> Unit,
+) {
+    DetailInfoCard(
+        title = stringResource(Strings.plugins_commands_title)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(TinaSpacing.md)) {
+            Text(
+                text = stringResource(
+                    Strings.plugins_commands_summary,
+                    summary.totalCount,
+                    summary.availableCount,
+                    summary.issueCount,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (filterOptions.size > 1) {
+                PluginCommandContributionFilterRow(
+                    filters = filterOptions,
+                    selectedFilter = selectedFilter,
+                    onFilterSelected = onFilterSelected,
+                )
+            }
+            commands.forEachIndexed { index, command ->
+                if (index > 0) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                PluginCommandContributionRow(
+                    command = command,
+                    isScriptPlugin = isScriptPlugin,
+                    onActionClick = onActionClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PluginCommandContributionFilterRow(
+    filters: List<PluginCommandContributionFilterOption>,
+    selectedFilter: PluginCommandContributionFilter,
+    onFilterSelected: (PluginCommandContributionFilter) -> Unit,
+) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(TinaSpacing.sm),
+    ) {
+        filters.forEach { option ->
+            FilterChip(
+                selected = selectedFilter == option.filter,
+                onClick = { onFilterSelected(option.filter) },
+                label = {
+                    Text(
+                        text = stringResource(
+                            Strings.plugins_diagnostics_source_filter_chip,
+                            stringResource(
+                                PluginsSettingsSectionSupport.resolvePluginCommandContributionFilterLabelRes(
+                                    option.filter,
+                                )
+                            ),
+                            option.count,
+                        )
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun PluginCommandContributionRow(
+    command: PluginsCommandContribution,
+    isScriptPlugin: Boolean,
+    onActionClick: (PluginDiagnosticAction, PluginsCommandContribution) -> Unit,
+) {
+    val missingCommandIdText = stringResource(Strings.plugins_commands_missing_command_id_value)
+    val commandIdText = if (command.commandId.isBlank()) {
+        missingCommandIdText
+    } else {
+        command.commandId
+    }
+    val commandTitle = if (command.title.isBlank()) {
+        commandIdText
+    } else {
+        command.title
+    }
+    val statusText = stringResource(
+        PluginsSettingsSectionSupport.resolvePluginCommandStatusLabelRes(command.status)
+    )
+    val statusColor = when (command.status) {
+        PluginCommandContributionStatus.AVAILABLE -> MaterialTheme.colorScheme.tertiary
+        PluginCommandContributionStatus.MISSING_COMMAND_ID,
+        PluginCommandContributionStatus.MISSING_COMMAND_DECLARATION,
+        PluginCommandContributionStatus.MISSING_RUNTIME_REGISTRATION,
+        PluginCommandContributionStatus.UNAVAILABLE,
+        PluginCommandContributionStatus.EXECUTION_FAILED -> MaterialTheme.colorScheme.error
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(TinaSpacing.xs)) {
+        Text(
+            text = commandTitle,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = stringResource(
+                Strings.plugins_commands_metadata,
+                stringResource(
+                    PluginsSettingsSectionSupport.resolvePluginCommandSurfaceLabelRes(
+                        command.surface
+                    )
+                ),
+                stringResource(
+                    PluginsSettingsSectionSupport.resolvePluginCommandSourceLabelRes(
+                        command.source
+                    )
+                ),
+                statusText,
+            ),
+            style = MaterialTheme.typography.labelSmall,
+            color = statusColor,
+        )
+        PluginInfoRow(stringResource(Strings.plugins_commands_id, commandIdText))
+        PluginInfoRow(stringResource(Strings.plugins_commands_group, command.group))
+        command.whenExpression?.let { whenExpression ->
+            PluginInfoRow(stringResource(Strings.plugins_commands_when, whenExpression))
+        }
+        command.statusMessage?.let { statusMessage ->
+            PluginInfoRow(stringResource(Strings.plugins_commands_status_message, statusMessage))
+        }
+        val actions = PluginsSettingsSectionSupport.resolvePluginCommandContributionActions(
+            command = command,
+            isScriptPlugin = isScriptPlugin,
+        )
+        if (actions.isNotEmpty()) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(TinaSpacing.xs),
+            ) {
+                actions.forEach { action ->
+                    TinaTextButton(
+                        text = stringResource(
+                            PluginsSettingsSectionSupport.resolvePluginDiagnosticActionLabelRes(action)
+                        ),
+                        onClick = { onActionClick(action, command) },
+                        contentPadding = PaddingValues(
+                            horizontal = TinaSpacing.sm,
+                            vertical = TinaSpacing.xxs,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+}
+
 private fun List<PluginsPackageRequirementGroup>.toPluginRequirementsPackageDisplay(): String = joinToString(
     separator = "; "
 ) { group ->
@@ -1781,6 +1981,36 @@ private fun InstalledPluginDetailScreen(
     val contributionSummary = PluginsSettingsSectionSupport.resolveContributionSummary(manifest)
     val requirementsSummary = PluginsSettingsSectionSupport.resolveRequirementsSummary(manifest)
     val configurationSummary = PluginsSettingsSectionSupport.resolveConfigurationSummary(manifest)
+    val commandContributions = remember(manifest, plugin.enabled, scriptPluginInfo, grantedPermissions) {
+        PluginsSettingsSectionSupport.resolveCommandContributions(
+            manifest = manifest,
+            checkRuntimeAvailability = plugin.enabled,
+        )
+    }
+    val commandContributionSummary = remember(commandContributions) {
+        PluginsSettingsSectionSupport.resolveCommandContributionSummary(commandContributions)
+    }
+    val commandContributionFilterOptions = remember(commandContributionSummary) {
+        PluginsSettingsSectionSupport.resolveCommandContributionFilterOptions(commandContributionSummary)
+    }
+    var commandContributionFilter by remember(manifest.id) {
+        mutableStateOf(PluginCommandContributionFilter.ALL)
+    }
+    LaunchedEffect(commandContributionFilterOptions, commandContributionFilter) {
+        val resolvedFilter = PluginsSettingsSectionSupport.resolveCommandContributionFilterOrAll(
+            filter = commandContributionFilter,
+            availableFilters = commandContributionFilterOptions,
+        )
+        if (resolvedFilter != commandContributionFilter) {
+            commandContributionFilter = resolvedFilter
+        }
+    }
+    val filteredCommandContributions = remember(commandContributions, commandContributionFilter) {
+        PluginsSettingsSectionSupport.filterCommandContributions(
+            commands = commandContributions,
+            filter = commandContributionFilter,
+        )
+    }
     val scope = rememberCoroutineScope()
     var doctorDiagnosticsReport by remember(manifest.id) { mutableStateOf<PluginDiagnosticsReport?>(null) }
     var isDoctorRunning by remember(manifest.id) { mutableStateOf(false) }
@@ -1980,9 +2210,48 @@ private fun InstalledPluginDetailScreen(
                         contributionSummary.themeCount,
                         contributionSummary.fileTreeMenuCount,
                         contributionSummary.editorContextMenuCount,
+                        contributionSummary.editorToolbarMenuCount,
                     )
                 )
             }
+        }
+
+        if (commandContributions.isNotEmpty()) {
+            PluginCommandContributionsCard(
+                commands = filteredCommandContributions,
+                summary = commandContributionSummary,
+                filterOptions = commandContributionFilterOptions,
+                selectedFilter = commandContributionFilter,
+                onFilterSelected = { selectedFilter ->
+                    commandContributionFilter = selectedFilter
+                },
+                isScriptPlugin = isScriptPlugin,
+                onActionClick = { action, command ->
+                    when (action) {
+                        PluginDiagnosticAction.OPEN_LOGS -> onOpenLogs(PluginLogLevel.WARN)
+                        PluginDiagnosticAction.RELOAD_PLUGIN -> onReload()
+                        PluginDiagnosticAction.SHOW_PERMISSIONS -> {
+                            showPluginPermissionsDialog = true
+                        }
+                        PluginDiagnosticAction.REPAIR_LSP_DEPENDENCIES -> onInstallLspDeps()
+                        PluginDiagnosticAction.COPY_DIAGNOSTIC -> {
+                            copyPluginDiagnosticToClipboard(
+                                context = context,
+                                text = PluginsSettingsSectionSupport
+                                    .buildPluginCommandContributionClipboardText(
+                                        plugin = plugin,
+                                        command = command,
+                                    ),
+                            )
+                            Toast.makeText(
+                                context,
+                                diagnosticCopiedText,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                    }
+                },
+            )
         }
 
         if (requirementsSummary.hasRequirements) {

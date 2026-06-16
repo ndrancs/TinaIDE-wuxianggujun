@@ -58,4 +58,3 @@ internal object EditorClipboardBridge {
         return text
     }
 }
-

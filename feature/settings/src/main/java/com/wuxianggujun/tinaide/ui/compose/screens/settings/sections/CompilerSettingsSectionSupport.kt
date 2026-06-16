@@ -86,4 +86,14 @@ internal object CompilerSettingsSectionSupport {
     }
 
     fun resolveArchiveExtension(fileName: String): String = ".${resolveArchiveFileType(fileName)}"
+
+    fun resolveArchiveBaseName(fileName: String): String {
+        val trimmed = fileName.trim()
+        return when {
+            trimmed.endsWith(".tar.gz", ignoreCase = true) -> trimmed.dropLast(".tar.gz".length)
+            trimmed.endsWith(".tar.xz", ignoreCase = true) -> trimmed.dropLast(".tar.xz".length)
+            trimmed.endsWith(".tar", ignoreCase = true) -> trimmed.dropLast(".tar".length)
+            else -> trimmed.substringBeforeLast('.', trimmed)
+        }.ifBlank { trimmed.ifBlank { "sysroot" } }
+    }
 }

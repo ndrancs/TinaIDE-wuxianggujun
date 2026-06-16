@@ -69,8 +69,8 @@ class HelpRepositoryTest {
             .isEqualTo("plugin-quick-start")
         assertThat(repository.resolveDocumentByLinkTarget("./plugins-settings.md")?.id)
             .isEqualTo("plugins-settings")
-        assertThat(repository.resolveDocumentByLinkTarget("help/faq.md#common-issues")?.id)
-            .isEqualTo("faq")
+        assertThat(repository.resolveDocumentByLinkTarget("help/known-issues.md#common-issues")?.id)
+            .isEqualTo("known-issues")
         assertThat(repository.resolveDocumentByLinkTarget("https://example.com/help.md"))
             .isNull()
     }

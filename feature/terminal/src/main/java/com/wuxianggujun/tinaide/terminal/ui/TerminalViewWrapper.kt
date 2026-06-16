@@ -23,10 +23,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.termux.terminal.TerminalSession
 import com.termux.view.TerminalView
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 /**
  * Termux TerminalView 的 Compose 包装器
@@ -126,7 +126,7 @@ fun TerminalViewWrapper(
             this.altEnabled = altEnabled
         }
     }
-    
+
     // 更新修饰键状态
     LaunchedEffect(ctrlEnabled, altEnabled) {
         viewClient.ctrlEnabled = ctrlEnabled
@@ -137,7 +137,7 @@ fun TerminalViewWrapper(
     LaunchedEffect(fontSizeSp) {
         visualFontSizeSp.floatValue = fontSizeSp
     }
-    
+
     // 更新光标闪烁设置
     LaunchedEffect(cursorBlinkEnabled, cursorBlinkRate) {
         viewRef.value?.let { view ->
@@ -151,19 +151,19 @@ fun TerminalViewWrapper(
     }
 
     val textSizePx = with(density) { fontSizeSp.sp.roundToPx() }
-    
+
     // 当 frameId 变化时，强制重绘 View
     LaunchedEffect(frameId) {
         viewRef.value?.invalidate()
     }
-    
+
     // 当 session 变化时，附加到 View
     LaunchedEffect(session) {
         session?.let { s ->
             viewRef.value?.attachSession(s)
         }
     }
-    
+
     // 避免在组合树销毁后仍持有 View 引用
     DisposableEffect(Unit) {
         onDispose { viewRef.value = null }
@@ -253,9 +253,7 @@ fun hideSoftKeyboard(context: Context, view: TerminalView) {
     imm.hideSoftInputFromWindow(view.windowToken, 0)
 }
 
-private fun spToPx(density: Density, sp: Float): Int {
-    return with(density) { sp.sp.roundToPx() }
-}
+private fun spToPx(density: Density, sp: Float): Int = with(density) { sp.sp.roundToPx() }
 
 // 字号阶梯上下限（与 TerminalPreferences/AppFontManager 的 8f..32f 对齐）。
 private const val MIN_FONT_SP = 8

@@ -3,8 +3,8 @@ package com.wuxianggujun.tinaide.core.config
 import android.content.Context
 import android.content.SharedPreferences
 import com.wuxianggujun.tinaide.core.ServiceLifecycle
-import org.json.JSONObject
 import java.io.File
+import org.json.JSONObject
 import timber.log.Timber
 
 /**
@@ -17,7 +17,8 @@ import timber.log.Timber
 class ConfigManager(
     private val context: Context,
     private val configFile: File = File(context.filesDir, "config.json"),
-) : IConfigManager, ServiceLifecycle {
+) : IConfigManager,
+    ServiceLifecycle {
     companion object {
         private const val TAG = "ConfigManager"
         private const val PREFS_NAME = "tinaide_config"
@@ -26,19 +27,19 @@ class ConfigManager(
     private val sharedPrefs: SharedPreferences by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
-    
+
     private val listeners = mutableMapOf<String, MutableList<ConfigChangeListener>>()
     private val jsonConfig = mutableMapOf<String, Any?>()
-    
+
     override fun onCreate() {
         loadJsonConfig()
     }
-    
+
     override fun onDestroy() {
         saveJsonConfig()
         listeners.clear()
     }
-    
+
     @Suppress("UNCHECKED_CAST")
     override fun <T> get(key: String, default: T): T {
         return try {
@@ -46,7 +47,7 @@ class ConfigManager(
             if (jsonConfig.containsKey(key)) {
                 return (jsonConfig[key] as? T) ?: default
             }
-            
+
             // 再从 SharedPreferences 中查找
             when (default) {
                 is String -> sharedPrefs.getString(key, default) as T
@@ -65,14 +66,12 @@ class ConfigManager(
         }
     }
 
-    override fun <T> get(key: ConfigKey<T>): T {
-        return get(key.key, key.default)
-    }
-    
+    override fun <T> get(key: ConfigKey<T>): T = get(key.key, key.default)
+
     override fun <T> set(key: String, value: T) {
         try {
             val oldValue = getStoredValue(key)
-            
+
             // 根据类型选择存储方式
             when (value) {
                 is String, is Int, is Long, is Float, is Boolean -> {
@@ -100,7 +99,7 @@ class ConfigManager(
                     saveJsonConfig()
                 }
             }
-            
+
             // 通知监听器
             if (oldValue != value) {
                 notifyListeners(key, value)
@@ -113,7 +112,7 @@ class ConfigManager(
     override fun <T> set(key: ConfigKey<T>, value: T) {
         set(key.key, value)
     }
-    
+
     override fun remove(key: String) {
         try {
             // 从 SharedPreferences 中删除
@@ -121,19 +120,19 @@ class ConfigManager(
                 remove(key)
                 apply()
             }
-            
+
             // 从 JSON 配置中删除
             if (jsonConfig.remove(key) != null) {
                 saveJsonConfig()
             }
-            
+
             // 通知监听器
             notifyListeners(key, null)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Error removing config for key: $key")
         }
     }
-    
+
     override fun clear() {
         try {
             // 清除 SharedPreferences
@@ -141,11 +140,11 @@ class ConfigManager(
                 clear()
                 apply()
             }
-            
+
             // 清除 JSON 配置
             jsonConfig.clear()
             saveJsonConfig()
-            
+
             // 通知所有监听器
             listeners.keys.forEach { key ->
                 notifyListeners(key, null)
@@ -154,44 +153,42 @@ class ConfigManager(
             Timber.tag(TAG).e(e, "Error clearing config")
         }
     }
-    
+
     override fun addListener(key: String, listener: ConfigChangeListener) {
         listeners.getOrPut(key) { mutableListOf() }.add(listener)
     }
-    
+
     override fun removeListener(key: String, listener: ConfigChangeListener) {
         listeners[key]?.remove(listener)
     }
-    
-    override fun exportConfig(): String {
-        return try {
-            val json = JSONObject()
-            
-            // 导出 SharedPreferences
-            val prefsJson = JSONObject()
-            sharedPrefs.all.forEach { (key, value) ->
-                prefsJson.put(key, value)
-            }
-            json.put("preferences", prefsJson)
-            
-            // 导出 JSON 配置
-            val jsonConfigObj = JSONObject()
-            jsonConfig.forEach { (key, value) ->
-                jsonConfigObj.put(key, value)
-            }
-            json.put("jsonConfig", jsonConfigObj)
-            
-            json.toString(2)
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Error exporting config")
-            "{}"
+
+    override fun exportConfig(): String = try {
+        val json = JSONObject()
+
+        // 导出 SharedPreferences
+        val prefsJson = JSONObject()
+        sharedPrefs.all.forEach { (key, value) ->
+            prefsJson.put(key, value)
         }
+        json.put("preferences", prefsJson)
+
+        // 导出 JSON 配置
+        val jsonConfigObj = JSONObject()
+        jsonConfig.forEach { (key, value) ->
+            jsonConfigObj.put(key, value)
+        }
+        json.put("jsonConfig", jsonConfigObj)
+
+        json.toString(2)
+    } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Error exporting config")
+        "{}"
     }
-    
+
     override fun importConfig(json: String) {
         try {
             val jsonObj = JSONObject(json)
-            
+
             // 导入 SharedPreferences
             if (jsonObj.has("preferences")) {
                 val prefsJson = jsonObj.getJSONObject("preferences")
@@ -210,7 +207,7 @@ class ConfigManager(
                     apply()
                 }
             }
-            
+
             // 导入 JSON 配置
             if (jsonObj.has("jsonConfig")) {
                 val jsonConfigObj = jsonObj.getJSONObject("jsonConfig")
@@ -223,7 +220,7 @@ class ConfigManager(
             Timber.tag(TAG).e(e, "Error importing config")
         }
     }
-    
+
     private fun loadJsonConfig() {
         try {
             if (configFile.exists()) {
@@ -236,7 +233,7 @@ class ConfigManager(
             Timber.tag(TAG).e(e, "Error loading JSON config")
         }
     }
-    
+
     private fun saveJsonConfig() {
         try {
             val json = JSONObject()
@@ -258,7 +255,7 @@ class ConfigManager(
         }
         return null
     }
-    
+
     private fun notifyListeners(key: String, newValue: Any?) {
         listeners[key]?.forEach { listener ->
             try {

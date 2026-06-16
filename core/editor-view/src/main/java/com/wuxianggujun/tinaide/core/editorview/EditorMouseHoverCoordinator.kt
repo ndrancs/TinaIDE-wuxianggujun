@@ -66,9 +66,7 @@ internal class EditorMouseHoverCoordinator(
     private fun isSameTextPosition(
         first: EditorMouseHoverTarget?,
         second: EditorMouseHoverTarget?
-    ): Boolean {
-        return first != null && second != null && first.position == second.position
-    }
+    ): Boolean = first != null && second != null && first.position == second.position
 
     private companion object {
         private const val DEFAULT_HOVER_DELAY_MS = 650L
