@@ -26,10 +26,41 @@ class RopeTextBufferTest {
 
         assertThat(buffer.toString()).isEqualTo("abcdef")
         // 连续相邻 Insert 会被 EditHistory 合并为一条 —— 一次 undo 直接回到空串，对齐 IntelliJ/Sora 的直觉。
-        assertThat(buffer.undo()).isTrue()
+        assertThat(buffer.undo()).isNotNull()
         assertThat(buffer.toString()).isEqualTo("")
-        assertThat(buffer.redo()).isTrue()
+        assertThat(buffer.redo()).isNotNull()
         assertThat(buffer.toString()).isEqualTo("abcdef")
+    }
+
+    @Test
+    fun undo_shouldReturnAppliedTextChange() {
+        val buffer = RopeTextBuffer("abc")
+        buffer.insert(1, "XYZ")
+
+        val change = buffer.undo()
+
+        assertThat(change).isNotNull()
+        assertThat(change!!.startOffset).isEqualTo(1)
+        assertThat(change.oldText).isEqualTo("XYZ")
+        assertThat(change.newText).isEqualTo("")
+        assertThat(change.fromUndoRedo).isTrue()
+        assertThat(buffer.toString()).isEqualTo("abc")
+    }
+
+    @Test
+    fun redo_shouldReturnAppliedTextChange() {
+        val buffer = RopeTextBuffer("abc")
+        buffer.insert(1, "XYZ")
+        buffer.undo()
+
+        val change = buffer.redo()
+
+        assertThat(change).isNotNull()
+        assertThat(change!!.startOffset).isEqualTo(1)
+        assertThat(change.oldText).isEqualTo("")
+        assertThat(change.newText).isEqualTo("XYZ")
+        assertThat(change.fromUndoRedo).isTrue()
+        assertThat(buffer.toString()).isEqualTo("aXYZbc")
     }
 
     @Test
@@ -41,11 +72,11 @@ class RopeTextBufferTest {
 
         assertThat(buffer.toString()).isEqualTo("abc\ndef")
         // 回车是合并边界：undo 第一次应该回到换行前的状态。
-        assertThat(buffer.undo()).isTrue()
+        assertThat(buffer.undo()).isNotNull()
         assertThat(buffer.toString()).isEqualTo("abc\n")
-        assertThat(buffer.undo()).isTrue()
+        assertThat(buffer.undo()).isNotNull()
         assertThat(buffer.toString()).isEqualTo("abc")
-        assertThat(buffer.undo()).isTrue()
+        assertThat(buffer.undo()).isNotNull()
         assertThat(buffer.toString()).isEqualTo("")
     }
 

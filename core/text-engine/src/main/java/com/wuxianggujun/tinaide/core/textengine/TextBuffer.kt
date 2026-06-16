@@ -36,8 +36,8 @@ interface TextBuffer {
 
     fun canUndo(): Boolean
     fun canRedo(): Boolean
-    fun undo(): Boolean
-    fun redo(): Boolean
+    fun undo(): TextChange?
+    fun redo(): TextChange?
 
     suspend fun loadFromFile(file: File, charset: Charset = Charsets.UTF_8): Result<Unit>
     suspend fun saveToFile(file: File, charset: Charset = Charsets.UTF_8): Result<Unit>

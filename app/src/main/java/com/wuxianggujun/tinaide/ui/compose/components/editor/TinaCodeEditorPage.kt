@@ -941,11 +941,11 @@ private class TextBufferSessionBinding(
     override fun canRedo(): Boolean = buffer.canRedo()
 
     override fun undo() {
-        buffer.undo()
+        editorState.undo()
     }
 
     override fun redo() {
-        buffer.redo()
+        editorState.redo()
     }
 
     override fun currentDocumentVersion(): Long = buffer.version

@@ -173,7 +173,7 @@ class RopeTextBuffer(
 
     override fun canRedo(): Boolean = lock.read { history.canRedo() }
 
-    override fun undo(): Boolean {
+    override fun undo(): TextChange? {
         var change: TextChange? = null
         lock.write {
             val operation = history.undo() ?: return@write
@@ -207,10 +207,10 @@ class RopeTextBuffer(
             }
         }
         change?.let(::dispatchChange)
-        return change != null
+        return change
     }
 
-    override fun redo(): Boolean {
+    override fun redo(): TextChange? {
         var change: TextChange? = null
         lock.write {
             val operation = history.redo() ?: return@write
@@ -244,7 +244,7 @@ class RopeTextBuffer(
             }
         }
         change?.let(::dispatchChange)
-        return change != null
+        return change
     }
 
     override suspend fun loadFromFile(file: File, charset: Charset): Result<Unit> = withContext(Dispatchers.IO) {

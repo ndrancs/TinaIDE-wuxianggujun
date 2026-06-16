@@ -1,6 +1,7 @@
 package com.wuxianggujun.tinaide.core.editorview
 
 import com.wuxianggujun.tinaide.core.textengine.Position
+import com.wuxianggujun.tinaide.core.textengine.TextChange
 import com.wuxianggujun.tinaide.core.textengine.TextScanKernel
 
 internal fun editorInsert(state: EditorState, text: String) {
@@ -335,24 +336,27 @@ internal fun editorReplaceRange(
 
 internal fun editorUndo(state: EditorState): Boolean {
     return state.traceSlowOperation("undo") {
-        if (!state.textBuffer.undo()) return@traceSlowOperation false
+        val change = state.textBuffer.undo() ?: return@traceSlowOperation false
         state.cancelSnippet()
         state.emitTextChanged(reason = "undo")
-        // After undo, clamp cursor to valid range
-        state.moveCursorTo(state.cursorOffset.coerceIn(0, state.textBuffer.length))
+        state.moveCursorToUndoRedoChange(change)
         true
     }
 }
 
 internal fun editorRedo(state: EditorState): Boolean {
     return state.traceSlowOperation("redo") {
-        if (!state.textBuffer.redo()) return@traceSlowOperation false
+        val change = state.textBuffer.redo() ?: return@traceSlowOperation false
         state.cancelSnippet()
         state.emitTextChanged(reason = "redo")
-        // After redo, clamp cursor to valid range
-        state.moveCursorTo(state.cursorOffset.coerceIn(0, state.textBuffer.length))
+        state.moveCursorToUndoRedoChange(change)
         true
     }
+}
+
+private fun EditorState.moveCursorToUndoRedoChange(change: TextChange) {
+    val targetOffset = change.startOffset + change.newText.length
+    moveCursorTo(targetOffset.coerceIn(0, textBuffer.length))
 }
 
 internal fun editorApplyCompletion(state: EditorState, item: EditorCompletionItem) {
@@ -649,31 +653,39 @@ internal fun editorToggleLineComment(
     if (commentToken.isBlank()) return false
     state.cancelSnippet()
 
-    val original = state.textBuffer.substring(0, state.textBuffer.length)
-    val lines = original.split('\n', limit = -1).toMutableList()
-    if (lines.isEmpty()) return false
-
     val range = state.selectionRange
+    val hasSelection = range != null && !range.isEmpty
     val curPos = state.cursorPosition
-    val startLine = (
-        if (range != null && !range.isEmpty) {
-            state.textBuffer.offsetToPosition(range.start).line
-        } else {
-            curPos.line
-        }
-        ).coerceIn(0, lines.lastIndex.coerceAtLeast(0))
-    val endLine = (
-        if (range != null && !range.isEmpty) {
-            state.textBuffer.offsetToPosition(range.end).line
-        } else {
-            curPos.line
-        }
-        ).coerceIn(0, lines.lastIndex.coerceAtLeast(0))
-    val targetRange = startLine..endLine
+    val lineCount = state.textBuffer.lineCount
+    if (lineCount <= 0) return false
 
-    val shouldUncomment = targetRange
+    val startPos = if (hasSelection) {
+        state.textBuffer.offsetToPosition(range!!.start)
+    } else {
+        curPos
+    }
+    val endPos = if (hasSelection) {
+        state.textBuffer.offsetToPosition(range!!.end)
+    } else {
+        curPos
+    }
+    val startLine = startPos.line.coerceIn(0, lineCount - 1)
+    var endLine = endPos.line.coerceIn(startLine, lineCount - 1)
+    if (hasSelection && endPos.column == 0 && endLine > startLine) {
+        endLine = (endLine - 1).coerceAtLeast(startLine)
+    }
+
+    val lineInfos = (startLine..endLine).map { lineIndex ->
+        LineCommentTargetLine(
+            lineStartOffset = state.textBuffer.getLineStart(lineIndex),
+            text = state.textBuffer.getLine(lineIndex)
+        )
+    }
+    if (lineInfos.isEmpty()) return false
+
+    val shouldUncomment = lineInfos
         .asSequence()
-        .map { lines[it] }
+        .map { it.text }
         .filter { it.isNotBlank() }
         .all { line ->
             val indent = TextScanKernel
@@ -682,47 +694,120 @@ internal fun editorToggleLineComment(
             line.substring(indent).startsWith(commentToken)
         }
 
-    for (lineIndex in targetRange.reversed()) {
-        val line = lines[lineIndex]
-        if (line.isBlank()) continue
+    val edits = mutableListOf<LineCommentOffsetEdit>()
+    val updatedLines = lineInfos.map { lineInfo ->
+        val line = lineInfo.text
+        if (line.isBlank()) {
+            return@map line
+        }
 
         val indent = TextScanKernel
             .scanLineWhitespace(line, state.config.tabSize)
             .leadingWhitespaceEnd
         val rest = line.substring(indent)
-        val updated = when {
+        when {
             shouldUncomment && rest.startsWith(commentToken) -> {
-                var newRest = rest.removePrefix(commentToken)
-                if (newRest.startsWith(" ")) {
-                    newRest = newRest.removePrefix(" ")
-                }
-                line.substring(0, indent) + newRest
+                val afterToken = rest.drop(commentToken.length)
+                val optionalSpaceLength = if (afterToken.startsWith(" ")) 1 else 0
+                val removeLength = commentToken.length + optionalSpaceLength
+                edits += LineCommentOffsetEdit(
+                    offset = lineInfo.lineStartOffset + indent,
+                    oldLength = removeLength,
+                    newLength = 0
+                )
+                line.substring(0, indent) + rest.drop(removeLength)
             }
 
-            !shouldUncomment -> line.substring(0, indent) + commentToken + " " + rest
+            !shouldUncomment -> {
+                val prefix = "$commentToken "
+                edits += LineCommentOffsetEdit(
+                    offset = lineInfo.lineStartOffset + indent,
+                    oldLength = 0,
+                    newLength = prefix.length
+                )
+                line.substring(0, indent) + prefix + rest
+            }
+
             else -> line
         }
-        lines[lineIndex] = updated
     }
 
-    val newContent = lines.joinToString("\n")
-    if (newContent == original) return false
+    val segmentStartOffset = state.textBuffer.getLineStart(startLine)
+    val segmentEndOffset = state.textBuffer.getLineEnd(endLine)
+        .coerceAtLeast(segmentStartOffset)
+        .coerceIn(0, state.textBuffer.length)
+    val originalSegment = state.textBuffer.substring(segmentStartOffset, segmentEndOffset)
+    val updatedSegment = updatedLines.joinToString("\n")
+    if (updatedSegment == originalSegment || edits.isEmpty()) return false
 
-    if (state.textBuffer is com.wuxianggujun.tinaide.core.textengine.RopeTextBuffer) {
-        state.textBuffer.replaceAll(newContent)
-    } else {
-        if (state.textBuffer.length > 0) {
-            state.textBuffer.delete(0, state.textBuffer.length)
-        }
-        if (newContent.isNotEmpty()) {
-            state.textBuffer.insert(0, newContent)
-        }
-    }
+    val selectionBeforeEdit = state.selectionRange
+    val cursorBeforeEdit = state.cursorOffset
+
+    state.textBuffer.replace(segmentStartOffset, segmentEndOffset, updatedSegment)
     state.emitTextChanged(reason = "toggleLineComment")
 
-    // Clamp cursor to valid range after content change
-    state.moveCursorTo(state.cursorOffset.coerceIn(0, state.textBuffer.length))
+    fun adjustOffset(offset: Int): Int {
+        return adjustOffsetAfterLineCommentEdits(
+            offset = offset,
+            edits = edits,
+            textLength = state.textBuffer.length
+        )
+    }
+
+    if (selectionBeforeEdit != null && !selectionBeforeEdit.isEmpty) {
+        val updatedSelection = OffsetRange(
+            anchor = adjustOffset(selectionBeforeEdit.anchor),
+            caret = adjustOffset(selectionBeforeEdit.caret)
+        )
+        state.selectionRange = updatedSelection
+        state.moveCursorTo(updatedSelection.caret, clearSelection = false)
+        if (selectionBeforeEdit != state.selectionRange) {
+            state.emitEvent(EditorEvent.SelectionChanged(state.selectionRange))
+        }
+    } else {
+        state.moveCursorTo(adjustOffset(cursorBeforeEdit))
+    }
     return true
+}
+
+private data class LineCommentTargetLine(
+    val lineStartOffset: Int,
+    val text: String
+)
+
+private data class LineCommentOffsetEdit(
+    val offset: Int,
+    val oldLength: Int,
+    val newLength: Int
+) {
+    val delta: Int get() = newLength - oldLength
+}
+
+private fun adjustOffsetAfterLineCommentEdits(
+    offset: Int,
+    edits: List<LineCommentOffsetEdit>,
+    textLength: Int
+): Int {
+    var delta = 0
+    for (edit in edits.sortedBy { it.offset }) {
+        if (edit.oldLength == 0) {
+            if (offset >= edit.offset) {
+                delta += edit.newLength
+            }
+            continue
+        }
+
+        if (offset < edit.offset) {
+            break
+        }
+
+        val editEnd = edit.offset + edit.oldLength
+        if (offset <= editEnd) {
+            return (edit.offset + delta).coerceIn(0, textLength)
+        }
+        delta += edit.delta
+    }
+    return (offset + delta).coerceIn(0, textLength)
 }
 
 /**
