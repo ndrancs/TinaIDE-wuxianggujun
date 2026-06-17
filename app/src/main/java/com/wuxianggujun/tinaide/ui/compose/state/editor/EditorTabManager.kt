@@ -278,6 +278,21 @@ class EditorTabManager(
         pendingCloseTab = null
     }
 
+    fun closeTabsByIds(tabIds: Set<String>): List<EditorTabState> {
+        if (tabIds.isEmpty()) return emptyList()
+
+        pendingCloseTab = pendingCloseTab?.takeUnless { it.id in tabIds }
+        val closedTabs = mutableListOf<EditorTabState>()
+        _tabs.indices
+            .filter { index -> _tabs[index].id in tabIds }
+            .reversed()
+            .forEach { index ->
+                closedTabs += _tabs[index]
+                closeTabInternal(index)
+            }
+        return closedTabs.asReversed()
+    }
+
     /**
      * 内部关闭标签页方法
      */

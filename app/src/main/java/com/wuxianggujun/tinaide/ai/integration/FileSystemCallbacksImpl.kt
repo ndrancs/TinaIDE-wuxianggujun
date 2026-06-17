@@ -547,7 +547,7 @@ class FileSystemCallbacksImpl(
     override fun toRelativePath(absolutePath: String): String = PathUtils.toRelativePath(absolutePath, projectRoot)
 
     private fun syncFileDeleted(absolutePath: String) {
-        editorState.requestCloseTabForFile(File(absolutePath))
+        editorState.closeTabsForDeletedPath(File(absolutePath))
     }
 
     private fun syncFileMoved(oldAbsolutePath: String, newAbsolutePath: String) {

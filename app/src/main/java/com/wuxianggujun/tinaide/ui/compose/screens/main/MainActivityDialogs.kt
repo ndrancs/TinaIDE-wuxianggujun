@@ -29,6 +29,7 @@ import com.wuxianggujun.tinaide.editor.session.SaveResult
 import com.wuxianggujun.tinaide.extensions.toastError
 import com.wuxianggujun.tinaide.extensions.toastInfo
 import com.wuxianggujun.tinaide.extensions.toastSuccess
+import com.wuxianggujun.tinaide.file.IFileOperations
 import com.wuxianggujun.tinaide.plugin.PluginManager
 import com.wuxianggujun.tinaide.plugin.ResolvedPluginApkExport
 import com.wuxianggujun.tinaide.project.ProjectApkExportType
@@ -67,6 +68,7 @@ import com.wuxianggujun.tinaide.ui.compose.state.git.GitUiState
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import timber.log.Timber
 
 private const val BUILTIN_APK_TEMPLATE_NATIVE = "builtin:native_activity"
@@ -324,6 +326,7 @@ internal fun MainActivityFileDialogs(
     editorContainerState: EditorContainerState,
 ) {
     val context = LocalContext.current
+    val fileOperations: IFileOperations = koinInject()
 
     // 新建文件对话框
     if (dialogState.showNewFileDialog && dialogState.newFileTargetDir != null) {
@@ -366,7 +369,8 @@ internal fun MainActivityFileDialogs(
     if (dialogState.showDeleteDialog && dialogState.deleteFile != null) {
         DeleteConfirmDialog(
             file = dialogState.deleteFile!!,
-            onDismiss = { dialogState.closeDeleteDialog() }
+            onDismiss = { dialogState.closeDeleteDialog() },
+            onDelete = fileOperations::deleteFile
         )
     }
 

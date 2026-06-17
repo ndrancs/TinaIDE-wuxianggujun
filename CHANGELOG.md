@@ -64,6 +64,7 @@
 - 修复编辑器双击/长按选词在 `operator+`、`operator-` 等贴靠符号后缀附近不稳定的问题：选词落点若命中紧贴标识符的少量符号后缀，会回退选择前面的标识符，但不会跨过空白；同时修正选择句柄拖动的文本锚点偏移，避免拖动时按手指/光标位置而不是句柄对应文本边界更新选区。
 - 修复长按代码内容会主动拉起软键盘的问题：长按现在只请求编辑器焦点、同步选区并显示上下文菜单，不再调用会显示输入法的焦点请求，避免长按选择或粘贴时被键盘打断。
 - 修复侧边栏文件树长按菜单总是贴在左侧的问题：文件/文件夹行会记录真实按下位置作为菜单锚点，若没有有效触点再回退到行底部中心，避免整行宽度撑满抽屉时锚点固定到左下角。
+- 修复侧边栏删除已打开文件后编辑器没有同步反应的问题：删除动作现在统一走文件管理器删除入口，并在文件删除通知到达时自动关闭受影响的打开标签页，目录删除时也会同步处理其中已打开的文件。
 - 修复可取消下载没有真正取消底层网络请求的问题：可恢复下载器和插件市场 API 改为可取消执行，取消时保留临时文件以便后续续传，不再弹出误导性的失败提示。
 
 ### Documentation
@@ -79,6 +80,7 @@
 - `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorStateSelectWordTest" --tests "com.wuxianggujun.tinaide.core.editorview.SelectionHandleLayoutTest" --console=plain`
 - `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorGestureCoordinatorLongPressTest" --console=plain`
 - `./gradlew :app:testArm64DebugUnitTest --tests "com.wuxianggujun.tinaide.ui.compose.components.FileTreeItemLongPressAnchorTest" --console=plain`
+- `./gradlew :app:testArm64DebugUnitTest --tests "com.wuxianggujun.tinaide.ui.compose.state.editor.EditorContainerStateTest" --console=plain`
 - `./gradlew :core:editor-view:testDebugUnitTest --tests "com.wuxianggujun.tinaide.core.editorview.EditorGestureHandlerTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorGestureCoordinatorCtrlClickTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorPopupComposeSmokeTest" --tests "com.wuxianggujun.tinaide.core.editorview.PopupOverlaySharedAnchorIntegrationTest" --tests "com.wuxianggujun.tinaide.core.editorview.EditorOverlaysIntegrationTest" --console=plain`
 - `./gradlew :core:editor-view:testDebugUnitTest --console=plain`
 - `./gradlew :core:editor-view:compileDebugKotlin --console=plain`

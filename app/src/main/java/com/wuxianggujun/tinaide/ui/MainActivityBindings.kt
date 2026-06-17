@@ -42,6 +42,7 @@ private const val FILE_TREE_WATCH_DEBOUNCE_MS = 96L
 internal fun BindMainActivityFileTreeState(
     fileTreeState: FileTreeState,
     fileTreeActionBridge: MainActivityFileTreeActionBridge,
+    editorContainerState: EditorContainerState,
 ) {
     val fileWatchService: IFileWatchService = koinInject()
     val projectContext: IProjectContext = koinInject()
@@ -100,6 +101,9 @@ internal fun BindMainActivityFileTreeState(
 
                 override fun onFileDeleted(file: java.io.File) {
                     enqueueFileChange(file, FileTreeState.FileChangeKind.DELETED)
+                    scope.launch {
+                        editorContainerState.closeTabsForDeletedPath(file)
+                    }
                 }
             }
             val registration = fileWatchService.addFileWatcher(rootPath, listener)

@@ -1239,6 +1239,35 @@ class EditorContainerState(
         return true
     }
 
+    internal fun closeTabsForDeletedPath(deletedPath: File): Int {
+        val targetPath = normalizeOpenTabLookupPath(deletedPath.absolutePath)
+            .trimEnd('/')
+        if (targetPath.isBlank()) return 0
+
+        val targetPrefix = "$targetPath/"
+        val affectedTabs = tabs
+            .filter { tab ->
+                val tabPath = normalizeOpenTabLookupPath(tab.file.absolutePath)
+                tabPath == targetPath || tabPath.startsWith(targetPrefix)
+            }
+        if (affectedTabs.isEmpty()) return 0
+
+        val cleanTabIds = affectedTabs
+            .filterNot { it.isDirty }
+            .mapTo(linkedSetOf()) { it.id }
+        val closedTabs = tabManager.closeTabsByIds(cleanTabIds)
+        affectedTabs
+            .firstOrNull { it.isDirty && tabs.any { tab -> tab.id == it.id } }
+            ?.let { dirtyTab ->
+                val index = tabs.indexOfFirst { it.id == dirtyTab.id }
+                if (index >= 0) requestCloseTab(index)
+            }
+
+        normalizeEditorPaneState()
+        persistSplitEditorState()
+        return closedTabs.size
+    }
+
     fun openFileWithType(file: File, contentType: ContentType): Int {
         val existingTabIds = tabs.map { it.id }.toSet()
         val openedIndex = tabManager.openFileWithType(file, contentType)

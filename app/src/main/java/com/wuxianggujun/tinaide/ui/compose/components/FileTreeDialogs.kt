@@ -315,7 +315,14 @@ private fun validateRenameName(
 @Composable
 fun DeleteConfirmDialog(
     file: File,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onDelete: (File) -> Boolean = { target ->
+        if (target.isDirectory) {
+            target.deleteRecursively()
+        } else {
+            target.delete()
+        }
+    }
 ) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val isDirectory = file.isDirectory
@@ -336,13 +343,7 @@ fun DeleteConfirmDialog(
     val targetPathDisplay = simplifyPath(file.absolutePath, context)
 
     fun submit() {
-        val deleted = runCatching {
-            if (isDirectory) {
-                file.deleteRecursively()
-            } else {
-                file.delete()
-            }
-        }.getOrDefault(false)
+        val deleted = runCatching { onDelete(file) }.getOrDefault(false)
 
         if (!deleted) {
             errorMessage = errorDelete

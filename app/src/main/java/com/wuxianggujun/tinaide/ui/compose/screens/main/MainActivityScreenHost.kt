@@ -74,15 +74,16 @@ internal fun MainActivityScreenHost(
     val projectSnapshot = mainScreenState.projectSnapshot
     val fileTreeState = mainScreenState.fileTreeState
 
-    BindMainActivityFileTreeState(
-        fileTreeState = fileTreeState,
-        fileTreeActionBridge = fileTreeActionBridge,
-    )
-
     val editorHostState = rememberMainActivityEditorHostState(
         editorManager = editorManager,
         projectRootPathProvider = { projectSnapshot.rootPath },
         onLspDiagnosticsChanged = bottomPanelViewModel::replaceDiagnosticsForFile,
+    )
+
+    BindMainActivityFileTreeState(
+        fileTreeState = fileTreeState,
+        fileTreeActionBridge = fileTreeActionBridge,
+        editorContainerState = editorHostState.editorContainerState,
     )
     val workspaceCallbacks = rememberMainActivityWorkspaceCallbacksHost(
         mainScreenState = mainScreenState,

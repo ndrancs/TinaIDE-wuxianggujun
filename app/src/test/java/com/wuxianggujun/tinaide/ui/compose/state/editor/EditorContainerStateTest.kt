@@ -872,6 +872,44 @@ class EditorContainerStateTest {
     }
 
     @Test
+    fun closeTabsForDeletedPath_shouldCloseOpenedFilesUnderDeletedDirectory() {
+        val deletedDir = File(context.cacheDir, "src")
+        val firstFile = File(deletedDir, "First.kt")
+        val nestedFile = File(deletedDir, "nested/Second.kt")
+        val siblingFile = File(context.cacheDir, "src2/Third.kt")
+        setTabs(
+            managerTabs = listOf(
+                EditorTab(id = "tab-1", file = firstFile),
+                EditorTab(id = "tab-2", file = nestedFile),
+                EditorTab(id = "tab-3", file = siblingFile)
+            ),
+            activeTabId = "tab-1"
+        )
+
+        val closedCount = state.closeTabsForDeletedPath(deletedDir)
+
+        assertThat(closedCount).isEqualTo(2)
+        assertThat(state.tabs.map { it.id }).containsExactly("tab-3")
+        assertThat(state.snapshotActivePluginEditorContextOrNull()?.tabId).isEqualTo("tab-3")
+    }
+
+    @Test
+    fun closeTabsForDeletedPath_shouldAskBeforeClosingDirtyDeletedTab() {
+        val deletedFile = File(context.cacheDir, "Dirty.kt")
+        setTabs(
+            managerTabs = listOf(EditorTab(id = "tab-1", file = deletedFile)),
+            activeTabId = "tab-1"
+        )
+        state.updateTabState(tabId = "tab-1", isDirty = true, canUndo = true, canRedo = false)
+
+        val closedCount = state.closeTabsForDeletedPath(deletedFile)
+
+        assertThat(closedCount).isEqualTo(0)
+        assertThat(state.tabs.map { it.id }).containsExactly("tab-1")
+        assertThat(state.pendingCloseTab?.id).isEqualTo("tab-1")
+    }
+
+    @Test
     fun openFileAndGoToPosition_shouldNotReuseCurrentActiveTabWhenTargetCannotOpen() {
         val activeFile = File(context.cacheDir, "ActiveEditor.kt").apply {
             writeText("fun active() = Unit")
