@@ -1,0 +1,76 @@
+# Reviewed direct file operation baseline.
+# Format: path | operation=count[,operation=count] | reason
+# Keep this file strict: new direct delete/rename calls must either use a safer project-aware API
+# or update this baseline with a concrete reason.
+
+app/src/main/java/com/wuxianggujun/tinaide/file/FileManager.kt | deleteRecursively=1,renameTo=2,delete=1 | Central observable user project file operation implementation.
+app/src/main/java/com/wuxianggujun/tinaide/plugindev/AndroidPluginProjectActions.kt | delete=1 | Plugin package output cleanup.
+app/src/main/java/com/wuxianggujun/tinaide/provider/MTDataFilesProvider.kt | renameTo=2,delete=1 | DocumentsProvider file operation contract.
+app/src/main/java/com/wuxianggujun/tinaide/ui/MainActivityActionsViewModel.kt | deleteRecursively=1,delete=1 | Main activity temporary state cleanup.
+app/src/main/java/com/wuxianggujun/tinaide/ui/MainActivityDialogCoordinator.kt | deleteRecursively=1,delete=1 | Main activity temporary state cleanup.
+app/src/main/java/com/wuxianggujun/tinaide/ui/ProjectManagerViewModel.kt | deleteRecursively=1,renameTo=1 | Project list workspace management outside open editor tabs.
+app/src/main/java/com/wuxianggujun/tinaide/ui/compose/components/ApkPackageDialog.kt | delete=1 | Resolved APK artifact cleanup.
+app/src/main/java/com/wuxianggujun/tinaide/ui/compose/components/FileTreeDialogs.kt | deleteRecursively=1,renameTo=1,delete=1 | Default dialog fallback; project sidebar passes IFileOperations.
+app/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/main/project/ProjectScreen.kt | deleteRecursively=1 | Template project cleanup path, not active project file tree mutation.
+app/src/main/java/com/wuxianggujun/tinaide/ui/compose/state/editor/LspEditorManager.kt | delete=1 | LSP metadata cache cleanup.
+app/src/main/java/com/wuxianggujun/tinaide/ui/runtime/SdlRuntimeLibraryStager.kt | deleteRecursively=1 | Runtime library staging cleanup.
+core/apk-builder/src/main/java/com/wuxianggujun/tinaide/core/apkbuilder/ApkBuilder.kt | deleteRecursively=1 | APK build working directory cleanup.
+core/apk-builder/src/main/java/com/wuxianggujun/tinaide/core/apkbuilder/ApkTemplate.kt | deleteRecursively=1 | APK template cache cleanup.
+core/apk-builder/src/main/java/com/wuxianggujun/tinaide/core/apkbuilder/DebugKeyStore.kt | deleteRecursively=1,delete=1 | Debug keystore file cleanup.
+core/common/src/main/java/com/wuxianggujun/tinaide/core/common/io/TarExtractor.kt | delete=2 | Archive extraction link collision cleanup.
+core/common/src/main/java/com/wuxianggujun/tinaide/utils/FileUtils.kt | deleteRecursively=1,renameTo=1 | Generic low-level file utility.
+core/compile/src/main/java/com/wuxianggujun/tinaide/core/compile/NativeMakeBuildStrategy.kt | deleteRecursively=1 | Build directory cleanup.
+core/compile/src/main/java/com/wuxianggujun/tinaide/core/compile/PRootMakeBuildStrategy.kt | deleteRecursively=1 | Build directory cleanup.
+core/compile/src/main/java/com/wuxianggujun/tinaide/core/compile/artifact/JsonArtifactStore.kt | deleteRecursively=1,delete=1 | Build artifact store cleanup.
+core/compile/src/main/java/com/wuxianggujun/tinaide/core/compile/strategy/CMakeStrategy.kt | deleteRecursively=1,delete=1 | CMake build cache cleanup.
+core/compile/src/main/java/com/wuxianggujun/tinaide/core/compile/strategy/SingleFileStrategy.kt | deleteRecursively=1,delete=3 | Single-file build diagnostic artifact cleanup.
+core/compile/src/main/java/com/wuxianggujun/tinaide/core/format/ClangFormatConfigManager.kt | delete=1 | Generated clang-format config cleanup.
+core/crash/src/main/java/com/wuxianggujun/tinaide/core/crash/NativeCrashHandler.kt | delete=1 | Native crash marker cleanup.
+core/git/src/main/java/com/wuxianggujun/tinaide/core/git/GitService.kt | delete=1 | Git service temporary file cleanup.
+core/git/src/main/java/com/wuxianggujun/tinaide/core/git/ssh/GitSshManager.kt | delete=2 | SSH temporary credential material cleanup.
+core/linux-distro/src/main/java/com/wuxianggujun/tinaide/core/linuxdistro/LinuxDistroInstaller.kt | deleteRecursively=4,renameTo=3,delete=3 | Linux distro install staging and rollback.
+core/linux-distro/src/main/java/com/wuxianggujun/tinaide/core/linuxdistro/LinuxDistroManager.kt | deleteRecursively=1 | Linux distro rootfs removal.
+core/logging/src/main/java/com/wuxianggujun/tinaide/core/logging/FileLoggingTree.kt | delete=1 | Log rotation cleanup.
+core/logging/src/main/java/com/wuxianggujun/tinaide/core/logging/LogExportUtils.kt | deleteRecursively=4,delete=1 | Log export directory cleanup.
+core/ndk/src/main/java/com/wuxianggujun/tinaide/core/ndk/AndroidNativeToolchainManager.kt | deleteRecursively=6,renameTo=2 | Toolchain install staging and rollback.
+core/ndk/src/main/java/com/wuxianggujun/tinaide/core/ndk/AndroidSysrootManager.kt | deleteRecursively=7,renameTo=2 | Sysroot install staging and rollback.
+core/ndk/src/main/java/com/wuxianggujun/tinaide/core/ndk/InstalledToolchainConfig.kt | deleteRecursively=1 | Toolchain config cleanup.
+core/ndk/src/main/java/com/wuxianggujun/tinaide/core/ndk/SysrootProfileConfig.kt | deleteRecursively=1 | Sysroot profile cleanup.
+core/network/src/main/java/com/wuxianggujun/tinaide/core/network/api/UserContentApiClient.kt | delete=1 | HTTP DELETE request builder call, not filesystem.
+core/packages/src/main/java/com/wuxianggujun/tinaide/core/packages/BundledPackagesInstaller.kt | deleteRecursively=2,delete=1 | Bundled package install staging cleanup.
+core/packages/src/main/java/com/wuxianggujun/tinaide/core/packages/PackageManagerImpl.kt | deleteRecursively=1 | Package install path cleanup.
+core/packages/src/main/java/com/wuxianggujun/tinaide/core/packages/backend/DownloadPackageBackend.kt | deleteRecursively=3,delete=3 | Package download and extraction cleanup.
+core/packages/src/main/java/com/wuxianggujun/tinaide/core/packages/cache/PackageCacheManager.kt | delete=4 | Package cache cleanup.
+core/packages/src/main/java/com/wuxianggujun/tinaide/core/packages/download/ResumableDownloader.kt | renameTo=1,delete=6 | Download temp file promotion and cleanup.
+core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/BundledPluginsInstaller.kt | deleteRecursively=1,delete=1 | Bundled plugin install staging cleanup.
+core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/PluginLogManager.kt | delete=2 | Plugin log cleanup.
+core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/PluginManager.kt | deleteRecursively=5,renameTo=1 | Plugin install, move, and rollback cleanup.
+core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/lsp/LspToolchainInstaller.kt | delete=1 | Plugin LSP toolchain temp file cleanup.
+core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/marketplace/PluginMarketplaceApi.kt | delete=1 | Marketplace download temp file cleanup.
+core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/marketplace/PluginMarketplaceRepository.kt | delete=1 | Marketplace cache file cleanup.
+core/plugin/src/main/java/com/wuxianggujun/tinaide/plugin/script/api/NetworkApiModule.kt | delete=1 | HTTP DELETE request builder call, not filesystem.
+core/project/src/main/java/com/wuxianggujun/tinaide/project/ProjectCreationService.kt | deleteRecursively=1 | Failed project creation rollback.
+core/project/src/main/java/com/wuxianggujun/tinaide/project/ProjectTemplateInstaller.kt | deleteRecursively=1,delete=1 | Project template staging cleanup.
+core/proot/src/main/java/com/wuxianggujun/tinaide/core/proot/InstallLogManager.kt | delete=2 | PRoot install log cleanup.
+core/proot/src/main/java/com/wuxianggujun/tinaide/core/proot/PRootEnvironment.kt | deleteRecursively=1 | PRoot environment cleanup.
+core/proot/src/main/java/com/wuxianggujun/tinaide/core/proot/PRootManager.kt | delete=1 | PRoot marker/temp file cleanup.
+core/proot/src/main/java/com/wuxianggujun/tinaide/core/proot/PRootSessionLogger.kt | delete=2 | PRoot session log cleanup.
+core/proot/src/main/java/com/wuxianggujun/tinaide/core/proot/RootfsProfileStore.kt | deleteRecursively=1 | Rootfs profile cache cleanup.
+core/search/src/main/java/com/wuxianggujun/tinaide/search/replace/BatchReplaceManager.kt | delete=1 | Batch replace backup cleanup.
+core/search/src/main/java/com/wuxianggujun/tinaide/search/replace/ReplaceEngine.kt | delete=1 | Replace backup cleanup.
+core/storage/src/main/java/com/wuxianggujun/tinaide/storage/ProjectDirStructure.kt | deleteRecursively=1 | Project directory structure cleanup.
+core/storage/src/main/java/com/wuxianggujun/tinaide/storage/ProjectExporter.kt | delete=1 | Project export temp file cleanup.
+core/storage/src/main/java/com/wuxianggujun/tinaide/storage/ProjectImporter.kt | deleteRecursively=4,renameTo=2,delete=2 | Project import staging and rollback.
+core/storage/src/main/java/com/wuxianggujun/tinaide/storage/ProjectLocationManager.kt | deleteRecursively=4,renameTo=1 | Workspace location migration cleanup.
+core/storage/src/main/java/com/wuxianggujun/tinaide/storage/StorageCleanupSupport.kt | deleteRecursively=1 | Low-level storage cleanup helper.
+core/storage/src/main/java/com/wuxianggujun/tinaide/storage/TinaFileProvider.kt | delete=1 | FileProvider delete contract.
+feature/ai/src/main/java/com/wuxianggujun/tinaide/ai/tools/executor/filesystem/DefaultFileSystemCallbacks.kt | deleteRecursively=1,delete=1 | Low-level default AI filesystem callbacks; app integration delegates to IFileOperations.
+feature/editor/src/main/java/com/wuxianggujun/tinaide/editor/session/DocumentSession.kt | delete=1 | Atomic save temp file cleanup.
+feature/editor/src/main/java/com/wuxianggujun/tinaide/editor/symbol/SymbolIndexCache.kt | delete=3 | Symbol index cache cleanup.
+feature/settings/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/settings/sections/CompilerSettingsSection.kt | delete=2 | Compiler settings temp file cleanup.
+feature/settings/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/settings/sections/EditorSettingsSection.kt | delete=1 | Editor settings temp file cleanup.
+feature/settings/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/settings/sections/PluginInstallHelper.kt | deleteRecursively=1,delete=2 | Plugin install staging cleanup.
+feature/settings/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/settings/sections/PluginsSettingsSection.kt | delete=5 | Plugin settings temp file cleanup.
+feature/settings/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/settings/sections/TerminalSettingsSection.kt | delete=1 | Terminal settings temp file cleanup.
+feature/settings/src/main/java/com/wuxianggujun/tinaide/ui/compose/screens/settings/sections/UserProjectTemplateManager.kt | renameTo=5,delete=6 | User project template install and rollback.
+feature/workspace/src/main/java/com/wuxianggujun/tinaide/ui/workspace/PRootLogActivity.kt | delete=1 | PRoot log entry cleanup.

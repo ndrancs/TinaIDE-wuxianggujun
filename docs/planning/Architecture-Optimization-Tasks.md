@@ -339,6 +339,21 @@ rg "deleteRecursively|\\.delete\\(|renameTo\\(" app feature core
 
 结果：`BUILD SUCCESSFUL`。
 
+### 2026-06-17 补充：P2 第一步
+
+- 已推进 P2 的第一步：新增直接文件操作基线检查。
+  - 新增 `tools/checks/check_direct_file_operations.py`，扫描生产 Kotlin/Java 源码中的 `deleteRecursively(...)`、`renameTo(...)` 和 `.delete()`。
+  - 新增 `tools/checks/direct_file_operations_allowlist.txt`，按文件、操作类型和现有次数记录已审查基线，并要求每个基线项写明原因。
+  - 新增 `tools/checks/README.md`，说明检查范围、运行命令和用户项目文件应优先走 `IFileOperations` 的约束。
+  - 本步不改任何运行时代码，只把“新增直接文件操作必须被审查”变成可执行检查。
+- 本轮补充验证：
+
+```powershell
+py tools/checks/check_direct_file_operations.py
+```
+
+结果：`OK: direct file operation baseline matched (101 entries, 175 operations).`
+
 ### 2026-06-17 补充：P1-2 第十一步
 
 - 已推进 P1-2 的第十一步：收口 Peek Definition 面板状态职责。
