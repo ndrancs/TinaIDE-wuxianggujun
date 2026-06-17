@@ -80,20 +80,27 @@ class ScriptPluginRuntime(
     private var luaState: Lua? = null
 
     override suspend fun initialize(): Result<Unit> = withContext(Dispatchers.Default) {
+        var createdLua: Lua? = null
         try {
             Timber.tag(TAG).d("Initializing Lua plugin: $pluginId")
 
-            luaState = Lua54().apply {
+            val lua = Lua54().apply {
+                createdLua = this
                 openLibraries()
                 configureSandbox()
             }
+            luaState = lua
 
             _isInitialized = true
             Timber.tag(TAG).i("Lua plugin initialized: $pluginId")
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to initialize Lua plugin: $pluginId")
-            Result.failure(e)
+        } catch (t: Throwable) {
+            t.rethrowIfFatalForPluginBoundary()
+            createdLua?.closeQuietly()
+            luaState = null
+            _isInitialized = false
+            Timber.tag(TAG).e(t, "Failed to initialize Lua plugin: $pluginId")
+            Result.failure(t)
         }
     }
 
@@ -146,9 +153,10 @@ class ScriptPluginRuntime(
         } catch (e: LuaException) {
             Timber.tag(TAG).e(e, "Lua script execution failed: $pluginId")
             PluginExecutionResult.Error(e.message ?: "Unknown Lua error", e.stackTraceToString())
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Lua script execution failed: $pluginId")
-            PluginExecutionResult.Error(e.message ?: "Unknown error", e.stackTraceToString())
+        } catch (t: Throwable) {
+            t.rethrowIfFatalForPluginBoundary()
+            Timber.tag(TAG).e(t, "Lua script execution failed: $pluginId")
+            PluginExecutionResult.Error(t.message ?: "Unknown error", t.stackTraceToString())
         }
     }
 
@@ -186,9 +194,10 @@ class ScriptPluginRuntime(
         } catch (e: LuaException) {
             Timber.tag(TAG).e(e, "Lua function call failed: $pluginId.$name")
             PluginExecutionResult.Error(e.message ?: "Unknown Lua error", e.stackTraceToString())
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Lua function call failed: $pluginId.$name")
-            PluginExecutionResult.Error(e.message ?: "Unknown error", e.stackTraceToString())
+        } catch (t: Throwable) {
+            t.rethrowIfFatalForPluginBoundary()
+            Timber.tag(TAG).e(t, "Lua function call failed: $pluginId.$name")
+            PluginExecutionResult.Error(t.message ?: "Unknown error", t.stackTraceToString())
         }
     }
 
@@ -355,5 +364,17 @@ private fun Lua.pushAny(value: Any?) {
         is LuaValue -> push(value)
         is LuaFunction -> push(value)
         else -> pushJavaObject(value)
+    }
+}
+
+internal fun Throwable.rethrowIfFatalForPluginBoundary() {
+    if (this !is Exception && this !is LinkageError) throw this
+}
+
+private fun Lua.closeQuietly() {
+    try {
+        close()
+    } catch (t: Throwable) {
+        t.rethrowIfFatalForPluginBoundary()
     }
 }

@@ -180,39 +180,73 @@ class ScriptPluginManager private constructor(
             )
 
             scope.launch {
-                val result = runtime.initialize()
-                if (result.isSuccess) {
-                    runtimes[plugin.manifest.id] = runtime
-                    val mainScriptFailure = loadMainScript(plugin, runtime)
-                    if (mainScriptFailure == null) {
-                        updateState(plugin.manifest.id, ScriptPluginState.ACTIVE)
-                        logManager.info(plugin.manifest.id, plugin.manifest.name, "Plugin loaded successfully")
+                try {
+                    val result = runtime.initialize()
+                    if (result.isSuccess) {
+                        runtimes[plugin.manifest.id] = runtime
+                        val mainScriptFailure = loadMainScript(plugin, runtime)
+                        if (mainScriptFailure == null) {
+                            updateState(plugin.manifest.id, ScriptPluginState.ACTIVE)
+                            logManager.info(plugin.manifest.id, plugin.manifest.name, "Plugin loaded successfully")
+                        } else {
+                            unloadPlugin(
+                                pluginId = plugin.manifest.id,
+                                nextState = ScriptPluginState.ERROR,
+                                error = mainScriptFailure.message
+                            )
+                            logManager.error(
+                                plugin.manifest.id,
+                                plugin.manifest.name,
+                                mainScriptFailure.message,
+                                mainScriptFailure.stackTrace
+                            )
+                        }
                     } else {
-                        unloadPlugin(
-                            pluginId = plugin.manifest.id,
-                            nextState = ScriptPluginState.ERROR,
-                            error = mainScriptFailure.message
-                        )
+                        runtime.destroy()
+                        val throwable = result.exceptionOrNull()
+                        val errorMsg = throwable?.message ?: "Unknown error"
+                        updateState(plugin.manifest.id, ScriptPluginState.ERROR, errorMsg)
                         logManager.error(
                             plugin.manifest.id,
                             plugin.manifest.name,
-                            mainScriptFailure.message,
-                            mainScriptFailure.stackTrace
+                            "Failed to load plugin: $errorMsg",
+                            throwable?.stackTraceToString()
                         )
                     }
-                } else {
-                    val errorMsg = result.exceptionOrNull()?.message ?: "Unknown error"
-                    updateState(plugin.manifest.id, ScriptPluginState.ERROR, errorMsg)
-                    logManager.error(plugin.manifest.id, plugin.manifest.name, "Failed to load plugin: $errorMsg")
+                } catch (t: Throwable) {
+                    t.rethrowIfFatalForPluginBoundary()
+                    val errorMsg = t.message ?: "Unknown error"
+                    if (runtimes.containsKey(plugin.manifest.id)) {
+                        unloadPlugin(
+                            pluginId = plugin.manifest.id,
+                            nextState = ScriptPluginState.ERROR,
+                            error = errorMsg
+                        )
+                    } else {
+                        runtime.destroy()
+                        updateState(plugin.manifest.id, ScriptPluginState.ERROR, errorMsg)
+                    }
+                    logManager.error(
+                        plugin.manifest.id,
+                        plugin.manifest.name,
+                        "Plugin load crashed: $errorMsg",
+                        t.stackTraceToString()
+                    )
                 }
             }
 
             Result.success(Unit)
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to load script plugin: ${plugin.manifest.id}")
-            updateState(plugin.manifest.id, ScriptPluginState.ERROR, e.message)
-            logManager.error(plugin.manifest.id, plugin.manifest.name, "Failed to load plugin: ${e.message}", e.stackTraceToString())
-            Result.failure(e)
+        } catch (t: Throwable) {
+            t.rethrowIfFatalForPluginBoundary()
+            Timber.tag(TAG).e(t, "Failed to load script plugin: ${plugin.manifest.id}")
+            updateState(plugin.manifest.id, ScriptPluginState.ERROR, t.message)
+            logManager.error(
+                plugin.manifest.id,
+                plugin.manifest.name,
+                "Failed to load plugin: ${t.message}",
+                t.stackTraceToString()
+            )
+            Result.failure(t)
         }
     }
 

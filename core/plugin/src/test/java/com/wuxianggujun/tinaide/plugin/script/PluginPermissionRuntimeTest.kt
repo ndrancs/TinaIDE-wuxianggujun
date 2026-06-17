@@ -10,6 +10,7 @@ import com.wuxianggujun.tinaide.plugin.PluginLogLevel
 import com.wuxianggujun.tinaide.plugin.PluginLogManager
 import com.wuxianggujun.tinaide.plugin.PluginManifest
 import java.io.File
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -127,6 +128,34 @@ class PluginPermissionRuntimeTest {
         )
 
         assertThat(runtime.getAllowedHosts()).containsExactly("api.example.com")
+    }
+
+    @Test
+    fun `initialize should keep recoverable Lua native failure inside Result`() = runBlocking {
+        val pluginId = "test.runtime.lua.native"
+        val runtime = ScriptPluginRuntime(
+            context = context,
+            manifest = PluginManifest(
+                id = pluginId,
+                name = "Lua Native Test",
+                version = "1.0.0",
+                type = "script"
+            ),
+            pluginDir = File(context.cacheDir, pluginId).apply { mkdirs() },
+            permissionManager = permissionManager
+        )
+
+        val callResult = runCatching { runtime.initialize() }
+
+        assertThat(callResult.isSuccess).isTrue()
+        val initializeResult = callResult.getOrThrow()
+        if (initializeResult.isSuccess) {
+            assertThat(runtime.isInitialized).isTrue()
+            runtime.destroy()
+        } else {
+            assertThat(runtime.isInitialized).isFalse()
+            assertThat(initializeResult.exceptionOrNull()).isNotNull()
+        }
     }
 
     @Test
