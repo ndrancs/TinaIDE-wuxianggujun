@@ -25,4 +25,5 @@ interface FileChangeListener {
     fun onFileCreated(file: File)
     fun onFileModified(file: File)
     fun onFileDeleted(file: File)
+    fun onFileRenamed(oldFile: File, newFile: File) = Unit
 }

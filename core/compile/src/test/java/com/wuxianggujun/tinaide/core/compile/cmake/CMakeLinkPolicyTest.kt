@@ -24,4 +24,24 @@ class CMakeLinkPolicyTest {
 
         assertThat(resolved).isEqualTo("-lSDL3 -lEGL")
     }
+
+    @Test
+    fun `resolveAndroidStandardLibraries includes android log by default`() {
+        val resolved = CMakeLinkPolicy.resolveAndroidStandardLibraries("")
+
+        assertThat(resolved).isEqualTo("-llog")
+    }
+
+    @Test
+    fun `resolveAndroidStandardLibraries keeps android log before explicit libraries`() {
+        val resolved = CMakeLinkPolicy.resolveAndroidStandardLibraries(
+            """
+            -lSDL3
+            -llog
+            -lEGL
+            """.trimIndent()
+        )
+
+        assertThat(resolved).isEqualTo("-llog -lSDL3 -lEGL")
+    }
 }

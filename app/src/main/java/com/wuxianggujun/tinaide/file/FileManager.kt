@@ -209,7 +209,7 @@ class FileManager(
         if (deleted) {
             notifyFileDeleted(file)
             PluginHostEventDispatcher.emitFileDeleted(file, wasDirectory)
-            recentFiles.remove(file)
+            removeRecentFilesForDeletedPath(file)
         }
         return deleted
     }
@@ -218,13 +218,12 @@ class FileManager(
         if (!file.exists()) return false
         val newFile = File(file.parent, newName)
         require(!newFile.exists()) { "File with new name already exists: ${newFile.absolutePath}" }
+        val wasDirectory = file.isDirectory
         val renamed = file.renameTo(newFile)
         if (renamed) {
-            notifyFileDeleted(file)
-            notifyFileCreated(newFile)
-            PluginHostEventDispatcher.emitFileRenamed(file, newFile, newFile.isDirectory)
-            val idx = recentFiles.indexOf(file)
-            if (idx >= 0) recentFiles[idx] = newFile
+            notifyFileRenamed(file, newFile)
+            PluginHostEventDispatcher.emitFileRenamed(file, newFile, wasDirectory)
+            retargetRecentFiles(file, newFile)
         }
         return renamed
     }
@@ -248,13 +247,13 @@ class FileManager(
 
     override fun moveFile(source: File, destination: File): Boolean {
         if (!source.exists()) return false
+        if (destination.exists()) return false
+        val wasDirectory = source.isDirectory
         val moved = source.renameTo(destination)
         if (moved) {
-            notifyFileDeleted(source)
-            notifyFileCreated(destination)
-            PluginHostEventDispatcher.emitFileRenamed(source, destination, destination.isDirectory)
-            val idx = recentFiles.indexOf(source)
-            if (idx >= 0) recentFiles[idx] = destination
+            notifyFileRenamed(source, destination)
+            PluginHostEventDispatcher.emitFileRenamed(source, destination, wasDirectory)
+            retargetRecentFiles(source, destination)
         }
         return moved
     }
@@ -492,6 +491,16 @@ class FileManager(
         }
     }
 
+    private fun notifyFileRenamed(oldFile: File, newFile: File) {
+        (listenersFor(oldFile) + listenersFor(newFile)).distinct().forEach { listener ->
+            try {
+                listener.onFileRenamed(oldFile, newFile)
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "Error notifying file renamed")
+            }
+        }
+    }
+
     private fun listenersFor(file: File): List<FileChangeListener> {
         val targetPath = file.absoluteFile.normalize().path
         val listenerSnapshot = synchronized(fileWatchLock) {
@@ -506,6 +515,51 @@ class FileManager(
             .flatMap { it.value.asSequence() }
             .distinct()
             .toList()
+    }
+
+    private fun retargetRecentFiles(oldPath: File, newPath: File) {
+        val oldRoot = normalizeRecentLookupPath(oldPath.absolutePath).trimEnd('/')
+        if (oldRoot.isBlank()) return
+
+        val oldRootCompare = normalizeRecentLookupPathForCompare(oldRoot)
+        val oldPrefixCompare = "$oldRootCompare/"
+        recentFiles.indices.forEach { index ->
+            val recent = recentFiles[index]
+            val recentPath = normalizeRecentLookupPath(recent.absolutePath)
+            val recentCompare = normalizeRecentLookupPathForCompare(recentPath)
+            recentFiles[index] = when {
+                recentCompare == oldRootCompare -> newPath
+                recentCompare.startsWith(oldPrefixCompare) -> {
+                    val suffix = recentPath.substring(oldRoot.length + 1)
+                    File(newPath, suffix.replace('/', File.separatorChar))
+                }
+                else -> recent
+            }
+        }
+        saveRecentFiles()
+    }
+
+    private fun removeRecentFilesForDeletedPath(deletedPath: File) {
+        val targetRoot = normalizeRecentLookupPath(deletedPath.absolutePath).trimEnd('/')
+        if (targetRoot.isBlank()) return
+
+        val targetRootCompare = normalizeRecentLookupPathForCompare(targetRoot)
+        val targetPrefixCompare = "$targetRootCompare/"
+        val removed = recentFiles.removeAll { recent ->
+            val recentCompare = normalizeRecentLookupPathForCompare(
+                normalizeRecentLookupPath(recent.absolutePath)
+            )
+            recentCompare == targetRootCompare || recentCompare.startsWith(targetPrefixCompare)
+        }
+        if (removed) saveRecentFiles()
+    }
+
+    private fun normalizeRecentLookupPath(path: String): String = path.replace('\\', '/')
+
+    private fun normalizeRecentLookupPathForCompare(path: String): String = if (File.separatorChar == '\\') {
+        path.lowercase()
+    } else {
+        path
     }
 
     private fun loadRecentFiles() {

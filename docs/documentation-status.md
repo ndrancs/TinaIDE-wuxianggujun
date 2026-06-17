@@ -43,7 +43,7 @@
 - 默认编译 / LSP：`native tina-toolchain + Android sysroot`，PRoot 只是可选 Linux 环境。
 - Release 构建：可能递增 `version.properties` 并备份 R8 mapping；mapping 文件仅由公开构建逻辑做本地归档。
 - Registry：当前 Android 主干只读取 `plugins/index.v2.json` 与 `packages/index.v2.json`。
-- MT 管理器访问：默认关闭；开启后只暴露 TinaIDE 自己的 `data`、`Android/data`、`Android/obb` 和 `user_de_data`。
+- MT 管理器访问：默认开启；只暴露 TinaIDE 自己的 `data`、`Android/data`、`Android/obb` 和 `user_de_data`，可在设置中关闭。
 
 ### 设计参考
 

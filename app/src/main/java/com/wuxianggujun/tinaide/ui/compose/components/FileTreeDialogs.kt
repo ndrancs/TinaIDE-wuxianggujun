@@ -170,7 +170,12 @@ private fun validateFolderName(
 @Composable
 fun RenameDialog(
     file: File,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onRename: (File, String) -> Boolean = { target, newName ->
+        target.parentFile?.let { parentDir ->
+            target.renameTo(File(parentDir, newName))
+        } ?: false
+    }
 ) {
     val initialSelection = remember(file) {
         val name = file.name
@@ -228,15 +233,7 @@ fun RenameDialog(
             return
         }
 
-        val parentDir = file.parentFile
-        if (parentDir == null) {
-            errorMessage = renameFailed
-            return
-        }
-
-        val renamed = runCatching {
-            file.renameTo(File(parentDir, newName))
-        }.getOrDefault(false)
+        val renamed = runCatching { onRename(file, newName) }.getOrDefault(false)
         if (!renamed) {
             errorMessage = renameFailed
             return

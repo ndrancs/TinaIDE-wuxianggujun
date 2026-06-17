@@ -241,6 +241,35 @@ class EditorManager(
         persistEditorState()
     }
 
+    override fun retargetOpenTabsForMovedPath(oldPath: File, newPath: File): List<EditorTab> {
+        val retargetedTabs = mutableListOf<EditorTab>()
+        val changed = synchronized(stateLock) {
+            var hasChanges = false
+            tabs.indices.forEach { index ->
+                val tab = tabs[index]
+                val retargetedFile = resolveMovedPathForOpenFile(
+                    openFile = tab.file,
+                    oldPath = oldPath,
+                    newPath = newPath
+                ) ?: return@forEach
+
+                val updatedTab = tab.copy(file = retargetedFile)
+                tabs[index] = updatedTab
+                sessions[tab.id]?.retargetFile(retargetedFile)
+                retargetedTabs += updatedTab
+                hasChanges = true
+            }
+            if (hasChanges) {
+                updateStateFlowsLocked()
+            }
+            hasChanges
+        }
+        if (changed) {
+            persistEditorState()
+        }
+        return retargetedTabs
+    }
+
     override fun getSession(tabId: String): DocumentSession? = synchronized(stateLock) { sessions[tabId] }
 
     override fun getSessionState(tabId: String): StateFlow<DocumentSessionState>? = synchronized(stateLock) { sessions[tabId]?.state }
@@ -426,6 +455,36 @@ class EditorManager(
                 }
             }
         }
+    }
+
+    private fun resolveMovedPathForOpenFile(
+        openFile: File,
+        oldPath: File,
+        newPath: File
+    ): File? {
+        val oldNormalized = normalizeFileLookupPath(oldPath.absolutePath).trimEnd('/')
+        if (oldNormalized.isBlank()) return null
+
+        val openNormalized = normalizeFileLookupPath(openFile.absolutePath)
+        val compareOld = normalizeFileLookupPathForCompare(oldNormalized)
+        val compareOpen = normalizeFileLookupPathForCompare(openNormalized)
+        val oldPrefix = "$compareOld/"
+        return when {
+            compareOpen == compareOld -> newPath
+            compareOpen.startsWith(oldPrefix) -> {
+                val suffix = openNormalized.substring(oldNormalized.length + 1)
+                File(newPath, suffix.replace('/', File.separatorChar))
+            }
+            else -> null
+        }
+    }
+
+    private fun normalizeFileLookupPath(path: String): String = path.replace('\\', '/')
+
+    private fun normalizeFileLookupPathForCompare(path: String): String = if (File.separatorChar == '\\') {
+        path.lowercase()
+    } else {
+        path
     }
 
     // ========== 外部文件修改相关方法 ==========

@@ -75,7 +75,7 @@ class PRootEnvironment(
 
     fun needsUpdate(): Boolean = false
 
-    suspend fun initialize(progress: (Float) -> Unit = {}): Result<Unit> = SelfHostedLinuxDistroRuntime.createFromAssets(context, configManager)
+    suspend fun initialize(progress: (Float) -> Unit = {}): Result<Unit> = SelfHostedLinuxDistroRuntime.createForExplicitInstall(context, configManager)
         .installDistro { installProgress ->
             progress(installProgress.progress)
         }.map { }
@@ -85,10 +85,7 @@ class PRootEnvironment(
             rootfsProfileStore.listProfiles()
                 .filter { profile -> profile.sourceType == RootfsSourceType.LINUX_DISTRO }
                 .forEach { profile -> rootfsProfileStore.deleteProfile(profile.id) }
-            SelfHostedLinuxDistroRuntime.createFromAssets(context, configManager)
-                .layout()
-                .runtimeDir
-                .deleteRecursively()
+            SelfHostedLinuxDistroRuntime.defaultRuntimeDir(context).deleteRecursively()
             synchronized(this@PRootEnvironment) {
                 cachedPRootManager = null
                 cachedPRootRootfsPath = null

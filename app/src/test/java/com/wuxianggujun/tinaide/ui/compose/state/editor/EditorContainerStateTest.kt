@@ -910,6 +910,52 @@ class EditorContainerStateTest {
     }
 
     @Test
+    fun syncTabsForMovedPath_shouldRetargetOpenedFilesUnderMovedDirectory() {
+        val oldDir = File(context.cacheDir, "src")
+        val newDir = File(context.cacheDir, "source")
+        val firstFile = File(oldDir, "First.kt")
+        val nestedFile = File(oldDir, "nested/Second.kt")
+        val siblingFile = File(context.cacheDir, "src2/Third.kt")
+        setTabs(
+            managerTabs = listOf(
+                EditorTab(id = "tab-1", file = firstFile),
+                EditorTab(id = "tab-2", file = nestedFile),
+                EditorTab(id = "tab-3", file = siblingFile)
+            ),
+            activeTabId = "tab-2"
+        )
+
+        val updatedCount = state.syncTabsForMovedPath(oldDir, newDir)
+
+        assertThat(updatedCount).isEqualTo(2)
+        assertThat(state.tabs.map { it.file.absolutePath }).containsExactly(
+            File(newDir, "First.kt").absolutePath,
+            File(newDir, "nested/Second.kt").absolutePath,
+            siblingFile.absolutePath
+        ).inOrder()
+        assertThat(state.snapshotActivePluginEditorContextOrNull()?.file)
+            .isEqualTo(File(newDir, "nested/Second.kt"))
+    }
+
+    @Test
+    fun syncTabsForMovedPath_shouldKeepDirtyMovedTabOpen() {
+        val oldFile = File(context.cacheDir, "Dirty.kt")
+        val newFile = File(context.cacheDir, "RenamedDirty.kt")
+        setTabs(
+            managerTabs = listOf(EditorTab(id = "tab-1", file = oldFile)),
+            activeTabId = "tab-1"
+        )
+        state.updateTabState(tabId = "tab-1", isDirty = true, canUndo = true, canRedo = false)
+
+        val updatedCount = state.syncTabsForMovedPath(oldFile, newFile)
+
+        assertThat(updatedCount).isEqualTo(1)
+        assertThat(state.tabs.single().file).isEqualTo(newFile)
+        assertThat(state.tabs.single().isDirty).isTrue()
+        assertThat(state.pendingCloseTab).isNull()
+    }
+
+    @Test
     fun openFileAndGoToPosition_shouldNotReuseCurrentActiveTabWhenTargetCannotOpen() {
         val activeFile = File(context.cacheDir, "ActiveEditor.kt").apply {
             writeText("fun active() = Unit")
@@ -1734,12 +1780,11 @@ class EditorContainerStateTest {
         projectRootPathProvider = { context.cacheDir.absolutePath }
     )
 
-    @Suppress("UNCHECKED_CAST")
     private fun setLspStatus(tabId: String, status: EditorStatus) {
-        val field = EditorContainerState::class.java.getDeclaredField("lspStatusesByTabId")
+        val field = EditorContainerState::class.java.getDeclaredField("lspUiState")
         field.isAccessible = true
-        val statuses = field.get(state) as MutableMap<String, EditorStatus>
-        statuses[tabId] = status
+        val lspUiState = field.get(state) as EditorLspUiState
+        lspUiState.handleStatusChanged(tabId, status)
     }
 }
 

@@ -503,7 +503,7 @@ fun TinaCodeEditorPage(
         }
     }
 
-    DisposableEffect(tab.id, editorState, buffer, breakpointStore) {
+    DisposableEffect(tab.id, editorState, buffer, breakpointStore, tab.file) {
         val toggleBreakpoint: (Int) -> Unit = { requestedLine ->
             if (tab.file.extension.lowercase() in breakpointSupportedExtensions) {
                 val targetLine = resolveMarkerLine(buffer, requestedLine)
@@ -629,7 +629,7 @@ fun TinaCodeEditorPage(
             }
     }
 
-    LaunchedEffect(tab.id, state) {
+    LaunchedEffect(tab.id, state, tab.file) {
         // 活动页切换只影响 LSP 生命周期，不值得让整页跟着重组。
         snapshotFlow {
             ActiveTabLspAttachmentState(

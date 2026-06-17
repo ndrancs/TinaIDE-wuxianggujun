@@ -39,6 +39,14 @@ class EditorTabManager(
 
     // ========== 标签页状态 ==========
 
+    data class RetargetedTab(
+        val oldId: String,
+        val newId: String,
+        val oldFile: File,
+        val newFile: File,
+        val contentType: ContentType
+    )
+
     private val _tabs = mutableStateListOf<EditorTabState>()
 
     /**
@@ -293,6 +301,31 @@ class EditorTabManager(
         return closedTabs.asReversed()
     }
 
+    fun retargetTabsForMovedPath(oldPath: File, newPath: File): List<RetargetedTab> {
+        val retargetedTabs = mutableListOf<RetargetedTab>()
+        _tabs.indices.forEach { index ->
+            val tab = _tabs[index]
+            val newFile = resolveMovedPathForOpenFile(
+                openFile = tab.file,
+                oldPath = oldPath,
+                newPath = newPath
+            ) ?: return@forEach
+            val newId = resolveRetargetedTabId(tab, newFile)
+            _tabs[index] = tab.copy(
+                id = newId,
+                file = newFile
+            )
+            retargetedTabs += RetargetedTab(
+                oldId = tab.id,
+                newId = newId,
+                oldFile = tab.file,
+                newFile = newFile,
+                contentType = tab.contentType
+            )
+        }
+        return retargetedTabs
+    }
+
     /**
      * 内部关闭标签页方法
      */
@@ -467,4 +500,43 @@ class EditorTabManager(
      * 获取未保存文件的数量
      */
     fun getUnsavedCount(): Int = _tabs.count { it.isDirty }
+
+    private fun resolveRetargetedTabId(tab: EditorTabState, newFile: File): String {
+        if (tab.contentType == ContentType.CODE || tab.contentType == ContentType.JSON) {
+            return tab.id
+        }
+
+        val candidate = "${newFile.absolutePath}#${tab.contentType.name}"
+        return if (_tabs.any { it.id == candidate && it.id != tab.id }) tab.id else candidate
+    }
+
+    private fun resolveMovedPathForOpenFile(
+        openFile: File,
+        oldPath: File,
+        newPath: File
+    ): File? {
+        val oldNormalized = normalizeOpenTabLookupPath(oldPath.absolutePath).trimEnd('/')
+        if (oldNormalized.isBlank()) return null
+
+        val openNormalized = normalizeOpenTabLookupPath(openFile.absolutePath)
+        val compareOld = normalizeOpenTabLookupPathForCompare(oldNormalized)
+        val compareOpen = normalizeOpenTabLookupPathForCompare(openNormalized)
+        val oldPrefix = "$compareOld/"
+        return when {
+            compareOpen == compareOld -> newPath
+            compareOpen.startsWith(oldPrefix) -> {
+                val suffix = openNormalized.substring(oldNormalized.length + 1)
+                File(newPath, suffix.replace('/', File.separatorChar))
+            }
+            else -> null
+        }
+    }
+
+    private fun normalizeOpenTabLookupPath(path: String): String = path.replace('\\', '/')
+
+    private fun normalizeOpenTabLookupPathForCompare(path: String): String = if (File.separatorChar == '\\') {
+        path.lowercase()
+    } else {
+        path
+    }
 }

@@ -18,6 +18,11 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -136,6 +141,22 @@ class ScriptPluginManagerTest {
     }
 
     @Test
+    fun `loadPlugin should mark script plugin error when runtime startup fails`() = runBlocking {
+        val plugin = installedPlugin(
+            pluginId = "sample.runtime.failure",
+            type = "script",
+            enabled = true
+        )
+
+        val result = manager.loadPlugin(plugin)
+        val errorInfo = awaitPluginState(plugin.manifest.id, ScriptPluginState.ERROR)
+
+        assertThat(result.isSuccess).isTrue()
+        assertThat(manager.getRuntime(plugin.manifest.id)).isNull()
+        assertThat(errorInfo.error).isNotEmpty()
+    }
+
+    @Test
     fun `shutdown should clear runtimes commands event subscriptions and states`() {
         val pluginId = "sample.shutdown.plugin"
         val runtime = mockk<ScriptPluginRuntime>(relaxed = true)
@@ -203,6 +224,16 @@ class ScriptPluginManagerTest {
         )
         method.isAccessible = true
         method.invoke(manager, plugins)
+    }
+
+    private suspend fun awaitPluginState(
+        pluginId: String,
+        state: ScriptPluginState
+    ): ScriptPluginInfo = withTimeout(5_000) {
+        manager.pluginStates
+            .map { states -> states[pluginId] }
+            .filterNotNull()
+            .first { info -> info.state == state }
     }
 
     @Suppress("UNCHECKED_CAST")

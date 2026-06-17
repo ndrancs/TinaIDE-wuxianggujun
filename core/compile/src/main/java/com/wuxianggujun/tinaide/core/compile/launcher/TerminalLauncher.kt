@@ -1,9 +1,12 @@
 package com.wuxianggujun.tinaide.core.compile.launcher
 
 import com.wuxianggujun.tinaide.core.compile.artifact.Artifact
+import com.wuxianggujun.tinaide.core.compile.artifact.ArtifactKind
 import com.wuxianggujun.tinaide.core.compile.event.BuildEvent
 import com.wuxianggujun.tinaide.core.compile.event.BuildEventEmitter
 import com.wuxianggujun.tinaide.core.compile.strategy.BuildContext
+import com.wuxianggujun.tinaide.core.i18n.Strings
+import com.wuxianggujun.tinaide.core.i18n.strOr
 import java.io.File
 import timber.log.Timber
 
@@ -36,6 +39,15 @@ class TerminalLauncher : Launcher {
         val file = File(artifact.absolutePath)
         if (!file.isFile) {
             val reason = "terminal artifact not found: ${artifact.absolutePath}"
+            emitter.emit(BuildEvent.Launch.Failed(reason, wasArtifactCached = false))
+            return LaunchOutcome.Failed(reason)
+        }
+        if (artifact.kind != ArtifactKind.EXECUTABLE) {
+            val reason = Strings.terminal_runtime_invalid_executable_artifact.strOr(
+                ctx.appContext,
+                artifact.absolutePath,
+                artifact.kind.name,
+            )
             emitter.emit(BuildEvent.Launch.Failed(reason, wasArtifactCached = false))
             return LaunchOutcome.Failed(reason)
         }

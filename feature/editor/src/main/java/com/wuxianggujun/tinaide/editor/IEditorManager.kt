@@ -30,6 +30,7 @@ interface IEditorManager : IEditorTabProvider {
     override fun getOpenTabs(): List<EditorTab>
     override fun getActiveTabId(): String?
     fun setActiveTab(tabId: String?)
+    fun retargetOpenTabsForMovedPath(oldPath: File, newPath: File): List<EditorTab>
     fun getSession(tabId: String): DocumentSession?
     fun getSessionState(tabId: String): StateFlow<DocumentSessionState>?
     suspend fun save(tabId: String, reason: SaveReason = SaveReason.MANUAL): SaveResult

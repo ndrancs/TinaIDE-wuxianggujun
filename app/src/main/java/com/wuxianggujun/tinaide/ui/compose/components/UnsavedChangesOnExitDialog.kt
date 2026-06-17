@@ -15,17 +15,17 @@ import com.wuxianggujun.tinaide.core.i18n.Strings
  * @param unsavedCount 未保存文件的数量
  * @param onSaveAllAndExit 点击"全部保存并退出"
  * @param onDiscardAndExit 点击"不保存退出"
- * @param onCancel 点击"取消"
+ * @param onDismiss 关闭对话框
  */
 @Composable
 fun UnsavedChangesOnExitDialog(
     unsavedCount: Int,
     onSaveAllAndExit: () -> Unit,
     onDiscardAndExit: () -> Unit,
-    onCancel: () -> Unit
+    onDismiss: () -> Unit
 ) {
     TinaAlertDialog(
-        onDismissRequest = onCancel,
+        onDismissRequest = onDismiss,
         title = { TinaDialogTitleText(stringResource(Strings.unsaved_changes_on_exit_title)) },
         text = {
             TinaDialogContentColumn {
@@ -45,12 +45,6 @@ fun UnsavedChangesOnExitDialog(
                     onClick = onSaveAllAndExit
                 )
             }
-        },
-        dismissButton = {
-            TinaTextButton(
-                text = stringResource(Strings.btn_cancel),
-                onClick = onCancel
-            )
         }
     )
 }

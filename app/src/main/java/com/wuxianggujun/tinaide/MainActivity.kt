@@ -26,6 +26,11 @@ import com.wuxianggujun.tinaide.ui.MainActivityFileTreeActionBridge
 import com.wuxianggujun.tinaide.ui.MainActivityNavigationHost
 import com.wuxianggujun.tinaide.ui.MainActivityShortcutDispatcher
 import com.wuxianggujun.tinaide.ui.MainViewModel
+import com.wuxianggujun.tinaide.ui.compose.screens.main.MainActivityContentBridges
+import com.wuxianggujun.tinaide.ui.compose.screens.main.MainActivityContentDelegates
+import com.wuxianggujun.tinaide.ui.compose.screens.main.MainActivityContentServices
+import com.wuxianggujun.tinaide.ui.compose.screens.main.MainActivityContentViewModels
+import com.wuxianggujun.tinaide.ui.compose.screens.main.MainActivityExternalFileActions
 import com.wuxianggujun.tinaide.ui.compose.screens.main.installMainActivityContent
 import com.wuxianggujun.tinaide.ui.createMainActivityActionsDelegate
 import com.wuxianggujun.tinaide.ui.createMainActivityCompileHost
@@ -135,29 +140,39 @@ class MainActivity :
         ) {
             installMainActivityContent(
                 activity = this,
-                projectContext = projectContext,
-                compilerViewModel = compilerViewModel,
-                mainViewModel = mainViewModel,
-                editorStateViewModel = editorStateViewModel,
-                debugViewModel = debugViewModel,
-                gitViewModel = gitViewModel,
-                editorManager = editorManager,
-                fileTreeActionBridge = fileTreeActionBridge,
-                processManager = processManager,
-                outputManager = outputManager,
-                bottomPanelViewModel = bottomPanelViewModel,
-                bottomPanelController = bottomPanelController,
-                actionsViewModel = actionsViewModel,
-                compileActionsHelper = currentCompileHost.compileActionsHelper,
-                actionsDelegate = actionsDelegate,
-                compileDelegate = currentCompileHost.compileDelegate,
-                navigationDelegate = currentNavigationHost.navigationDelegate,
-                shortcutDispatcher = shortcutDispatcher,
-                editorActionBridge = editorActionBridge,
-                dialogCoordinator = currentWorkspaceHost.dialogCoordinator,
-                workspaceActions = currentWorkspaceHost.workspaceActions,
-                onOpenWithExternalApp = ::openWithExternalApp,
-                onShareFileOrDirectory = ::shareFileOrDirectory,
+                viewModels = MainActivityContentViewModels(
+                    compiler = compilerViewModel,
+                    main = mainViewModel,
+                    editorState = editorStateViewModel,
+                    debug = debugViewModel,
+                    git = gitViewModel,
+                    bottomPanel = bottomPanelViewModel,
+                    actions = actionsViewModel,
+                ),
+                services = MainActivityContentServices(
+                    projectContext = projectContext,
+                    editorManager = editorManager,
+                    processManager = processManager,
+                    outputManager = outputManager,
+                ),
+                bridges = MainActivityContentBridges(
+                    fileTreeActions = fileTreeActionBridge,
+                    bottomPanelActions = bottomPanelController,
+                    editorActions = editorActionBridge,
+                ),
+                delegates = MainActivityContentDelegates(
+                    actions = actionsDelegate,
+                    compileActionsHelper = currentCompileHost.compileActionsHelper,
+                    compile = currentCompileHost.compileDelegate,
+                    navigation = currentNavigationHost.navigationDelegate,
+                    shortcuts = shortcutDispatcher,
+                    dialogCoordinator = currentWorkspaceHost.dialogCoordinator,
+                    workspaceActions = currentWorkspaceHost.workspaceActions,
+                ),
+                externalFileActions = MainActivityExternalFileActions(
+                    openWithExternalApp = ::openWithExternalApp,
+                    shareFileOrDirectory = ::shareFileOrDirectory,
+                ),
             )
         }
     }

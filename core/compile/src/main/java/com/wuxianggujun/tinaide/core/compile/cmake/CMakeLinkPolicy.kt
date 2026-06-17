@@ -11,13 +11,21 @@ package com.wuxianggujun.tinaide.core.compile.cmake
  * 最终让可执行文件产生意外的 DT_NEEDED（例如 `libSDL3.so`）。
  */
 internal object CMakeLinkPolicy {
+    private const val ANDROID_LOG_LIBRARY = "-llog"
 
     /**
      * 仅传播项目显式配置的链接库参数。
      */
     fun resolveStandardLibraries(projectLdLibs: String): String {
-        if (projectLdLibs.isBlank()) return ""
-        return projectLdLibs.lineSequence()
+        return normalizeLibraries(projectLdLibs.lineSequence())
+    }
+
+    fun resolveAndroidStandardLibraries(projectLdLibs: String): String {
+        return normalizeLibraries(sequenceOf(ANDROID_LOG_LIBRARY) + projectLdLibs.lineSequence())
+    }
+
+    private fun normalizeLibraries(libraries: Sequence<String>): String {
+        return libraries
             .map { it.trim() }
             .filter { it.isNotBlank() }
             .distinct()

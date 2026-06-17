@@ -6,6 +6,7 @@ import com.wuxianggujun.tinaide.core.compile.ProcessManager
 import com.wuxianggujun.tinaide.core.compile.RunConfigurationManager
 import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.editor.symbol.ProjectSymbolIndexService
+import com.wuxianggujun.tinaide.file.IFileOperations
 import com.wuxianggujun.tinaide.ui.BottomPanelController
 import com.wuxianggujun.tinaide.ui.BottomPanelViewModel
 import com.wuxianggujun.tinaide.ui.compose.state.editor.EditorContainerState
@@ -21,7 +22,8 @@ class AiToolsIntegrationManager(
     private val context: Context,
     private val viewModel: AiChatViewModel,
     private val scope: CoroutineScope,
-    private val linuxEnvironmentProvider: LinuxEnvironmentProvider
+    private val linuxEnvironmentProvider: LinuxEnvironmentProvider,
+    private val fileOperations: IFileOperations
 ) {
     /**
      * 初始化项目上下文
@@ -64,7 +66,12 @@ class AiToolsIntegrationManager(
         )
         viewModel.setEditorCallbacks(editorCallbacks)
 
-        val fileSystemCallbacks = FileSystemCallbacksImpl(context, projectRoot, editorState)
+        val fileSystemCallbacks = FileSystemCallbacksImpl(
+            context = context,
+            projectRoot = projectRoot,
+            editorState = editorState,
+            fileOperations = fileOperations
+        )
         viewModel.setFileSystemCallbacks(fileSystemCallbacks)
 
         val codeAnalysisCallbacks = CodeAnalysisCallbacksImpl(projectRoot, symbolIndexService)

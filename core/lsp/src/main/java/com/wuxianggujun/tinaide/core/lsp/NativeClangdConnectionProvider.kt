@@ -11,6 +11,7 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import timber.log.Timber
 
@@ -41,6 +42,7 @@ class NativeClangdConnectionProvider(
     companion object {
         private const val TAG = "NativeClangd"
         private const val ANDROID_10_API_LEVEL = Build.VERSION_CODES.Q
+        private const val START_PROBE_TIMEOUT_MS = 120L
     }
 
     private val appContext = context.applicationContext
@@ -145,8 +147,8 @@ class NativeClangdConnectionProvider(
         fun startAndProbe(attempt: LaunchAttempt): Process {
             val p = startProcess(attempt)
             // 避免“进程可启动但瞬间退出”导致误判成功（常见于 ELF 依赖缺失）
-            Thread.sleep(120L)
-            if (p.isAlive) return p
+            val exitedImmediately = p.waitFor(START_PROBE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            if (!exitedImmediately) return p
 
             val code = runCatching { p.exitValue() }.getOrDefault(-1)
             val stderrPreview = runCatching {

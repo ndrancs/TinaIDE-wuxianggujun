@@ -206,3 +206,14 @@
 # 该 Provider 显式绑定 R.xml.file_paths，并在生成 content:// URI 时不再依赖
 # PackageManager 返回 android.support.FILE_PROVIDER_PATHS meta-data。
 # keep 规则位于 core/storage/consumer-rules.pro，app 侧不重复维护。
+
+# ============================================================================
+# 18. Android 资源名安全网（动态资源/反射访问）
+# ============================================================================
+# Release 同时启用 R8 与 resource shrinker。部分入口可能通过 manifest meta-data、
+# getIdentifier/openRawResource、资源别名或第三方库按 R.* 字段/资源名定位资源。
+# 保留 R 内部类与字段名，避免 release 混淆后资源反射链路失效导致启动或运行崩溃。
+-keep class **.R$* { *; }
+-keepclassmembers class **.R$* {
+    public static <fields>;
+}

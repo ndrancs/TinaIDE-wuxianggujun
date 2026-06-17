@@ -34,8 +34,14 @@ class BottomPanelViewModel(
     private val _buildLogs = MutableStateFlow<List<BuildLogEntry>>(emptyList())
     val buildLogs: StateFlow<List<BuildLogEntry>> = _buildLogs.asStateFlow()
 
+    private val _buildLogCount = MutableStateFlow(0)
+    val buildLogCount: StateFlow<Int> = _buildLogCount.asStateFlow()
+
     private val _runOutputLogs = MutableStateFlow<List<BuildLogEntry>>(emptyList())
     val runOutputLogs: StateFlow<List<BuildLogEntry>> = _runOutputLogs.asStateFlow()
+
+    private val _runOutputCount = MutableStateFlow(0)
+    val runOutputCount: StateFlow<Int> = _runOutputCount.asStateFlow()
 
     private val _diagnostics = MutableStateFlow<List<Diagnostic>>(emptyList())
     val diagnostics: StateFlow<List<Diagnostic>> = _diagnostics.asStateFlow()
@@ -60,13 +66,21 @@ class BottomPanelViewModel(
                 IOutputManager.OutputChannel.BUILD -> {
                     val entries = parseOutputEntries(text)
                     if (entries.isNotEmpty()) {
-                        _buildLogs.update { currentLogs -> currentLogs + entries }
+                        _buildLogs.update { currentLogs ->
+                            val updatedLogs = currentLogs + entries
+                            _buildLogCount.value = updatedLogs.size
+                            updatedLogs
+                        }
                     }
                 }
                 IOutputManager.OutputChannel.RUN -> {
                     val entries = parseOutputEntries(text)
                     if (entries.isNotEmpty()) {
-                        _runOutputLogs.update { currentLogs -> currentLogs + entries }
+                        _runOutputLogs.update { currentLogs ->
+                            val updatedLogs = currentLogs + entries
+                            _runOutputCount.value = updatedLogs.size
+                            updatedLogs
+                        }
                     }
                 }
             }
@@ -74,8 +88,14 @@ class BottomPanelViewModel(
 
         override fun onOutputCleared(channel: IOutputManager.OutputChannel) {
             when (channel) {
-                IOutputManager.OutputChannel.BUILD -> _buildLogs.value = emptyList()
-                IOutputManager.OutputChannel.RUN -> _runOutputLogs.value = emptyList()
+                IOutputManager.OutputChannel.BUILD -> {
+                    _buildLogs.value = emptyList()
+                    _buildLogCount.value = 0
+                }
+                IOutputManager.OutputChannel.RUN -> {
+                    _runOutputLogs.value = emptyList()
+                    _runOutputCount.value = 0
+                }
             }
         }
     }
@@ -155,13 +175,17 @@ class BottomPanelViewModel(
     private fun restoreBuildLogsFromBuffer() {
         val buffered = outputManager.getOutput(IOutputManager.OutputChannel.BUILD)
         if (buffered.isBlank()) return
-        _buildLogs.value = parseOutputEntries(buffered)
+        val entries = parseOutputEntries(buffered)
+        _buildLogs.value = entries
+        _buildLogCount.value = entries.size
     }
 
     private fun restoreRunOutputFromBuffer() {
         val buffered = outputManager.getOutput(IOutputManager.OutputChannel.RUN)
         if (buffered.isBlank()) return
-        _runOutputLogs.value = parseOutputEntries(buffered)
+        val entries = parseOutputEntries(buffered)
+        _runOutputLogs.value = entries
+        _runOutputCount.value = entries.size
     }
 
     private fun parseOutputEntries(text: String): List<BuildLogEntry> = text

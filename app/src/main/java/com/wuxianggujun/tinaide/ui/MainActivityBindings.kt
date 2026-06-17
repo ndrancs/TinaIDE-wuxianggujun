@@ -87,6 +87,12 @@ internal fun BindMainActivityFileTreeState(
                         }
                         if (snapshot.isNotEmpty()) {
                             fileTreeState.handleFileChanges(snapshot)
+                            snapshot
+                                .asSequence()
+                                .filter { it.kind == FileTreeState.FileChangeKind.DELETED }
+                                .forEach { change ->
+                                    editorContainerState.closeTabsForDeletedPath(java.io.File(change.path))
+                                }
                         }
                     }
                 }
@@ -101,9 +107,12 @@ internal fun BindMainActivityFileTreeState(
 
                 override fun onFileDeleted(file: java.io.File) {
                     enqueueFileChange(file, FileTreeState.FileChangeKind.DELETED)
-                    scope.launch {
-                        editorContainerState.closeTabsForDeletedPath(file)
-                    }
+                }
+
+                override fun onFileRenamed(oldFile: java.io.File, newFile: java.io.File) {
+                    enqueueFileChange(oldFile, FileTreeState.FileChangeKind.DELETED)
+                    enqueueFileChange(newFile, FileTreeState.FileChangeKind.CREATED)
+                    editorContainerState.syncTabsForMovedPath(oldFile, newFile)
                 }
             }
             val registration = fileWatchService.addFileWatcher(rootPath, listener)

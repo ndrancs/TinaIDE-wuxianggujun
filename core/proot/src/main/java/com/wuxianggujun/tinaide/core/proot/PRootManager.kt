@@ -800,22 +800,11 @@ class PRootManager(
     }
 
     private fun waitForExitWithTimeout(process: Process, timeoutMs: Long): Boolean {
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (true) {
-            try {
-                process.exitValue()
-                return true
-            } catch (_: IllegalThreadStateException) {
-                if (System.currentTimeMillis() >= deadline) {
-                    return false
-                }
-                try {
-                    Thread.sleep(50)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    return false
-                }
-            }
+        return try {
+            process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            false
         }
     }
 

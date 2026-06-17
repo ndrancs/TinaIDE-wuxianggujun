@@ -166,12 +166,12 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- MT 管理器文件提供器（默认禁用，可在设置中启用） -->
+        <!-- MT 管理器文件提供器（默认启用，可在设置中关闭） -->
         <provider
             android:name=".provider.MTDataFilesProvider"
             android:authorities="${applicationId}.MTDataFilesProvider"
             android:exported="true"
-            android:enabled="false"
+            android:enabled="true"
             android:grantUriPermissions="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">
             <intent-filter>
@@ -179,13 +179,13 @@
             </intent-filter>
         </provider>
 
-        <!-- MT 管理器唤醒 Activity（默认禁用） -->
+        <!-- MT 管理器唤醒 Activity（默认启用） -->
         <activity
             android:name=".provider.MTDataFilesWakeUpActivity"
             android:taskAffinity="${applicationId}.MTDataFilesWakeUp"
             android:excludeFromRecents="true"
             android:exported="true"
-            android:enabled="false"
+            android:enabled="true"
             android:noHistory="true" />
 
         <!-- Termux components declared in library manifest -->

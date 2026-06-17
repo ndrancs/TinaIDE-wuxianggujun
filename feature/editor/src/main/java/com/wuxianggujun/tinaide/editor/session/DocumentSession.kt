@@ -75,7 +75,7 @@ data class DetachedEditorSnapshot(
 class DocumentSession(
     private val context: Context,
     val tabId: String,
-    val file: File,
+    file: File,
     private val projectSymbolIndexServiceProvider: () -> ProjectSymbolIndexService? = { null },
     initialViewState: EditorViewState? = null,
     private val coroutineScope: CoroutineScope
@@ -121,6 +121,9 @@ class DocumentSession(
         INITIAL_LOADING,
         READY
     }
+
+    var file: File = file
+        private set
 
     private val editorBinding = AtomicReference<EditorBinding?>()
     private val saveMutex = Mutex()
@@ -347,6 +350,27 @@ class DocumentSession(
                 )
             }
         }
+    }
+
+    fun retargetFile(newFile: File) {
+        if (file.absolutePath == newFile.absolutePath) return
+
+        stopFileWatcher()
+        file = newFile
+        val marker = readCurrentWriteMarker()
+        fileLastModifiedOnOpen = marker?.modifiedAt ?: if (newFile.exists()) newFile.lastModified() else 0L
+        fileSizeOnOpen = marker?.fileSize ?: if (newFile.exists()) newFile.length() else 0L
+        lastInternalWriteMarker = marker
+        lastObservedWriteMarker = marker
+        _state.update {
+            it.copy(
+                file = newFile,
+                title = newFile.name.ifBlank { "Untitled" },
+                hasExternalModification = false,
+                lastError = null
+            )
+        }
+        startFileWatcher()
     }
 
     private fun currentViewState(): EditorViewState {

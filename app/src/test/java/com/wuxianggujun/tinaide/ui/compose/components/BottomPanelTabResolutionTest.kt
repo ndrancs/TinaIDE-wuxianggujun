@@ -78,4 +78,13 @@ class BottomPanelTabResolutionTest {
             )
         ).isEqualTo(BottomPanelTab.BOOKMARKS)
     }
+
+    @Test
+    fun `formatBottomPanelTabBadgeCount hides empty count and caps large values`() {
+        assertThat(formatBottomPanelTabBadgeCount(0)).isNull()
+        assertThat(formatBottomPanelTabBadgeCount(-1)).isNull()
+        assertThat(formatBottomPanelTabBadgeCount(7)).isEqualTo("7")
+        assertThat(formatBottomPanelTabBadgeCount(999)).isEqualTo("999")
+        assertThat(formatBottomPanelTabBadgeCount(1000)).isEqualTo("999+")
+    }
 }

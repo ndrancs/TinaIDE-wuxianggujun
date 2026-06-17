@@ -164,13 +164,8 @@ class LspEditorManager {
         val compileCommandsDir: File,
     )
 
-    private data class TabRequestTicket(
-        val tabId: String,
-        val generation: Long,
-        val documentUri: String,
-    )
-
     private val stateLock = Any()
+    private val tabRequestTracker = LspTabRequestTracker(stateLock)
     private val lspScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val sharedCxxSessionMutex = Mutex()
     private val compileSetupMutex = Mutex()
@@ -192,8 +187,6 @@ class LspEditorManager {
     private var sharedCxxShutdownJob: Job? = null
     private val compileSetupCache = mutableMapOf<CompileSetupKey, CompileSetup>()
     private val compileSetupTasks = mutableMapOf<CompileSetupKey, kotlinx.coroutines.Deferred<CompileSetup?>>()
-    private val tabRequestGenerations = mutableMapOf<String, Long>()
-    private val tabInflightRequests = mutableMapOf<String, MutableSet<CompletableFuture<*>>>()
 
     @Volatile
     private var foldingRangeEnabled: Boolean = false
@@ -1509,41 +1502,28 @@ class LspEditorManager {
         }
     }
 
-    private fun nextRequestGeneration(tabId: String): List<CompletableFuture<*>> = synchronized(stateLock) {
-        tabRequestGenerations[tabId] = (tabRequestGenerations[tabId] ?: 0L) + 1L
-        tabInflightRequests.remove(tabId)?.toList().orEmpty()
-    }
+    private fun nextRequestGeneration(tabId: String): List<CompletableFuture<*>> =
+        tabRequestTracker.invalidateTab(tabId)
 
-    private fun createTabRequestTicket(tabId: String, documentUri: String): TabRequestTicket {
-        val generation = synchronized(stateLock) { tabRequestGenerations[tabId] ?: 0L }
-        return TabRequestTicket(
-            tabId = tabId,
-            generation = generation,
-            documentUri = documentUri
-        )
-    }
+    private fun createTabRequestTicket(tabId: String, documentUri: String): LspTabRequestTicket =
+        tabRequestTracker.createTicket(tabId, documentUri)
 
-    private fun isTabRequestStillValid(ticket: TabRequestTicket): Boolean = synchronized(stateLock) {
-        val currentGeneration = tabRequestGenerations[ticket.tabId] ?: 0L
-        val tabSession = tabSessions[ticket.tabId]
-        currentGeneration == ticket.generation &&
-            tabSession?.documentUri == ticket.documentUri &&
-            tabSession?.isConnected == true
-    }
+    private fun isTabRequestStillValid(ticket: LspTabRequestTicket): Boolean =
+        tabRequestTracker.isStillValid(ticket) { tabId ->
+            tabSessions[tabId]?.let { tabSession ->
+                LspTrackedTabRequestState(
+                    documentUri = tabSession.documentUri,
+                    isConnected = tabSession.isConnected
+                )
+            }
+        }
 
     private fun trackTabFuture(tabId: String, future: CompletableFuture<*>) {
-        synchronized(stateLock) {
-            tabInflightRequests.getOrPut(tabId) { mutableSetOf() }.add(future)
-        }
+        tabRequestTracker.trackFuture(tabId, future)
     }
 
     private fun untrackTabFuture(tabId: String, future: CompletableFuture<*>) {
-        synchronized(stateLock) {
-            tabInflightRequests[tabId]?.remove(future)
-            if (tabInflightRequests[tabId].isNullOrEmpty()) {
-                tabInflightRequests.remove(tabId)
-            }
-        }
+        tabRequestTracker.untrackFuture(tabId, future)
     }
 
     private suspend fun resolveCompileSetup(
@@ -1903,9 +1883,7 @@ class LspEditorManager {
             attachTokenCache.clear()
             semanticTokensCache.clear()
             completionWarmupTabIds.clear()
-            tabRequestGenerations.clear()
-            val inflight = tabInflightRequests.values.flatten()
-            tabInflightRequests.clear()
+            val inflight = tabRequestTracker.drainAll()
             val shared = sharedCxxSession
             sharedCxxSession = null
             if (clearBindings) tabBindings.clear()
@@ -2021,7 +1999,7 @@ class LspEditorManager {
     }
 
     private suspend fun <T> awaitTrackedTabFuture(
-        ticket: TabRequestTicket,
+        ticket: LspTabRequestTicket,
         future: CompletableFuture<T>?,
         timeoutSeconds: Long,
         operation: String

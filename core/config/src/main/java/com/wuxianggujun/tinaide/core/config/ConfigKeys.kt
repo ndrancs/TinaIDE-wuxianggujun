@@ -167,12 +167,11 @@ sealed class ConfigKey<T>(val key: String, val default: T) {
 
     /**
      * MT 管理器文件提供器开关
-     * 启用后允许 MT 管理器访问应用私有目录
-     * 默认关闭，用户明确启用后才暴露应用私有目录
+     * 默认开启，便于用户在日志上传失败或应用启动异常时通过 MT 管理器导出诊断文件。
      */
     object MTFileProviderEnabled : ConfigKey<Boolean>(
         key = "storage.mt_file_provider.enabled",
-        default = false
+        default = true
     )
 }
 

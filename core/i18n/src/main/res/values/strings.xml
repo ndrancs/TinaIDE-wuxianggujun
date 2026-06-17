@@ -451,6 +451,7 @@
   <!-- Output Activity -->
   <string name="action_clear">清空</string>
 <string name="action_select_all">全选</string>
+<string name="action_scroll_to_bottom">滚动到底部</string>
 
   <!-- Activity Titles -->
   <string name="crash_activity_title">应用崩溃</string>
@@ -845,7 +846,7 @@
   <string name="settings_linux_rootfs_path">Rootfs 路径</string>
   <string name="value_default">默认</string>
   <string name="settings_mt_access">MT 管理器访问</string>
-  <string name="settings_mt_access_desc">默认关闭。开启后仅允许 MT 管理器访问 TinaIDE 的 data、Android/data、Android/obb 和 user_de_data 目录。</string>
+  <string name="settings_mt_access_desc">默认开启。仅允许 MT 管理器访问 TinaIDE 的 data、Android/data、Android/obb 和 user_de_data 目录，可在此关闭。</string>
 
   <!-- Storage Cleanup -->
   <string name="settings_title_storage_cleanup">存储清理</string>
@@ -1563,6 +1564,7 @@
   <string name="sdl_runtime_invalid_shared_library">SDL 图形运行需要共享库（.so），当前目标不是可加载的共享库：%1$s</string>
   <string name="sdl_runtime_no_shared_library_target">SDL 图形运行需要 CMake 共享库目标（.so）。请将 CMake 目标改为 add_library(... SHARED ...)，或切换到终端模式运行可执行文件。</string>
   <string name="sdl_runtime_auto_selected_shared_library_target">SDL 图形模式已自动切换到共享库目标：%1$s</string>
+  <string name="terminal_runtime_invalid_executable_artifact">终端运行只能启动可执行文件，当前产物不是可执行文件：%1$s（类型：%2$s）。如果这是 NDK 共享库项目，请使用构建/导出产物，或新增可执行测试目标后再运行。</string>
   <string name="sdl_runtime_error_non_sdl_library">当前共享库未检测到 SDL 依赖，无法用 SDL 图形运行时启动：%1$s</string>
   <string name="sdl_runtime_stage_failed">准备 SDL 图形运行时失败：%1$s</string>
   <string name="sdl_runtime_error_scan_failed">解析共享库失败：%1$s，原因：%2$s</string>

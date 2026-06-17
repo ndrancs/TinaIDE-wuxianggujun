@@ -832,7 +832,7 @@ class NativeCMakeBuildExecutor(
         val projectCppFlags = mergeCppFlags(options.cppFlags, options.cppStandard)
         val projectLdFlags = options.ldFlags
         val projectLdLibs = options.ldLibs
-        val projectStandardLibraries = CMakeLinkPolicy.resolveStandardLibraries(projectLdLibs)
+        val projectStandardLibraries = CMakeLinkPolicy.resolveAndroidStandardLibraries(projectLdLibs)
         val combinedExtraCMakeArgs = options.extraCMakeArgs
             .map { it.trim() }
             .filter { it.isNotBlank() }

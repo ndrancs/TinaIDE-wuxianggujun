@@ -5,10 +5,8 @@ import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
 import com.wuxianggujun.tinaide.core.linux.UnavailableLinuxEnvironment
-import com.wuxianggujun.tinaide.core.linuxdistro.AndroidAssetLinuxDistroManifestSource
 import com.wuxianggujun.tinaide.core.linuxdistro.DistroArchitecture
 import com.wuxianggujun.tinaide.core.linuxdistro.DistroPackageManager
-import com.wuxianggujun.tinaide.core.linuxdistro.loadCatalog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -43,7 +41,7 @@ class RootfsDistroRuntime(
 
     fun listDistros(): List<DistroOption> = runCatching {
         val architecture = SelfHostedLinuxDistroRuntime.defaultArchitecture()
-        SelfHostedLinuxDistroRuntime.loadRemoteOrAssetCatalog(appContext)
+        SelfHostedLinuxDistroRuntime.loadCachedOrBundledCatalog(appContext)
             .listInstallableDefaultArtifacts(architecture)
             .map { resolved ->
                 val packageManager = resolved.distro.packageManager.toRootfsPackageManager()
@@ -67,7 +65,7 @@ class RootfsDistroRuntime(
     suspend fun installDistro(
         distroId: String,
         progress: (InstallProgress) -> Unit = {},
-    ): Result<RootfsProfile> = SelfHostedLinuxDistroRuntime.createFromAssets(appContext, configManager)
+    ): Result<RootfsProfile> = SelfHostedLinuxDistroRuntime.createForExplicitInstall(appContext, configManager)
         .installDistro(distroId = distroId) { installProgress ->
             progress(
                 InstallProgress(

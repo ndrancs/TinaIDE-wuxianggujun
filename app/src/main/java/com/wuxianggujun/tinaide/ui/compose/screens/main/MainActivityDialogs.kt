@@ -361,7 +361,8 @@ internal fun MainActivityFileDialogs(
     if (dialogState.showRenameDialog && dialogState.renameFile != null) {
         RenameDialog(
             file = dialogState.renameFile!!,
-            onDismiss = { dialogState.closeRenameDialog() }
+            onDismiss = { dialogState.closeRenameDialog() },
+            onRename = fileOperations::renameFile
         )
     }
 
@@ -727,6 +728,6 @@ internal fun MainActivityUnsavedExitDialog(
             onShowUnsavedExitDialogChange(false)
             onFinish()
         },
-        onCancel = { onShowUnsavedExitDialogChange(false) }
+        onDismiss = { onShowUnsavedExitDialogChange(false) }
     )
 }

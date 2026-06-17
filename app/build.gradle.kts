@@ -333,6 +333,10 @@ dependencies {
     // Kotlin Serialization
     implementation(libs.kotlinx.serialization.json)
 
+    // LuaJava Android native runtime. core:plugin owns the Java API dependency;
+    // the app must package liblua54.so for script/hybrid plugins.
+    runtimeOnly("party.iroiro.luajava:android:${libs.versions.luajava.get()}:lua54@aar")
+
     // Tree-sitter grammar 依赖由 :core:tree-sitter 统一管理
     // GenerateTreeSitterLanguageRegistry task 仍需要解析 implementation deps，
     // 因此保留对 :core:tree-sitter 的依赖即可（grammar jars 通过传递依赖到达 classpath）。

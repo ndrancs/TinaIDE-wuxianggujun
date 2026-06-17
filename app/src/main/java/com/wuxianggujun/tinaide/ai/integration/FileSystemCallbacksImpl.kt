@@ -19,6 +19,7 @@ import com.wuxianggujun.tinaide.ai.tools.executor.filesystem.ListFilesResult
 import com.wuxianggujun.tinaide.ai.tools.executor.filesystem.MoveFileRequest
 import com.wuxianggujun.tinaide.ai.tools.executor.filesystem.ReplaceLineRequest
 import com.wuxianggujun.tinaide.ai.tools.executor.filesystem.ReplaceTextRequest
+import com.wuxianggujun.tinaide.file.IFileOperations
 import com.wuxianggujun.tinaide.ui.compose.state.editor.EditorContainerState
 import java.io.File
 import java.nio.file.Files
@@ -31,7 +32,8 @@ import java.nio.file.StandardCopyOption
 class FileSystemCallbacksImpl(
     private val context: Context,
     private val projectRoot: String,
-    private val editorState: EditorContainerState
+    private val editorState: EditorContainerState,
+    private val fileOperations: IFileOperations
 ) : FileSystemCallbacks {
 
     override fun readFile(path: String): FileReadResult {
@@ -142,15 +144,26 @@ class FileSystemCallbacksImpl(
             )
         }
 
+        if (file.isDirectory && !request.recursive) {
+            return FileOperationResult(
+                success = false,
+                message = "Recursive flag required to delete directory: ${toRelativePath(file.absolutePath)}",
+                path = toRelativePath(file.absolutePath)
+            )
+        }
+
         return try {
-            if (file.isDirectory && request.recursive) {
-                file.deleteRecursively()
-            } else {
-                file.delete()
+            val deleted = fileOperations.deleteFile(file, recursive = request.recursive)
+
+            if (!deleted) {
+                return FileOperationResult(
+                    success = false,
+                    message = "Failed to delete: ${toRelativePath(file.absolutePath)}",
+                    path = toRelativePath(file.absolutePath)
+                )
             }
 
             syncFileDeleted(file.absolutePath)
-
             FileOperationResult(
                 success = true,
                 message = "Deleted: ${toRelativePath(file.absolutePath)}",
@@ -208,12 +221,18 @@ class FileSystemCallbacksImpl(
         }
 
         return try {
-            val copyOption = if (request.overwrite) {
-                StandardCopyOption.REPLACE_EXISTING
-            } else {
-                StandardCopyOption.ATOMIC_MOVE
+            val moved = fileOperations.moveFile(
+                source = sourceFile,
+                destination = destFile,
+                overwrite = request.overwrite
+            )
+
+            if (!moved) {
+                return FileOperationResult(
+                    success = false,
+                    message = "Failed to move: ${toRelativePath(sourceFile.absolutePath)} -> ${toRelativePath(destFile.absolutePath)}"
+                )
             }
-            Files.move(sourceFile.toPath(), destFile.toPath(), copyOption)
 
             syncFileMoved(sourceFile.absolutePath, destFile.absolutePath)
 
@@ -551,11 +570,9 @@ class FileSystemCallbacksImpl(
     }
 
     private fun syncFileMoved(oldAbsolutePath: String, newAbsolutePath: String) {
-        if (editorState.requestCloseTabForFile(File(oldAbsolutePath))) {
-            val newFile = File(PathUtils.normalizeFilePath(newAbsolutePath))
-            if (newFile.exists()) {
-                editorState.openFile(newFile)
-            }
-        }
+        editorState.syncTabsForMovedPath(
+            oldPath = File(PathUtils.normalizeFilePath(oldAbsolutePath)),
+            newPath = File(PathUtils.normalizeFilePath(newAbsolutePath))
+        )
     }
 }

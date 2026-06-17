@@ -7,12 +7,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -28,7 +25,6 @@ import com.wuxianggujun.tinaide.core.editorlsp.CompletionSource
 import com.wuxianggujun.tinaide.core.editorlsp.SemanticToken
 import com.wuxianggujun.tinaide.core.editorlsp.SignatureHelpResult
 import com.wuxianggujun.tinaide.core.editorview.EditorColorScheme
-import com.wuxianggujun.tinaide.core.editorview.EditorConfig
 import com.wuxianggujun.tinaide.core.editorview.EditorRenderPerformanceSnapshot
 import com.wuxianggujun.tinaide.core.editorview.EditorState
 import com.wuxianggujun.tinaide.core.i18n.Strings
@@ -67,8 +63,6 @@ import java.io.File
 import java.net.URI
 import java.nio.charset.Charset
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import org.eclipse.lsp4j.WorkspaceEdit
 import org.koin.core.context.GlobalContext
 import timber.log.Timber
@@ -344,28 +338,81 @@ class EditorContainerState(
     private val lspEditorManager = LspEditorManager()
     private val searchStateManager = SearchStateManager()
     private val tabManager = EditorTabManager(context, editorManager)
-    private val splitEditorSessionStorage = SplitEditorSessionStorage(context)
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val documentSessionCoordinator = EditorDocumentSessionCoordinator(
+        editorManager = editorManager,
+        activeTabProvider = { getActiveTab() },
+    )
     private val codeEditorCallbacks = mutableMapOf<String, CodeEditorCallback>()
-    private val codeEditorRuntimesByTabId =
-        java.util.LinkedHashMap<String, CodeEditorRuntime>(16, 0.75f, true)
-    private val tabPaneMap = mutableStateMapOf<String, EditorPaneId>()
-    private val mirroredTabIdsByPane = mutableStateMapOf<EditorPaneId, Set<String>>()
-    private val activeTabIdByPane = mutableStateMapOf<EditorPaneId, String>()
-    private var pendingSplitEditorSnapshot: SplitEditorStateSnapshot? = null
-    private var restoredSplitEditorProjectPath: String? = null
-    private var lastSplitEditorProjectPath: String? = null
-    private val navigationBackStack = mutableStateListOf<NavigationHistoryEntry>()
-    private val navigationForwardStack = mutableStateListOf<NavigationHistoryEntry>()
-    private val maxNavigationHistorySize = 100
-    private var pendingSaveAllNotificationTargets: List<ActiveSaveTarget> = emptyList()
-    private var pluginLspDependencyAlertSequence: Long = 0L
+    private val splitPaneState = EditorSplitPaneState()
+    private val codeRuntimeCache = EditorCodeRuntimeCache(
+        context = context,
+        cacheLimit = CODE_EDITOR_RUNTIME_CACHE_LIMIT,
+        projectRootPathProvider = ::getEditorProjectRootPathOrNull,
+        activeTabIdProvider = ::getActiveTabId,
+        isSplitEditorEnabledProvider = { isSplitEditorEnabled },
+        splitPaneState = splitPaneState,
+        attachedCodeEditorTabIdsProvider = { codeEditorCallbacks.keys.toSet() },
+        openTabsProvider = { tabs },
+    )
+    private val saveAllNotificationTracker = EditorSaveAllNotificationTracker()
 
-    private val lspStatusesByTabId = mutableStateMapOf<String, EditorStatus>()
-    private val diagnosticsByFilePath = mutableStateMapOf<String, List<Diagnostic>>()
-    private var diagnosticsObserver: ((fileUri: String, diagnostics: List<Diagnostic>) -> Unit)? = null
-    var pluginLspDependencyAlert by mutableStateOf<PluginLspDependencyAlert?>(null)
-        private set
+    private val peekDefinitionState = EditorPeekDefinitionState()
+    private val lspUiState = EditorLspUiState()
+    private val diagnosticsState = EditorDiagnosticsState(
+        filePathNormalizer = ::fileToNormalizedPath,
+        fileUriNormalizer = ::fileUriToNormalizedPath,
+    )
+    val pluginLspDependencyAlert: PluginLspDependencyAlert?
+        get() = lspUiState.pluginDependencyAlert
+
+    private val tabLifecycleCoordinator = EditorTabLifecycleCoordinator(
+        splitPaneState = splitPaneState,
+        isCodeEditableType = ::isCodeEditableType,
+        releaseLspForTab = ::releaseTinaLspForTab,
+        clearCodeEditorRuntime = codeRuntimeCache::remove,
+        removeCodeEditorCallback = codeEditorCallbacks::remove,
+        cleanupSearchState = searchStateManager::cleanupForTab,
+        dismissPeekDefinitionPanel = ::dismissPeekDefinitionPanel,
+        normalizeEditorPaneState = { normalizeEditorPaneState() },
+    )
+    private val navigationHistoryManager = EditorNavigationHistoryManager(
+        currentLocationProvider = ::snapshotActiveNavigationLocationOrNull,
+        openLocation = { target ->
+            val targetFile = File(target.filePath)
+            if (!targetFile.exists() || targetFile.isDirectory) {
+                false
+            } else {
+                openFileAndGoToPosition(targetFile, target.line, target.column, recordHistory = false)
+            }
+        }
+    )
+    private val splitSessionCoordinator = EditorSplitSessionCoordinator(
+        storage = SplitEditorSessionStorage(context),
+        projectPathProvider = ::resolveSplitEditorSessionProjectPath,
+        hasTabs = { tabs.isNotEmpty() },
+        createSnapshot = ::createSplitEditorStateSnapshot,
+        restoreSnapshot = ::restoreSplitEditorStateSnapshot,
+        normalizePaneState = { normalizeEditorPaneState() },
+        clearInMemory = ::clearSplitEditorStateInMemory,
+    )
+    private val fileMutationCoordinator = EditorFileMutationCoordinator(
+        editorManager = editorManager,
+        tabManager = tabManager,
+        tabs = tabManager.tabs,
+        navigationBackStack = navigationHistoryManager.backStack,
+        navigationForwardStack = navigationHistoryManager.forwardStack,
+        splitPaneState = splitPaneState,
+        codeRuntimeCache = codeRuntimeCache,
+        codeEditorCallbacks = codeEditorCallbacks,
+        lspUiState = lspUiState,
+        diagnosticsState = diagnosticsState,
+        isCodeEditableType = ::isCodeEditableType,
+        requestCloseTabAt = ::requestCloseTab,
+        releaseTinaLspForTab = ::releaseTinaLspForTab,
+        normalizeEditorPaneState = { normalizeEditorPaneState() },
+        persistSplitEditorState = ::persistSplitEditorState,
+    )
 
     init {
         // 注入 LspPluginManager 到 LspEditorManager
@@ -373,46 +420,15 @@ class EditorContainerState(
             lspEditorManager.setLspPluginManager(it)
         }
 
-        lspEditorManager.onDiagnosticsChanged = { fileUri, diagnostics ->
-            val normalizedPath = fileUriToNormalizedPath(fileUri)
-            if (normalizedPath != null) {
-                diagnosticsByFilePath[normalizedPath] = diagnostics
-            }
-            PluginHostEventDispatcher.emitDiagnosticsChanged(fileUri, diagnostics)
-            diagnosticsObserver?.invoke(fileUri, diagnostics)
-        }
+        lspEditorManager.onDiagnosticsChanged = diagnosticsState::handleDiagnosticsChanged
 
-        lspEditorManager.onLspStatusChanged = { tabId, status ->
-            lspStatusesByTabId[tabId] = status
-        }
+        lspEditorManager.onLspStatusChanged = lspUiState::handleStatusChanged
 
-        lspEditorManager.onPluginLspDependencyNotReady = { event ->
-            pluginLspDependencyAlertSequence += 1
-            pluginLspDependencyAlert = PluginLspDependencyAlert(
-                sequence = pluginLspDependencyAlertSequence,
-                pluginId = event.pluginId,
-                pluginName = event.pluginName,
-                message = event.message,
-            )
-        }
+        lspEditorManager.onPluginLspDependencyNotReady = lspUiState::handlePluginDependencyNotReady
 
         // 设置标签关闭回调，清理状态
         tabManager.onTabClosed = { tabId, contentType ->
-            if (contentType == ContentType.CODE || contentType == ContentType.JSON) {
-                lspEditorManager.releaseLspEditor(tabId)
-                lspStatusesByTabId.remove(tabId)
-            }
-            tabPaneMap.remove(tabId)
-            removeMirroredTabId(tabId)
-            activeTabIdByPane
-                .filterValues { it == tabId }
-                .keys
-                .toList()
-                .forEach(activeTabIdByPane::remove)
-            normalizeEditorPaneState()
-            codeEditorCallbacks.remove(tabId)
-            searchStateManager.cleanupForTab(tabId)
-            dismissPeekDefinitionPanel(tabId)
+            tabLifecycleCoordinator.handleManagerTabClosed(tabId, contentType)
         }
     }
 
@@ -427,9 +443,7 @@ class EditorContainerState(
     val lastOpenError: String? get() = tabManager.lastOpenError
 
     fun consumePluginLspDependencyAlert(): PluginLspDependencyAlert? {
-        val alert = pluginLspDependencyAlert
-        pluginLspDependencyAlert = null
-        return alert
+        return lspUiState.consumePluginDependencyAlert()
     }
 
     var isSplitEditorEnabled by mutableStateOf(false)
@@ -444,8 +458,8 @@ class EditorContainerState(
     var splitEditorLayout by mutableStateOf(SplitEditorLayout.HORIZONTAL)
         private set
 
-    internal var peekDefinitionPanelState by mutableStateOf<PeekDefinitionPanelState?>(null)
-        private set
+    internal val peekDefinitionPanelState: PeekDefinitionPanelState?
+        get() = peekDefinitionState.panelState
 
     private fun resolveProjectRootPath(): String? = projectRootPathProvider()
         ?.takeIf { it.isNotBlank() }
@@ -455,11 +469,9 @@ class EditorContainerState(
     internal fun getEditorProjectRootPathOrNull(): String? = resolveProjectRootPath()
 
     internal fun showPeekDefinitionLoading(ownerTabId: String, title: String) {
-        peekDefinitionPanelState = PeekDefinitionPanelState(
+        peekDefinitionState.showLoading(
             ownerTabId = ownerTabId,
-            title = title,
-            locations = emptyList(),
-            isLoading = true
+            title = title
         )
     }
 
@@ -468,19 +480,15 @@ class EditorContainerState(
         title: String,
         locations: List<LocationItem>
     ) {
-        peekDefinitionPanelState = PeekDefinitionPanelState(
+        peekDefinitionState.showResults(
             ownerTabId = ownerTabId,
             title = title,
-            locations = locations,
-            isLoading = false
+            locations = locations
         )
     }
 
     internal fun dismissPeekDefinitionPanel(ownerTabId: String? = null) {
-        val current = peekDefinitionPanelState ?: return
-        if (ownerTabId == null || current.ownerTabId == ownerTabId) {
-            peekDefinitionPanelState = null
-        }
+        peekDefinitionState.dismiss(ownerTabId)
     }
 
     internal fun getBookmarksProjectRootPathOrNull(): String? = resolveProjectRootPath()
@@ -490,16 +498,11 @@ class EditorContainerState(
     var onLspDiagnosticsChanged: ((fileUri: String, diagnostics: List<Diagnostic>) -> Unit)? = null
         set(value) {
             field = value
-            diagnosticsObserver = value
+            diagnosticsState.onDiagnosticsChanged = value
         }
 
-    private fun readDiagnosticsForFile(file: File): List<Diagnostic> {
-        val normalizedPath = fileToNormalizedPath(file)
-        return diagnosticsByFilePath[normalizedPath].orEmpty()
-    }
-
-    internal fun getDiagnosticsFlow(file: File): Flow<List<Diagnostic>> = snapshotFlow { readDiagnosticsForFile(file) }
-        .distinctUntilChanged()
+    internal fun getDiagnosticsFlow(file: File): Flow<List<Diagnostic>> =
+        diagnosticsState.getDiagnosticsFlow(file)
 
     // ========== LSP 导航回调 ==========
 
@@ -585,12 +588,10 @@ class EditorContainerState(
         else -> false
     }
 
-    internal fun getLspStatus(tabId: String): EditorStatus = lspStatusesByTabId[tabId] ?: EditorStatus.NoLsp
+    internal fun getLspStatus(tabId: String): EditorStatus = lspUiState.getStatus(tabId)
 
-    internal fun getLspStatusFlow(tabId: String): Flow<EditorStatus> = snapshotFlow {
-        lspStatusesByTabId[tabId] ?: EditorStatus.NoLsp
-    }
-        .distinctUntilChanged()
+    internal fun getLspStatusFlow(tabId: String): Flow<EditorStatus> =
+        lspUiState.getStatusFlow(tabId)
 
     internal fun getActiveLspStatus(): EditorStatus {
         val tab = getActiveTab() ?: return EditorStatus.NoLsp
@@ -756,92 +757,23 @@ class EditorContainerState(
     internal fun unbindCodeEditorCallbacks(tabId: String) {
         unbindCodeViewerSearchCallback(tabId)
         unregisterCodeEditorCallback(tabId)
-        trimCodeEditorRuntimeCache()
+        codeRuntimeCache.trim()
     }
 
-    internal fun getOrCreateCodeEditorRuntime(tab: EditorTabState): CodeEditorRuntime {
-        val runtime = codeEditorRuntimesByTabId.getOrPut(tab.id) {
-            val buffer = RopeTextBuffer()
-            CodeEditorRuntime(
-                buffer = buffer,
-                editorState = EditorState(
-                    textBuffer = buffer,
-                    file = tab.file,
-                    projectRootPath = getEditorProjectRootPathOrNull(),
-                    config = EditorConfig.fromPrefs()
-                )
-            )
-        }
-        trimCodeEditorRuntimeCache(protectedTabIds = setOf(tab.id))
-        return runtime
-    }
+    internal fun getOrCreateCodeEditorRuntime(tab: EditorTabState): CodeEditorRuntime =
+        codeRuntimeCache.getOrCreate(tab)
 
-    internal fun getOrCreateSyntaxHighlighter(tab: EditorTabState): TreeSitterHighlighter? {
-        val runtime = getOrCreateCodeEditorRuntime(tab)
-        if (!runtime.syntaxHighlighterCreationAttempted) {
-            runtime.syntaxHighlighterCreationAttempted = true
-            runtime.syntaxHighlighter = TreeSitterHighlighter.create(context.applicationContext, tab.file)
-        }
-        return runtime.syntaxHighlighter
-    }
+    internal fun getOrCreateSyntaxHighlighter(tab: EditorTabState): TreeSitterHighlighter? =
+        codeRuntimeCache.getOrCreateSyntaxHighlighter(tab)
 
-    internal fun getOrCreateFoldingProvider(tab: EditorTabState): TreeSitterFoldingProvider? {
-        val runtime = getOrCreateCodeEditorRuntime(tab)
-        if (!runtime.foldingProviderCreationAttempted) {
-            runtime.foldingProviderCreationAttempted = true
-            runtime.foldingProvider = TreeSitterFoldingProvider.create(context.applicationContext, tab.file)
-        }
-        return runtime.foldingProvider
-    }
+    internal fun getOrCreateFoldingProvider(tab: EditorTabState): TreeSitterFoldingProvider? =
+        codeRuntimeCache.getOrCreateFoldingProvider(tab)
 
     internal fun isCodeEditorRuntimeLoaded(tabId: String): Boolean =
-        codeEditorRuntimesByTabId[tabId]?.isContentLoaded == true
+        codeRuntimeCache.isLoaded(tabId)
 
     internal fun markCodeEditorRuntimeLoaded(tabId: String) {
-        codeEditorRuntimesByTabId[tabId]?.isContentLoaded = true
-        trimCodeEditorRuntimeCache(protectedTabIds = setOf(tabId))
-    }
-
-    private fun clearCodeEditorRuntime(tabId: String) {
-        codeEditorRuntimesByTabId.remove(tabId)?.disposeCodeEditorRuntime()
-    }
-
-    private fun trimCodeEditorRuntimeCache(protectedTabIds: Set<String> = emptySet()) {
-        if (codeEditorRuntimesByTabId.size <= CODE_EDITOR_RUNTIME_CACHE_LIMIT) return
-
-        val effectiveProtectedTabIds = buildSet {
-            addAll(protectedTabIds)
-            getActiveTabId()?.let(::add)
-            if (isSplitEditorEnabled) {
-                activeTabIdByPane.values.forEach(::add)
-            }
-            codeEditorCallbacks.keys.forEach(::add)
-        }
-
-        while (codeEditorRuntimesByTabId.size > CODE_EDITOR_RUNTIME_CACHE_LIMIT) {
-            val evictableTabId = codeEditorRuntimesByTabId.keys.firstOrNull { tabId ->
-                tabId !in effectiveProtectedTabIds && tabs.firstOrNull { it.id == tabId }?.isDirty != true
-            } ?: break
-
-            codeEditorRuntimesByTabId.remove(evictableTabId)?.disposeCodeEditorRuntime()
-            Timber.tag("EditorContainerState").d(
-                "trimCodeEditorRuntimeCache: evicted tab=%s, remaining=%d",
-                evictableTabId,
-                codeEditorRuntimesByTabId.size
-            )
-        }
-    }
-
-    private fun CodeEditorRuntime.disposeCodeEditorRuntime() {
-        syntaxHighlighter?.setOnStateUpdated(null)
-        if (syntaxHighlighter != null && editorState.highlighter === syntaxHighlighter) {
-            editorState.highlighter = null
-        }
-        syntaxHighlighter?.dispose()
-        foldingProvider?.dispose()
-        syntaxHighlighter = null
-        foldingProvider = null
-        isTreeSitterSnapshotReady = false
+        codeRuntimeCache.markLoaded(tabId)
     }
 
     internal fun registerCodeEditorCallback(tabId: String, callback: CodeEditorCallback) {
@@ -911,9 +843,9 @@ class EditorContainerState(
         is ActiveEditableEditorBindingResult.Available -> {
             val source = snapshotActiveNavigationLocationOrNull()
             if (activeEditor.callback.goToPosition(line, column)) {
-                recordNavigationTransition(
+                navigationHistoryManager.recordTransition(
                     source = source,
-                    target = navigationEntryOf(activeEditor.file, line, column)
+                    target = navigationHistoryManager.entryOf(activeEditor.file, line, column)
                 )
                 ActiveEditorCommandResult.SUCCESS
             } else {
@@ -963,75 +895,19 @@ class EditorContainerState(
         return true
     }
 
-    internal fun canNavigateBack(): Boolean = navigationBackStack.isNotEmpty()
+    internal fun canNavigateBack(): Boolean = navigationHistoryManager.canNavigateBack()
 
-    internal fun canNavigateForward(): Boolean = navigationForwardStack.isNotEmpty()
+    internal fun canNavigateForward(): Boolean = navigationHistoryManager.canNavigateForward()
 
-    internal fun navigateBack(): Boolean = navigateHistory(
-        sourceStack = navigationBackStack,
-        destinationStack = navigationForwardStack
-    )
+    internal fun navigateBack(): Boolean = navigationHistoryManager.navigateBack()
 
-    internal fun navigateForward(): Boolean = navigateHistory(
-        sourceStack = navigationForwardStack,
-        destinationStack = navigationBackStack
-    )
-
-    private fun navigateHistory(
-        sourceStack: SnapshotStateList<NavigationHistoryEntry>,
-        destinationStack: SnapshotStateList<NavigationHistoryEntry>
-    ): Boolean {
-        val current = snapshotActiveNavigationLocationOrNull() ?: return false
-        while (sourceStack.isNotEmpty()) {
-            val target = sourceStack.removeAt(sourceStack.lastIndex)
-            if (target.isSameNavigationLocation(current)) continue
-
-            val targetFile = File(target.filePath)
-            if (!targetFile.exists() || targetFile.isDirectory) continue
-
-            if (openFileAndGoToPosition(targetFile, target.line, target.column, recordHistory = false)) {
-                pushNavigationEntry(destinationStack, current)
-                return true
-            }
-        }
-        return false
-    }
+    internal fun navigateForward(): Boolean = navigationHistoryManager.navigateForward()
 
     private fun snapshotActiveNavigationLocationOrNull(): NavigationHistoryEntry? {
         val file = getActiveFileOrNull() ?: return null
         val cursor = getCursorPositionInActiveTab() ?: return null
-        return navigationEntryOf(file, cursor.line, cursor.column)
+        return navigationHistoryManager.entryOf(file, cursor.line, cursor.column)
     }
-
-    private fun navigationEntryOf(file: File, line: Int, column: Int): NavigationHistoryEntry = NavigationHistoryEntry(
-        filePath = file.absolutePath,
-        line = line.coerceAtLeast(0),
-        column = column.coerceAtLeast(0)
-    )
-
-    private fun recordNavigationTransition(
-        source: NavigationHistoryEntry?,
-        target: NavigationHistoryEntry
-    ) {
-        if (source == null || source.isSameNavigationLocation(target)) return
-        pushNavigationEntry(navigationBackStack, source)
-        navigationForwardStack.clear()
-    }
-
-    private fun pushNavigationEntry(
-        stack: SnapshotStateList<NavigationHistoryEntry>,
-        entry: NavigationHistoryEntry
-    ) {
-        if (stack.lastOrNull()?.isSameNavigationLocation(entry) == true) return
-        stack.add(entry)
-        while (stack.size > maxNavigationHistorySize) {
-            stack.removeAt(0)
-        }
-    }
-
-    private fun NavigationHistoryEntry.isSameNavigationLocation(other: NavigationHistoryEntry): Boolean = normalizeOpenTabLookupPath(filePath) == normalizeOpenTabLookupPath(other.filePath) &&
-        line == other.line &&
-        column == other.column
 
     internal fun snapshotActiveEditableEditorContent(): ActiveEditableEditorSnapshotResult = when (val activeEditor = resolveActiveEditableEditorBindingResult()) {
         ActiveEditableEditorBindingResult.NoOpenFile -> ActiveEditableEditorSnapshotResult.NoOpenFile
@@ -1181,10 +1057,7 @@ class EditorContainerState(
         val managerTabIds = managerTabs.map { it.id }.toSet()
         tabs.map { it.id }
             .filter { it !in managerTabIds }
-            .forEach { removedTabId ->
-                releaseTinaLspForTab(removedTabId)
-                clearCodeEditorRuntime(removedTabId)
-            }
+            .let { removedTabIds -> tabLifecycleCoordinator.releaseRemovedTabResources(removedTabIds) }
         tabManager.syncFromManager(managerTabs, activeTabId)
         normalizeEditorPaneState(preferredActiveTabId = activeTabId)
         restoreSplitEditorStateIfNeeded()
@@ -1213,9 +1086,9 @@ class EditorContainerState(
 
         val requested = requestNavigateToPositionInActiveTab(line, column)
         if (requested && recordHistory) {
-            recordNavigationTransition(
+            navigationHistoryManager.recordTransition(
                 source = source,
-                target = navigationEntryOf(openedTab.file, line, column)
+                target = navigationHistoryManager.entryOf(openedTab.file, line, column)
             )
         }
         return requested
@@ -1239,34 +1112,9 @@ class EditorContainerState(
         return true
     }
 
-    internal fun closeTabsForDeletedPath(deletedPath: File): Int {
-        val targetPath = normalizeOpenTabLookupPath(deletedPath.absolutePath)
-            .trimEnd('/')
-        if (targetPath.isBlank()) return 0
+    internal fun closeTabsForDeletedPath(deletedPath: File): Int = fileMutationCoordinator.closeTabsForDeletedPath(deletedPath)
 
-        val targetPrefix = "$targetPath/"
-        val affectedTabs = tabs
-            .filter { tab ->
-                val tabPath = normalizeOpenTabLookupPath(tab.file.absolutePath)
-                tabPath == targetPath || tabPath.startsWith(targetPrefix)
-            }
-        if (affectedTabs.isEmpty()) return 0
-
-        val cleanTabIds = affectedTabs
-            .filterNot { it.isDirty }
-            .mapTo(linkedSetOf()) { it.id }
-        val closedTabs = tabManager.closeTabsByIds(cleanTabIds)
-        affectedTabs
-            .firstOrNull { it.isDirty && tabs.any { tab -> tab.id == it.id } }
-            ?.let { dirtyTab ->
-                val index = tabs.indexOfFirst { it.id == dirtyTab.id }
-                if (index >= 0) requestCloseTab(index)
-            }
-
-        normalizeEditorPaneState()
-        persistSplitEditorState()
-        return closedTabs.size
-    }
+    internal fun syncTabsForMovedPath(oldPath: File, newPath: File): Int = fileMutationCoordinator.syncTabsForMovedPath(oldPath, newPath)
 
     fun openFileWithType(file: File, contentType: ContentType): Int {
         val existingTabIds = tabs.map { it.id }.toSet()
@@ -1279,15 +1127,7 @@ class EditorContainerState(
         val closedTabId = tabs.getOrNull(index)?.id
         tabManager.requestCloseTab(index)
         if (closedTabId != null && tabs.none { it.id == closedTabId }) {
-            releaseTinaLspForTab(closedTabId)
-            clearCodeEditorRuntime(closedTabId)
-            tabPaneMap.remove(closedTabId)
-            removeMirroredTabId(closedTabId)
-            activeTabIdByPane
-                .filterValues { it == closedTabId }
-                .keys
-                .toList()
-                .forEach(activeTabIdByPane::remove)
+            tabLifecycleCoordinator.cleanupClosedTabState(closedTabId)
         }
         normalizeEditorPaneState()
         persistSplitEditorState()
@@ -1321,10 +1161,7 @@ class EditorContainerState(
         if (closed) {
             tabIdsBeforeClose
                 .filter { closedTabId -> tabs.none { it.id == closedTabId } }
-                .forEach { closedTabId ->
-                    releaseTinaLspForTab(closedTabId)
-                    clearCodeEditorRuntime(closedTabId)
-                }
+                .let { closedTabIds -> tabLifecycleCoordinator.releaseRemovedTabResources(closedTabIds) }
             normalizeEditorPaneState()
             persistSplitEditorState()
         }
@@ -1338,10 +1175,7 @@ class EditorContainerState(
         if (hadPendingClose) {
             tabIdsBeforeClose
                 .filter { closedTabId -> tabs.none { it.id == closedTabId } }
-                .forEach { closedTabId ->
-                    releaseTinaLspForTab(closedTabId)
-                    clearCodeEditorRuntime(closedTabId)
-                }
+                .let { closedTabIds -> tabLifecycleCoordinator.releaseRemovedTabResources(closedTabIds) }
             normalizeEditorPaneState()
             persistSplitEditorState()
         }
@@ -1363,20 +1197,9 @@ class EditorContainerState(
         val tabIdsToRelease = tabs.map { it.id }.filter { it != keptTabId }
         val completed = tabManager.closeOtherTabs(exceptIndex)
         if (!completed) return true
-        tabIdsToRelease.forEach { tabId ->
-            releaseTinaLspForTab(tabId)
-            clearCodeEditorRuntime(tabId)
-        }
-        tabPaneMap.keys
-            .filter { it != keptTabId }
-            .toList()
-            .forEach(tabPaneMap::remove)
-        removeMirroredTabsExcept(keptTabId)
+        tabLifecycleCoordinator.releaseRemovedTabResources(tabIdsToRelease)
         val keptPane = resolvePaneForTab(keptTabId)
-        activeTabIdByPane.keys
-            .filter { it != keptPane }
-            .toList()
-            .forEach(activeTabIdByPane::remove)
+        tabLifecycleCoordinator.retainOnlyTabPaneState(keptTabId, keptPane)
         normalizeEditorPaneState(preferredActiveTabId = keptTabId)
         persistSplitEditorState()
         return true
@@ -1392,13 +1215,8 @@ class EditorContainerState(
         val tabIdsToRelease = tabs.map { it.id }
         val completed = tabManager.closeAllTabs()
         if (!completed) return hadTabs
-        tabIdsToRelease.forEach { tabId ->
-            releaseTinaLspForTab(tabId)
-            clearCodeEditorRuntime(tabId)
-        }
-        tabPaneMap.clear()
-        mirroredTabIdsByPane.clear()
-        activeTabIdByPane.clear()
+        tabLifecycleCoordinator.releaseRemovedTabResources(tabIdsToRelease)
+        tabLifecycleCoordinator.clearSplitPaneState()
         isSplitEditorEnabled = false
         focusedPane = EditorPaneId.PRIMARY
         persistSplitEditorState()
@@ -1407,32 +1225,16 @@ class EditorContainerState(
 
     fun updateTabState(tabId: String, isDirty: Boolean, canUndo: Boolean, canRedo: Boolean) {
         tabManager.updateTabState(tabId, isDirty, canUndo, canRedo)
-        trimCodeEditorRuntimeCache()
+        codeRuntimeCache.trim()
     }
 
     internal fun rememberDirtyTabsForSaveAllNotification() {
-        pendingSaveAllNotificationTargets = tabs
-            .asSequence()
-            .filter { it.isDirty }
-            .map { tab ->
-                ActiveSaveTarget(
-                    tabId = tab.id,
-                    file = tab.file
-                )
-            }
-            .toList()
+        saveAllNotificationTracker.rememberDirtyTabs(tabs)
     }
 
     internal fun resolveSuccessfulSaveAllNotificationTargets(
         results: List<SaveResult>
-    ): List<ActiveSaveTarget> {
-        val targets = pendingSaveAllNotificationTargets
-        pendingSaveAllNotificationTargets = emptyList()
-        if (targets.isEmpty() || results.isEmpty()) return emptyList()
-        return targets.zip(results).mapNotNull { (target, result) ->
-            target.takeIf { result is SaveResult.Success }
-        }
-    }
+    ): List<ActiveSaveTarget> = saveAllNotificationTracker.resolveSuccessfulTargets(results)
 
     internal fun notifySuccessfulSaveAllResults(
         results: List<SaveResult>,
@@ -1444,66 +1246,35 @@ class EditorContainerState(
             }
     }
 
-    internal fun getTabToolbarStateFlow(tabId: String): Flow<TabToolbarState>? = editorManager.getSessionState(tabId)
-        ?.map { docState ->
-            TabToolbarState(
-                isDirty = docState.isDirty,
-                canUndo = docState.canUndo,
-                canRedo = docState.canRedo,
-                charsetName = docState.charsetName
-            )
-        }
-        ?.distinctUntilChanged()
+    internal fun getTabToolbarStateFlow(tabId: String): Flow<TabToolbarState>? =
+        documentSessionCoordinator.getTabToolbarStateFlow(tabId)
 
-    internal fun getTabLastEditAtFlow(tabId: String): Flow<Long?>? = editorManager.getSessionState(tabId)
-        ?.map { it.lastEditAt }
-        ?.distinctUntilChanged()
+    internal fun getTabLastEditAtFlow(tabId: String): Flow<Long?>? =
+        documentSessionCoordinator.getTabLastEditAtFlow(tabId)
 
-    internal fun getActiveEditorSessionAlertFlow(): Flow<ActiveEditorSessionAlertState>? {
-        val activeTab = getActiveTab() ?: return null
-        return editorManager.getSessionState(activeTab.id)
-            ?.map { docState ->
-                ActiveEditorSessionAlertState(
-                    tabId = activeTab.id,
-                    file = activeTab.file,
-                    hasExternalModification = docState.hasExternalModification,
-                    lastError = docState.lastError
-                        ?.trim()
-                        ?.takeIf { it.isNotEmpty() }
-                )
-            }
-            ?.distinctUntilChanged()
-    }
-
-    private fun getSession(tabId: String): DocumentSession? = editorManager.getSession(tabId)
+    internal fun getActiveEditorSessionAlertFlow(): Flow<ActiveEditorSessionAlertState>? =
+        documentSessionCoordinator.getActiveEditorSessionAlertFlow()
 
     internal fun attachTabEditorBinding(tabId: String, binding: DocumentSession.EditorBinding) {
-        getSession(tabId)?.attachEditor(binding)
+        documentSessionCoordinator.attachEditorBinding(tabId, binding)
     }
 
     internal fun detachTabEditorBinding(tabId: String, binding: DocumentSession.EditorBinding) {
-        getSession(tabId)?.detachEditor(binding)
+        documentSessionCoordinator.detachEditorBinding(tabId, binding)
     }
 
     internal fun getTabDetachedEditorSnapshot(tabId: String): DetachedEditorSnapshot? =
-        getSession(tabId)?.detachedEditorSnapshot()
+        documentSessionCoordinator.getDetachedEditorSnapshot(tabId)
 
     internal fun markTabDetachedEditorSnapshotRestored(
         tabId: String,
         snapshot: DetachedEditorSnapshot
     ) {
-        getSession(tabId)?.markDetachedEditorSnapshotRestored(snapshot)
+        documentSessionCoordinator.markDetachedEditorSnapshotRestored(tabId, snapshot)
     }
 
     internal fun getTabEditorViewState(tabId: String): EditorViewState? =
-        getSession(tabId)?.state?.value?.let { state ->
-            EditorViewState(
-                cursorLine = state.cursorLine,
-                cursorColumn = state.cursorColumn,
-                scrollX = state.scrollX,
-                scrollY = state.scrollY
-            )
-        }
+        documentSessionCoordinator.getEditorViewState(tabId)
 
     internal fun notifyTabEditorContentChanged(
         tabId: String,
@@ -1511,19 +1282,20 @@ class EditorContainerState(
         canRedo: Boolean,
         changeCausedByUndoManager: Boolean
     ) {
-        getSession(tabId)?.notifyEditorContentChanged(
+        documentSessionCoordinator.notifyEditorContentChanged(
+            tabId = tabId,
             canUndo = canUndo,
             canRedo = canRedo,
-            changeCausedByUndoManager = changeCausedByUndoManager
+            changeCausedByUndoManager = changeCausedByUndoManager,
         )
     }
 
     internal fun markTabEditorSnapshotClean(tabId: String, charset: Charset) {
-        getSession(tabId)?.markEditorSnapshotClean(charset)
+        documentSessionCoordinator.markEditorSnapshotClean(tabId, charset)
     }
 
     internal fun updateTabCursorPosition(tabId: String, line: Int, column: Int) {
-        getSession(tabId)?.updateCursorPosition(line, column)
+        documentSessionCoordinator.updateCursorPosition(tabId, line, column)
     }
 
     internal fun notifyTabSelectionChanged(tabId: String, selection: SelectionSnapshot?) {
@@ -1536,7 +1308,7 @@ class EditorContainerState(
     }
 
     internal fun updateTabScrollPosition(tabId: String, scrollX: Int, scrollY: Int) {
-        getSession(tabId)?.updateScrollPosition(scrollX, scrollY)
+        documentSessionCoordinator.updateScrollPosition(tabId, scrollX, scrollY)
     }
 
     fun createSplitEditorStateSnapshot(): SplitEditorStateSnapshot {
@@ -1545,10 +1317,10 @@ class EditorContainerState(
             val pane = if (isSplitEditorEnabled) resolvePaneForTab(tab.id) else EditorPaneId.PRIMARY
             normalizeOpenTabLookupPath(tab.file.absolutePath) to pane
         }
-        val mirroredPaths = mirroredTabIdsByPane.mapValues { (_, tabIds) ->
+        val mirroredPaths = splitPaneState.mirroredTabIdsByPane().mapValues { (_, tabIds) ->
             tabIds.mapNotNullTo(linkedSetOf()) { tabId -> pathByTabId[tabId] }
         }.filterValues { it.isNotEmpty() }
-        val activePaths = activeTabIdByPane.mapNotNull { (pane, tabId) ->
+        val activePaths = splitPaneState.activeTabIdsByPane().mapNotNull { (pane, tabId) ->
             pathByTabId[tabId]?.let { path -> pane to path }
         }.toMap()
 
@@ -1570,20 +1342,19 @@ class EditorContainerState(
             normalizeOpenTabLookupPath(path)
         }
 
-        tabPaneMap.clear()
-        mirroredTabIdsByPane.clear()
-        activeTabIdByPane.clear()
+        splitPaneState.clear()
         splitEditorLayout = normalized.layout
         splitEditorPrimaryRatio = normalized.primaryRatio
         isSplitEditorEnabled = normalized.isEnabled && tabs.isNotEmpty()
 
         tabs.forEach { tab ->
             val path = normalizeOpenTabLookupPath(tab.file.absolutePath)
-            tabPaneMap[tab.id] = if (isSplitEditorEnabled) {
+            val pane = if (isSplitEditorEnabled) {
                 paneAssignmentsByPath[path] ?: EditorPaneId.PRIMARY
             } else {
                 EditorPaneId.PRIMARY
             }
+            splitPaneState.setPane(tab.id, pane)
         }
 
         if (isSplitEditorEnabled) {
@@ -1592,13 +1363,19 @@ class EditorContainerState(
                     tabIdByPath[normalizeOpenTabLookupPath(path)]
                 }
                 if (mirroredTabIds.isNotEmpty()) {
-                    mirroredTabIdsByPane[pane] = mirroredTabIds
+                    mirroredTabIds.forEach { tabId ->
+                        splitPaneState.addMirroredTabToPane(
+                            pane = pane,
+                            tabId = tabId,
+                            ownerPane = resolvePaneForTab(tabId),
+                        )
+                    }
                 }
             }
 
             normalized.activeFilePathByPane.forEach { (pane, path) ->
                 tabIdByPath[normalizeOpenTabLookupPath(path)]?.let { tabId ->
-                    activeTabIdByPane[pane] = tabId
+                    splitPaneState.setActiveTabId(pane, tabId)
                 }
             }
         }
@@ -1608,45 +1385,19 @@ class EditorContainerState(
         } else {
             EditorPaneId.PRIMARY
         }
-        normalizeEditorPaneState(preferredActiveTabId = activeTabIdByPane[focusedPane])
+        normalizeEditorPaneState(preferredActiveTabId = splitPaneState.activeTabId(focusedPane))
     }
 
     private fun persistSplitEditorState() {
-        val projectPath = resolveSplitEditorSessionProjectPath() ?: return
-        if (tabs.isEmpty()) {
-            splitEditorSessionStorage.clear(projectPath)
-            return
-        }
-        splitEditorSessionStorage.save(projectPath, createSplitEditorStateSnapshot())
+        splitSessionCoordinator.persist()
     }
 
     private fun restoreSplitEditorStateIfNeeded() {
-        val projectPath = resolveSplitEditorSessionProjectPath() ?: return
-        if (lastSplitEditorProjectPath != projectPath) {
-            lastSplitEditorProjectPath = projectPath
-            restoredSplitEditorProjectPath = null
-            pendingSplitEditorSnapshot = null
-            clearSplitEditorStateInMemory()
-        }
-
-        if (restoredSplitEditorProjectPath == projectPath) return
-        val snapshot = pendingSplitEditorSnapshot ?: splitEditorSessionStorage.load(projectPath)
-        pendingSplitEditorSnapshot = snapshot
-        if (tabs.isEmpty()) return
-
-        if (snapshot != null) {
-            restoreSplitEditorStateSnapshot(snapshot)
-        } else {
-            normalizeEditorPaneState()
-        }
-        restoredSplitEditorProjectPath = projectPath
-        pendingSplitEditorSnapshot = null
+        splitSessionCoordinator.restoreIfNeeded()
     }
 
     private fun clearSplitEditorStateInMemory() {
-        tabPaneMap.clear()
-        mirroredTabIdsByPane.clear()
-        activeTabIdByPane.clear()
+        splitPaneState.clear()
         isSplitEditorEnabled = false
         focusedPane = EditorPaneId.PRIMARY
         splitEditorPrimaryRatio = DEFAULT_SPLIT_EDITOR_PRIMARY_RATIO
@@ -1656,7 +1407,7 @@ class EditorContainerState(
     fun getTabsForPane(pane: EditorPaneId): List<EditorTabState> = getTabsForPaneInternal(pane)
 
     fun getActiveIndexForPane(pane: EditorPaneId): Int {
-        val activeTabId = activeTabIdByPane[pane]
+        val activeTabId = splitPaneState.activeTabId(pane)
         val activeIndex = activeTabId?.let { id -> tabs.indexOfFirst { it.id == id } } ?: -1
         if (activeIndex >= 0 && isTabVisibleInPane(activeTabId!!, pane)) return activeIndex
         return tabs.indexOfFirst { isTabVisibleInPane(it.id, pane) }
@@ -1681,9 +1432,9 @@ class EditorContainerState(
         }
         focusedPane = targetPane
         if (!isTabMirroredToPane(tab.id, targetPane)) {
-            tabPaneMap[tab.id] = targetPane
+            splitPaneState.setPane(tab.id, targetPane)
         }
-        activeTabIdByPane[targetPane] = tab.id
+        splitPaneState.setActiveTabId(targetPane, tab.id)
         tabManager.selectTab(index)
         normalizeEditorPaneState(preferredActiveTabId = tab.id)
         persistSplitEditorState()
@@ -1712,12 +1463,10 @@ class EditorContainerState(
             isSplitEditorEnabled = true
             if (tabs.isNotEmpty()) {
                 val activeTab = getActiveTab()
-                tabs.forEach { tab ->
-                    tabPaneMap.putIfAbsent(tab.id, EditorPaneId.PRIMARY)
-                }
+                splitPaneState.ensurePaneForTabs(tabs.map { it.id }, EditorPaneId.PRIMARY)
                 activeTab?.let {
                     focusedPane = EditorPaneId.PRIMARY
-                    activeTabIdByPane[EditorPaneId.PRIMARY] = it.id
+                    splitPaneState.setActiveTabId(EditorPaneId.PRIMARY, it.id)
                 }
             }
             normalizeEditorPaneState()
@@ -1727,10 +1476,10 @@ class EditorContainerState(
 
     fun closeSecondaryPane() {
         val activeTabId = getActiveTabId()
-        tabPaneMap.keys.toList().forEach { tabPaneMap[it] = EditorPaneId.PRIMARY }
-        mirroredTabIdsByPane.clear()
-        activeTabIdByPane.clear()
-        activeTabId?.let { activeTabIdByPane[EditorPaneId.PRIMARY] = it }
+        splitPaneState.moveAllTabsToPane(EditorPaneId.PRIMARY)
+        splitPaneState.clearMirrors()
+        splitPaneState.clearActiveTabs()
+        activeTabId?.let { splitPaneState.setActiveTabId(EditorPaneId.PRIMARY, it) }
         isSplitEditorEnabled = false
         focusedPane = EditorPaneId.PRIMARY
         normalizeEditorPaneState(preferredActiveTabId = activeTabId)
@@ -1748,9 +1497,9 @@ class EditorContainerState(
             return false
         }
         isSplitEditorEnabled = true
-        removeMirroredTabId(activeTab.id)
-        tabPaneMap[activeTab.id] = EditorPaneId.SECONDARY
-        activeTabIdByPane[EditorPaneId.SECONDARY] = activeTab.id
+        splitPaneState.removeMirroredTabId(activeTab.id)
+        splitPaneState.setPane(activeTab.id, EditorPaneId.SECONDARY)
+        splitPaneState.setActiveTabId(EditorPaneId.SECONDARY, activeTab.id)
         focusedPane = EditorPaneId.SECONDARY
         normalizeEditorPaneState(preferredActiveTabId = activeTab.id)
         tabManager.findTabIndex(activeTab.id)
@@ -1772,10 +1521,10 @@ class EditorContainerState(
         }
         isSplitEditorEnabled = true
         val ownerPane = resolvePaneForTab(activeTab.id)
-        tabPaneMap.putIfAbsent(activeTab.id, ownerPane)
-        addMirroredTabToPane(EditorPaneId.SECONDARY, activeTab.id)
-        activeTabIdByPane[ownerPane] = activeTab.id
-        activeTabIdByPane[EditorPaneId.SECONDARY] = activeTab.id
+        splitPaneState.setPaneIfAbsent(activeTab.id, ownerPane)
+        splitPaneState.addMirroredTabToPane(EditorPaneId.SECONDARY, activeTab.id, ownerPane)
+        splitPaneState.setActiveTabId(ownerPane, activeTab.id)
+        splitPaneState.setActiveTabId(EditorPaneId.SECONDARY, activeTab.id)
         focusedPane = EditorPaneId.SECONDARY
         normalizeEditorPaneState(preferredActiveTabId = activeTab.id)
         tabManager.findTabIndex(activeTab.id)
@@ -1788,8 +1537,8 @@ class EditorContainerState(
     private fun assignOpenedTabToFocusedPane(openedIndex: Int) {
         val openedTab = tabs.getOrNull(openedIndex) ?: return
         val targetPane = if (isSplitEditorEnabled) focusedPane else EditorPaneId.PRIMARY
-        tabPaneMap[openedTab.id] = targetPane
-        activeTabIdByPane[targetPane] = openedTab.id
+        splitPaneState.setPane(openedTab.id, targetPane)
+        splitPaneState.setActiveTabId(targetPane, openedTab.id)
         focusedPane = targetPane
         normalizeEditorPaneState(preferredActiveTabId = openedTab.id)
         persistSplitEditorState()
@@ -1808,39 +1557,29 @@ class EditorContainerState(
             resolvePaneForTab(openedTab.id)
         }
         focusedPane = targetPane
-        activeTabIdByPane[targetPane] = openedTab.id
+        splitPaneState.setActiveTabId(targetPane, openedTab.id)
         normalizeEditorPaneState(preferredActiveTabId = openedTab.id)
         persistSplitEditorState()
     }
 
     private fun normalizeEditorPaneState(preferredActiveTabId: String? = getActiveTabId()) {
         val liveTabIds = tabs.map { it.id }.toSet()
-        tabPaneMap.keys
-            .filter { it !in liveTabIds }
-            .toList()
-            .forEach(tabPaneMap::remove)
-        pruneMirroredTabs(liveTabIds)
-        activeTabIdByPane
-            .filterValues { it !in liveTabIds }
-            .keys
-            .toList()
-            .forEach(activeTabIdByPane::remove)
+        splitPaneState.removeMissingTabs(liveTabIds)
+        splitPaneState.pruneMirroredTabs(liveTabIds, ::resolvePaneForTab)
 
-        tabs.forEach { tab ->
-            tabPaneMap.putIfAbsent(tab.id, EditorPaneId.PRIMARY)
-        }
+        splitPaneState.ensurePaneForTabs(tabs.map { it.id }, EditorPaneId.PRIMARY)
 
         if (!isSplitEditorEnabled) {
-            tabPaneMap.keys.toList().forEach { tabPaneMap[it] = EditorPaneId.PRIMARY }
-            mirroredTabIdsByPane.clear()
+            splitPaneState.moveAllTabsToPane(EditorPaneId.PRIMARY)
+            splitPaneState.clearMirrors()
             focusedPane = EditorPaneId.PRIMARY
         }
 
         EditorPaneId.values().forEach { pane ->
-            val activeTabId = activeTabIdByPane[pane]
+            val activeTabId = splitPaneState.activeTabId(pane)
             if (activeTabId == null || activeTabId !in liveTabIds || !isTabVisibleInPane(activeTabId, pane)) {
-                getTabsForPaneInternal(pane).firstOrNull()?.let { activeTabIdByPane[pane] = it.id }
-                    ?: activeTabIdByPane.remove(pane)
+                getTabsForPaneInternal(pane).firstOrNull()?.let { splitPaneState.setActiveTabId(pane, it.id) }
+                    ?: splitPaneState.removeActiveTab(pane)
             }
         }
 
@@ -1852,7 +1591,7 @@ class EditorContainerState(
 
         val targetTabId = preferredActiveTabId
             ?.takeIf { it in liveTabIds && isTabVisibleInPane(it, focusedPane) }
-            ?: activeTabIdByPane[focusedPane]
+            ?: splitPaneState.activeTabId(focusedPane)
             ?: tabs.firstOrNull()?.id
             ?: return
         val targetIndex = tabs.indexOfFirst { it.id == targetTabId }
@@ -1865,55 +1604,11 @@ class EditorContainerState(
 
     private fun isTabVisibleInPane(tabId: String, pane: EditorPaneId): Boolean = resolvePaneForTab(tabId) == pane || isTabMirroredToPane(tabId, pane)
 
-    private fun isTabMirroredToPane(tabId: String, pane: EditorPaneId): Boolean = isSplitEditorEnabled && mirroredTabIdsByPane[pane]?.contains(tabId) == true
+    private fun isTabMirroredToPane(tabId: String, pane: EditorPaneId): Boolean =
+        splitPaneState.isMirroredToPane(tabId, pane, isSplitEditorEnabled)
 
-    private fun addMirroredTabToPane(pane: EditorPaneId, tabId: String) {
-        if (resolvePaneForTab(tabId) == pane) return
-        mirroredTabIdsByPane[pane] = mirroredTabIdsByPane[pane].orEmpty() + tabId
-    }
-
-    private fun removeMirroredTabId(tabId: String) {
-        mirroredTabIdsByPane.keys.toList().forEach { pane ->
-            val updated = mirroredTabIdsByPane[pane].orEmpty() - tabId
-            if (updated.isEmpty()) {
-                mirroredTabIdsByPane.remove(pane)
-            } else {
-                mirroredTabIdsByPane[pane] = updated
-            }
-        }
-    }
-
-    private fun removeMirroredTabsExcept(keptTabId: String) {
-        mirroredTabIdsByPane.keys.toList().forEach { pane ->
-            val updated = mirroredTabIdsByPane[pane].orEmpty().filterTo(linkedSetOf()) { it == keptTabId }
-            if (updated.isEmpty()) {
-                mirroredTabIdsByPane.remove(pane)
-            } else {
-                mirroredTabIdsByPane[pane] = updated
-            }
-        }
-    }
-
-    private fun pruneMirroredTabs(liveTabIds: Set<String>) {
-        mirroredTabIdsByPane.keys.toList().forEach { pane ->
-            val updated = mirroredTabIdsByPane[pane]
-                .orEmpty()
-                .filterTo(linkedSetOf()) { tabId ->
-                    tabId in liveTabIds && resolvePaneForTab(tabId) != pane
-                }
-            if (updated.isEmpty()) {
-                mirroredTabIdsByPane.remove(pane)
-            } else {
-                mirroredTabIdsByPane[pane] = updated
-            }
-        }
-    }
-
-    private fun resolvePaneForTab(tabId: String): EditorPaneId = if (isSplitEditorEnabled) {
-        tabPaneMap[tabId] ?: EditorPaneId.PRIMARY
-    } else {
-        EditorPaneId.PRIMARY
-    }
+    private fun resolvePaneForTab(tabId: String): EditorPaneId =
+        splitPaneState.paneFor(tabId, isSplitEditorEnabled)
 
     private fun getActiveTab(): EditorTabState? = tabManager.getActiveTab()
 
@@ -1940,11 +1635,6 @@ class EditorContainerState(
                 selectTab(previousIndex)
             }
         }
-    }
-
-    private fun normalizeOpenTabLookupPath(path: String): String {
-        val normalized = path.replace('\\', '/')
-        return if (File.separatorChar == '\\') normalized.lowercase() else normalized
     }
 
     internal fun getActiveFileOrNull(): File? = getActiveTab()?.file
@@ -2033,7 +1723,7 @@ class EditorContainerState(
 
     fun releaseTinaLspForTab(tabId: String) {
         lspEditorManager.releaseLspEditor(tabId)
-        lspStatusesByTabId.remove(tabId)
+        lspUiState.removeStatus(tabId)
     }
 
     fun notifyTinaTextChanged(tabId: String, change: TextChange) {
@@ -2257,11 +1947,10 @@ class EditorContainerState(
         lspEditorManager.release()
         searchStateManager.release()
         codeEditorCallbacks.clear()
-        codeEditorRuntimesByTabId.values.forEach { it.disposeCodeEditorRuntime() }
-        codeEditorRuntimesByTabId.clear()
-        navigationBackStack.clear()
-        navigationForwardStack.clear()
-        diagnosticsByFilePath.clear()
+        codeRuntimeCache.release()
+        navigationHistoryManager.clear()
+        lspUiState.clear()
+        diagnosticsState.clear()
     }
 
     private fun fileToNormalizedPath(file: File): String = file.absolutePath

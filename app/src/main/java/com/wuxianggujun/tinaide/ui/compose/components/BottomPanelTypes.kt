@@ -17,6 +17,13 @@ enum class BottomPanelTab(@param:StringRes @get:StringRes val titleRes: Int) {
     GIT(Strings.bottom_panel_git)
 }
 
+data class BottomPanelTabMenuAction(
+    @param:StringRes @get:StringRes val titleRes: Int,
+    val enabled: Boolean = true,
+    val destructive: Boolean = false,
+    val onClick: () -> Unit
+)
+
 private val defaultNormalModeBottomTabs = listOf(
     BottomPanelTab.BUILD_LOG,
     BottomPanelTab.DIAGNOSTICS,
@@ -45,3 +52,9 @@ internal fun resolveSelectedBottomPanelTab(
     selectedBottomTab: BottomPanelTab,
     normalModeTabs: List<BottomPanelTab>
 ): BottomPanelTab = selectedBottomTab.takeIf { it in normalModeTabs } ?: BottomPanelTab.BUILD_LOG
+
+internal fun formatBottomPanelTabBadgeCount(count: Int): String? = when {
+    count <= 0 -> null
+    count > 999 -> "999+"
+    else -> count.toString()
+}

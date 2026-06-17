@@ -15,6 +15,7 @@ import com.wuxianggujun.tinaide.core.compile.ProcessManager
 import com.wuxianggujun.tinaide.core.linux.LinuxEnvironmentProvider
 import com.wuxianggujun.tinaide.editor.IEditorManager
 import com.wuxianggujun.tinaide.editor.symbol.ProjectSymbolIndexService
+import com.wuxianggujun.tinaide.file.IFileOperations
 import com.wuxianggujun.tinaide.file.IProjectContext
 import com.wuxianggujun.tinaide.output.IOutputManager
 import com.wuxianggujun.tinaide.ui.BottomPanelController
@@ -89,11 +90,13 @@ internal fun MainActivityAiToolsEffect(
 ) {
     val aiToolsManager = remember(currentAiChatViewModel) {
         val linuxEnvironmentProvider = GlobalContext.get().get<LinuxEnvironmentProvider>()
+        val fileOperations = GlobalContext.get().get<IFileOperations>()
         AiToolsIntegrationManager(
             context = context,
             viewModel = currentAiChatViewModel,
             scope = lifecycleScope,
             linuxEnvironmentProvider = linuxEnvironmentProvider,
+            fileOperations = fileOperations,
         )
     }
 
