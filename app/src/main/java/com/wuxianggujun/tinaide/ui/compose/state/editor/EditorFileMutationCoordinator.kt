@@ -21,8 +21,8 @@ internal class EditorFileMutationCoordinator(
     private val navigationBackStack: SnapshotStateList<EditorContainerState.NavigationHistoryEntry>,
     private val navigationForwardStack: SnapshotStateList<EditorContainerState.NavigationHistoryEntry>,
     private val splitPaneState: EditorSplitPaneState,
+    private val codeRuntimeCache: EditorCodeRuntimeCache,
     private val codeEditorCallbacks: MutableMap<String, EditorContainerState.CodeEditorCallback>,
-    private val codeEditorRuntimesByTabId: MutableMap<String, EditorContainerState.CodeEditorRuntime>,
     private val lspStatusesByTabId: MutableMap<String, EditorStatus>,
     private val diagnosticsByFilePath: MutableMap<String, List<Diagnostic>>,
     private val isCodeEditableType: (ContentType) -> Boolean,
@@ -97,10 +97,10 @@ internal class EditorFileMutationCoordinator(
 
         idMap.forEach { (oldId, newId) ->
             codeEditorCallbacks.remove(oldId)?.let { callback -> codeEditorCallbacks[newId] = callback }
-            codeEditorRuntimesByTabId.remove(oldId)?.let { runtime -> codeEditorRuntimesByTabId[newId] = runtime }
             lspStatusesByTabId.remove(oldId)?.let { status -> lspStatusesByTabId[newId] = status }
         }
         splitPaneState.remapTabIds(idMap)
+        codeRuntimeCache.remapTabIds(idMap)
     }
 
     private fun retargetNavigationHistory(oldPath: File, newPath: File) {

@@ -339,6 +339,21 @@ rg "deleteRecursively|\\.delete\\(|renameTo\\(" app feature core
 
 结果：`BUILD SUCCESSFUL`。
 
+### 2026-06-17 补充：P1-2 第六步
+
+- 已推进 P1-2 的第六步：收口 CodeEditor runtime 缓存职责。
+  - 新增 `EditorCodeRuntimeCache`，集中维护 CodeEditor runtime 的 LRU 缓存、Tree-sitter highlighter/folding provider 创建、runtime loaded 标记、tab id remap 和释放。
+  - `EditorContainerState` 保留对外 runtime 访问方法，内部委托缓存类，避免 UI 调用方变更。
+  - `EditorFileMutationCoordinator` 不再直接持有 runtime map，文件移动/重命名后的 runtime tab id remap 改为委托给 `EditorCodeRuntimeCache`。
+  - 本步不改变 CodeEditor runtime 缓存上限、脏 tab 保护、split active tab 保护、已绑定 editor callback 保护和 Tree-sitter provider 创建策略。
+- 本轮补充验证：
+
+```powershell
+.\gradlew :app:testArm64DebugUnitTest --tests "com.wuxianggujun.tinaide.ui.compose.state.editor.EditorContainerStateTest" --console=plain
+```
+
+结果：`BUILD SUCCESSFUL`。
+
 ### 2026-06-17 补充：P1-2 第五步
 
 - 已推进 P1-2 的第五步：收口 tab 生命周期清理职责。

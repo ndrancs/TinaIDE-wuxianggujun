@@ -27,7 +27,6 @@ import com.wuxianggujun.tinaide.core.editorlsp.CompletionSource
 import com.wuxianggujun.tinaide.core.editorlsp.SemanticToken
 import com.wuxianggujun.tinaide.core.editorlsp.SignatureHelpResult
 import com.wuxianggujun.tinaide.core.editorview.EditorColorScheme
-import com.wuxianggujun.tinaide.core.editorview.EditorConfig
 import com.wuxianggujun.tinaide.core.editorview.EditorRenderPerformanceSnapshot
 import com.wuxianggujun.tinaide.core.editorview.EditorState
 import com.wuxianggujun.tinaide.core.i18n.Strings
@@ -345,9 +344,17 @@ class EditorContainerState(
     private val tabManager = EditorTabManager(context, editorManager)
     private val mainHandler = Handler(Looper.getMainLooper())
     private val codeEditorCallbacks = mutableMapOf<String, CodeEditorCallback>()
-    private val codeEditorRuntimesByTabId =
-        java.util.LinkedHashMap<String, CodeEditorRuntime>(16, 0.75f, true)
     private val splitPaneState = EditorSplitPaneState()
+    private val codeRuntimeCache = EditorCodeRuntimeCache(
+        context = context,
+        cacheLimit = CODE_EDITOR_RUNTIME_CACHE_LIMIT,
+        projectRootPathProvider = ::getEditorProjectRootPathOrNull,
+        activeTabIdProvider = ::getActiveTabId,
+        isSplitEditorEnabledProvider = { isSplitEditorEnabled },
+        splitPaneState = splitPaneState,
+        attachedCodeEditorTabIdsProvider = { codeEditorCallbacks.keys.toSet() },
+        openTabsProvider = { tabs },
+    )
     private var pendingSaveAllNotificationTargets: List<ActiveSaveTarget> = emptyList()
     private var pluginLspDependencyAlertSequence: Long = 0L
 
@@ -360,7 +367,7 @@ class EditorContainerState(
         splitPaneState = splitPaneState,
         isCodeEditableType = ::isCodeEditableType,
         releaseLspForTab = ::releaseTinaLspForTab,
-        clearCodeEditorRuntime = ::clearCodeEditorRuntime,
+        clearCodeEditorRuntime = codeRuntimeCache::remove,
         removeCodeEditorCallback = codeEditorCallbacks::remove,
         cleanupSearchState = searchStateManager::cleanupForTab,
         dismissPeekDefinitionPanel = ::dismissPeekDefinitionPanel,
@@ -393,8 +400,8 @@ class EditorContainerState(
         navigationBackStack = navigationHistoryManager.backStack,
         navigationForwardStack = navigationHistoryManager.forwardStack,
         splitPaneState = splitPaneState,
+        codeRuntimeCache = codeRuntimeCache,
         codeEditorCallbacks = codeEditorCallbacks,
-        codeEditorRuntimesByTabId = codeEditorRuntimesByTabId,
         lspStatusesByTabId = lspStatusesByTabId,
         diagnosticsByFilePath = diagnosticsByFilePath,
         isCodeEditableType = ::isCodeEditableType,
@@ -779,92 +786,23 @@ class EditorContainerState(
     internal fun unbindCodeEditorCallbacks(tabId: String) {
         unbindCodeViewerSearchCallback(tabId)
         unregisterCodeEditorCallback(tabId)
-        trimCodeEditorRuntimeCache()
+        codeRuntimeCache.trim()
     }
 
-    internal fun getOrCreateCodeEditorRuntime(tab: EditorTabState): CodeEditorRuntime {
-        val runtime = codeEditorRuntimesByTabId.getOrPut(tab.id) {
-            val buffer = RopeTextBuffer()
-            CodeEditorRuntime(
-                buffer = buffer,
-                editorState = EditorState(
-                    textBuffer = buffer,
-                    file = tab.file,
-                    projectRootPath = getEditorProjectRootPathOrNull(),
-                    config = EditorConfig.fromPrefs()
-                )
-            )
-        }
-        trimCodeEditorRuntimeCache(protectedTabIds = setOf(tab.id))
-        return runtime
-    }
+    internal fun getOrCreateCodeEditorRuntime(tab: EditorTabState): CodeEditorRuntime =
+        codeRuntimeCache.getOrCreate(tab)
 
-    internal fun getOrCreateSyntaxHighlighter(tab: EditorTabState): TreeSitterHighlighter? {
-        val runtime = getOrCreateCodeEditorRuntime(tab)
-        if (!runtime.syntaxHighlighterCreationAttempted) {
-            runtime.syntaxHighlighterCreationAttempted = true
-            runtime.syntaxHighlighter = TreeSitterHighlighter.create(context.applicationContext, tab.file)
-        }
-        return runtime.syntaxHighlighter
-    }
+    internal fun getOrCreateSyntaxHighlighter(tab: EditorTabState): TreeSitterHighlighter? =
+        codeRuntimeCache.getOrCreateSyntaxHighlighter(tab)
 
-    internal fun getOrCreateFoldingProvider(tab: EditorTabState): TreeSitterFoldingProvider? {
-        val runtime = getOrCreateCodeEditorRuntime(tab)
-        if (!runtime.foldingProviderCreationAttempted) {
-            runtime.foldingProviderCreationAttempted = true
-            runtime.foldingProvider = TreeSitterFoldingProvider.create(context.applicationContext, tab.file)
-        }
-        return runtime.foldingProvider
-    }
+    internal fun getOrCreateFoldingProvider(tab: EditorTabState): TreeSitterFoldingProvider? =
+        codeRuntimeCache.getOrCreateFoldingProvider(tab)
 
     internal fun isCodeEditorRuntimeLoaded(tabId: String): Boolean =
-        codeEditorRuntimesByTabId[tabId]?.isContentLoaded == true
+        codeRuntimeCache.isLoaded(tabId)
 
     internal fun markCodeEditorRuntimeLoaded(tabId: String) {
-        codeEditorRuntimesByTabId[tabId]?.isContentLoaded = true
-        trimCodeEditorRuntimeCache(protectedTabIds = setOf(tabId))
-    }
-
-    private fun clearCodeEditorRuntime(tabId: String) {
-        codeEditorRuntimesByTabId.remove(tabId)?.disposeCodeEditorRuntime()
-    }
-
-    private fun trimCodeEditorRuntimeCache(protectedTabIds: Set<String> = emptySet()) {
-        if (codeEditorRuntimesByTabId.size <= CODE_EDITOR_RUNTIME_CACHE_LIMIT) return
-
-        val effectiveProtectedTabIds = buildSet {
-            addAll(protectedTabIds)
-            getActiveTabId()?.let(::add)
-            if (isSplitEditorEnabled) {
-                splitPaneState.activeTabIds.forEach(::add)
-            }
-            codeEditorCallbacks.keys.forEach(::add)
-        }
-
-        while (codeEditorRuntimesByTabId.size > CODE_EDITOR_RUNTIME_CACHE_LIMIT) {
-            val evictableTabId = codeEditorRuntimesByTabId.keys.firstOrNull { tabId ->
-                tabId !in effectiveProtectedTabIds && tabs.firstOrNull { it.id == tabId }?.isDirty != true
-            } ?: break
-
-            codeEditorRuntimesByTabId.remove(evictableTabId)?.disposeCodeEditorRuntime()
-            Timber.tag("EditorContainerState").d(
-                "trimCodeEditorRuntimeCache: evicted tab=%s, remaining=%d",
-                evictableTabId,
-                codeEditorRuntimesByTabId.size
-            )
-        }
-    }
-
-    private fun CodeEditorRuntime.disposeCodeEditorRuntime() {
-        syntaxHighlighter?.setOnStateUpdated(null)
-        if (syntaxHighlighter != null && editorState.highlighter === syntaxHighlighter) {
-            editorState.highlighter = null
-        }
-        syntaxHighlighter?.dispose()
-        foldingProvider?.dispose()
-        syntaxHighlighter = null
-        foldingProvider = null
-        isTreeSitterSnapshotReady = false
+        codeRuntimeCache.markLoaded(tabId)
     }
 
     internal fun registerCodeEditorCallback(tabId: String, callback: CodeEditorCallback) {
@@ -1316,7 +1254,7 @@ class EditorContainerState(
 
     fun updateTabState(tabId: String, isDirty: Boolean, canUndo: Boolean, canRedo: Boolean) {
         tabManager.updateTabState(tabId, isDirty, canUndo, canRedo)
-        trimCodeEditorRuntimeCache()
+        codeRuntimeCache.trim()
     }
 
     internal fun rememberDirtyTabsForSaveAllNotification() {
@@ -2084,8 +2022,7 @@ class EditorContainerState(
         lspEditorManager.release()
         searchStateManager.release()
         codeEditorCallbacks.clear()
-        codeEditorRuntimesByTabId.values.forEach { it.disposeCodeEditorRuntime() }
-        codeEditorRuntimesByTabId.clear()
+        codeRuntimeCache.release()
         navigationHistoryManager.clear()
         diagnosticsByFilePath.clear()
     }
