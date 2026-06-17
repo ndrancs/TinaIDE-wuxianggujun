@@ -1,7 +1,6 @@
 package com.wuxianggujun.tinaide.ui.compose.state.editor
 
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import com.wuxianggujun.tinaide.core.lsp.Diagnostic
 import com.wuxianggujun.tinaide.editor.IEditorManager
 import com.wuxianggujun.tinaide.ui.compose.components.EditorStatus
 import com.wuxianggujun.tinaide.ui.compose.components.editor.ContentType
@@ -24,7 +23,7 @@ internal class EditorFileMutationCoordinator(
     private val codeRuntimeCache: EditorCodeRuntimeCache,
     private val codeEditorCallbacks: MutableMap<String, EditorContainerState.CodeEditorCallback>,
     private val lspStatusesByTabId: MutableMap<String, EditorStatus>,
-    private val diagnosticsByFilePath: MutableMap<String, List<Diagnostic>>,
+    private val diagnosticsState: EditorDiagnosticsState,
     private val isCodeEditableType: (ContentType) -> Boolean,
     private val requestCloseTabAt: (Int) -> Unit,
     private val releaseTinaLspForTab: (String) -> Unit,
@@ -78,7 +77,7 @@ internal class EditorFileMutationCoordinator(
         remapRetargetedTabIds(retargetedTabs)
         retargetNavigationHistory(oldPath, newPath)
         retargetedTabs.forEach { tab ->
-            diagnosticsByFilePath.remove(normalizeOpenTabLookupPath(tab.oldFile.absolutePath))
+            diagnosticsState.removeForFile(tab.oldFile)
             if (isCodeEditableType(tab.contentType)) {
                 releaseTinaLspForTab(tab.newId)
             }

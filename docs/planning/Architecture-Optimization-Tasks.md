@@ -339,6 +339,21 @@ rg "deleteRecursively|\\.delete\\(|renameTo\\(" app feature core
 
 结果：`BUILD SUCCESSFUL`。
 
+### 2026-06-17 补充：P1-2 第七步
+
+- 已推进 P1-2 的第七步：收口 LSP diagnostics 状态职责。
+  - 新增 `EditorDiagnosticsState`，集中维护 diagnostics state map、外部 diagnostics observer、file URI 归一化后的写入/读取/清理和插件事件分发。
+  - `EditorContainerState` 保留 `onLspDiagnosticsChanged` 与 `getDiagnosticsFlow(...)` 对外入口，内部委托 diagnostics 状态类。
+  - `EditorFileMutationCoordinator` 不再直接持有 diagnostics map，文件移动/重命名后的旧路径 diagnostics 清理改为委托给 `EditorDiagnosticsState`。
+  - 本步不改变 LSP publishDiagnostics 来源、底部诊断面板订阅方式、插件事件语义和 UI 展示策略。
+- 本轮补充验证：
+
+```powershell
+.\gradlew :app:testArm64DebugUnitTest --tests "com.wuxianggujun.tinaide.ui.compose.state.editor.EditorContainerStateTest" --console=plain
+```
+
+结果：`BUILD SUCCESSFUL`。
+
 ### 2026-06-17 补充：P1-2 第六步
 
 - 已推进 P1-2 的第六步：收口 CodeEditor runtime 缓存职责。

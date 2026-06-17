@@ -359,8 +359,10 @@ class EditorContainerState(
     private var pluginLspDependencyAlertSequence: Long = 0L
 
     private val lspStatusesByTabId = mutableStateMapOf<String, EditorStatus>()
-    private val diagnosticsByFilePath = mutableStateMapOf<String, List<Diagnostic>>()
-    private var diagnosticsObserver: ((fileUri: String, diagnostics: List<Diagnostic>) -> Unit)? = null
+    private val diagnosticsState = EditorDiagnosticsState(
+        filePathNormalizer = ::fileToNormalizedPath,
+        fileUriNormalizer = ::fileUriToNormalizedPath,
+    )
     var pluginLspDependencyAlert by mutableStateOf<PluginLspDependencyAlert?>(null)
         private set
     private val tabLifecycleCoordinator = EditorTabLifecycleCoordinator(
@@ -403,7 +405,7 @@ class EditorContainerState(
         codeRuntimeCache = codeRuntimeCache,
         codeEditorCallbacks = codeEditorCallbacks,
         lspStatusesByTabId = lspStatusesByTabId,
-        diagnosticsByFilePath = diagnosticsByFilePath,
+        diagnosticsState = diagnosticsState,
         isCodeEditableType = ::isCodeEditableType,
         requestCloseTabAt = ::requestCloseTab,
         releaseTinaLspForTab = ::releaseTinaLspForTab,
@@ -417,14 +419,7 @@ class EditorContainerState(
             lspEditorManager.setLspPluginManager(it)
         }
 
-        lspEditorManager.onDiagnosticsChanged = { fileUri, diagnostics ->
-            val normalizedPath = fileUriToNormalizedPath(fileUri)
-            if (normalizedPath != null) {
-                diagnosticsByFilePath[normalizedPath] = diagnostics
-            }
-            PluginHostEventDispatcher.emitDiagnosticsChanged(fileUri, diagnostics)
-            diagnosticsObserver?.invoke(fileUri, diagnostics)
-        }
+        lspEditorManager.onDiagnosticsChanged = diagnosticsState::handleDiagnosticsChanged
 
         lspEditorManager.onLspStatusChanged = { tabId, status ->
             lspStatusesByTabId[tabId] = status
@@ -520,16 +515,11 @@ class EditorContainerState(
     var onLspDiagnosticsChanged: ((fileUri: String, diagnostics: List<Diagnostic>) -> Unit)? = null
         set(value) {
             field = value
-            diagnosticsObserver = value
+            diagnosticsState.onDiagnosticsChanged = value
         }
 
-    private fun readDiagnosticsForFile(file: File): List<Diagnostic> {
-        val normalizedPath = fileToNormalizedPath(file)
-        return diagnosticsByFilePath[normalizedPath].orEmpty()
-    }
-
-    internal fun getDiagnosticsFlow(file: File): Flow<List<Diagnostic>> = snapshotFlow { readDiagnosticsForFile(file) }
-        .distinctUntilChanged()
+    internal fun getDiagnosticsFlow(file: File): Flow<List<Diagnostic>> =
+        diagnosticsState.getDiagnosticsFlow(file)
 
     // ========== LSP 导航回调 ==========
 
@@ -2024,7 +2014,7 @@ class EditorContainerState(
         codeEditorCallbacks.clear()
         codeRuntimeCache.release()
         navigationHistoryManager.clear()
-        diagnosticsByFilePath.clear()
+        diagnosticsState.clear()
     }
 
     private fun fileToNormalizedPath(file: File): String = file.absolutePath
