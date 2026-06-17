@@ -1,7 +1,7 @@
 {
   "id": "tinaide.project.templates",
   "name": "TinaIDE C/C++ Project Templates",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "apiVersion": 1,
   "description": "Built-in offline C/C++ project templates for TinaIDE.",
   "type": "config",

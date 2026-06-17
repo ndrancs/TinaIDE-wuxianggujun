@@ -20,7 +20,7 @@ import timber.log.Timber
  *   2. 远程拉取：走 [GitHubRegistryConfig] 多端点候选（GitHub Raw + jsDelivr + 国内代理），
  *      成功则写缓存并返回。
  *   3. 过期缓存：远程失败时退回上次成功缓存。
- *   4. 内置 asset：[fallback]（已修好的 v3.23 清单），最终兜底。
+ *   4. [fallback]：通常是缓存优先、本地 asset 兜底的无网络源。
  *
  * 设计取舍：远程清单只用于「更新数据不发版」，因此任何远程异常（网络、坏 JSON、
  * 比 App 新的 schema）都静默回落，不打断安装、不崩溃。

@@ -146,10 +146,15 @@ fun OutlineContent(
         val tabId = documentSymbolsTabId ?: return@LaunchedEffect
         symbols = runCatching { editorContainerState.documentSymbols(tabId) }
             .getOrElse { emptyList() }
+            .filter { it.name.isNotBlank() }
         loading = false
     }
 
-    Column(modifier = modifier.fillMaxSize().padding(10.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(start = 8.dp, top = 4.dp, end = 8.dp, bottom = 8.dp)
+    ) {
         TinaOverlayPanelSurface(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.small,
@@ -160,14 +165,14 @@ fun OutlineContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text(stringResource(Strings.outline_search_hint)) },
+                    placeholder = { Text(stringResource(Strings.outline_search_hint)) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
@@ -226,7 +231,7 @@ fun OutlineContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         if (query.isNotEmpty()) {
             Row(
@@ -322,9 +327,9 @@ private fun DocumentSymbolRow(
         onClick = { onNavigate(file, line, column) },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 2.dp),
         shape = MaterialTheme.shapes.small,
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 5.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp),
         unselectedColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.14f),
         unselectedBorder = BorderStroke(
@@ -333,71 +338,77 @@ private fun DocumentSymbolRow(
         )
     ) {
         Row(
-            modifier = Modifier
-                .padding(start = indent)
-                .weight(0.55f),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (hasChildren) {
-                TinaPanelSegmentButton(
-                    onClick = onToggleCollapsed,
-                    modifier = Modifier.size(26.dp),
-                    minHeight = 26.dp,
-                    shape = MaterialTheme.shapes.small,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Icon(
-                        imageVector = if (collapsed) Icons.Default.ChevronRight else Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
-                    )
+            Row(
+                modifier = Modifier
+                    .padding(start = indent)
+                    .weight(0.55f),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (hasChildren) {
+                    TinaPanelSegmentButton(
+                        onClick = onToggleCollapsed,
+                        modifier = Modifier.size(24.dp),
+                        minHeight = 24.dp,
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (collapsed) Icons.Default.ChevronRight else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.size(24.dp))
                 }
-            } else {
-                Spacer(modifier = Modifier.size(26.dp))
+
+                Icon(
+                    imageVector = symbolKindIcon(item.kind),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
 
-            Icon(
-                imageVector = symbolKindIcon(item.kind),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-
             Text(
-                text = item.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                text = item.kind,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(0.2f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+
+            val detail = if (!item.containerName.isNullOrBlank()) {
+                "${item.containerName} (${item.line + 1})"
+            } else {
+                "${item.line + 1}"
+            }
+
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(0.25f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
-
-        Text(
-            text = item.kind,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.2f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-
-        val detail = if (!item.containerName.isNullOrBlank()) {
-            "${item.containerName} (${item.line + 1})"
-        } else {
-            "${item.line + 1}"
-        }
-
-        Text(
-            text = detail,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.25f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }
 

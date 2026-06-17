@@ -728,6 +728,6 @@ internal fun MainActivityUnsavedExitDialog(
             onShowUnsavedExitDialogChange(false)
             onFinish()
         },
-        onCancel = { onShowUnsavedExitDialogChange(false) }
+        onDismiss = { onShowUnsavedExitDialogChange(false) }
     )
 }

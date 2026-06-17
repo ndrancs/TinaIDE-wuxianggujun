@@ -5,7 +5,6 @@ import android.os.Build
 import com.wuxianggujun.tinaide.core.config.IConfigManager
 import com.wuxianggujun.tinaide.core.i18n.Strings
 import com.wuxianggujun.tinaide.core.i18n.strOr
-import com.wuxianggujun.tinaide.core.linuxdistro.AndroidAssetLinuxDistroManifestSource
 import com.wuxianggujun.tinaide.core.linuxdistro.DistroArchitecture
 import com.wuxianggujun.tinaide.core.linuxdistro.InstalledLinuxDistro
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroCatalog
@@ -15,7 +14,6 @@ import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroInstallPhase
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroInstallProgress
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroManager
 import com.wuxianggujun.tinaide.core.linuxdistro.LinuxDistroRootfsConfig
-import com.wuxianggujun.tinaide.core.linuxdistro.loadCatalog
 import com.wuxianggujun.tinaide.storage.ProjectPaths
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -238,26 +236,38 @@ class SelfHostedLinuxDistroRuntime(
 
         const val DEFAULT_DISTRO_ID = "alpine"
 
-        fun createFromAssets(
+        fun createForExplicitInstall(
             context: Context,
             configManager: IConfigManager,
         ): SelfHostedLinuxDistroRuntime {
-            val catalog = loadRemoteOrAssetCatalog(context.applicationContext)
+            val catalog = loadRemoteOrCachedCatalog(context.applicationContext)
             return create(context, configManager, catalog)
         }
 
-        /**
-         * 构造发行版清单 catalog：远程增强（registry 托管）优先，任何失败回落到内置 asset。
-         * 远程源内部已做缓存 + 多端点回落，调用方无需感知。
-         */
-        fun loadRemoteOrAssetCatalog(context: Context): LinuxDistroCatalog {
-            val appContext = context.applicationContext
-            val assetSource = AndroidAssetLinuxDistroManifestSource(appContext)
-            return RemoteLinuxDistroManifestSource(
-                context = appContext,
-                fallback = assetSource,
-            ).loadCatalog()
+        fun createForStartup(
+            context: Context,
+            configManager: IConfigManager,
+        ): SelfHostedLinuxDistroRuntime {
+            val catalog = loadBundledCatalog(context.applicationContext)
+            return create(context, configManager, catalog)
         }
+
+        fun createForLocalRead(
+            context: Context,
+            configManager: IConfigManager,
+        ): SelfHostedLinuxDistroRuntime {
+            val catalog = loadCachedOrBundledCatalog(context.applicationContext)
+            return create(context, configManager, catalog)
+        }
+
+        fun loadBundledCatalog(context: Context): LinuxDistroCatalog =
+            LinuxDistroCatalogRepository.create(context.applicationContext).loadBundledCatalog()
+
+        fun loadCachedOrBundledCatalog(context: Context): LinuxDistroCatalog =
+            LinuxDistroCatalogRepository.create(context.applicationContext).loadCachedOrBundledCatalog()
+
+        fun loadRemoteOrCachedCatalog(context: Context): LinuxDistroCatalog =
+            LinuxDistroCatalogRepository.create(context.applicationContext).loadRemoteOrCachedCatalog()
 
         fun create(
             context: Context,

@@ -33,12 +33,10 @@ object PRootBootstrap {
     private val configManager: IConfigManager
         get() = org.koin.core.context.GlobalContext.get().get()
 
-    private fun createSelfHostedLinuxDistroRuntime(context: Context): SelfHostedLinuxDistroRuntime = SelfHostedLinuxDistroRuntime.createFromAssets(context, configManager)
-
     private fun defaultDistroId(): String = SelfHostedLinuxDistroRuntime.DEFAULT_DISTRO_ID
 
     private fun syncConfiguredRuntimeProfiles(context: Context) {
-        createSelfHostedLinuxDistroRuntime(context).syncInstalledProfiles()
+        SelfHostedLinuxDistroRuntime.createForStartup(context, configManager).syncInstalledProfiles()
     }
 
     fun getActiveProfile(context: Context): RootfsProfile {
@@ -262,7 +260,7 @@ object PRootBootstrap {
                 currentPackage = PACKAGE_LINUX_DISTRO_RUNTIME,
             )
 
-            val runtime = createSelfHostedLinuxDistroRuntime(context)
+            val runtime = SelfHostedLinuxDistroRuntime.createForExplicitInstall(context, configManager)
             runtime.installDistro(distroId) { progress ->
                 val stage = when (progress.phase) {
                     SelfHostedLinuxDistroRuntime.Phase.PREPARING,

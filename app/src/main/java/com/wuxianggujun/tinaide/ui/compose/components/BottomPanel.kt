@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -73,6 +74,7 @@ fun BottomPanel(
     fileEncoding: String = "",
     onCursorPositionClick: (() -> Unit)? = null
 ) {
+    val context = LocalContext.current
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val currentHeightDp = with(density) { bottomPanelState.currentHeight.toDp() }
@@ -131,6 +133,12 @@ fun BottomPanel(
     )
     val diagnostics = bottomPanelViewModel.diagnostics.collectAsStateWithLifecycleWhen(
         !isActive && resolvedBottomTab == BottomPanelTab.DIAGNOSTICS
+    )
+    val buildLogCount by bottomPanelViewModel.buildLogCount.collectAsStateWithLifecycle()
+    val runOutputCount by bottomPanelViewModel.runOutputCount.collectAsStateWithLifecycle()
+    val normalModeTabBadges = mapOf(
+        BottomPanelTab.BUILD_LOG to buildLogCount,
+        BottomPanelTab.RUN_OUTPUT to runOutputCount
     )
 
     val bookmarkRepository: IBookmarkRepository = koinInject()
@@ -216,6 +224,7 @@ fun BottomPanel(
                             BottomPanelTabRow(
                                 selectedTab = resolvedBottomTab,
                                 tabs = normalModeTabs,
+                                badges = normalModeTabBadges,
                                 onTabSelected = { tab ->
                                     // 切换标签页时，如果面板未展开则展开
                                     scope.launch {
@@ -247,15 +256,32 @@ fun BottomPanel(
                                     BottomPanelTab.BUILD_LOG -> BuildLogContent(
                                         logs = buildLogs,
                                         modifier = Modifier.fillMaxSize(),
-                                        onClearLogs = { bottomPanelViewModel.clearBuildLogs() }
+                                        copyActionTitleRes = Strings.btn_copy_log,
+                                        onCopyAll = {
+                                            copyLogEntriesToClipboard(
+                                                context = context,
+                                                logs = bottomPanelViewModel.buildLogs.value,
+                                                clipboardLabelRes = Strings.build_log_clipboard_label,
+                                                emptyMessageRes = Strings.build_log_empty
+                                            )
+                                        },
+                                        onClear = { bottomPanelViewModel.clearBuildLogs() }
                                     )
                                     BottomPanelTab.RUN_OUTPUT -> {
                                         BuildLogContent(
                                             logs = runOutputLogs,
                                             modifier = Modifier.fillMaxSize(),
-                                            onClearLogs = { bottomPanelViewModel.clearRunOutput() },
                                             emptyMessageRes = Strings.run_output_empty,
-                                            clipboardLabelRes = Strings.run_output_clipboard_label
+                                            copyActionTitleRes = Strings.action_copy,
+                                            onCopyAll = {
+                                                copyLogEntriesToClipboard(
+                                                    context = context,
+                                                    logs = bottomPanelViewModel.runOutputLogs.value,
+                                                    clipboardLabelRes = Strings.run_output_clipboard_label,
+                                                    emptyMessageRes = Strings.run_output_empty
+                                                )
+                                            },
+                                            onClear = { bottomPanelViewModel.clearRunOutput() }
                                         )
                                     }
                                     BottomPanelTab.DIAGNOSTICS -> DiagnosticsContent(

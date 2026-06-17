@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,9 +49,15 @@ object PanelHeightPreset {
 @Stable
 class BottomPanelDragState(
     initialExpanded: Boolean = false,
-    val minHeight: Float = 0f,
-    val maxHeight: Float = 300f
+    minHeight: Float = 0f,
+    maxHeight: Float = 300f
 ) {
+    var minHeight: Float = minHeight
+        private set
+
+    var maxHeight: Float = maxHeight
+        private set
+
     internal val heightAnimatable = Animatable(
         if (initialExpanded) maxHeight else minHeight
     )
@@ -112,6 +119,12 @@ class BottomPanelDragState(
      */
     suspend fun collapseImmediate() {
         heightAnimatable.snapTo(minHeight)
+    }
+
+    internal suspend fun updateBounds(minHeight: Float, maxHeight: Float) {
+        this.minHeight = minHeight
+        this.maxHeight = maxHeight
+        heightAnimatable.snapTo(heightAnimatable.value.coerceIn(minHeight, maxHeight))
     }
 
     /**
@@ -228,8 +241,8 @@ class BottomPanelDragState(
 /**
  * 创建并记住底部面板状态
  *
- * 注意：不使用 rememberSaveable，每次重组都从收起状态开始
- * 使用 maxHeightPx 作为 key，确保 maxHeight 变化时重新创建状态
+ * 注意：不使用 rememberSaveable，不跨会话保存高度状态
+ * 可用高度变化时更新已有状态边界，避免键盘弹出时重建为收起状态
  */
 @Composable
 fun rememberBottomPanelDragState(
@@ -241,8 +254,12 @@ fun rememberBottomPanelDragState(
     val minHeightPx = with(density) { minHeight.toPx() }
     val maxHeightPx = with(density) { maxHeight.toPx() }
 
-    // 使用 maxHeightPx 作为 key，确保屏幕尺寸变化时重新创建状态
-    return remember(maxHeightPx) {
+    // IME 或窗口尺寸变化会改变可用高度，这里只同步边界，不重建状态。
+    val state = remember(initialExpanded) {
         BottomPanelDragState(initialExpanded, minHeightPx, maxHeightPx)
     }
+    LaunchedEffect(minHeightPx, maxHeightPx) {
+        state.updateBounds(minHeightPx, maxHeightPx)
+    }
+    return state
 }

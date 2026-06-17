@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -63,7 +62,6 @@ internal fun MainActivityBottomPanelHost(
             .fillMaxSize()
             .padding(paddingValues)
             .consumeWindowInsets(paddingValues)
-            .imePadding()
     ) {
         val maxPanelHeight = (maxHeight - EditorStatusBarHeight - BottomPanelSecondaryBarHeight)
             .coerceAtLeast(0.dp)

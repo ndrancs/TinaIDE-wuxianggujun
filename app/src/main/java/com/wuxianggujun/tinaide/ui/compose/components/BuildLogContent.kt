@@ -16,9 +16,12 @@ import com.wuxianggujun.tinaide.core.i18n.Strings
 fun BuildLogContent(
     logs: List<BuildLogEntry>,
     modifier: Modifier = Modifier,
-    onClearLogs: (() -> Unit)? = null,
+    selectAllRequest: Int = 0,
+    scrollToBottomRequest: Int = 0,
     @StringRes emptyMessageRes: Int = Strings.build_log_empty,
-    @StringRes clipboardLabelRes: Int = Strings.build_log_clipboard_label
+    @StringRes copyActionTitleRes: Int = Strings.btn_copy_log,
+    onCopyAll: (() -> Unit)? = null,
+    onClear: (() -> Unit)? = null
 ) {
     if (logs.isEmpty()) {
         EmptyStateContent(
@@ -31,9 +34,11 @@ fun BuildLogContent(
             modifier = modifier,
             fontSizeSp = 12f,
             autoScroll = true,
-            onClearLogs = onClearLogs,
-            emptyMessageRes = emptyMessageRes,
-            clipboardLabelRes = clipboardLabelRes
+            selectAllRequest = selectAllRequest,
+            scrollToBottomRequest = scrollToBottomRequest,
+            copyActionTitleRes = copyActionTitleRes,
+            onCopyAll = onCopyAll,
+            onClear = onClear
         )
     }
 }

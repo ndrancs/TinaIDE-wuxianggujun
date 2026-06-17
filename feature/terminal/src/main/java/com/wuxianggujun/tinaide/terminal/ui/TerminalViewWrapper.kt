@@ -2,6 +2,7 @@ package com.wuxianggujun.tinaide.terminal.ui
 
 import android.content.Context
 import android.graphics.Typeface
+import android.view.KeyEvent
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +40,8 @@ fun TerminalViewWrapper(
     altEnabled: Boolean,
     onSingleTap: () -> Unit = {},
     onScale: (Float) -> Float = { it },
+    onKeyDown: (Int, KeyEvent, TerminalSession?) -> Boolean = { _, _, _ -> false },
+    onCodePoint: (Int, Boolean, TerminalSession?) -> Boolean = { _, _, _ -> false },
     modifier: Modifier = Modifier,
     fontSizeSp: Float = 13f,
     typeface: Typeface = Typeface.MONOSPACE,
@@ -62,6 +65,8 @@ fun TerminalViewWrapper(
     val persistJob = remember { mutableStateOf<Job?>(null) }
 
     val currentOnFontSizeChange by rememberUpdatedState(onFontSizeChange)
+    val currentOnKeyDown by rememberUpdatedState(onKeyDown)
+    val currentOnCodePoint by rememberUpdatedState(onCodePoint)
 
     // 创建 TerminalViewClient
     val viewClient = remember(context) {
@@ -117,6 +122,12 @@ fun TerminalViewWrapper(
                     showSoftKeyboard(context, view)
                 }
                 onSingleTap()
+            },
+            onKeyDown = { keyCode, event, termSession ->
+                currentOnKeyDown(keyCode, event, termSession)
+            },
+            onCodePoint = { codePoint, ctrlDown, termSession ->
+                currentOnCodePoint(codePoint, ctrlDown, termSession)
             },
             onEmulatorSet = {
                 // 当模拟器设置完成时，可以进行一些初始化

@@ -1,6 +1,7 @@
 package com.wuxianggujun.tinaide.ui
 
 import android.os.Bundle
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -283,6 +284,7 @@ private fun TerminalScreen(
     // 强杀 shell 时 `suppressExitNotice` 会阻止 Termux 追加 `[Process completed - press Enter]`。
     val runSession = if (isRunMode) sessions.find { it.id == runSessionId } else null
     val runExitCode = runSession?.runExitCode
+    val runCompleted = isRunMode && runExitCode != null
 
     var ctrlEnabled by remember { mutableStateOf(false) }
     var altEnabled by remember { mutableStateOf(false) }
@@ -399,6 +401,29 @@ private fun TerminalScreen(
                                 // 点击时可以显示键盘
                             },
                             onScale = { it },
+                            onKeyDown = { keyCode, event, _ ->
+                                if (!runCompleted) {
+                                    false
+                                } else if (
+                                    event.action == AndroidKeyEvent.ACTION_DOWN &&
+                                    (keyCode == AndroidKeyEvent.KEYCODE_ENTER || keyCode == AndroidKeyEvent.KEYCODE_NUMPAD_ENTER)
+                                ) {
+                                    onBack()
+                                    true
+                                } else {
+                                    !event.isSystem()
+                                }
+                            },
+                            onCodePoint = { codePoint, _, _ ->
+                                if (!runCompleted) {
+                                    false
+                                } else {
+                                    if (codePoint == '\n'.code || codePoint == '\r'.code) {
+                                        onBack()
+                                    }
+                                    true
+                                }
+                            },
                             modifier = Modifier.fillMaxSize(),
                             fontSizeSp = fontSizeSp,
                             typeface = terminalTypeface,
@@ -415,7 +440,13 @@ private fun TerminalScreen(
                     altEnabled = altEnabled,
                     onCtrlToggle = { ctrlEnabled = !ctrlEnabled },
                     onAltToggle = { altEnabled = !altEnabled },
-                    onKey = { viewModel.sendText(it) },
+                    onKey = { key ->
+                        if (!runCompleted) {
+                            viewModel.sendText(key)
+                        } else if (key.contains('\n') || key.contains('\r')) {
+                            onBack()
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }

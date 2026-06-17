@@ -329,3 +329,38 @@ AI 工具按功能分类组织，当前包含以下类别：
 参数: 项目根路径（或库标识）、查询内容、范围限制（目录/关键词/topic）
 结果: 命中代码片段 / 返回文档要点（概述即可）
 状态: 成功 / 失败（含错误码与下一步）
+## Codex 搜索排除策略
+
+默认不要递归扫描、读取、统计或搜索以下目录：
+
+- `.git/`
+- `node_modules/`
+- `build/`
+- `out/`
+- `dist/`
+- `.gradle/`
+- `.gradle-user-home-ai/`
+- `.tmp/`
+- `.cache/`
+- `.kotlin/`
+- `.cxx/`
+- `.externalNativeBuild/`
+- `.vite/`
+- `.turbo/`
+- `coverage/`
+- `captures/`
+- `logs/`
+- `log/`
+- `tmp/`
+- `temp/`
+- `.ace-tool/`
+- `app/.local/`
+- `app/src/*/assets/tina-toolchain/archive/`
+- `external/llvm-build-libs/`
+- `llvm-project/`
+- `llvm-projects/`
+- `llvm_projects/`
+
+代码搜索必须优先使用 `rg`，并遵守项目根目录的 `.ignore`。如果必须查看构建产物、缓存、日志或大型第三方源码/二进制目录，只读取明确的目标文件或小范围目录，不做全项目递归。
+
+不要从 `C:\` 或用户主目录启动针对本项目的全局搜索；需要分析本项目时，工作目录应保持在本仓库根目录或更小的子模块目录。
