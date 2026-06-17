@@ -339,6 +339,21 @@ rg "deleteRecursively|\\.delete\\(|renameTo\\(" app feature core
 
 结果：`BUILD SUCCESSFUL`。
 
+### 2026-06-17 补充：P1-2 第十一步
+
+- 已推进 P1-2 的第十一步：收口 Peek Definition 面板状态职责。
+  - 新增 `EditorPeekDefinitionState`，集中维护 peek definition panel 的 loading、results 和 owner 限定关闭逻辑。
+  - `EditorContainerState` 保留 `peekDefinitionPanelState`、`showPeekDefinitionLoading(...)`、`showPeekDefinitionResults(...)`、`dismissPeekDefinitionPanel(...)` 对外入口，内部委托状态类。
+  - 新增 `EditorPeekDefinitionStateTest`，覆盖 loading 展示、结果替换和非 owner tab 不关闭面板。
+  - 本步不改变 LSP 导航代理、`TinaCodeEditorPage` 订阅方式、面板 UI 或 tab 关闭时的 dismiss 策略。
+- 本轮补充验证：
+
+```powershell
+.\gradlew :app:testArm64DebugUnitTest --tests "com.wuxianggujun.tinaide.ui.compose.state.editor.EditorContainerStateTest" --tests "com.wuxianggujun.tinaide.ui.compose.state.editor.EditorPeekDefinitionStateTest" --console=plain
+```
+
+结果：`BUILD SUCCESSFUL`。
+
 ### 2026-06-17 补充：P1-2 第十步
 
 - 已推进 P1-2 的第十步：收口 DocumentSession/editor binding 桥接职责。

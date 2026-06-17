@@ -357,6 +357,7 @@ class EditorContainerState(
     )
     private val saveAllNotificationTracker = EditorSaveAllNotificationTracker()
 
+    private val peekDefinitionState = EditorPeekDefinitionState()
     private val lspUiState = EditorLspUiState()
     private val diagnosticsState = EditorDiagnosticsState(
         filePathNormalizer = ::fileToNormalizedPath,
@@ -457,8 +458,8 @@ class EditorContainerState(
     var splitEditorLayout by mutableStateOf(SplitEditorLayout.HORIZONTAL)
         private set
 
-    internal var peekDefinitionPanelState by mutableStateOf<PeekDefinitionPanelState?>(null)
-        private set
+    internal val peekDefinitionPanelState: PeekDefinitionPanelState?
+        get() = peekDefinitionState.panelState
 
     private fun resolveProjectRootPath(): String? = projectRootPathProvider()
         ?.takeIf { it.isNotBlank() }
@@ -468,11 +469,9 @@ class EditorContainerState(
     internal fun getEditorProjectRootPathOrNull(): String? = resolveProjectRootPath()
 
     internal fun showPeekDefinitionLoading(ownerTabId: String, title: String) {
-        peekDefinitionPanelState = PeekDefinitionPanelState(
+        peekDefinitionState.showLoading(
             ownerTabId = ownerTabId,
-            title = title,
-            locations = emptyList(),
-            isLoading = true
+            title = title
         )
     }
 
@@ -481,19 +480,15 @@ class EditorContainerState(
         title: String,
         locations: List<LocationItem>
     ) {
-        peekDefinitionPanelState = PeekDefinitionPanelState(
+        peekDefinitionState.showResults(
             ownerTabId = ownerTabId,
             title = title,
-            locations = locations,
-            isLoading = false
+            locations = locations
         )
     }
 
     internal fun dismissPeekDefinitionPanel(ownerTabId: String? = null) {
-        val current = peekDefinitionPanelState ?: return
-        if (ownerTabId == null || current.ownerTabId == ownerTabId) {
-            peekDefinitionPanelState = null
-        }
+        peekDefinitionState.dismiss(ownerTabId)
     }
 
     internal fun getBookmarksProjectRootPathOrNull(): String? = resolveProjectRootPath()
